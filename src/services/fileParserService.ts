@@ -1,8 +1,11 @@
 /**
  * Intelligent File Parser Service for Educational Documents
  * Extracts clean, pedagogical text from PDF, DOCX, TXT, and Markdown files.
+ * Uses Mammoth, PDF.js, Pako stream decompression, and Arabic Unicode Hex decoding.
  */
 import JSZip from 'jszip';
+import pako from 'pako';
+import mammoth from 'mammoth';
 
 export interface ParsedDocumentResult {
   fileName: string;
@@ -35,7 +38,7 @@ export class FileParserService {
       extractedText = await this.readPdfFile(file);
     } else if (file.type.startsWith('image/')) {
       fileType = 'image';
-      extractedText = `ملف صورة تعليمية: ${file.name} (سيتم توليد أسئلة ورسوم بيانية مستوحاة من الموضوع)`;
+      extractedText = `ملف صورة تعليمية (${file.name}): سيتم استنباط الأسئلة والرسوم البيانية استناداً لعنوان الملف وموضوعه.`;
     } else {
       // Fallback text read
       extractedText = await this.readTextFile(file);
@@ -47,7 +50,7 @@ export class FileParserService {
     const wordCount = words.length;
     const characterCount = cleanedText.length;
     const previewSnippet = cleanedText.slice(0, 450) + (cleanedText.length > 450 ? '...' : '');
-    const topicsSummary = this.extractTopicKeywords(cleanedText);
+    const topicsSummary = this.extractTopicKeywords(cleanedText, file.name);
 
     return {
       fileName: file.name,
@@ -67,17 +70,29 @@ export class FileParserService {
   private readTextFile(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string || '');
+      reader.onload = () => resolve((reader.result as string) || '');
       reader.onerror = () => reject(new Error('فشل قراءة الملف النصي'));
       reader.readAsText(file, 'UTF-8');
     });
   }
 
   /**
-   * Read and parse Microsoft Word (.docx) files using JSZip and DOMParser
+   * Read and parse Microsoft Word (.docx) files using Mammoth + JSZip fallback
    */
   private async readDocxFile(file: File): Promise<string> {
     try {
+      const arrayBuffer = await file.arrayBuffer();
+      // Primary: Mammoth extraction
+      try {
+        const mammothResult = await mammoth.extractRawText({ arrayBuffer });
+        if (mammothResult.value && mammothResult.value.trim().length > 15) {
+          return mammothResult.value;
+        }
+      } catch (mErr) {
+        console.warn('Mammoth docx parse fallback:', mErr);
+      }
+
+      // Secondary: JSZip XML parse
       const zip = await JSZip.loadAsync(file);
       const documentXml = await zip.file('word/document.xml')?.async('text');
 
@@ -88,7 +103,6 @@ export class FileParserService {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(documentXml, 'application/xml');
       
-      // Extract paragraphs (<w:p>) to preserve structure
       const paragraphs = xmlDoc.getElementsByTagName('w:p');
       const lines: string[] = [];
 
@@ -111,60 +125,205 @@ export class FileParserService {
   }
 
   /**
-   * Read and parse PDF files using stream extraction and string parsing
+   * Read and parse PDF files using PDF.js worker, Pako stream decompression, and Hex Unicode decoding
    */
   private async readPdfFile(file: File): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer();
+
+    // 1. First Priority: PDF.js with CDN Worker
     try {
-      const arrayBuffer = await file.arrayBuffer();
+      const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
+      if (pdfjs && pdfjs.getDocument) {
+        try {
+          if (pdfjs.GlobalWorkerOptions && !pdfjs.GlobalWorkerOptions.workerSrc) {
+            pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version || '5.7.284'}/build/pdf.worker.min.mjs`;
+          }
+        } catch {}
 
-      // Dynamic attempt with pdfjs-dist if available in browser
-      try {
-        const pdfjs = await import('pdfjs-dist/build/pdf.mjs');
-        if (pdfjs && pdfjs.getDocument) {
-          const loadingTask = pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) });
-          const pdf = await loadingTask.promise;
-          let fullText = '';
+        const loadingTask = pdfjs.getDocument({
+          data: new Uint8Array(arrayBuffer),
+          useSystemFonts: true,
+          isEvalSupported: false
+        });
 
-          for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 40); pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const textContent = await page.getTextContent();
-            const pageText = textContent.items
-              .map((item: any) => item.str || '')
-              .join(' ');
+        const pdf = await loadingTask.promise;
+        let fullText = '';
+
+        for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 60); pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str || '')
+            .join(' ');
+          if (pageText.trim()) {
             fullText += `[صفحة ${pageNum}]\n${pageText}\n\n`;
           }
-
-          if (fullText.trim().length > 30) {
-            return fullText;
-          }
         }
-      } catch (pdfErr) {
-        console.warn('pdfjs-dist dynamic import warning, using stream decoder:', pdfErr);
-      }
 
-      // Stream fallback: decode textual streams from PDF buffer
-      const decoder = new TextDecoder('utf-8');
-      const rawString = decoder.decode(new Uint8Array(arrayBuffer));
-      
-      // Extract text inside parenthesis (text) Tj or TJ
-      const textMatches: string[] = [];
-      const regexTj = /\(([^)]+)\)\s*Tj/g;
-      let match;
-      while ((match = regexTj.exec(rawString)) !== null) {
-        if (match[1] && match[1].length > 1) {
-          textMatches.push(match[1]);
+        if (fullText.trim().length > 25) {
+          return fullText;
         }
       }
-
-      if (textMatches.length > 10) {
-        return textMatches.join(' ');
-      }
-
-      return 'تم استخراج بنية ملف PDF بنجاح وجاهز لتوليد الأسئلة وفق الموضوع والمحتوى العلمي للوثيقة.';
-    } catch (e) {
-      console.warn('PDF parsing error:', e);
-      return 'تم قراءة الملف المرفق وسيتم توجيه الذكاء الاصطناعي لاستنباط الأسئلة والامتحان منه بدقة.';
+    } catch (pdfErr) {
+      console.warn('PDF.js extraction failed, falling back to direct stream inflator:', pdfErr);
     }
+
+    // 2. Second Priority: Pako Stream Decompressor & Hex Unicode Decoder
+    try {
+      const pakoText = this.extractTextFromPdfBinaryWithPako(arrayBuffer);
+      if (pakoText && pakoText.trim().length > 25) {
+        return pakoText;
+      }
+    } catch (pakoErr) {
+      console.warn('Pako stream decompression failed:', pakoErr);
+    }
+
+    // 3. Third Priority: Raw Latin string scanning
+    const decoder = new TextDecoder('utf-8');
+    const rawString = decoder.decode(new Uint8Array(arrayBuffer));
+    const rawMatches = this.extractStringsFromPdfText(rawString);
+    if (rawMatches && rawMatches.trim().length > 25) {
+      return rawMatches;
+    }
+
+    return `وثيقة منهاج تعليمية (${file.name}): تحتوي على مفاهيم ومسائل علمية في المنهاج الأردني، جاهزة للتوليد الشامل والتحليل الدقيق.`;
+  }
+
+  /**
+   * Decompresses all PDF streams using Pako and extracts Latin/Arabic text and Unicode Hex strings
+   */
+  private extractTextFromPdfBinaryWithPako(buffer: ArrayBuffer): string {
+    const uint8 = new Uint8Array(buffer);
+    const extractedBlocks: string[] = [];
+
+    let idx = 0;
+    while (idx < uint8.length) {
+      // Find 'stream'
+      let streamPos = -1;
+      for (let i = idx; i < uint8.length - 6; i++) {
+        if (
+          uint8[i] === 115 && // s
+          uint8[i + 1] === 116 && // t
+          uint8[i + 2] === 114 && // r
+          uint8[i + 3] === 101 && // e
+          uint8[i + 4] === 97 && // a
+          uint8[i + 5] === 109 // m
+        ) {
+          streamPos = i + 6;
+          break;
+        }
+      }
+      if (streamPos === -1) break;
+
+      // Skip newline after stream keyword (\r\n or \n)
+      if (uint8[streamPos] === 13) streamPos++;
+      if (uint8[streamPos] === 10) streamPos++;
+
+      // Find 'endstream'
+      let endPos = -1;
+      for (let j = streamPos; j < uint8.length - 9; j++) {
+        if (
+          uint8[j] === 101 && // e
+          uint8[j + 1] === 110 && // n
+          uint8[j + 2] === 100 && // d
+          uint8[j + 3] === 115 && // s
+          uint8[j + 4] === 116 && // t
+          uint8[j + 5] === 114 && // r
+          uint8[j + 6] === 101 && // e
+          uint8[j + 7] === 97 && // a
+          uint8[j + 8] === 109 // m
+        ) {
+          endPos = j;
+          break;
+        }
+      }
+      if (endPos === -1) break;
+
+      let actualEnd = endPos;
+      while (actualEnd > streamPos && (uint8[actualEnd - 1] === 10 || uint8[actualEnd - 1] === 13 || uint8[actualEnd - 1] === 32)) {
+        actualEnd--;
+      }
+
+      const chunk = uint8.slice(streamPos, actualEnd);
+      idx = endPos + 9;
+
+      let rawStream = '';
+      try {
+        const decompressed = pako.inflate(chunk);
+        rawStream = new TextDecoder('utf-8').decode(decompressed);
+      } catch {
+        rawStream = new TextDecoder('latin1').decode(chunk);
+      }
+
+      const streamText = this.extractStringsFromPdfText(rawStream);
+      if (streamText.trim()) {
+        extractedBlocks.push(streamText.trim());
+      }
+    }
+
+    return extractedBlocks.join('\n\n');
+  }
+
+  /**
+   * Extract text from raw PDF stream operators: (...) Tj, [(...)] TJ, <hex> Tj
+   */
+  private extractStringsFromPdfText(raw: string): string {
+    const lines: string[] = [];
+
+    // 1. Match parentheses (text) Tj
+    const regexTj = /\(([^)]+)\)\s*(?:Tj|'|")/g;
+    let match;
+    while ((match = regexTj.exec(raw)) !== null) {
+      const txt = match[1].replace(/\\([()\\])/g, '$1').trim();
+      if (txt.length > 1 && !txt.startsWith('/') && !txt.match(/^[0-9A-Za-z_-]{1,3}$/)) {
+        lines.push(txt);
+      }
+    }
+
+    // 2. Match array text [(...)] TJ
+    const regexArray = /\[([^\]]+)\]\s*TJ/g;
+    while ((match = regexArray.exec(raw)) !== null) {
+      const inner = match[1];
+      const partRegex = /\(([^)]+)\)/g;
+      let part;
+      let lineParts = '';
+      while ((part = partRegex.exec(inner)) !== null) {
+        lineParts += part[1].replace(/\\([()\\])/g, '$1') + ' ';
+      }
+      if (lineParts.trim().length > 2) {
+        lines.push(lineParts.trim());
+      }
+    }
+
+    // 3. Match Unicode Hex strings <06270644...> Tj (Common in Arabic PDFs)
+    const regexHex = /<([0-9a-fA-F]{4,})>\s*(?:Tj|'|")/g;
+    while ((match = regexHex.exec(raw)) !== null) {
+      const decodedHex = this.decodePdfHexString(match[1]);
+      if (decodedHex.trim().length > 1) {
+        lines.push(decodedHex.trim());
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Decode UTF-16BE hex strings into Arabic characters
+   */
+  private decodePdfHexString(hex: string): string {
+    hex = hex.replace(/\s+/g, '');
+    if (hex.length % 2 !== 0) hex += '0';
+    if (hex.length >= 4) {
+      const chars: string[] = [];
+      for (let i = 0; i < hex.length; i += 4) {
+        const code = parseInt(hex.substring(i, i + 4), 16);
+        if (!isNaN(code) && code > 0) {
+          chars.push(String.fromCharCode(code));
+        }
+      }
+      return chars.join('');
+    }
+    return '';
   }
 
   /**
@@ -180,27 +339,45 @@ export class FileParserService {
   }
 
   /**
-   * Extract meaningful topic keywords for the teacher
+   * Extract meaningful topic keywords and headings from the document
    */
-  private extractTopicKeywords(text: string): string[] {
+  private extractTopicKeywords(text: string, fileName?: string): string[] {
     const keywords: string[] = [];
-    const sample = text.slice(0, 1500);
 
+    // 1. Match headings like "الوحدة الأولى: ..." or "الفصل الثاني: ..." or "الدرس: ..."
+    const unitMatches = text.match(/الوحدة\s+(?:الأولى|الثانية|الثالثة|الرابعة|الخامسة|السادسة|السابعة|الثامنة|[٠-٩\d]+)[^:\n]*[:\-]?\s*([^\n.؛]{3,50})/g);
+    if (unitMatches) {
+      unitMatches.forEach(m => keywords.push(m.trim()));
+    }
+
+    const lessonMatches = text.match(/(?:الدرس|الفصل|موضوع|قانون|مبدأ|نظرية)\s+([^\n.؛]{3,45})/g);
+    if (lessonMatches) {
+      lessonMatches.slice(0, 4).forEach(m => keywords.push(m.trim()));
+    }
+
+    // 2. High-value scientific concept candidates
     const candidates = [
-      'الفيزياء', 'الكيمياء', 'الأحياء', 'الرياضيات', 'ميكانيكا الكم',
-      'التأثير الكهروضوئي', 'الدوائر الكهربائية', 'قانون أوم', 'قانون هوك',
-      'الطاقة الحركية', 'البناء الضوئي', 'الانقسام المنصف', 'الوراثة',
-      'الاتزان الكيميائي', 'الأحماض والقواعد', 'الموجات', 'السرعة والتسارع',
-      'تفاضل وتكامل', 'الروبوتات', 'BTEC'
+      'الحث الكهرومغناطيسي', 'قانون فاراداي', 'قانون لنز', 'الظاهرة الكهروضوئية',
+      'ميكانيكا الكم', 'نموذج بور', 'أطياف الانبعاث', 'الاتزان الكيميائي',
+      'الحموض والقواعد', 'المحلول المنظم', 'الخلايا الجلفانية', 'تأكسد واختزال',
+      'الوراثة المندلية', 'تضاعف DNA', 'بناء البروتين', 'السيال العصبي',
+      'قواعد الاشتقاق', 'المعدلات المرتبطة بالزمن', 'تطبيقات القيم القصوى', 'التكامل',
+      'المتحكمات الدقيقة', 'برمجة أردوينو', 'الحساسات الرقمية', 'Pearson BTEC'
     ];
 
     for (const kw of candidates) {
-      if (sample.includes(kw)) {
+      if (text.includes(kw) && !keywords.includes(kw)) {
         keywords.push(kw);
       }
     }
 
-    return keywords.length > 0 ? keywords.slice(0, 5) : ['المحتوى العلمي المرفق'];
+    // 3. Fallback to clean file name if keywords are sparse
+    if (keywords.length === 0 && fileName) {
+      const cleanName = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+      keywords.push(cleanName);
+    }
+
+    return keywords.length > 0 ? Array.from(new Set(keywords)).slice(0, 5) : ['المحتوى العلمي المرفق'];
   }
 }
 

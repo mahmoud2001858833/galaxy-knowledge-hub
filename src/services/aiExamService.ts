@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { DocumentExamSynthesisEngine } from './documentExamSynthesisEngine';
 
 
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
@@ -210,6 +211,20 @@ export class AIExamService {
       includeTables = true
     } = params;
 
+    // 1. Direct High-Precision Synthesis if Document Text is provided
+    if (uploadedFileText && uploadedFileText.trim().length > 20) {
+      return DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count,
+        qType,
+        bloom,
+        subject,
+        topic,
+        includeDiagrams,
+        includeTables
+      });
+    }
+
     // Call REST API /api/v1/ai/generate-questions with ak_live key
     try {
       if (this.config.apiKey) {
@@ -298,6 +313,83 @@ export class AIExamService {
       includeDiagrams = true,
       includeTables = true
     } = params;
+
+    // If document is uploaded, synthesize all sections directly from the document text
+    if (uploadedFileText && uploadedFileText.trim().length > 20) {
+      const mcqQuestions = DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count: 4,
+        qType: 'mcq',
+        bloom: 'understand',
+        subject,
+        topic,
+        includeDiagrams,
+        includeTables: false
+      });
+
+      const calcQuestions = DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count: 2,
+        qType: 'calculation',
+        bloom: 'apply',
+        subject,
+        topic,
+        includeDiagrams: false,
+        includeTables
+      });
+
+      const essayQuestions = DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count: 2,
+        qType: 'analytical',
+        bloom: 'analyze',
+        subject,
+        topic,
+        includeDiagrams,
+        includeTables: false
+      });
+
+      return {
+        id: `exam-${Date.now()}`,
+        examTitle: `امتحان التقييم النهائي المستخرج من: ${sourceDocumentName || topic || subject}`,
+        subject,
+        gradeLevel,
+        durationMinutes,
+        totalMarks,
+        schoolName: 'مدرسة عنبه الثانية الشاملة للبنين',
+        academicYear: '2025 / 2026',
+        sourceDocumentName,
+        instructions: [
+          'أجب عن جميع الأسئلة الواردة في الورقة الامتحانية وتأكد من عدد الصفحات.',
+          'الأسئلة مستخرجة ومبنية بدقة استناداً لوثيقة المنهاج المرفوعة.',
+          'وضح خطوات الحل والقوانين الرياضية المستخدمة في المسائل الحسابية بدقة.',
+          'يُراعى الدقة في كتابة الوحدات الفيزيائية ورموز المعادلات.',
+          'زمن الامتحان محسوب بدقة ولا يسمح بالخروج قبل مضي نصف الوقت.'
+        ],
+        sections: [
+          {
+            sectionTitle: 'القسم الأول: الأسئلة الموضوعية (اختيار من متعدد) - مستخرجة من المستند',
+            sectionDescription: 'اختر رمز الإجابة الصحيحة لكل فقرة من الفقرات الآتية وانقلها إلى جدول الإجابات:',
+            questions: mcqQuestions
+          },
+          {
+            sectionTitle: 'القسم الثاني: المسائل والبيانات التجريبية - مستخرجة من المستند',
+            sectionDescription: 'أجب عن المسائل والبيانات الآتية مستعيناً بالجداول والرسوم التوضيحية المرفقة:',
+            questions: calcQuestions
+          },
+          {
+            sectionTitle: 'القسم الثالث: التحليل والتفكير العلمي الناقد - مقتبس من نصوص المستند',
+            sectionDescription: 'ناقش وعلل الظواهر العلمية بناءً على القوانين والمفاهيم المقررة في الوثيقة:',
+            questions: essayQuestions
+          }
+        ],
+        generatedAt: new Date().toLocaleDateString('ar-JO', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      };
+    }
 
     const mcqQuestions = await this.generateQuestions({
       subject,
@@ -770,7 +862,22 @@ export class AIExamService {
     includeDiagrams?: boolean;
     includeTables?: boolean;
   }): GeneratedQuestion[] {
-    const { bloom, qType, count, topic, subject, includeDiagrams, includeTables } = params;
+    const { bloom, qType, count, topic, subject, uploadedFileText, includeDiagrams, includeTables } = params;
+
+    // Strict Synthesis from Document if provided
+    if (uploadedFileText && uploadedFileText.trim().length > 20) {
+      return DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count,
+        qType,
+        bloom,
+        subject,
+        topic,
+        includeDiagrams,
+        includeTables
+      });
+    }
+
     const questions: GeneratedQuestion[] = [];
     const templates = this.getTopicTemplates(subject, topic);
 

@@ -708,28 +708,38 @@ export const ExamGeneratorStudio: React.FC = () => {
 
                   {/* Parsed File Insight Card */}
                   {parsedFile && (
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-xs space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-2">
                       <div className="flex items-center justify-between font-bold">
-                        <span className="text-slate-800 dark:text-slate-200 truncate">{parsedFile.fileName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">
+                        <span className="text-slate-800 dark:text-slate-200 truncate flex items-center gap-1.5">
+                          <FileCheck className="w-4 h-4 text-emerald-600" />
+                          <span>{parsedFile.fileName}</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
                           {Math.round(parsedFile.fileSize / 1024)} KB
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                        <div>الكلمات المستخرجة: <strong>{parsedFile.wordCount}</strong></div>
-                        <div>الحروف: <strong>{parsedFile.characterCount}</strong></div>
+                        <div>الكلمات المستخرجة: <strong className="text-emerald-600 dark:text-emerald-400">{parsedFile.wordCount}</strong></div>
+                        <div>الحروف: <strong className="text-emerald-600 dark:text-emerald-400">{parsedFile.characterCount}</strong></div>
                       </div>
 
-                      <div className="pt-1.5 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px]">
-                        <label className="flex items-center gap-1.5 cursor-pointer font-bold text-cyan-600 dark:text-cyan-400">
+                      {parsedFile.previewSnippet && (
+                        <div className="p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-100 dark:border-emerald-900/40 text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-mono line-clamp-3">
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">معاينة النص المستخرج: </span>
+                          {parsedFile.previewSnippet}
+                        </div>
+                      )}
+
+                      <div className="pt-1.5 border-t border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-[11px]">
+                        <label className="flex items-center gap-1.5 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300">
                           <input
                             type="checkbox"
                             checked={useFileStrictly}
                             onChange={(e) => setUseFileStrictly(e.target.checked)}
-                            className="rounded"
+                            className="rounded text-emerald-600 focus:ring-emerald-500"
                           />
-                          <span>اعتماد محتوى الملف كمصدر حصري للأسئلة</span>
+                          <span>توليد الامتحان حصرياً من نصوص ومعطيات هذا الملف</span>
                         </label>
                       </div>
                     </div>
@@ -936,8 +946,12 @@ export const ExamGeneratorStudio: React.FC = () => {
                       <span className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
                         {outputMode === 'full_exam'
-                          ? 'توليد ورقة الامتحان الوزاري المتكاملة 📄'
-                          : 'توليد بنك الأسئلة المخصص فورياً ⚡'}
+                          ? (parsedFile && useFileStrictly 
+                              ? `توليد الامتحان الوزاري مستخرجاً من ملف: ${parsedFile.fileName.slice(0, 24)} 📄` 
+                              : 'توليد ورقة الامتحان الوزاري المتكاملة 📄')
+                          : (parsedFile && useFileStrictly 
+                              ? `توليد بنك الأسئلة مستخرجاً من ملف: ${parsedFile.fileName.slice(0, 24)} ⚡` 
+                              : 'توليد بنك الأسئلة المخصص فورياً ⚡')}
                       </span>
                     )}
                   </Button>

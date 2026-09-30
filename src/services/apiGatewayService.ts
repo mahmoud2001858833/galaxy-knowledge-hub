@@ -4,6 +4,8 @@
  * Powers /api/v1/* endpoints and the developer portal.
  */
 
+import { DocumentExamSynthesisEngine } from './documentExamSynthesisEngine';
+
 export interface ApiKeyRecord {
   id: string;
   name: string;
@@ -883,6 +885,20 @@ export class ApiGatewayService {
     includeTables?: boolean;
   }): any[] {
     const { subject, topic, count, bloom, qType, uploadedFileText, includeDiagrams = true, includeTables = true } = params;
+
+    // Strict Synthesis from Document if provided
+    if (uploadedFileText && uploadedFileText.trim().length > 20) {
+      return DocumentExamSynthesisEngine.synthesizeQuestionsFromText({
+        documentText: uploadedFileText,
+        count,
+        qType: qType as any,
+        bloom: (bloom as any) || 'analyze',
+        subject,
+        topic,
+        includeDiagrams,
+        includeTables
+      });
+    }
 
     const templates = [
       {
