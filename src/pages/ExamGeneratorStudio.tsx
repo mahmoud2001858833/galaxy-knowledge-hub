@@ -38,7 +38,14 @@ import {
   ChevronRight,
   File,
   Image as ImageIcon,
-  FolderOpen
+  FolderOpen,
+  Edit3,
+  Trash2,
+  Plus,
+  QrCode,
+  Search,
+  CheckCircle,
+  Maximize2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +73,101 @@ export const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color:
   { id: 'analyze', label: 'تحليل (Analyze)', desc: 'تفكيك المسألة واستنتاج العلاقات والرسوم البيانية', color: 'from-amber-500 to-orange-600' },
   { id: 'evaluate', label: 'تقييم (Evaluate)', desc: 'إصدار أحكام ونقد الفرضيات والنتائج التجريبية', color: 'from-purple-500 to-pink-600' },
   { id: 'create', label: 'ابتكار (Create)', desc: 'تصميم تجربة أو ابتكار حل علمي غير تقليدي', color: 'from-rose-500 to-red-600' }
+];
+
+export interface CurriculumPreset {
+  id: string;
+  badge: string;
+  title: string;
+  subject: string;
+  targetLevel: string;
+  topic: string;
+  durationMinutes: number;
+  totalMarks: number;
+  icon: string;
+  notes: string;
+  color: string;
+}
+
+export const CURRICULUM_PRESETS: CurriculumPreset[] = [
+  {
+    id: 'physics_tawjihi',
+    badge: 'توجيهي علمي',
+    title: 'فيزياء: الكهرومغناطيسية والكم',
+    subject: 'الفيزياء الحديثة والكلاسيكية',
+    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
+    topic: 'الحث الكهرومغناطيسي، الحث الذاتي والمتبادل، والظاهرة الكهروضوئية',
+    durationMinutes: 90,
+    totalMarks: 100,
+    icon: '⚛️',
+    notes: 'مخططات دوائر وتبرير كامل لجميع البدائل وتطبيق قوانين فاراداي ولنز وآينشتاين',
+    color: 'from-cyan-500 to-blue-600'
+  },
+  {
+    id: 'chemistry_tawjihi',
+    badge: 'توجيهي علمي',
+    title: 'كيمياء: الحموض والقواعد والاتزان',
+    subject: 'الكيمياء الحركية والعضوية',
+    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
+    topic: 'الاتزان في محاليل الحموض والقواعد وتأثير الأيون المشترك والمحلول المنظم pH',
+    durationMinutes: 90,
+    totalMarks: 100,
+    icon: '🧪',
+    notes: 'حسابات Ka و pH والمحلول المنظم وتحديد الأزواج المترافقة',
+    color: 'from-emerald-500 to-teal-600'
+  },
+  {
+    id: 'math_scientific',
+    badge: 'توجيهي علمي',
+    title: 'رياضيات: التفاضل وتطبيقات القيم القصوى',
+    subject: 'الرياضيات والتفاضل والتكامل',
+    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
+    topic: 'قواعد الاشتقاق، المعدلات المرتبطة بالزمن، وتطبيقات القيم القصوى الهندسية',
+    durationMinutes: 120,
+    totalMarks: 100,
+    icon: '📐',
+    notes: 'خطوات إيجاد المشتقات والمعدلات وتحديد إشارات المشتقة الأولى والثانية',
+    color: 'from-purple-500 to-indigo-600'
+  },
+  {
+    id: 'biology_tawjihi',
+    badge: 'توجيهي علمي',
+    title: 'علوم حياتية: الوراثة وتضاعف DNA',
+    subject: 'العلوم الحياتية والوراثة',
+    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
+    topic: 'الوراثة المندلية وسجل النسب، وتضاعف DNA وبناء البروتين والسيال العصبي',
+    durationMinutes: 90,
+    totalMarks: 100,
+    icon: '🧬',
+    notes: 'مربعات بانيت وحساب الروابط الهيدروجينية وترجمة كودونات mRNA',
+    color: 'from-rose-500 to-pink-600'
+  },
+  {
+    id: 'btec_robotics',
+    badge: 'BTEC دولي',
+    title: 'تكنولوجيا وBTEC: الروبوتات والمتحكمات',
+    subject: 'تكنولوجيا المعلومات BTEC',
+    targetLevel: 'مسار Pearson BTEC الدولي',
+    topic: 'المتحكمات الدقيقة، برمجة أردوينو، والحساسات الرقمية والتناظرية والتحكم PWM',
+    durationMinutes: 90,
+    totalMarks: 100,
+    icon: '🤖',
+    notes: 'حسابات التردد وزوايا المحركات الخطوية ومخطط الدوائر المتكاملة',
+    color: 'from-amber-500 to-orange-600'
+  },
+  {
+    id: 'english_tawjihi',
+    badge: 'توجيهي أردني',
+    title: 'اللغة الإنجليزية: القراءة والقواعد',
+    subject: 'اللغة الإنجليزية (English Language)',
+    targetLevel: 'الثانوية العامة (التوجيهي الأردني)',
+    topic: 'Reading Comprehension, Conditionals, Passive Voice and Academic Collocations',
+    durationMinutes: 90,
+    totalMarks: 100,
+    icon: '🇬🇧',
+    notes: 'Grammar transformation, inferences, and contextual vocabulary analysis',
+    color: 'from-blue-600 to-sky-700'
+  }
 ];
 
 export const ExamGeneratorStudio: React.FC = () => {
@@ -119,8 +221,123 @@ export const ExamGeneratorStudio: React.FC = () => {
   // Student Submissions for current exam
   const [submissions, setSubmissions] = useState<StudentExamSubmission[]>([]);
 
-  // Print Mode State
+  // Print Mode & Watermark State
   const [printAnswerKey, setPrintAnswerKey] = useState(false);
+  const [showWatermark, setShowWatermark] = useState(true);
+
+  // Question Inline Editing State
+  const [editingQuestion, setEditingQuestion] = useState<GeneratedQuestion | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Submissions Details Modal State
+  const [selectedSubmissionForView, setSelectedSubmissionForView] = useState<StudentExamSubmission | null>(null);
+  const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
+
+  // Apply Fast-Track Curriculum Preset
+  const handleApplyPreset = (preset: CurriculumPreset) => {
+    setSubject(preset.subject);
+    setTargetLevel(preset.targetLevel);
+    setTopic(preset.topic);
+    setExamDuration(preset.durationMinutes);
+    setExamTotalMarks(preset.totalMarks);
+    setAdditionalNotes(preset.notes);
+    toast.success(`تم اختيار المنهاج: ${preset.title} بنجاح! جاهز للتوليد الفوري ⚡`);
+  };
+
+  // Open Edit Modal for a Question
+  const handleOpenEditQuestion = (q: GeneratedQuestion) => {
+    setEditingQuestion(JSON.parse(JSON.stringify(q)));
+    setIsEditModalOpen(true);
+  };
+
+  // Save Changes to Question
+  const handleSaveEditedQuestion = () => {
+    if (!editingQuestion || !generatedExam) return;
+
+    const updatedSections = generatedExam.sections.map(sec => ({
+      ...sec,
+      questions: sec.questions.map(q => q.id === editingQuestion.id ? editingQuestion : q)
+    }));
+
+    const allQs = updatedSections.flatMap(s => s.questions);
+    const newTotal = allQs.reduce((sum, q) => sum + (q.points || 0), 0);
+
+    const updatedExam: FullExamStructure = {
+      ...generatedExam,
+      sections: updatedSections,
+      totalMarks: newTotal
+    };
+
+    setGeneratedExam(updatedExam);
+    setGeneratedQuestions(allQs);
+    setExamTotalMarks(newTotal);
+    setIsEditModalOpen(false);
+    setEditingQuestion(null);
+    toast.success('تم حفظ التعديلات على السؤال وتحديث مجموع علامات الورقة! ✏️');
+  };
+
+  // Delete Question
+  const handleDeleteQuestion = (qId: string) => {
+    if (!generatedExam) return;
+    const updatedSections = generatedExam.sections.map(sec => ({
+      ...sec,
+      questions: sec.questions.filter(q => q.id !== qId)
+    }));
+    const allQs = updatedSections.flatMap(s => s.questions);
+    const newTotal = allQs.reduce((sum, q) => sum + (q.points || 0), 0);
+    const updatedExam: FullExamStructure = {
+      ...generatedExam,
+      sections: updatedSections,
+      totalMarks: newTotal
+    };
+    setGeneratedExam(updatedExam);
+    setGeneratedQuestions(allQs);
+    setExamTotalMarks(newTotal);
+    toast.info('تم حذف السؤال وتحديث مجموع العلامات');
+  };
+
+  // Add Custom Question Manually
+  const handleAddCustomQuestion = () => {
+    if (!generatedExam) return;
+    const newQ: GeneratedQuestion = {
+      id: `q-custom-${Date.now()}`,
+      type: 'mcq',
+      bloomLevel: 'apply',
+      questionText: 'نص السؤال الإضافي: اكتب هنا نص السؤال أو المسألة الامتحانية...',
+      points: 5,
+      options: [
+        { label: 'أ', text: 'الخيار الأول (صحيح)', isCorrect: true, explanation: 'تبرير الإجابة الصحيحة' },
+        { label: 'ب', text: 'الخيار الثاني', isCorrect: false, explanation: 'غير صحيح' },
+        { label: 'ج', text: 'الخيار الثالث', isCorrect: false, explanation: 'غير صحيح' },
+        { label: 'د', text: 'الخيار الرابع', isCorrect: false, explanation: 'غير صحيح' }
+      ],
+      correctAnswer: 'أ',
+      rationale: 'التبرير العلمي للإجابة الصحيحة'
+    };
+
+    const updatedSections = [...generatedExam.sections];
+    if (updatedSections.length === 0) {
+      updatedSections.push({
+        sectionTitle: 'القسم الأول',
+        sectionDescription: 'أسئلة عامة',
+        questions: [newQ]
+      });
+    } else {
+      updatedSections[0].questions.push(newQ);
+    }
+
+    const allQs = updatedSections.flatMap(s => s.questions);
+    const newTotal = allQs.reduce((sum, q) => sum + (q.points || 0), 0);
+    setGeneratedExam({
+      ...generatedExam,
+      sections: updatedSections,
+      totalMarks: newTotal
+    });
+    setGeneratedQuestions(allQs);
+    setExamTotalMarks(newTotal);
+    handleOpenEditQuestion(newQ);
+    toast.success('تمت إضافة سؤال جديد إلى ورقة الامتحان! يمكنك تعديله الآن');
+  };
 
   // Handle File Upload
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -392,6 +609,44 @@ export const ExamGeneratorStudio: React.FC = () => {
                   <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">ak_live ✓ (مفعل ومعتمد)</span>
                 </div>
               </Link>
+            </div>
+
+            {/* 1.1 Curriculum Fast-Track Presets Bar */}
+            <div className="space-y-2.5 print:hidden">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-cyan-500" />
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                    نماذج المناهج المعتمدة الجاهزة للاختيار السريع:
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400">انقر لتعبئة المواصفات وتوليد الامتحان فوراً</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                {CURRICULUM_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    onClick={() => handleApplyPreset(preset)}
+                    className="group p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-right hover:border-cyan-400 hover:shadow-md transition-all flex flex-col justify-between h-24"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-base">{preset.icon}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 group-hover:text-cyan-600">
+                        {preset.badge}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-black text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                        {preset.title.split(':')[0]}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        {preset.totalMarks} علامة &bull; {preset.durationMinutes} دقيقة
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Studio Workspace Grid */}
@@ -703,6 +958,29 @@ export const ExamGeneratorStudio: React.FC = () => {
 
                   {generatedExam && (
                     <div className="flex items-center gap-2 flex-wrap">
+                      {/* Add Custom Question */}
+                      <Button
+                        onClick={handleAddCustomQuestion}
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs gap-1 border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400"
+                        title="إضافة سؤال مخصص إلى ورقة الامتحان"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>إضافة سؤال</span>
+                      </Button>
+
+                      {/* Watermark Toggle */}
+                      <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 cursor-pointer pr-1 border-r border-slate-200 dark:border-slate-800">
+                        <input
+                          type="checkbox"
+                          checked={showWatermark}
+                          onChange={(e) => setShowWatermark(e.target.checked)}
+                          className="rounded text-cyan-600"
+                        />
+                        <span className="hidden sm:inline">علامة مائية</span>
+                      </label>
+
                       {/* PDF Student Paper */}
                       <Button
                         onClick={() => handlePrintPDF(false)}
@@ -755,15 +1033,33 @@ export const ExamGeneratorStudio: React.FC = () => {
 
                 {/* Formal Examination Paper Template */}
                 {generatedExam ? (
-                  <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 print:border-black print:shadow-none print:p-4 print:bg-white print:text-black">
+                  <div className="relative overflow-hidden p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 print:border-black print:shadow-none print:p-4 print:bg-white print:text-black">
                     
+                    {/* Watermark */}
+                    {showWatermark && (
+                      <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.03] dark:opacity-[0.025] rotate-[-25deg] text-5xl font-black text-slate-900 dark:text-white print:opacity-[0.05] print:text-black">
+                        امتحان رسمي معتمد &bull; {generatedExam.schoolName}
+                      </div>
+                    )}
+
                     {/* Official Ministerial Header */}
-                    <div className="text-center space-y-1.5 pb-4 border-b-2 border-slate-800 dark:border-slate-200 print:border-black">
-                      <div className="text-xs font-bold text-slate-700 dark:text-slate-300 print:text-black">
+                    <div className="relative text-center space-y-1.5 pb-4 border-b-2 border-slate-800 dark:border-slate-200 print:border-black">
+                      {/* Official Coat of Arms / Emblem SVG */}
+                      <div className="flex justify-center mb-1">
+                        <svg className="w-10 h-10 text-slate-800 dark:text-slate-200 print:text-black" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M50 10 L62 25 L85 28 L72 45 L76 70 L50 60 L24 70 L28 45 L15 28 L38 25 Z" fill="currentColor" fillOpacity="0.1" stroke="currentColor" strokeWidth="2.5"/>
+                          <circle cx="50" cy="42" r="16" stroke="currentColor" strokeWidth="2.5" fill="none"/>
+                          <path d="M42 42 L50 32 L58 42 L54 50 L46 50 Z" fill="currentColor"/>
+                          <path d="M25 80 Q50 95 75 80" stroke="currentColor" strokeWidth="3" strokeLinecap="round" fill="none"/>
+                          <line x1="35" y1="88" x2="65" y2="88" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      </div>
+
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 print:text-black">
                         المملكة الأردنية الهاشمية &bull; وزارة التربية والتعليم
                       </div>
                       <div className="text-xs font-bold text-slate-600 dark:text-slate-400 print:text-black">
-                        مديرية التربية والتعليم للواء المزار الشمالي &bull; {generatedExam.schoolName}
+                        مديرية التربية والتعليم &bull; {generatedExam.schoolName}
                       </div>
                       <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white print:text-black pt-1">
                         {generatedExam.examTitle} ({generatedExam.academicYear})
@@ -781,11 +1077,77 @@ export const ExamGeneratorStudio: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Official Ministry Grade Rubric Table */}
+                    <div className="overflow-x-auto my-2">
+                      <table className="w-full text-xs border-collapse border border-slate-800 dark:border-slate-300 print:border-black text-center">
+                        <thead>
+                          <tr className="bg-slate-100 dark:bg-slate-800 print:bg-slate-100 font-bold">
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">السؤال</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">س 1 (موضوعي)</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">س 2 (حسابي)</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">س 3 (تحليلي)</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5 bg-cyan-50 dark:bg-cyan-950/40 print:bg-slate-200">المجموع النهائي</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">توقيع المصحح</th>
+                            <th className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">توقيع المدقق</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5 font-bold">العلامة القصوى</td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">40</td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">30</td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5">30</td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5 font-bold bg-cyan-50 dark:bg-cyan-950/40 print:bg-slate-200">
+                              {generatedExam.totalMarks}
+                            </td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5" rowSpan={2}></td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5" rowSpan={2}></td>
+                          </tr>
+                          <tr className="h-7">
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5 font-bold">العلامة المستحقة</td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5"></td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5"></td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5"></td>
+                            <td className="border border-slate-400 dark:border-slate-600 print:border-black p-1.5 bg-cyan-50 dark:bg-cyan-950/40 print:bg-slate-200"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
                     {/* Student Metadata Box (Hidden on Answer Key) */}
                     {!printAnswerKey && (
-                      <div className="grid grid-cols-2 gap-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 text-xs print:border-black print:bg-white print:text-black">
-                        <div>اسم الطالب: ............................................................................</div>
-                        <div>الشعبة / رقم الجلوس: .......................................</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-700 text-xs print:border-black print:bg-white print:text-black">
+                        <div>اسم الطالب: .......................................</div>
+                        <div>الصف والشعبة: ....................</div>
+                        <div>رقم الجلوس: ....................</div>
+                        <div>اسم المعلم: ....................</div>
+                      </div>
+                    )}
+
+                    {/* OMR Multiple Choice Answer Sheet */}
+                    {!printAnswerKey && (
+                      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-300 dark:border-slate-700 text-xs print:border-black print:bg-white">
+                        <div className="text-[11px] font-bold text-center mb-1 text-slate-700 dark:text-slate-300 print:text-black">
+                          جدول تفريغ وتظليل إجابات الأسئلة الموضوعية (OMR Sheet)
+                        </div>
+                        <table className="w-full text-center border-collapse border border-slate-400 print:border-black text-[11px]">
+                          <thead>
+                            <tr className="bg-slate-100 dark:bg-slate-800 print:bg-slate-100 font-bold">
+                              <td className="border border-slate-400 print:border-black p-1">الفقرة</td>
+                              {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                                <td key={n} className="border border-slate-400 print:border-black p-1">{n}</td>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="h-7">
+                              <td className="border border-slate-400 print:border-black p-1 font-bold">الرمز</td>
+                              {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                                <td key={n} className="border border-slate-400 print:border-black p-1"></td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     )}
 
@@ -811,12 +1173,28 @@ export const ExamGeneratorStudio: React.FC = () => {
                                 <div key={q.id} className="space-y-3 pb-4 border-b border-slate-100 dark:border-slate-800 print:border-slate-300 print:break-inside-avoid">
                                   {/* Question Header */}
                                   <div className="flex items-start justify-between gap-3 text-xs sm:text-sm">
-                                    <div className="font-bold text-slate-900 dark:text-white print:text-black leading-relaxed">
+                                    <div className="font-bold text-slate-900 dark:text-white print:text-black leading-relaxed flex-1">
                                       س {qIdx + 1}) {q.questionText}
                                     </div>
-                                    <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 print:text-black print:border">
-                                      ({q.points} علامات)
-                                    </span>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 print:text-black print:border">
+                                        ({q.points} علامات)
+                                      </span>
+                                      <button
+                                        onClick={() => handleOpenEditQuestion(q)}
+                                        className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-cyan-600 transition-colors print:hidden"
+                                        title="تعديل هذا السؤال"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteQuestion(q.id)}
+                                        className="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-400 hover:text-rose-600 transition-colors print:hidden"
+                                        title="حذف هذا السؤال"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Inline Scientific Diagram if present */}
@@ -987,6 +1365,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                       <th className="p-3 font-bold">النسبة</th>
                       <th className="p-3 font-bold">الوقت المستغرق</th>
                       <th className="p-3 font-bold">تاريخ التسليم</th>
+                      <th className="p-3 font-bold text-center">ورقة الإجابة</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1011,6 +1390,20 @@ export const ExamGeneratorStudio: React.FC = () => {
                         <td className="p-3 font-mono text-[11px]">{sub.timeTakenMinutes} دقيقة</td>
                         <td className="p-3 text-slate-400 text-[10px]">
                           {new Date(sub.submittedAt).toLocaleTimeString('ar-JO', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Button
+                            onClick={() => {
+                              setSelectedSubmissionForView(sub);
+                              setIsSubmissionModalOpen(true);
+                            }}
+                            variant="ghost"
+                            size="sm"
+                            className="rounded-lg text-xs gap-1 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/50"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>معاينة الحل</span>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -1042,10 +1435,10 @@ export const ExamGeneratorStudio: React.FC = () => {
               </div>
               <div>
                 <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
-                  رابط الامتحان الإلكتروني التفاعلي للطلاب
+                  رابط وكود الامتحان الإلكتروني التفاعلي للطلاب
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-500">
-                  انسخ الرابط وشاركه مع طلابك لإجراء الاختبار إلكترونياً مع تصحيح تلقائي فوري
+                  انسخ الرابط أو اعرض رمز QR ليتمكن الطلاب من مسحه بكاميرا الهاتف والبدء في الاختبار فوراً
                 </DialogDescription>
               </div>
             </div>
@@ -1074,6 +1467,41 @@ export const ExamGeneratorStudio: React.FC = () => {
             </div>
           </div>
 
+          {/* QR Code Presentation Box */}
+          {shareableLink && (
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
+              <div className="p-2 bg-white rounded-2xl shadow-sm border border-slate-200 shrink-0">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(shareableLink)}`}
+                  alt="QR Code for Exam"
+                  className="w-28 h-28 object-contain"
+                  loading="lazy"
+                />
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center sm:justify-start gap-1.5">
+                  <QrCode className="w-4 h-4 text-purple-600" />
+                  <span>رمز الاستجابة السريع (QR Code)</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  اعرض هذا الرمز عبر شاشة العرض / الداتاشو في قاعة الامتحان ليقوم الطلاب بمسحه والدخول بضغطة واحدة.
+                </p>
+                <Button
+                  onClick={() => {
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(shareableLink)}`;
+                    window.open(qrUrl, '_blank');
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl text-[11px] h-8 gap-1 text-purple-600 dark:text-purple-400"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  <span>تكبير وطباعة كود QR</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Student Required Fields Settings */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
             <span className="font-bold text-slate-800 dark:text-slate-200 block mb-1">
@@ -1085,7 +1513,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                 type="checkbox"
                 checked={studentRegistrationConfig.requireFullName}
                 onChange={(e) => setStudentRegistrationConfig({ ...studentRegistrationConfig, requireFullName: e.target.checked })}
-                className="rounded"
+                className="rounded text-purple-600"
               />
               <span>اسم الطالب الكامل (إلزامي)</span>
             </label>
@@ -1095,7 +1523,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                 type="checkbox"
                 checked={studentRegistrationConfig.requireClassSection}
                 onChange={(e) => setStudentRegistrationConfig({ ...studentRegistrationConfig, requireClassSection: e.target.checked })}
-                className="rounded"
+                className="rounded text-purple-600"
               />
               <span>الصف والشعبة (مثال: العاشر أ، الأول ثانوي علمي)</span>
             </label>
@@ -1105,7 +1533,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                 type="checkbox"
                 checked={studentRegistrationConfig.requireSeatNumber}
                 onChange={(e) => setStudentRegistrationConfig({ ...studentRegistrationConfig, requireSeatNumber: e.target.checked })}
-                className="rounded"
+                className="rounded text-purple-600"
               />
               <span>الرقم التعريفي أو رقم الجلوس</span>
             </label>
@@ -1115,7 +1543,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                 type="checkbox"
                 checked={studentRegistrationConfig.requireSchoolName}
                 onChange={(e) => setStudentRegistrationConfig({ ...studentRegistrationConfig, requireSchoolName: e.target.checked })}
-                className="rounded"
+                className="rounded text-purple-600"
               />
               <span>اسم المدرسة</span>
             </label>
@@ -1136,6 +1564,266 @@ export const ExamGeneratorStudio: React.FC = () => {
               تم الانتهاء
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 4. Edit Question Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto" dir="rtl">
+          {editingQuestion && (
+            <>
+              <DialogHeader className="text-right">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-2xl bg-cyan-500/10 text-cyan-600">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
+                      تعديل وتخصيص السؤال الامتحاني
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                      يمكنك تعديل نص السؤال، العلامة، الخيارات، والإجابة النموذجية مع تبريرها العلمي.
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-4 text-xs">
+                {/* Question Text */}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">نص السؤال:</label>
+                  <Textarea
+                    value={editingQuestion.questionText}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, questionText: e.target.value })}
+                    className="min-h-[70px] rounded-xl text-xs bg-slate-50 dark:bg-slate-800"
+                  />
+                </div>
+
+                {/* Points & Bloom Level */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">العلامة المخصصة (درجات):</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={editingQuestion.points}
+                      onChange={(e) => setEditingQuestion({ ...editingQuestion, points: Math.max(1, parseInt(e.target.value) || 1) })}
+                      className="h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-800"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">مستوى بلوم المعرفي:</label>
+                    <select
+                      value={editingQuestion.bloomLevel}
+                      onChange={(e) => setEditingQuestion({ ...editingQuestion, bloomLevel: e.target.value as BloomLevel })}
+                      className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                    >
+                      {BLOOM_LEVELS.map(b => (
+                        <option key={b.id} value={b.id}>{b.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Multiple Choice Options Editor (if MCQ) */}
+                {editingQuestion.options && editingQuestion.options.length > 0 && (
+                  <div className="space-y-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
+                        خيارات الإجابة (حدد الدائرة للإجابة الصحيحة):
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {editingQuestion.options.map((opt, oIdx) => (
+                        <div key={opt.label} className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOpts = editingQuestion.options!.map((o, i) => ({
+                                ...o,
+                                isCorrect: i === oIdx
+                              }));
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                options: newOpts,
+                                correctAnswer: opt.label
+                              });
+                            }}
+                            className={`w-7 h-7 rounded-xl font-bold flex items-center justify-center shrink-0 transition-all ${
+                              opt.isCorrect
+                                ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-400'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300'
+                            }`}
+                            title={opt.isCorrect ? 'الإجابة الصحيحة' : 'اجعلها الإجابة الصحيحة'}
+                          >
+                            {opt.label}
+                          </button>
+                          <Input
+                            value={opt.text}
+                            onChange={(e) => {
+                              const newOpts = [...editingQuestion.options!];
+                              newOpts[oIdx] = { ...newOpts[oIdx], text: e.target.value };
+                              setEditingQuestion({ ...editingQuestion, options: newOpts });
+                            }}
+                            className="h-9 text-xs rounded-xl bg-white dark:bg-slate-900"
+                            placeholder={`نص الخيار (${opt.label})...`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Correct Answer (for non-MCQ or summary) */}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">رمز أو ملخص الإجابة النموذجية:</label>
+                  <Input
+                    value={editingQuestion.correctAnswer || ''}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, correctAnswer: e.target.value })}
+                    className="h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-800"
+                    placeholder="مثال: أ أو 25 m/s..."
+                  />
+                </div>
+
+                {/* Scientific Rationale */}
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-slate-300">التفسير والتبرير العلمي للإجابة:</label>
+                  <Textarea
+                    value={editingQuestion.rationale || ''}
+                    onChange={(e) => setEditingQuestion({ ...editingQuestion, rationale: e.target.value })}
+                    className="min-h-[60px] rounded-xl text-xs bg-slate-50 dark:bg-slate-800"
+                    placeholder="اكتب التبرير والخطوات العلمية..."
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <Button
+                  onClick={() => setIsEditModalOpen(false)}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl text-xs"
+                >
+                  إلغاء التعديل
+                </Button>
+
+                <Button
+                  onClick={handleSaveEditedQuestion}
+                  size="sm"
+                  className="rounded-xl text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold gap-1"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>حفظ التعديلات في ورقة الامتحان</span>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 5. Student Submission Review Modal */}
+      <Dialog open={isSubmissionModalOpen} onOpenChange={setIsSubmissionModalOpen}>
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto" dir="rtl">
+          {selectedSubmissionForView && (
+            <>
+              <DialogHeader className="text-right">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-2xl bg-emerald-500/10 text-emerald-600">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <DialogTitle className="text-lg font-black text-slate-900 dark:text-white">
+                      ورقة إجابة الطالب: {selectedSubmissionForView.studentName}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                      الصف: {selectedSubmissionForView.classSection} &bull; رقم الجلوس: {selectedSubmissionForView.seatNumber || '—'} &bull; المدرسة: {selectedSubmissionForView.schoolName || '—'}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              {/* Score Summary Box */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-400/20 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-slate-500 font-bold">العلامة الكلية المحققة:</div>
+                  <div className="text-2xl font-black text-cyan-600 dark:text-cyan-400">
+                    {selectedSubmissionForView.score} من {selectedSubmissionForView.totalPossible}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className={`px-3 py-1 rounded-full font-bold text-xs ${
+                    selectedSubmissionForView.percentage >= 85 ? 'bg-emerald-500/20 text-emerald-600' :
+                    selectedSubmissionForView.percentage >= 65 ? 'bg-blue-500/20 text-blue-600' :
+                    'bg-rose-500/20 text-rose-600'
+                  }`}>
+                    النسبة: {selectedSubmissionForView.percentage}%
+                  </span>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    الوقت: {selectedSubmissionForView.timeTakenMinutes} دقيقة &bull; التسليم: {new Date(selectedSubmissionForView.submittedAt).toLocaleTimeString('ar-JO')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Questions Detailed Breakdown */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  تفاصيل إجابات الطالب فقرة بفقرة:
+                </h4>
+
+                {generatedExam?.sections.flatMap(s => s.questions).map((q, idx) => {
+                  const studentAns = selectedSubmissionForView.answers[q.id];
+                  const isCorrect = q.type === 'mcq' && q.options
+                    ? studentAns === q.options.find(o => o.isCorrect)?.label
+                    : studentAns === q.correctAnswer;
+
+                  return (
+                    <div
+                      key={q.id}
+                      className={`p-3.5 rounded-2xl border text-xs space-y-1.5 ${
+                        isCorrect
+                          ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/40'
+                          : 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-300 dark:border-rose-800/40'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 font-bold">
+                        <span className="text-slate-900 dark:text-white">س {idx + 1}) {q.questionText}</span>
+                        <Badge variant={isCorrect ? 'default' : 'destructive'} className="shrink-0 text-[10px]">
+                          {isCorrect ? 'صحيحة ✓' : 'خاطئة ✗'}
+                        </Badge>
+                      </div>
+
+                      <div className="text-[11px] flex items-center gap-3 text-slate-600 dark:text-slate-300">
+                        <span>إجابة الطالب: <strong className={isCorrect ? 'text-emerald-600 font-black' : 'text-rose-600 font-black'}>{studentAns || 'لم يُجب'}</strong></span>
+                        <span>&bull;</span>
+                        <span>الإجابة النموذجية: <strong className="text-slate-900 dark:text-white">{q.correctAnswer}</strong></span>
+                        <span>&bull;</span>
+                        <span>العلامة: <strong>{isCorrect ? q.points : 0} / {q.points}</strong></span>
+                      </div>
+
+                      {q.rationale && (
+                        <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-200 dark:border-slate-800">
+                          💡 {q.rationale}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2 text-left">
+                <Button
+                  onClick={() => setIsSubmissionModalOpen(false)}
+                  className="rounded-xl text-xs bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold"
+                >
+                  إغلاق
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

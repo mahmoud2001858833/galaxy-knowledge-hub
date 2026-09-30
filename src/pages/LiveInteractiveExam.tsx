@@ -13,16 +13,21 @@ import {
   Send, 
   Printer, 
   RotateCcw, 
-  ArrowRight,
-  BookOpen,
-  Sparkles,
-  ShieldCheck,
-  Check,
-  X
+  ArrowRight, 
+  BookOpen, 
+  Sparkles, 
+  ShieldCheck, 
+  Check, 
+  X,
+  Flag,
+  HelpCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
   aiExamService, 
@@ -48,9 +53,11 @@ export const LiveInteractiveExam: React.FC = () => {
 
   // Exam Answers State
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<string, boolean>>({});
   const [timeLeftSeconds, setTimeLeftSeconds] = useState(5400); // 90 mins default
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [finalSubmission, setFinalSubmission] = useState<StudentExamSubmission | null>(null);
+  const [isConfirmSubmitOpen, setIsConfirmSubmitOpen] = useState(false);
 
   // Load Exam Package (Local + Cloud)
   useEffect(() => {
@@ -75,6 +82,50 @@ export const LiveInteractiveExam: React.FC = () => {
     }
   }, [examId]);
 
+  // Restore state from LocalStorage on mount
+  useEffect(() => {
+    if (!examId) return;
+    try {
+      const savedAns = localStorage.getItem(`live_exam_ans_${examId}`);
+      if (savedAns) setAnswers(JSON.parse(savedAns));
+
+      const savedFlags = localStorage.getItem(`live_exam_flags_${examId}`);
+      if (savedFlags) setFlaggedQuestions(JSON.parse(savedFlags));
+
+      const savedStudent = localStorage.getItem(`live_exam_student_${examId}`);
+      if (savedStudent) {
+        const parsed = JSON.parse(savedStudent);
+        if (parsed.studentName) setStudentName(parsed.studentName);
+        if (parsed.classSection) setClassSection(parsed.classSection);
+        if (parsed.seatNumber) setSeatNumber(parsed.seatNumber);
+        if (parsed.schoolName) setSchoolName(parsed.schoolName);
+        if (parsed.examStarted) setExamStarted(true);
+        if (parsed.startTime) setStartTime(parsed.startTime);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [examId]);
+
+  // Sync state to LocalStorage
+  useEffect(() => {
+    if (!examId || !examStarted) return;
+    try {
+      localStorage.setItem(`live_exam_ans_${examId}`, JSON.stringify(answers));
+      localStorage.setItem(`live_exam_flags_${examId}`, JSON.stringify(flaggedQuestions));
+      localStorage.setItem(`live_exam_student_${examId}`, JSON.stringify({
+        studentName,
+        classSection,
+        seatNumber,
+        schoolName,
+        examStarted,
+        startTime
+      }));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [answers, flaggedQuestions, examStarted, examId, studentName, classSection, seatNumber, schoolName, startTime]);
+
   // Countdown Timer
   useEffect(() => {
     if (!examStarted || isSubmitted) return;
@@ -83,8 +134,11 @@ export const LiveInteractiveExam: React.FC = () => {
       setTimeLeftSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmitExam();
+          executeSubmitExam();
           return 0;
+        }
+        if (prev === 300) {
+          toast.warning('تنبيه: متبقي 5 دقائق فقط على انتهاء وقت الامتحان!');
         }
         return prev - 1;
       });
@@ -110,8 +164,34 @@ export const LiveInteractiveExam: React.FC = () => {
     toast.success('بدأ الاختبار! بالتوفيق والنجاح 🚀');
   };
 
-  // Submit Exam & Auto-Grade
-  const handleSubmitExam = () => {
+  // Toggle Flag on Question
+  const toggleFlagQuestion = (qId: string, qNum: number) => {
+    setFlaggedQuestions((prev) => {
+      const nextState = !prev[qId];
+      if (nextState) {
+        toast.info(`تم تمييز السؤال (${qNum}) بعلامة للمراجعة لاحقاً 🚩`);
+      } else {
+        toast.info(`تمت إزالة علامة المراجعة عن السؤال (${qNum})`);
+      }
+      return { ...prev, [qId]: nextState };
+    });
+  };
+
+  // Initiate Submit (Checks for unanswered questions first)
+  const handleInitiateSubmit = () => {
+    if (!examPackage || isSubmitted) return;
+    const allQuestions = examPackage.exam.sections.flatMap(s => s.questions);
+    const unAnswered = allQuestions.filter(q => !answers[q.id]);
+
+    if (unAnswered.length > 0) {
+      setIsConfirmSubmitOpen(true);
+    } else {
+      executeSubmitExam();
+    }
+  };
+
+  // Execute Final Submit & Auto-Grade
+  const executeSubmitExam = () => {
     if (!examPackage || isSubmitted) return;
 
     const allQuestions = examPackage.exam.sections.flatMap(s => s.questions);
@@ -160,6 +240,15 @@ export const LiveInteractiveExam: React.FC = () => {
     aiExamService.submitStudentExam(submission);
     setFinalSubmission(submission);
     setIsSubmitted(true);
+    setIsConfirmSubmitOpen(false);
+
+    // Clear local storage for this exam on successful submission
+    try {
+      localStorage.removeItem(`live_exam_ans_${examPackage.id}`);
+      localStorage.removeItem(`live_exam_flags_${examPackage.id}`);
+      localStorage.removeItem(`live_exam_student_${examPackage.id}`);
+    } catch {}
+
     toast.success('تم تسليم الامتحان وتصحيحه بنجاح!');
   };
 
@@ -225,15 +314,20 @@ export const LiveInteractiveExam: React.FC = () => {
 
         {examStarted && !isSubmitted && (
           <div className="flex items-center gap-3">
-            <div className="px-3 py-1 rounded-xl bg-cyan-500/10 border border-cyan-400/20 flex items-center gap-2 text-xs font-mono font-bold text-cyan-600 dark:text-cyan-400">
-              <Timer className="w-3.5 h-3.5 animate-pulse" />
+            <div className={`px-3 py-1 rounded-xl flex items-center gap-2 text-xs font-mono font-bold transition-all ${
+              timeLeftSeconds <= 300
+                ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30'
+                : 'bg-cyan-500/10 border border-cyan-400/20 text-cyan-600 dark:text-cyan-400'
+            }`}>
+              <Timer className="w-3.5 h-3.5" />
               <span>{formatTime(timeLeftSeconds)}</span>
+              {timeLeftSeconds <= 300 && <span className="text-[10px] hidden sm:inline">(أوشك الوقت!)</span>}
             </div>
 
             <Button
-              onClick={handleSubmitExam}
+              onClick={handleInitiateSubmit}
               size="sm"
-              className="rounded-xl text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1"
+              className="rounded-xl text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-1 shadow-sm"
             >
               <Send className="w-3.5 h-3.5" />
               <span>تسليم الاختبار</span>
@@ -359,6 +453,62 @@ export const LiveInteractiveExam: React.FC = () => {
               </div>
             </div>
 
+            {/* Question Navigator Palette (Sticky) */}
+            <div className="p-3.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-sm space-y-2 sticky top-20 z-30">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>لوحة التنقل السريع بين الأسئلة:</span>
+                </span>
+                <div className="flex items-center gap-3 text-[11px]">
+                  <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                    <span>تمت الإجابة ({answeredCount})</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-amber-500 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                    <span>مؤشر للمراجعة ({Object.values(flaggedQuestions).filter(Boolean).length})</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-400 font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 inline-block" />
+                    <span>متبقي ({allQuestions.length - answeredCount})</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Number Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {allQuestions.map((q, idx) => {
+                  const isAnswered = !!answers[q.id];
+                  const isFlagged = !!flaggedQuestions[q.id];
+
+                  return (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`q-card-${q.id}`);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className={`relative w-8 h-8 rounded-xl font-bold text-xs transition-all flex items-center justify-center ${
+                        isFlagged
+                          ? 'bg-amber-500 text-white ring-2 ring-amber-300 shadow-sm'
+                          : isAnswered
+                          ? 'bg-emerald-600 text-white shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      }`}
+                      title={`السؤال ${idx + 1}: ${isFlagged ? 'مؤشر للمراجعة' : isAnswered ? 'تمت الإجابة' : 'لم يُجب بعد'}`}
+                    >
+                      {idx + 1}
+                      {isFlagged && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-300 border border-amber-600" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Questions Feed */}
             {allQuestions.map((q, idx) => {
               const currentAns = answers[q.id];
@@ -366,6 +516,7 @@ export const LiveInteractiveExam: React.FC = () => {
               return (
                 <div
                   key={q.id}
+                  id={`q-card-${q.id}`}
                   className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -376,7 +527,26 @@ export const LiveInteractiveExam: React.FC = () => {
                       <span className="text-xs font-bold text-slate-500">
                         ({q.points} علامات)
                       </span>
+                      {flaggedQuestions[q.id] && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-400/30 flex items-center gap-1">
+                          <Flag className="w-2.5 h-2.5 fill-amber-500" />
+                          <span>مؤشر للمراجعة</span>
+                        </span>
+                      )}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleFlagQuestion(q.id, idx + 1)}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                        flaggedQuestions[q.id]
+                          ? 'bg-amber-500/15 text-amber-600 border border-amber-400/40'
+                          : 'text-slate-400 hover:text-amber-500 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      <Flag className={`w-3.5 h-3.5 ${flaggedQuestions[q.id] ? 'fill-amber-500' : ''}`} />
+                      <span>{flaggedQuestions[q.id] ? 'مؤشر للمراجعة' : 'علامة مراجعة'}</span>
+                    </button>
                   </div>
 
                   <p className="text-sm font-bold text-slate-900 dark:text-white leading-relaxed">
@@ -482,7 +652,7 @@ export const LiveInteractiveExam: React.FC = () => {
                 بمجرد النقر على تسليم، سيتم رصد علامتك وحفظها وإصدار شهادة التقييم الفورية.
               </p>
               <Button
-                onClick={handleSubmitExam}
+                onClick={handleInitiateSubmit}
                 size="lg"
                 className="rounded-2xl px-8 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-500/25"
               >
@@ -491,6 +661,51 @@ export const LiveInteractiveExam: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Confirmation Modal when submitting with unanswered questions */}
+        <Dialog open={isConfirmSubmitOpen} onOpenChange={setIsConfirmSubmitOpen}>
+          <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-3xl p-6 space-y-4" dir="rtl">
+            <DialogHeader className="text-right">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-black text-slate-900 dark:text-white">
+                    تنبيه: توجد أسئلة غير مجابة!
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-slate-500">
+                    لديك <strong>{allQuestions.length - answeredCount}</strong> أسئلة لم تقم بالإجابة عليها بعد.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <p>هل أنت متأكد من رغبتك في تسليم ورقة الامتحان دون إكمال بقية الأسئلة؟</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                نوصيك بالعودة واستخدام لوحة التنقل العلوية للإجابة عن الأسئلة المتبقية لضمان أعلى علامة.
+              </p>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <Button
+                onClick={() => setIsConfirmSubmitOpen(false)}
+                variant="outline"
+                className="rounded-xl text-xs flex-1"
+              >
+                العودة وإكمال الحل
+              </Button>
+
+              <Button
+                onClick={executeSubmitExam}
+                className="rounded-xl text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold flex-1"
+              >
+                تأكيد التسليم الآن
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Stage 3: Results & Official Digital Certificate */}
         {isSubmitted && finalSubmission && (
