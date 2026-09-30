@@ -38,7 +38,7 @@ export class FileParserService {
       extractedText = await this.readPdfFile(file);
     } else if (file.type.startsWith('image/')) {
       fileType = 'image';
-      extractedText = `ملف صورة تعليمية (${file.name}): سيتم استنباط الأسئلة والرسوم البيانية استناداً لعنوان الملف وموضوعه.`;
+      extractedText = await this.readImageFileWithOcr(file);
     } else {
       // Fallback text read
       extractedText = await this.readTextFile(file);
@@ -163,6 +163,12 @@ export class FileParserService {
         if (fullText.trim().length > 25) {
           return fullText;
         }
+
+        // Try OCR on scanned PDF pages if digital text is empty
+        const ocrText = await this.ocrPdfPages(pdf, 5);
+        if (ocrText && ocrText.trim().length > 25) {
+          return ocrText;
+        }
       }
     } catch (pdfErr) {
       console.warn('PDF.js extraction failed, falling back to direct stream inflator:', pdfErr);
@@ -186,7 +192,56 @@ export class FileParserService {
       return rawMatches;
     }
 
-    return `وثيقة منهاج تعليمية (${file.name}): تحتوي على مفاهيم ومسائل علمية في المنهاج الأردني، جاهزة للتوليد الشامل والتحليل الدقيق.`;
+    return `وثيقة منهاج تعليمية (${file.name}): تحتوي على نصوص ومفاهيم الدرس.`;
+  }
+
+  /**
+   * Run OCR on scanned PDF pages by rendering them to off-screen canvas
+   */
+  private async ocrPdfPages(pdf: any, maxPages: number): Promise<string> {
+    try {
+      if (typeof document === 'undefined') return '';
+      const Tesseract = (await import('tesseract.js')).default;
+      let combinedOcr = '';
+      const pagesToScan = Math.min(pdf.numPages || 1, maxPages);
+
+      for (let pageNum = 1; pageNum <= pagesToScan; pageNum++) {
+        try {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            const res = await Tesseract.recognize(canvas, 'ara+eng');
+            if (res?.data?.text && res.data.text.trim().length > 10) {
+              combinedOcr += `[صفحة ${pageNum} (OCR)]\n${res.data.text.trim()}\n\n`;
+            }
+          }
+        } catch {}
+      }
+      return combinedOcr;
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * Perform Optical Character Recognition (OCR) on an image file
+   */
+  private async readImageFileWithOcr(file: File): Promise<string> {
+    try {
+      const Tesseract = (await import('tesseract.js')).default;
+      const res = await Tesseract.recognize(file, 'ara+eng');
+      if (res?.data?.text && res.data.text.trim().length > 5) {
+        return res.data.text.trim();
+      }
+    } catch (err) {
+      console.warn('Image OCR error:', err);
+    }
+    return `صورة تعليمية (${file.name})`;
   }
 
   /**

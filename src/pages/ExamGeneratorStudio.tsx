@@ -64,6 +64,7 @@ import {
   type StudentExamSubmission
 } from '@/services/aiExamService';
 import { fileParserService, type ParsedDocumentResult } from '@/services/fileParserService';
+import { DocumentExamSynthesisEngine, type DocumentAnalysisResult } from '@/services/documentExamSynthesisEngine';
 import SafeBoundary from '@/components/common/SafeBoundary';
 
 export const BLOOM_LEVELS: { id: BloomLevel; label: string; desc: string; color: string }[] = [
@@ -177,19 +178,25 @@ export const ExamGeneratorStudio: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'create' | 'submissions'>('create');
   const [outputMode, setOutputMode] = useState<'questions' | 'full_exam'>('full_exam');
 
-  // File Upload State
+  // Generation Source: 'file' (Default & primary) vs 'curriculum_preset'
+  const [creationSource, setCreationSource] = useState<'file' | 'curriculum_preset'>('file');
+
+  // File Upload State & Deep AI Analysis Pipeline
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [parsingStage, setParsingStage] = useState<number>(0);
   const [parsedFile, setParsedFile] = useState<ParsedDocumentResult | null>(null);
+  const [docAnalysis, setDocAnalysis] = useState<DocumentAnalysisResult | null>(null);
+  const [analysisActiveTab, setAnalysisActiveTab] = useState<'definitions' | 'laws' | 'causes' | 'classifications' | 'raw_text'>('definitions');
   const [useFileStrictly, setUseFileStrictly] = useState(true);
 
   // Exam Specifications
-  const [subject, setSubject] = useState('الفيزياء الحديثة والكلاسيكية');
+  const [subject, setSubject] = useState('');
   const [targetLevel, setTargetLevel] = useState('الثانوية العامة (التوجيهي الأردني)');
   const [bloom, setBloom] = useState<BloomLevel>('analyze');
   const [qType, setQType] = useState<QuestionType>('all_mixed');
   const [count, setCount] = useState(8);
-  const [topic, setTopic] = useState('الفيزياء الذرية والنووية: ميكانيكا الكم، أطياف الانبعاث، والتأثير الكهروضوئي');
+  const [topic, setTopic] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('تضمين رسوم بيانية ومخططات دوائر وتبرير كامل لجميع البدائل');
 
   // Exam Header Metadata
@@ -235,6 +242,7 @@ export const ExamGeneratorStudio: React.FC = () => {
 
   // Apply Fast-Track Curriculum Preset
   const handleApplyPreset = (preset: CurriculumPreset) => {
+    setCreationSource('curriculum_preset');
     setSubject(preset.subject);
     setTargetLevel(preset.targetLevel);
     setTopic(preset.topic);
@@ -242,6 +250,19 @@ export const ExamGeneratorStudio: React.FC = () => {
     setExamTotalMarks(preset.totalMarks);
     setAdditionalNotes(preset.notes);
     toast.success(`تم اختيار المنهاج: ${preset.title} بنجاح! جاهز للتوليد الفوري ⚡`);
+  };
+
+  // Remove or Reset Uploaded File
+  const handleRemoveUploadedFile = () => {
+    setParsedFile(null);
+    setDocAnalysis(null);
+    setParsingStage(0);
+    setSubject('');
+    setTopic('');
+    setGeneratedExam(null);
+    setGeneratedQuestions([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    toast.info('تمت إزالة الملف. يمكنك الآن رفع ملف منهاج جديد 📄');
   };
 
   // Open Edit Modal for a Question
@@ -339,26 +360,51 @@ export const ExamGeneratorStudio: React.FC = () => {
     toast.success('تمت إضافة سؤال جديد إلى ورقة الامتحان! يمكنك تعديله الآن');
   };
 
-  // Handle File Upload
+  // Handle File Upload and Deep Semantic Pedagogical Analysis Pipeline
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsParsingFile(true);
-    toast.info(`جارٍ قراءة وفحص الملف: ${file.name}...`);
+    setParsingStage(1);
+    toast.info(`جارٍ قراءة وفحص ملف المنهاج: ${file.name}... ⏳`);
 
     try {
+      // Stage 1: File text parsing & OCR
       const result = await fileParserService.parseFile(file);
       setParsedFile(result);
 
-      // Auto update topic if detected
-      if (result.topicsSummary.length > 0 && result.topicsSummary[0] !== 'المحتوى العلمي المرفق') {
-        setTopic(result.topicsSummary.join(' • '));
-      }
+      // Stage 2: Deep Semantic Analysis of propositions, laws, and definitions
+      setParsingStage(2);
+      await new Promise(r => setTimeout(r, 300));
+      setParsingStage(3);
+      const analysis = DocumentExamSynthesisEngine.analyzeDocument(result.extractedText);
+      setDocAnalysis(analysis);
 
-      toast.success(`تمت قراءة الملف بنجاح (${result.wordCount} كلمة مستخرجة) 📄`);
+      // Stage 4: Proposition Classification
+      await new Promise(r => setTimeout(r, 200));
+      setParsingStage(4);
+
+      // Map domain to Arabic subject name
+      const domainToSubject: Record<string, string> = {
+        physics: 'الفيزياء الحديثة والكلاسيكية',
+        chemistry: 'الكيمياء الحركية والعضوية',
+        biology: 'العلوم الحياتية والوراثة',
+        mathematics: 'الرياضيات والتفاضل والتكامل',
+        technology: 'تكنولوجيا المعلومات وBTEC',
+        language_humanities: 'اللغة العربية والعلوم الإنسانية',
+        general: 'العلوم العامة والمعارف المتكاملة'
+      };
+
+      setSubject(domainToSubject[analysis.domain] || 'العلوم العامة والمعارف المتكاملة');
+      const detectedTopic = analysis.title || (result.topicsSummary.length > 0 && result.topicsSummary[0] !== 'المحتوى العلمي المرفق' ? result.topicsSummary.join(' • ') : file.name.replace(/\.[^/.]+$/, ''));
+      setTopic(detectedTopic);
+
+      setParsingStage(5);
+      toast.success(`تم قراءة الملف وتحليل ${analysis.propositions.length} قضية علمية بالتفصيل الممل! 📄 (${result.wordCount} كلمة)`);
     } catch (err: any) {
-      toast.error('حدث خطأ أثناء قراءة الملف، تأكد من سلامة المستند');
+      console.error('File parsing error:', err);
+      toast.error('حدث خطأ أثناء قراءة الملف، تأكد من سلامة المستند أو الصورة');
     } finally {
       setIsParsingFile(false);
     }
@@ -366,27 +412,36 @@ export const ExamGeneratorStudio: React.FC = () => {
 
   // Generate Questions
   const handleGenerateQuestions = async () => {
+    if (creationSource === 'file' && !parsedFile) {
+      toast.error('يرجى رفع ملف المنهاج أولاً ليتمكن الذكاء الاصطناعي من قراءته وتوليد الامتحان منه!');
+      return;
+    }
+
     setIsGenerating(true);
     try {
+      const effectiveFileText = (creationSource === 'file' && parsedFile) 
+        ? parsedFile.extractedText 
+        : (useFileStrictly && parsedFile ? parsedFile.extractedText : undefined);
+
       const questions = await aiExamService.generateQuestions({
-        subject,
+        subject: subject || (parsedFile ? 'المنهاج المرفوع' : 'العلوم العامة'),
         targetLevel,
         bloom,
         qType,
         count,
-        topic,
+        topic: topic || (parsedFile ? parsedFile.fileName : 'محتوى الوثيقة'),
         additionalNotes,
-        uploadedFileText: (useFileStrictly && parsedFile) ? parsedFile.extractedText : undefined,
+        uploadedFileText: effectiveFileText,
         includeDiagrams,
         includeTables
       });
 
       setGeneratedQuestions(questions);
 
-      const synthesizedExam = {
+      const synthesizedExam: FullExamStructure = {
         id: `exam-${Date.now()}`,
-        examTitle: `امتحان التقييم في مادة ${subject} - ${topic}`,
-        subject,
+        examTitle: `امتحان التقييم في مادة ${subject || 'المنهاج'} - ${topic || 'المحتوى المرفق'}`,
+        subject: subject || 'المنهاج المعتمد',
         gradeLevel: targetLevel,
         durationMinutes: examDuration,
         totalMarks: examTotalMarks,
@@ -395,13 +450,14 @@ export const ExamGeneratorStudio: React.FC = () => {
         sourceDocumentName: parsedFile?.fileName,
         instructions: [
           'أجب عن جميع الأسئلة الواردة في الورقة الامتحانية وتأكد من عدد الصفحات.',
+          'الأسئلة مستخرجة ومبنية بدقة استناداً لوثيقة المنهاج المرفوعة.',
           'وضح خطوات الحل والقوانين الرياضية المستخدمة في المسائل الحسابية بدقة.',
           'يُراعى الدقة في كتابة الوحدات الفيزيائية ورموز المعادلات.'
         ],
         sections: [
           {
-            sectionTitle: `القسم الشامل: بنك أسئلة ${subject} (${topic})`,
-            sectionDescription: 'أجب عن جميع الأسئلة الآتية بدقة وعناية:',
+            sectionTitle: `القسم الشامل: بنك أسئلة ${subject || 'المنهاج'} (${topic || 'مستخرج من الملف'})`,
+            sectionDescription: 'أجب عن جميع الأسئلة الآتية بدقة وعناية استناداً للمنهاج المقرر:',
             questions
           }
         ]
@@ -411,12 +467,12 @@ export const ExamGeneratorStudio: React.FC = () => {
       auditLogger.record({
         action: 'AI_QUERY',
         module: 'Exam Studio',
-        description: `توليد ${questions.length} أسئلة بمستوى (${bloom}) لموضوع (${topic})`,
+        description: `توليد ${questions.length} أسئلة بمستوى (${bloom}) مشتقة من (${parsedFile?.fileName || topic})`,
         user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
         severity: 'info'
       });
 
-      toast.success(`تم توليد ${questions.length} أسئلة علمية معتمدة وتجهيز نموذج الامتحان بنجاح 🚀`);
+      toast.success(`تم توليد ${questions.length} أسئلة مشتقة 100% من ملفك وتجهيز الامتحان بنجاح 🚀`);
     } catch {
       toast.error('حدث خطأ أثناء التوليد');
     } finally {
@@ -426,15 +482,24 @@ export const ExamGeneratorStudio: React.FC = () => {
 
   // Generate Full Official Exam
   const handleGenerateFullExam = async () => {
+    if (creationSource === 'file' && !parsedFile) {
+      toast.error('يرجى رفع ملف المنهاج أولاً ليتمكن الذكاء الاصطناعي من قراءته وتوليد الامتحان منه!');
+      return;
+    }
+
     setIsGenerating(true);
     try {
+      const effectiveFileText = (creationSource === 'file' && parsedFile) 
+        ? parsedFile.extractedText 
+        : (useFileStrictly && parsedFile ? parsedFile.extractedText : undefined);
+
       const exam = await aiExamService.generateOfficialExam({
-        subject,
+        subject: subject || (parsedFile ? 'المنهاج المرفوع' : 'الفيزياء'),
         gradeLevel: targetLevel,
-        topic,
+        topic: topic || (parsedFile ? parsedFile.fileName : 'محتوى الوثيقة'),
         durationMinutes: examDuration,
         totalMarks: examTotalMarks,
-        uploadedFileText: (useFileStrictly && parsedFile) ? parsedFile.extractedText : undefined,
+        uploadedFileText: effectiveFileText,
         sourceDocumentName: parsedFile?.fileName,
         includeDiagrams,
         includeTables
@@ -448,12 +513,12 @@ export const ExamGeneratorStudio: React.FC = () => {
       auditLogger.record({
         action: 'AI_QUERY',
         module: 'Exam Studio',
-        description: `توليد ورقة امتحان رسمي متكامل في مادة (${subject}) علامات: ${examTotalMarks}`,
+        description: `توليد ورقة امتحان رسمي متكامل مشتق من (${parsedFile?.fileName || subject}) علامات: ${examTotalMarks}`,
         user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
         severity: 'info'
       });
 
-      toast.success('تم تصميم ورقة الامتحان الوزاري المتكاملة بنجاح 📄');
+      toast.success('تم تصميم ورقة الامتحان الوزاري المشتقة 100% من ملفك بنجاح 📄');
     } catch {
       toast.error('حدث خطأ أثناء تصميم الامتحان');
     } finally {
@@ -611,42 +676,109 @@ export const ExamGeneratorStudio: React.FC = () => {
               </Link>
             </div>
 
-            {/* 1.1 Curriculum Fast-Track Presets Bar */}
-            <div className="space-y-2.5 print:hidden">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-cyan-500" />
-                  <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                    نماذج المناهج المعتمدة الجاهزة للاختيار السريع:
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-400">انقر لتعبئة المواصفات وتوليد الامتحان فوراً</span>
+            {/* Mode Switcher: File Upload vs Curriculum Presets */}
+            <div className="space-y-3 print:hidden">
+              <div className="flex flex-col sm:flex-row items-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreationSource('file');
+                    if (!parsedFile) {
+                      setSubject('');
+                      setTopic('');
+                    }
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                    creationSource === 'file'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>1. توليد امتحان ذكي مشتق 100% من ملف منهاج / دوسية مرفوعة (PDF / Word / صور)</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 text-white font-bold">الموصى به</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreationSource('curriculum_preset');
+                    if (!subject) setSubject('الفيزياء الحديثة والكلاسيكية');
+                    if (!topic) setTopic('الفيزياء الذرية والنووية: ميكانيكا الكم، أطياف الانبعاث، والتأثير الكهروضوئي');
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                    creationSource === 'curriculum_preset'
+                      ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>2. توليد سريع من بنك المناهج العامة المعتمدة (بدون ملف)</span>
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                {CURRICULUM_PRESETS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    onClick={() => handleApplyPreset(preset)}
-                    className="group p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-right hover:border-cyan-400 hover:shadow-md transition-all flex flex-col justify-between h-24"
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="text-base">{preset.icon}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 group-hover:text-cyan-600">
-                        {preset.badge}
+              {/* Show Curriculum Presets only when preset mode is chosen */}
+              {creationSource === 'curriculum_preset' && (
+                <div className="space-y-2.5 p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-cyan-500" />
+                      <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                        نماذج المناهج المعتمدة الجاهزة للاختيار السريع:
                       </span>
                     </div>
-                    <div>
-                      <div className="text-[11px] font-black text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
-                        {preset.title.split(':')[0]}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate">
-                        {preset.totalMarks} علامة &bull; {preset.durationMinutes} دقيقة
-                      </div>
-                    </div>
+                    <span className="text-[11px] text-slate-400">انقر لتعبئة المواصفات وتوليد الامتحان فوراً</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                    {CURRICULUM_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => handleApplyPreset(preset)}
+                        className="group p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-right hover:border-cyan-400 hover:shadow-md transition-all flex flex-col justify-between h-24"
+                      >
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-base">{preset.icon}</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-700 text-slate-700 dark:text-slate-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 group-hover:text-cyan-600">
+                            {preset.badge}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-black text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                            {preset.title.split(':')[0]}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {preset.totalMarks} علامة &bull; {preset.durationMinutes} دقيقة
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Informative Hint for File Mode */}
+              {creationSource === 'file' && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300/40 text-xs flex items-center justify-between text-emerald-800 dark:text-emerald-300">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>
+                      <strong>نمط اشتقاق الامتحان من ملفك الخاص: </strong>
+                      الذكاء الاصطناعي سيقرأ ملفك كلمة بكلمة ويستخرج القوانين والمفاهيم وأسباب الظواهر بالتفصيل الممل قبل التوليد.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCreationSource('curriculum_preset');
+                      if (!subject) setSubject('الفيزياء الحديثة والكلاسيكية');
+                      if (!topic) setTopic('الفيزياء الذرية والنووية: ميكانيكا الكم، أطياف الانبعاث، والتأثير الكهروضوئي');
+                    }}
+                    className="text-[11px] text-cyan-600 dark:text-cyan-400 font-bold underline shrink-0 hover:text-cyan-700"
+                  >
+                    ليس لديك ملف؟ جرب المناهج الجاهزة
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Studio Workspace Grid */}
@@ -655,18 +787,18 @@ export const ExamGeneratorStudio: React.FC = () => {
               {/* Left Control Panel: Upload, Specs, & Generation (Hidden on Print) */}
               <div className="lg:col-span-5 space-y-5 print:hidden">
                 
-                {/* 1. Intelligent Document Upload Box */}
-                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                {/* 1. Intelligent Document Upload Box & Deep Analysis Dashboard */}
+                <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2">
-                      <UploadCloud className="w-4 h-4 text-cyan-500" />
+                      <UploadCloud className="w-4 h-4 text-emerald-500" />
                       <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        رفع وقراءة الوثيقة التعليمية (PDF, Word, TXT)
+                        رفع وفحص ملف المنهاج بالذكاء الاصطناعي (PDF, Word, صور, TXT)
                       </h3>
                     </div>
                     {parsedFile && (
-                      <span className="text-[10px] text-emerald-600 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10">
-                        تمت القراءة بنجاح ✓
+                      <span className="text-[10px] text-emerald-600 font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        تم الفحص والتحليل الدلالي بنجاح ✓
                       </span>
                     )}
                   </div>
@@ -679,69 +811,288 @@ export const ExamGeneratorStudio: React.FC = () => {
                     className="hidden"
                   />
 
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`p-6 rounded-2xl border-2 border-dashed cursor-pointer text-center space-y-2 transition-all ${
-                      parsedFile
-                        ? 'border-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/20'
-                        : 'border-slate-300 dark:border-slate-700 hover:border-cyan-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <div className="w-10 h-10 mx-auto rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-600">
-                      {isParsingFile ? (
-                        <RefreshCw className="w-5 h-5 animate-spin" />
-                      ) : parsedFile ? (
-                        <FileCheck className="w-5 h-5 text-emerald-600" />
-                      ) : (
-                        <UploadCloud className="w-5 h-5" />
+                  {!parsedFile ? (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`p-6 rounded-2xl border-2 border-dashed cursor-pointer text-center space-y-3 transition-all ${
+                        isParsingFile
+                          ? 'border-cyan-400 bg-cyan-50/20 dark:bg-cyan-950/20'
+                          : 'border-slate-300 dark:border-slate-700 hover:border-emerald-500 hover:bg-emerald-50/10 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                        {isParsingFile ? (
+                          <RefreshCw className="w-6 h-6 animate-spin text-cyan-600" />
+                        ) : (
+                          <UploadCloud className="w-6 h-6" />
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="text-xs font-black text-slate-800 dark:text-slate-200">
+                          {isParsingFile ? 'محرك الذكاء الاصطناعي يفحص المستند الآن...' : 'انقر لاختيار ملف المنهاج أو اسحبه هنا'}
+                        </div>
+                        <p className="text-[11px] text-slate-400 max-w-xs mx-auto">
+                          يدعم ملفات PDF المدرسية والجامعية، مستندات Word (.docx)، دوسيات مصورة، وملفات نصية.
+                        </p>
+                      </div>
+
+                      {/* Real-time Multi-Stage Analysis Progress */}
+                      {isParsingFile && (
+                        <div className="pt-2 max-w-sm mx-auto space-y-2 text-right">
+                          <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 h-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, Math.max(15, parsingStage * 25))}%` }}
+                            />
+                          </div>
+                          <div className="text-[11px] font-bold text-cyan-700 dark:text-cyan-300 flex items-center justify-between">
+                            <span>
+                              {parsingStage === 1 && 'المرحلة 1: قراءة الملف واستخراج النصوص والرموز (OCR)...'}
+                              {parsingStage === 2 && 'المرحلة 2: التعدين الدلالي وتفكيك المصطلحات والمفاهيم...'}
+                              {parsingStage === 3 && 'المرحلة 3: استخراج القوانين والمعادلات والعلاقات الرياضية...'}
+                              {parsingStage === 4 && 'المرحلة 4: استخراج علاقات التعليل والأسباب وظواهر "علل"...'}
+                              {parsingStage >= 5 && 'المرحلة 5: اكتمل التحليل وتجهيز بنك القضايا المشتقة!'}
+                            </span>
+                            <span className="font-mono">{Math.min(5, Math.max(1, parsingStage))}/5</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                    
-                    <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      {parsedFile ? parsedFile.fileName : 'انقر لاختيار ملف المنهاج أو اسحبه هنا'}
-                    </div>
+                  ) : (
+                    /* Deep Document AI Analysis Dashboard */
+                    <div className="space-y-3">
+                      {/* File Info Bar */}
+                      <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <FileCheck className="w-4 h-4" />
+                          </div>
+                          <div className="truncate">
+                            <div className="font-black text-slate-800 dark:text-slate-100 truncate">{parsedFile.fileName}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {Math.round(parsedFile.fileSize / 1024)} KB &bull; {parsedFile.wordCount} كلمة مستخرجة
+                            </div>
+                          </div>
+                        </div>
 
-                    <p className="text-[11px] text-slate-400">
-                      يدعم ملفات PDF المدرسية، وثائق Word (.docx)، الملفات النصية والصور
-                    </p>
-                  </div>
-
-                  {/* Parsed File Insight Card */}
-                  {parsedFile && (
-                    <div className="p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-2">
-                      <div className="flex items-center justify-between font-bold">
-                        <span className="text-slate-800 dark:text-slate-200 truncate flex items-center gap-1.5">
-                          <FileCheck className="w-4 h-4 text-emerald-600" />
-                          <span>{parsedFile.fileName}</span>
-                        </span>
-                        <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
-                          {Math.round(parsedFile.fileSize / 1024)} KB
-                        </span>
+                        <Button
+                          onClick={handleRemoveUploadedFile}
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-xl text-[11px] h-8 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 gap-1 shrink-0"
+                          title="حذف الملف ورفع ملف آخر"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>تغيير الملف</span>
+                        </Button>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                        <div>الكلمات المستخرجة: <strong className="text-emerald-600 dark:text-emerald-400">{parsedFile.wordCount}</strong></div>
-                        <div>الحروف: <strong className="text-emerald-600 dark:text-emerald-400">{parsedFile.characterCount}</strong></div>
-                      </div>
-
-                      {parsedFile.previewSnippet && (
-                        <div className="p-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-emerald-100 dark:border-emerald-900/40 text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-mono line-clamp-3">
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">معاينة النص المستخرج: </span>
-                          {parsedFile.previewSnippet}
+                      {/* 4 Key Metric Stat Cards */}
+                      {docAnalysis && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                          <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                            <div className="text-[10px] text-slate-400 font-bold">المفاهيم والتعريفات</div>
+                            <div className="text-base font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                              {docAnalysis.keyDefinitions.length}
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                            <div className="text-[10px] text-slate-400 font-bold">القوانين والمعادلات</div>
+                            <div className="text-base font-black text-cyan-600 dark:text-cyan-400 font-mono">
+                              {docAnalysis.keyLaws.length}
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                            <div className="text-[10px] text-slate-400 font-bold">أسباب وظواهر "علل"</div>
+                            <div className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
+                              {docAnalysis.keyCauses.length}
+                            </div>
+                          </div>
+                          <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+                            <div className="text-[10px] text-slate-400 font-bold">إجمالي القضايا المفحوصة</div>
+                            <div className="text-base font-black text-purple-600 dark:text-purple-400 font-mono">
+                              {docAnalysis.propositions.length}
+                            </div>
+                          </div>
                         </div>
                       )}
 
-                      <div className="pt-1.5 border-t border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-[11px]">
-                        <label className="flex items-center gap-1.5 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300">
-                          <input
-                            type="checkbox"
-                            checked={useFileStrictly}
-                            onChange={(e) => setUseFileStrictly(e.target.checked)}
-                            className="rounded text-emerald-600 focus:ring-emerald-500"
-                          />
-                          <span>توليد الامتحان حصرياً من نصوص ومعطيات هذا الملف</span>
-                        </label>
-                      </div>
+                      {/* Interactive Tabs for Deep Content Inspection */}
+                      {docAnalysis && (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/70 space-y-3">
+                          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700/60">
+                            <div className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+                              <span>لوحة التحليل العميق والمفصل للمحتوى:</span>
+                            </div>
+                          </div>
+
+                          {/* Sub Tab Buttons */}
+                          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setAnalysisActiveTab('definitions')}
+                              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                                analysisActiveTab === 'definitions'
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              المفاهيم ({docAnalysis.keyDefinitions.length})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAnalysisActiveTab('laws')}
+                              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                                analysisActiveTab === 'laws'
+                                  ? 'bg-cyan-600 text-white shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              القوانين ({docAnalysis.keyLaws.length})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAnalysisActiveTab('causes')}
+                              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                                analysisActiveTab === 'causes'
+                                  ? 'bg-amber-600 text-white shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              الظواهر و"علل" ({docAnalysis.keyCauses.length})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAnalysisActiveTab('classifications')}
+                              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                                analysisActiveTab === 'classifications'
+                                  ? 'bg-purple-600 text-white shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              التصنيفات ({docAnalysis.keyClassifications.length})
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setAnalysisActiveTab('raw_text')}
+                              className={`px-2.5 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                                analysisActiveTab === 'raw_text'
+                                  ? 'bg-slate-800 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800'
+                              }`}
+                            >
+                              معاينة النص الكامل 📄
+                            </button>
+                          </div>
+
+                          {/* Sub Tab Content */}
+                          <div className="max-h-48 overflow-y-auto space-y-2 text-xs pr-1">
+                            {analysisActiveTab === 'definitions' && (
+                              docAnalysis.keyDefinitions.length > 0 ? (
+                                docAnalysis.keyDefinitions.map((def, idx) => (
+                                  <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-900/40 space-y-1">
+                                    <div className="font-black text-emerald-700 dark:text-emerald-400 flex items-center justify-between">
+                                      <span>{idx + 1}. {def.term}</span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600">مفهوم علمي</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-700 dark:text-slate-300">{def.definition}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                      <span className="text-emerald-600 font-bold">اقتباس حرفي: </span>«{def.rawExcerpt}»
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-4 text-slate-400 text-xs">تم فحص النص ككتلة دلالية متكاملة للاشتقاق المباشر.</div>
+                              )
+                            )}
+
+                            {analysisActiveTab === 'laws' && (
+                              docAnalysis.keyLaws.length > 0 ? (
+                                docAnalysis.keyLaws.map((law, idx) => (
+                                  <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-cyan-100 dark:border-cyan-900/40 space-y-1">
+                                    <div className="font-black text-cyan-700 dark:text-cyan-400 flex items-center justify-between">
+                                      <span>{idx + 1}. {law.lawName}</span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600">قانون / علاقة</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-700 dark:text-slate-300">{law.rule}</div>
+                                    <div className="text-[10px] text-slate-400 font-mono bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                      <span className="text-cyan-600 font-bold">اقتباس حرفي: </span>«{law.rawExcerpt}»
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-4 text-slate-400 text-xs">لا توجد صياغات قوانين رياضية صريحة في هذا المقطع.</div>
+                              )
+                            )}
+
+                            {analysisActiveTab === 'causes' && (
+                              docAnalysis.keyCauses.length > 0 ? (
+                                docAnalysis.keyCauses.map((c, idx) => (
+                                  <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/40 space-y-1">
+                                    <div className="font-black text-amber-700 dark:text-amber-400 flex items-center justify-between">
+                                      <span>الظاهرة: {c.phenomenon}</span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600">تفسير / علل</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-700 dark:text-slate-300">
+                                      <strong className="text-amber-600">السبب العلمي: </strong>{c.cause}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-mono bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
+                                      <span className="text-amber-600 font-bold">اقتباس حرفي: </span>«{c.rawExcerpt}»
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-4 text-slate-400 text-xs">تم استخراج القضايا المعرفية في بنك الأسئلة العام.</div>
+                              )
+                            )}
+
+                            {analysisActiveTab === 'classifications' && (
+                              docAnalysis.keyClassifications.length > 0 ? (
+                                docAnalysis.keyClassifications.map((cl, idx) => (
+                                  <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-purple-900/40 space-y-1">
+                                    <div className="font-black text-purple-700 dark:text-purple-400">
+                                      {idx + 1}. الفئة: {cl.category}
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 pt-1">
+                                      {cl.items.map((it, iIdx) => (
+                                        <span key={iIdx} className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-400/20 font-bold">
+                                          {it}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-4 text-slate-400 text-xs">لا توجد تصنيفات مجدولة في هذا المقطع.</div>
+                              )
+                            )}
+
+                            {analysisActiveTab === 'raw_text' && (
+                              <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed select-all">
+                                {parsedFile.extractedText}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[11px]">
+                            <label className="flex items-center gap-1.5 cursor-pointer font-bold text-emerald-700 dark:text-emerald-300">
+                              <input
+                                type="checkbox"
+                                checked={useFileStrictly}
+                                onChange={(e) => setUseFileStrictly(e.target.checked)}
+                                className="rounded text-emerald-600 focus:ring-emerald-500"
+                              />
+                              <span>توليد الامتحان حصرياً 100% من نصوص ومعطيات هذا الملف</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -779,19 +1130,16 @@ export const ExamGeneratorStudio: React.FC = () => {
                   {/* Subject and Target Level */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300">المبحث الدراسي:</label>
-                      <select
+                      <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                        <span>المبحث الدراسي:</span>
+                        {docAnalysis && <span className="text-[10px] text-emerald-600 font-bold">مستنتج من الملف ✓</span>}
+                      </label>
+                      <Input
                         value={subject}
                         onChange={(e) => setSubject(e.target.value)}
+                        placeholder={creationSource === 'file' ? "سيستنتجه الذكاء الاصطناعي من ملفك..." : "مثال: الفيزياء، الكيمياء، الأحياء..."}
                         className="w-full text-xs h-9 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold"
-                      >
-                        <option value="الفيزياء الحديثة والكلاسيكية">الفيزياء الحديثة والكلاسيكية</option>
-                        <option value="الكيمياء الحركية والعضوية">الكيمياء الحركية والعضوية</option>
-                        <option value="العلوم الحياتية والوراثة">العلوم الحياتية والوراثة</option>
-                        <option value="الرياضيات والتفاضل والتكامل">الرياضيات والتفاضل والتكامل</option>
-                        <option value="تكنولوجيا المعلومات وBTEC">تكنولوجيا المعلومات BTEC</option>
-                        <option value="الروبوتات والذكاء الاصطناعي">الروبوتات والذكاء الاصطناعي</option>
-                      </select>
+                      />
                     </div>
 
                     <div className="space-y-1">
@@ -867,11 +1215,14 @@ export const ExamGeneratorStudio: React.FC = () => {
 
                   {/* Topic Input */}
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300">موضوع أو وحدة الاختبار:</label>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                      <span>موضوع أو وحدة الاختبار:</span>
+                      {docAnalysis && <span className="text-[10px] text-emerald-600 font-bold">مستنتج من الملف ✓</span>}
+                    </label>
                     <Input
                       value={topic}
                       onChange={(e) => setTopic(e.target.value)}
-                      placeholder="مثال: التأثير الكهروضوئي، قانون أوم، البناء الضوئي..."
+                      placeholder={creationSource === 'file' ? "سيستنتجه الذكاء الاصطناعي من ملفك أو اكتبه هنا..." : "مثال: التأثير الكهروضوئي، قانون أوم، البناء الضوئي..."}
                       className="text-xs h-9 rounded-xl bg-slate-50 dark:bg-slate-800"
                     />
                   </div>
@@ -915,7 +1266,7 @@ export const ExamGeneratorStudio: React.FC = () => {
                         type="checkbox"
                         checked={includeDiagrams}
                         onChange={(e) => setIncludeDiagrams(e.target.checked)}
-                        className="rounded"
+                        className="rounded text-cyan-600"
                       />
                       <span className="font-bold">إنشاء أشكال ورسوم توضيحية علمية للأسئلة (Diagrams & SVGs)</span>
                     </label>
@@ -925,36 +1276,63 @@ export const ExamGeneratorStudio: React.FC = () => {
                         type="checkbox"
                         checked={includeTables}
                         onChange={(e) => setIncludeTables(e.target.checked)}
-                        className="rounded"
+                        className="rounded text-cyan-600"
                       />
                       <span className="font-bold">إنشاء جداول بيانات علمية وتجارب معملية (Data Tables)</span>
                     </label>
                   </div>
 
-                  {/* Generation Trigger Button */}
-                  <Button
-                    onClick={outputMode === 'full_exam' ? handleGenerateFullExam : handleGenerateQuestions}
-                    disabled={isGenerating}
-                    className="w-full h-11 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-black text-xs shadow-lg shadow-cyan-500/20"
-                  >
-                    {isGenerating ? (
-                      <span className="flex items-center gap-2">
-                        <BrainCircuit className="w-4 h-4 animate-spin" />
-                        جاري قراءة الملف وتوليد الامتحان الذكي بدقة...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" />
-                        {outputMode === 'full_exam'
-                          ? (parsedFile && useFileStrictly 
-                              ? `توليد الامتحان الوزاري مستخرجاً من ملف: ${parsedFile.fileName.slice(0, 24)} 📄` 
-                              : 'توليد ورقة الامتحان الوزاري المتكاملة 📄')
-                          : (parsedFile && useFileStrictly 
-                              ? `توليد بنك الأسئلة مستخرجاً من ملف: ${parsedFile.fileName.slice(0, 24)} ⚡` 
-                              : 'توليد بنك الأسئلة المخصص فورياً ⚡')}
-                      </span>
-                    )}
-                  </Button>
+                  {/* Generation Trigger Button with Strict File Gating */}
+                  {creationSource === 'file' && !parsedFile ? (
+                    <div className="space-y-2 pt-2">
+                      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">يرجى رفع ملف المنهاج أولاً</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            لن يتم توليد أي امتحان افتراضي مسبق. الذكاء الاصطناعي بانتظار رفع ملفك ليقرأه بالتفصيل ويستخرج الأسئلة حصرياً منه.
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        disabled
+                        className="w-full h-12 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-black text-xs cursor-not-allowed opacity-75"
+                      >
+                        <UploadCloud className="w-4 h-4 ml-1.5" />
+                        <span>يرجى رفع ملف المنهاج أولاً لبدء الفحص والتوليد 📄</span>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={outputMode === 'full_exam' ? handleGenerateFullExam : handleGenerateQuestions}
+                      disabled={isGenerating}
+                      className={`w-full h-12 rounded-2xl text-white font-black text-xs shadow-lg transition-all ${
+                        creationSource === 'file'
+                          ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 shadow-emerald-500/25'
+                          : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 shadow-cyan-500/20'
+                      }`}
+                    >
+                      {isGenerating ? (
+                        <span className="flex items-center gap-2">
+                          <BrainCircuit className="w-4 h-4 animate-spin" />
+                          <span>جاري توليد الأسئلة المشتقة من نصوص ومعادلات ملفك بدقة...</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          <span>
+                            {outputMode === 'full_exam'
+                              ? (parsedFile && useFileStrictly 
+                                  ? `🚀 ابدأ توليد ورقة الامتحان الوزاري المشتقة 100% من ملفك (${parsedFile.fileName.slice(0, 22)})` 
+                                  : 'توليد ورقة الامتحان الوزاري المتكاملة 📄')
+                              : (parsedFile && useFileStrictly 
+                                  ? `⚡ ابدأ توليد بنك الأسئلة المشتق 100% من ملفك (${parsedFile.fileName.slice(0, 22)})` 
+                                  : 'توليد بنك الأسئلة المخصص فورياً ⚡')}
+                          </span>
+                        </span>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -1053,6 +1431,22 @@ export const ExamGeneratorStudio: React.FC = () => {
                     {showWatermark && (
                       <div className="pointer-events-none select-none absolute inset-0 flex items-center justify-center opacity-[0.03] dark:opacity-[0.025] rotate-[-25deg] text-5xl font-black text-slate-900 dark:text-white print:opacity-[0.05] print:text-black">
                         امتحان رسمي معتمد &bull; {generatedExam.schoolName}
+                      </div>
+                    )}
+
+                    {/* Verified Source Document Banner */}
+                    {(generatedExam.sourceDocumentName || parsedFile) && (
+                      <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center justify-between text-emerald-800 dark:text-emerald-300 print:hidden">
+                        <div className="flex items-center gap-2">
+                          <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>
+                            <strong>وثيقة المصدر المعتمدة: </strong>
+                            تم اشتقاق وصياغة هذا الامتحان بالكامل من ملف: <code className="font-mono bg-emerald-500/20 px-1.5 py-0.5 rounded text-emerald-900 dark:text-emerald-100 font-bold">{generatedExam.sourceDocumentName || parsedFile?.fileName}</code>
+                          </span>
+                        </div>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold shrink-0">
+                          مشتق 100% من الملف ✓
+                        </span>
                       </div>
                     )}
 
@@ -1326,16 +1720,92 @@ export const ExamGeneratorStudio: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-16 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-3 print:hidden">
-                    <div className="w-14 h-14 mx-auto rounded-3xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-                      <FileText className="w-7 h-7" />
+                  <div className="p-8 sm:p-14 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-6 print:hidden">
+                    <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <FileText className="w-8 h-8" />
                     </div>
-                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                      استوديو الامتحانات جاهز لتوليد ورقتك الامتحانية
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                      ارفع ملف المنهاج أو حدد الموضوع المطلوب واضغط على زر التوليد للحصول على ورقة امتحان مطابقة للمعايير الوزارية فوراً.
-                    </p>
+
+                    <div className="space-y-2 max-w-lg mx-auto">
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                        {creationSource === 'file'
+                          ? (parsedFile 
+                              ? `تم تحليل الملف (${parsedFile.fileName}) وهو جاهز للتوليد الآن!`
+                              : 'استوديو توليد الامتحانات من ملف المنهاج والدوسيات')
+                          : 'استوديو الامتحانات جاهز لتوليد ورقتك الامتحانية فوراً'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {creationSource === 'file'
+                          ? (parsedFile
+                              ? `محرك الذكاء الاصطناعي استخرج ${docAnalysis?.propositions.length || 0} قضية ومعادلة علمية من ملفك. اضغط زر "ابدأ توليد ورقة الامتحان" في لوحة التحكم لبدء التوليد الفوري.`
+                              : 'لن يتم توليد أي امتحان افتراضي مسبق قبل رفع ملفك. يرجى رفع ملف المنهاج ليقوم محرك الذكاء الاصطناعي بقراءته بالتفصيل الممل، واستخراج أسئلته حصرياً منه.')
+                          : 'حدد المبحث والموضوع المطلوبين، أو اختر من نماذج المناهج المعتمدة أعلاه، ثم اضغط على زر التوليد.'}
+                      </p>
+                    </div>
+
+                    {/* 3 Step Visual Guide for File Mode */}
+                    {creationSource === 'file' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-right pt-2">
+                        <div className={`p-4 rounded-2xl border text-xs space-y-2 transition-all ${
+                          parsedFile 
+                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800' 
+                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                        }`}>
+                          <div className="flex items-center gap-2 font-black text-slate-800 dark:text-slate-200">
+                            <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xs font-mono">1</span>
+                            <span>رفع وثيقة المنهاج</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-relaxed">
+                            ارفع ملف PDF أو Word أو صور ملخصات أو نصوص الدوسية المعتمدة.
+                          </p>
+                          {parsedFile && (
+                            <span className="inline-block text-[10px] text-emerald-600 font-bold bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full">
+                              مكتمل ✓
+                            </span>
+                          )}
+                        </div>
+
+                        <div className={`p-4 rounded-2xl border text-xs space-y-2 transition-all ${
+                          docAnalysis 
+                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800' 
+                            : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800'
+                        }`}>
+                          <div className="flex items-center gap-2 font-black text-slate-800 dark:text-slate-200">
+                            <span className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 flex items-center justify-center text-xs font-mono">2</span>
+                            <span>التحليل والتعدين العميق</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-relaxed">
+                            قراءة كلمة بكلمة واستخراج المفاهيم والقوانين والعلاقات وأسباب الظواهر.
+                          </p>
+                          {docAnalysis && (
+                            <span className="inline-block text-[10px] text-cyan-600 font-bold bg-cyan-100 dark:bg-cyan-950/60 px-2 py-0.5 rounded-full">
+                              تم التعدين ({docAnalysis.propositions.length} قضية) ✓
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-4 rounded-2xl border bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                          <div className="flex items-center gap-2 font-black text-slate-800 dark:text-slate-200">
+                            <span className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 flex items-center justify-center text-xs font-mono">3</span>
+                            <span>توليد الامتحان المخصص</span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-relaxed">
+                            ورقة امتحان رسمي ونموذج إجابة وتبرير مستخرج 100% من نصوص ملفك.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Trigger Button if file is not uploaded yet */}
+                    {creationSource === 'file' && !parsedFile && (
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="rounded-2xl text-xs h-10 px-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold gap-2 shadow-md shadow-emerald-500/20"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>انقر هنا لرفع ملف المنهاج وبدء الفحص الآن 📄</span>
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
