@@ -32,8 +32,8 @@ export interface LessonSlideData {
     explanation?: string;
     exampleProblem?: {
       problem: string;
-      givens?: string;
-      required?: string;
+      givens?: string | string[];
+      required?: string | string[];
       steps?: string[];
       finalAnswer?: string;
     };
@@ -54,13 +54,14 @@ export interface LessonSlideData {
 }
 
 class GeminiMultimodalService {
+  private defaultApiKey = atob('QVEuQWI4Uk42SkZ4Z0NWSm00MEllNWdPZkxwTkFsV2h2ckg3eUVnT1dKcHZhdTJacnBCNGc=');
   private primaryApiKey: string;
   private storageKey = 'galaxy_gemini_api_key';
-  private activeModel: string = 'gemini-2.5-flash-lite';
+  private activeModel: string = 'gemini-2.5-flash';
   private fallbackModels: string[] = [
+    'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
-    'gemini-3.5-flash-lite',
-    'gemini-2.5-flash'
+    'gemini-1.5-flash'
   ];
 
   constructor() {
@@ -70,11 +71,10 @@ class GeminiMultimodalService {
       if (customKey && customKey.trim()) {
         this.primaryApiKey = customKey.trim();
       } else {
-        // Obfuscated production key resolved at browser runtime
-        this.primaryApiKey = atob('QVEuQWI4Uk42SkZ4Z0NWSm00MEllNWdPZkxwTkFsV2h2ckg3eUVnT1dKcHZhdTJacnBCNGc=');
+        this.primaryApiKey = this.defaultApiKey;
       }
     } catch {
-      this.primaryApiKey = '';
+      this.primaryApiKey = this.defaultApiKey;
     }
   }
 
@@ -90,37 +90,45 @@ class GeminiMultimodalService {
   }
 
   /**
-   * Universal internal dispatcher with model cascade
+   * Universal internal dispatcher with model cascade and key resilience
    */
   private async dispatchGeminiRequest(payload: any): Promise<string> {
     const modelsToTry = [this.activeModel, ...this.fallbackModels.filter(m => m !== this.activeModel)];
     let lastError: Error | null = null;
 
-    for (const model of modelsToTry) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${this.primaryApiKey}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    // Keys to attempt: custom primary key, then verified default key if different
+    const keysToTry = [this.primaryApiKey];
+    if (this.primaryApiKey !== this.defaultApiKey) {
+      keysToTry.push(this.defaultApiKey);
+    }
 
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData?.error?.message || `HTTP ${response.status}`);
+    for (const key of keysToTry) {
+      for (const model of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (!textOutput) {
+            throw new Error('لم يتم استلام نص من خادم الذكاء الاصطناعي');
+          }
+
+          this.activeModel = model; // Cache successful model
+          return textOutput;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Gemini model ${model} failed, trying fallback...`, err?.message);
         }
-
-        const data = await response.json();
-        const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!textOutput) {
-          throw new Error('لم يتم استلام نص من خادم الذكاء الاصطناعي');
-        }
-
-        this.activeModel = model; // Cache successful model
-        return textOutput;
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Gemini model ${model} failed, trying fallback...`, err?.message);
       }
     }
 
@@ -299,9 +307,42 @@ class GeminiMultimodalService {
     // Strategy 4: Direct parse after cleaning
     try {
       return JSON.parse(this.sanitizeJsonString(raw));
-    } catch (e) {
-      return null;
+    } catch (e) {}
+
+    // Strategy 5: Resilient recovery for truncated arrays (e.g., slides array cut off by token limit)
+    if (raw.includes('"slides"')) {
+      try {
+        const slidesIdx = raw.indexOf('"slides"');
+        const arrayStart = raw.indexOf('[', slidesIdx);
+        if (arrayStart !== -1) {
+          const lastObjectEnd = raw.lastIndexOf('}');
+          if (lastObjectEnd > arrayStart) {
+            let candidate = raw.substring(0, lastObjectEnd + 1);
+            let openBraces = (candidate.match(/\{/g) || []).length;
+            let closeBraces = (candidate.match(/\}/g) || []).length;
+            let openBrackets = (candidate.match(/\[/g) || []).length;
+            let closeBrackets = (candidate.match(/\]/g) || []).length;
+
+            while (openBrackets > closeBrackets) {
+              candidate += ']';
+              closeBrackets++;
+            }
+            while (openBraces > closeBraces) {
+              candidate += '}';
+              closeBraces++;
+            }
+
+            const cleaned = this.sanitizeJsonString(candidate);
+            const parsed = JSON.parse(cleaned);
+            if (parsed && Array.isArray(parsed.slides) && parsed.slides.length >= 4) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {}
     }
+
+    return null;
   }
 
   private sanitizeJsonString(str: string): string {
@@ -583,52 +624,60 @@ class GeminiMultimodalService {
 تنبيه حاسم وإلزامي: هذا الموضوع لا يتوفر له مختبر تفاعلي 3D مطابق في المنصة، لذا يُمنع منعاً باتاً إنشاء أي شريحة من نوع "simulation" إطلاقاً! يجب أن تكون جميع الشرائح مفاهيمية، رياضية، تطبيقية، وأنشطة تفاعلية فقط دون أي محاكاة.
 `;
 
-    const prompt = `أنت خبير التخطيط التعليمي واستراتيجيات التدريس النشط ومصمم الدروس التفاعلية في منصة ذروة العلم 2.0 (مدرسة عنبه الثانوية الشاملة للبنين).
+    const prompt = `أنت خبير التخطيط التعليمي واستراتيجيات التدريس النشط ومصمم المناهج التفاعلية في منصة ذروة العلم 2.0 (مدرسة عنبه الثانوية الشاملة للبنين).
 قم بإعداد درس تفاعلي متكامل، عالي العمق والتفصيل والأصالة لموضوع: "${topic}"، المرحلة: "${gradeLevel}"، التخصص: "${discipline}".
 
 قواعد الإنشاء الإلزامية:
-1. غير مقيد بعدد قليل ولا بقالب مكرر: يجب أن يحتوي العرض على عدد وافر ومتنوع من الشرائح (بين 7 إلى 10 شرائح متتابعة) تغطي رحلة تعليمية صفية كاملة ومصممة خصيصاً لهذا الموضوع.
+1. غير مقيد بعدد قليل ولا بقالب مكرر: يجب أن يحتوي العرض على عدد وافر ومتنوع من الشرائح (بين 7 إلى 9 شرائح متتابعة) تغطي رحلة تعليمية كاملة ومصممة خصيصاً لهذا الموضوع.
 2. أصالة المحتوى وتخصيصه لكل درس على حدة: ممنوع قطعياً استخدام نصوص عامة أو قوالب مفرغة أو عبارات مجهولة (مثل "خيار أ" أو "ناتج 1" أو "القانون العام"). كل مسألة، وكل قانون، وكل خطأ شائع، وكل سؤال اختبار يجب أن يكون حقيقياً تماماً ومخصصاً لدرس (${topic}) وفق منهاج ${gradeLevel}.
 3. ${simDirective}
 4. تنوع أنواع الشرائح المطلوبة في العرض (استخدم هذه الأنواع بدقة):
-   - "objectives": التهيئة الحافزة، السؤال الجوهري الاستقصائي المثير للدهشة، ونواتج التعلم المستهدفة المحددة بدقة.
-   - "concept": التأصيل النظري والمفاهيم العلمية الأساسية وتفسير الظاهرة علمياً.
+   - "objectives": التهيئة الحافزة، السؤال الجوهري الاستقصائي المثير للدهشة، و3 نواتج تعلم محددة بدقة.
+   - "concept": التأصيل النظري والمفاهيم العلمية الأساسية وتفسير الظاهرة علمياً وعلاقتها بالحياة.
    - "law": القوانين والمعادلات الحاكمة مع نص العلاقة الرياضية بوضوح في keyFormula ودلالات الرموز ووحدات النظام الدولي SI.
-   - "example": مسألة تدريبية تطبيقية محلولة خطوة بخطوة بالتعويض العددي المباشر مع نص المسألة، المعطيات، خطوات التعويض، والناتج النهائي مع الوحدة (في كائن exampleProblem).
+   - "example": مسألة تدريبية تطبيقية محلولة خطوة بخطوة بالتعويض العددي المباشر خاصة حصراً بموضوع (${topic}). يجب ملء كائن exampleProblem كاملاً بحقول:
+     * "problem": نص مسألة حقيقية بأرقام واقعية عن ${topic}.
+     * "givens": المعطيات ووحداتها (سواء نصاً أو قائمة).
+     * "required": المطلوب حسابه بوضوح.
+     * "steps": مصفوفة من خطوات الحل والتعويض الرقمي التفصيلي.
+     * "finalAnswer": القيمة العددية النهائية مع وحدة القياس الفيزيائية/الكيميائية.
    ${matchedSim ? '- "simulation": الاستقصاء والتجريب العملي المخبري في مختبر ' + matchedSim.title + ' مع 3 خطوات عمل استقصائية محددة.' : ''}
    - "applications": التطبيقات التكنولوجية والصناعية المعاصرة ومسارات BTEC الهندسية والواقعية المرتبطة بالموضوع.
    - "misconceptions": قائمتان على الأقل من المفاهيم المغلوطة الحقيقية الخاصة بالموضوع وتصحيحها العلمي الرصين (في كائن misconceptions).
    - "challenge": نشاط تفكير ناقد وسؤال تحدي صفي للطلاب لاستراتيجية (فكر - زاوج - شارك) في حقل challengeQuestion.
-   - "exit_ticket": تذكرة الخروج والتقييم الختامي بـ 2 إلى 3 أسئلة اختيار من متعدد عميقة وواقعية مع 4 خيارات حقيقية والتفسير العلمي الكامل لكل سؤال.
+   - "exit_ticket": تذكرة الخروج والتقييم الختامي بـ 2 إلى 3 أسئلة اختيار من متعدد عميقة وواقعية مع 4 خيارات حقيقية والتفسير العلمي الكامل لكل سؤال في مصفوفة quiz.
    - "summary": ملخص الحصة والخلاصة الذهبية وأبرز 3 ركائز للمتابعة في الدرس القادم.
 
-5. لكل شريحة: اكتب "teacherNotes" (ملاحظات للمعلم والأسئلة السابرة المقترحة لطرحها على الطلاب)، و"audioNarration" (نص ناطق مختصر باللغة العربية الفصحى يقرأه الذكاء الاصطناعي صوتياً في الحصة).
+5. الإيجاز والتركيز في الشروح التوجيهية:
+   - "teacherNotes": ملاحظة توجيهية واستراتيجية تدريس مقترحة للمعلم (سطر واحد إلى سطرين).
+   - "audioNarration": نص ناطق بليغ وموجز باللغة العربية الفصحى يقرأه الذكاء الاصطناعي صوتياً في الحصة (سطر إلى سطرين).
 
-أرجع النتيجة حصراً بصيغة كائن JSON صالح، بدون أي مقدمات أو علامات إضافية:
+أرجع النتيجة حصراً بصيغة كائن JSON صالح وفق الهيكل التالي:
 {
   "suggestedSimulationSlug": "${matchedSim ? matchedSim.englishSlug : ''}",
   "slides": [
     {
       "id": "slide-1",
-      "title": "عنوان دقيق ومحفز للدرس",
+      "title": "عنوان جذاب ومحفز للدرس",
       "subtitle": "التهيئة الحافزة ونواتج التعلم",
       "type": "objectives",
-      "teacherNotes": "ملاحظة توجيهية للمعلم...",
-      "audioNarration": "نص صوتي ترحيبي باللغة العربية الفصحى...",
+      "teacherNotes": "طرح السؤال المحفز وقيادة العصف الذهني لمدة دقيقة...",
+      "audioNarration": "مرحباً بكم يا أبطال، في هذا الدرس سنستكشف معاً...",
       "content": {
-        "bullets": ["الهدف المعرفي الدقيق 1", "الهدف المهاري/التطبيقي 2", "الهدف التحليلي 3"],
-        "explanation": "تمهيد وسؤال محوري استقصائي مثير للتفكير يربط موضوع الدرس بالواقع..."
+        "bullets": ["الهدف المعرفي 1", "الهدف التطبيقي 2", "الهدف التحليلي 3"],
+        "explanation": "تمهيد وسؤال محوري استقصائي مثير للتفكير..."
       }
     }
-    // ... باقي الشرائح (7 إلى 10 شرائح متكاملة بمحتوى علمي حقيقي وغير مكرر)
   ]
 }`;
 
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.25,
-        maxOutputTokens: 4500
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 }
       }
     };
 
@@ -673,10 +722,148 @@ class GeminiMultimodalService {
     discipline: string = 'فيزياء',
     matchedSim: SimulationRecord | null
   ): { slides: LessonSlideData[]; suggestedSimulationSlug: string } {
-    const t = topic.toLowerCase();
-    const isPhysics = discipline.includes('فيزياء') || t.includes('ضوء') || t.includes('حث') || t.includes('كهرومغناطيسية') || t.includes('حركة') || t.includes('كبلر') || t.includes('نيوتن');
-    const isChemistry = discipline.includes('كيمياء') || t.includes('اتزان') || t.includes('حمض') || t.includes('قاعدة') || t.includes('تفاعل') || t.includes('سرعة');
+    const t = (topic || '').toLowerCase();
+
+    // Fine-grained topic classification
+    const isStatesOfMatter = t.includes('حالات المادة') || t.includes('صلب') || t.includes('سائل') || t.includes('غاز') || t.includes('بلازما') || t.includes('حرارة نوعية') || t.includes('انصهار') || t.includes('تبخر') || t.includes('تسامي');
+    const isAcidsBases = t.includes('حمض') || t.includes('قاعدة') || t.includes('ph') || t.includes('هيدرونيوم') || t.includes('معايرة') || t.includes('منظم');
+    const isEquilibriumOrKinetics = t.includes('اتزان') || t.includes('سرعة التفاعل') || t.includes('لوشاتلييه') || t.includes('ثابت الاتزان');
+    const isOptics = t.includes('ضوء') || t.includes('انكسار') || t.includes('عدسات') || t.includes('مرايا') || t.includes('سنيل') || t.includes('انعكاس');
+    const isInduction = t.includes('حث') || t.includes('فاراداي') || t.includes('لينز') || t.includes('مغناطيس') || t.includes('تدفق');
+    const isMechanics = t.includes('نيوتن') || t.includes('حركة') || t.includes('سقوط') || t.includes('مقذوف') || t.includes('زخم') || t.includes('تصادم') || t.includes('تسارع');
+    const isCircuits = t.includes('دارة') || t.includes('كيرشوف') || t.includes('أوم') || t.includes('مقاومة') || t.includes('تيار') || t.includes('جهد');
+    const isKepler = t.includes('كبلر') || t.includes('مدار') || t.includes('فلك') || t.includes('جاذبية');
     const isMath = discipline.includes('رياضيات') || t.includes('تكامل') || t.includes('تفاضل') || t.includes('متجهات') || t.includes('احتمال');
+
+    // Build bespoke Key Formula and Example Problem according to exact topic
+    let keyFormula = 'Φ = B · A · cos(θ) | ε = -N · (ΔΦ / Δt)';
+    let exampleProblem: NonNullable<LessonSlideData['content']['exampleProblem']> = {
+      problem: `ملف دائري مكون من N = 100 لفة، ومساحة مقطعه A = 0.04 m²، مغمور عمودياً في مجال مغناطيسي منتظم B = 0.5 T. إذا انخفض المجال المغناطيسي إلى الصفر خلال زمن Δt = 0.2 s، احسب القوة الدافعة الحثية المتولدة في الملف.`,
+      givens: `N = 100 لفة, A = 0.04 m², B1 = 0.5 T, B2 = 0 T, Δt = 0.2 s, θ = 0°`,
+      required: `القوة الدافعة الحثية المتوسطة المتولدة ε (بالفولت V)`,
+      steps: [
+        `حساب التغير في التدفق المغناطيسي: ΔΦ = (B2 - B1) · A · cos(0°) = (0 - 0.5) × 0.04 × 1 = -0.02 Wb`,
+        `تطبيق قانون فاراداي في الحث الكهرومغناطيسي: ε = -N · (ΔΦ / Δt)`,
+        `التعويض العددي: ε = -(100) × (-0.02 / 0.2) = -(100) × (-0.1) = +10 V`
+      ],
+      finalAnswer: `ε = +10 Volts (V)`
+    };
+
+    if (isStatesOfMatter) {
+      keyFormula = 'q = m · c · ΔT | q_phase = m · L_f (أو L_v) | PV = nRT';
+      exampleProblem = {
+        problem: `احسب كمية الحرارة الكلية اللازمة لتحويل 200 g من الجليد عند درجة حرارة -10°C إلى ماء سائل عند درجة حرارة 50°C تحت الضغط الجوي المعتاد. (علمًا أن c_ice = 2.09 J/g°C، L_f = 334 J/g، c_water = 4.18 J/g°C).`,
+        givens: [
+          'كتلة المادة (m) = 200 g',
+          'درجة الحرارة الابتدائية = -10°C، نقطة الانصهار = 0°C، درجة الحرارة النهائية = 50°C',
+          'الحرارة النوعية للجليد c_ice = 2.09 J/g°C',
+          'حرارة الانصهار الكامنة L_f = 334 J/g',
+          'الحرارة النوعية للماء السائل c_water = 4.18 J/g°C'
+        ],
+        required: `كمية الحرارة الكلية Q_total بالجول (J) والكيلوجول (kJ)`,
+        steps: [
+          `المرحلة الأولى (تسخين الجليد إلى 0°C): Q1 = m · c_ice · ΔT = 200 × 2.09 × (0 - (-10)) = 4,180 J`,
+          `المرحلة الثانية (انصهار الجليد عند 0°C ثبوت درجة الحرارة): Q2 = m · L_f = 200 × 334 = 66,800 J`,
+          `المرحلة الثالثة (تسخين الماء السائل من 0°C إلى 50°C): Q3 = m · c_water · ΔT = 200 × 4.18 × (50 - 0) = 41,800 J`,
+          `حساب الطاقة الكلية: Q_total = Q1 + Q2 + Q3 = 4,180 + 66,800 + 41,800 = 112,780 J`
+        ],
+        finalAnswer: `Q_total = 112,780 J = 112.78 kJ`
+      };
+    } else if (isAcidsBases) {
+      keyFormula = 'pH = -log[H3O+] | Kw = [H3O+][OH-] = 1.0 × 10⁻¹⁴ | Ka = [H3O+][A-] / [HA]';
+      exampleProblem = {
+        problem: `محلول حمض ضعيف HA تركيزه 0.1 M وقيمة ثابت تأينه Ka = 1.0 × 10⁻⁵ عند درجة حرارة 25°C. احسب تركيز أيون الهيدرونيوم [H3O+] والرقم الهيدروجيني pH للمحلول.`,
+        givens: `[HA] = 0.1 M, Ka = 1.0 × 10⁻⁵, T = 25°C`,
+        required: `[H3O+] والرقم الهيدروجيني pH`,
+        steps: [
+          `كتابة معادلة التأين: HA + H2O ⇌ H3O+ + A-`,
+          `تطبيق قانون ثابت التأين: Ka = [H3O+]² / [HA] (بإهمال تأين الحمض لصغر Ka)`,
+          `التعويض العددي: [H3O+]² = 1.0 × 10⁻⁵ × 0.1 = 1.0 × 10⁻⁶ M² ← [H3O+] = 1.0 × 10⁻³ M`,
+          `حساب الرقم الهيدروجيني: pH = -log(1.0 × 10⁻³) = 3.0`
+        ],
+        finalAnswer: `pH = 3.0 | [H3O+] = 1.0 × 10⁻³ M`
+      };
+    } else if (isEquilibriumOrKinetics) {
+      keyFormula = 'Kc = [C]^c · [D]^d / ([A]^a · [B]^b) | Rate = k · [A]^m · [B]^n';
+      exampleProblem = {
+        problem: `في التفاعل المتزن الغازي: N2(g) + 3H2(g) ⇌ 2NH3(g) في وعاء حجمه 2.0 L عند درجة حرارة ثابتة، وجد عند الاتزان أن عدد مولات N2 = 0.4 mol، وعدد مولات H2 = 0.6 mol، وعدد مولات NH3 = 0.8 mol. احسب قيمة ثابت الاتزان Kc.`,
+        givens: `V = 2.0 L, n(N2) = 0.4 mol, n(H2) = 0.6 mol, n(NH3) = 0.8 mol`,
+        required: `قيمة ثابت الاتزان Kc للتفاعل عند نفس درجة الحرارة`,
+        steps: [
+          `حساب التراكيز المولارية عند الاتزان (M = n / V):`,
+          `[N2] = 0.4 / 2.0 = 0.2 M | [H2] = 0.6 / 2.0 = 0.3 M | [NH3] = 0.8 / 2.0 = 0.4 M`,
+          `كتابة علاقة ثابت الاتزان: Kc = [NH3]² / ([N2] · [H2]³)`,
+          `التعويض الحسابي: Kc = (0.4)² / (0.2 × (0.3)³) = 0.16 / (0.2 × 0.027) = 0.16 / 0.0054 ≈ 29.63`
+        ],
+        finalAnswer: `Kc ≈ 29.63`
+      };
+    } else if (isOptics) {
+      keyFormula = 'n1 · sin(θ1) = n2 · sin(θ2) | 1/f = 1/do + 1/di | m = -di / do';
+      exampleProblem = {
+        problem: `شعاع ضوئي ينتقل من الهواء (n1 = 1.0) إلى قالب من الزجاج (n2 = 1.5) بزاوية سقوط θ1 = 30°. احسب زاوية الانكسار θ2 في الزجاج، والزاوية الحرجة للانعكاس الكلي الداخلي بين الزجاج والهواء.`,
+        givens: `n1 = 1.0 (هواء), n2 = 1.5 (زجاج), θ1 = 30°`,
+        required: `زاوية الانكسار θ2، والزاوية الحرجة θc`,
+        steps: [
+          `تطبيق قانون سنيل: n1 · sin(θ1) = n2 · sin(θ2)`,
+          `التعويض: 1.0 · sin(30°) = 1.5 · sin(θ2) ← 0.5 = 1.5 · sin(θ2) ← sin(θ2) = 0.333`,
+          `إيجاد زاوية الانكسار: θ2 = arcsin(0.333) ≈ 19.47°`,
+          `حساب الزاوية الحرجة (من الزجاج إلى الهواء): sin(θc) = n1 / n2 = 1.0 / 1.5 = 0.667 ← θc ≈ 41.8°`
+        ],
+        finalAnswer: `θ2 = 19.47° | θc = 41.8°`
+      };
+    } else if (isMechanics) {
+      keyFormula = 'ΣF = m · a | p = m · v | vf = vi + a·t | Δx = vi·t + ½a·t²';
+      exampleProblem = {
+        problem: `جسم كتلته m = 5.0 kg يتحرك بسرعة ابتدائية vi = 4.0 m/s على سطح أفقي أملس. أثرت عليه قوة دفع أفقية ثابتة F = 20.0 N في نفس اتجاه حركته لمدة زمنية t = 3.0 s. احسب تسارع الجسم، سرعته النهائية، والمسافة التي قطعها خلال هذه المدة.`,
+        givens: `m = 5.0 kg, vi = 4.0 m/s, F = 20.0 N, t = 3.0 s`,
+        required: `التسارع a، السرعة النهائية vf، الإزاحة المقطوعة Δx`,
+        steps: [
+          `تطبيق قانون نيوتن الثاني: a = F / m = 20.0 N / 5.0 kg = 4.0 m/s²`,
+          `حساب السرعة النهائية: vf = vi + a·t = 4.0 + (4.0 × 3.0) = 4.0 + 12.0 = 16.0 m/s`,
+          `حساب المسافة المقطوعة: Δx = vi·t + ½a·t² = (4.0 × 3.0) + 0.5 × 4.0 × (3.0)² = 12.0 + 18.0 = 30.0 m`
+        ],
+        finalAnswer: `a = 4.0 m/s² | vf = 16.0 m/s | Δx = 30.0 m`
+      };
+    } else if (isCircuits) {
+      keyFormula = 'V = I · R | Req = R1 + R2 (توالي) | 1/Req = 1/R1 + 1/R2 (توازي) | P = I · V';
+      exampleProblem = {
+        problem: `وصلت مقاومتان R1 = 6 Ω و R2 = 3 Ω على التوازي مع بطارية فرق جهدها V = 12 V ومقاومتها الداخلية مهملة. احسب المقاومة المكافئة للدارة، والتيار الكلي المار من البطارية، والقدرة المستهلكة في الدارة.`,
+        givens: `R1 = 6 Ω, R2 = 3 Ω (توازي), V = 12 V`,
+        required: `المقاومة المكافئة Req، التيار الكلي I_total، القدرة الكلية P`,
+        steps: [
+          `حساب المقاومة المكافئة على التوازي: 1/Req = 1/6 + 1/3 = 1/6 + 2/6 = 3/6 = 1/2 ← Req = 2.0 Ω`,
+          `حساب التيار الكلي باستخدام قانون أوم: I = V / Req = 12 V / 2.0 Ω = 6.0 A`,
+          `حساب القدرة الكهربائية الكلية: P = I · V = 6.0 A × 12 V = 72 W (أو P = V² / Req = 144 / 2 = 72 W)`
+        ],
+        finalAnswer: `Req = 2.0 Ω | I_total = 6.0 A | P = 72.0 Watts (W)`
+      };
+    } else if (isKepler) {
+      keyFormula = 'T² / r³ = 4π² / (G · M) = Constant | F = G · (m1·m2) / r²';
+      exampleProblem = {
+        problem: `كوكب يدور حول الشمس في مدار دائري نصف قطره r = 4.0 AU. بالاعتماد على القانون الثالث لكبلر، احسب الزمن الدوري لمدار الكوكب بالسنوات الأرضية (Years).`,
+        givens: `نصف قطر المدار r = 4.0 AU، بالنسبة للأرض r_earth = 1 AU و T_earth = 1 Year`,
+        required: `الزمن الدوري للكوكب T بالسنوات (Years)`,
+        steps: [
+          `تطبيق القانون الثالث لكبلر بالنسبة للأرض: (T_planet / T_earth)² = (r_planet / r_earth)³`,
+          `التعويض: T² / (1)² = (4.0)³ / (1)³ = 64`,
+          `أخذ الجذر التربيعي للطرفين: T = √64 = 8.0 سنوات`
+        ],
+        finalAnswer: `T = 8.0 Years (سنوات أرضية)`
+      };
+    } else if (isMath) {
+      keyFormula = '∫ f(x) dx = F(x) + C | dy/dx = lim(Δx→0) [f(x+Δx) - f(x)] / Δx';
+      exampleProblem = {
+        problem: `احسب قيمة التكامل غير المحدود للدالة: ∫ (6x² + 4x - 5) dx مع إيجاد ثابت التكامل C عند علمك أن منحنى الدالة الأصلية F(x) يمر بالنقطة (1, 8).`,
+        givens: `f(x) = 6x² + 4x - 5, نقطة المنحنى (x = 1, y = 8)`,
+        required: `صيغة الدالة الأصلية F(x) وثابت التكامل C`,
+        steps: [
+          `إجراء التكامل لكل حد: F(x) = 6(x³/3) + 4(x²/2) - 5x + C = 2x³ + 2x² - 5x + C`,
+          `التعويض بالنقطة (1, 8) لإيجاد C: 8 = 2(1)³ + 2(1)² - 5(1) + C ← 8 = -1 + C ← C = 9`,
+          `الصيغة النهائية للدالة الأصلية: F(x) = 2x³ + 2x² - 5x + 9`
+        ],
+        finalAnswer: `F(x) = 2x³ + 2x² - 5x + 9 (C = 9)`
+      };
+    }
 
     const slides: LessonSlideData[] = [
       // 1. Objectives & Hook
@@ -705,9 +892,9 @@ class GeminiMultimodalService {
         subtitle: 'التأصيل المعرفي وتفسير الظاهرة',
         type: 'concept',
         teacherNotes: 'ركز على تفكيك المصطلحات الأساسية وشرح كيفية ترابط المتغيرات فيزيائياً وكيميائياً.',
-        audioNarration: `يرتكز مفهوم ${topic} على فهم دقيق لآلية تفاعل المتغيرات وطبيعة النظام الفيزيائي أو الكيميائي في الظروف المعيارية.`,
+        audioNarration: `يرتكز مفهوم ${topic} على فهم دقيق لآلية تفاعل المتغيرات وطبيعة النظام في الظروف المعيارية.`,
         content: {
-          explanation: `يمثل (${topic}) حجر زاوية في فهم سلوك الأنظمة الفيزيائية/الكيميائية، حيث يخضع لمبادئ حفظ الطاقة والمادة، وتفسير القوى والتفاعلات الحادثة بدقة.`,
+          explanation: `يمثل (${topic}) حجر زاوية في فهم سلوك الأنظمة الطبيعية، حيث يخضع لمبادئ حفظ الطاقة والمادة، وتفسير القوى والتفاعلات الحادثة بدقة.`,
           bullets: [
             `طبيعة النظام: تحديد الشروط الأولية لحدوث واستمرار ظاهرة ${topic}`,
             `العوامل الحاكمة: تمييز المتغيرات المستقلة والتابعة المؤثرة في استجابة النظام`,
@@ -725,7 +912,7 @@ class GeminiMultimodalService {
         teacherNotes: 'أكد للطلاب على أهمية كتابة الوحدات الدولية SI بجانب كل معطى قبل البدء بالتعويض في القانون.',
         audioNarration: 'القانون الرياضي الحاكم هو المفتاح الأساسي للحل، انتبهوا لدلالات الرموز ووحدات القياس.',
         content: {
-          keyFormula: isPhysics ? 'Φ = B · A · cos(θ) | ε = -N · (ΔΦ / Δt)' : isChemistry ? 'Kc = [Products]^c / [Reactants]^a | pH = -log[H3O+]' : '∫ f(x) dx = F(x) + C | dy/dx = f\'(x)',
+          keyFormula: keyFormula,
           explanation: `تخضع حسابات (${topic}) لعلاقة رياضية دقيقة تربط بين المتغيرات الأساسية، وتتطلب التزاماً صارماً بنظام الوحدات الدولي (SI Units).`,
           bullets: [
             'الرموز الأساسية: تعريف كل رمز فيزيائي/كيميائي وقيمته القياسية',
@@ -745,33 +932,7 @@ class GeminiMultimodalService {
         audioNarration: 'والآن لنطبق القانون عملياً من خلال مسألة نموذجية خطوة بخطوة وصولاً إلى الناتج النهائي الصحيح.',
         content: {
           explanation: `مسألة نموذجية تحاكي أسئلة الامتحانات الوزارية لترسيخ خطوات الحل والتعويض الرقمي في موضوع (${topic}):`,
-          exampleProblem: {
-            problem: isPhysics 
-              ? `ملف دائري مكون من N = 100 لفة، ومساحة مقطعه A = 0.04 m²، مغمور عمودياً في مجال مغناطيسي منتظم B = 0.5 T. إذا انخفض المجال المغناطيسي إلى الصفر خلال زمن Δt = 0.2 s، احسب القوة الدافعة الحثية المتولدة في الملف.`
-              : isChemistry
-              ? `محلول حمض ضعيف HA تركيزه 0.1 M وقيمة ثابت تأينه Ka = 1.0 × 10⁻⁵ عند درجة حرارة 25°C. احسب تركيز أيون الهيدرونيوم [H3O+] والرقم الهيدروجيني pH للمحلول.`
-              : `احسب قيمة التكامل غير المحدود للدالة: ∫ (6x² + 4x - 5) dx مع إيجاد ثابت التكامل C عند مرور المنحنى بالنقطة (1, 8).`,
-            givens: isPhysics
-              ? `N = 100 لفة, A = 0.04 m², B1 = 0.5 T, B2 = 0 T, Δt = 0.2 s, θ = 0° (مستوى الملف عمودي على المجال)`
-              : isChemistry
-              ? `[HA] = 0.1 M, Ka = 1.0 × 10⁻⁵, T = 25°C`
-              : `f(x) = 6x² + 4x - 5, النقطة (x=1, y=8)`,
-            steps: isPhysics ? [
-              `حساب التغير في التدفق المغناطيسي: ΔΦ = (B2 - B1) · A · cos(0°) = (0 - 0.5) × 0.04 × 1 = -0.02 Wb`,
-              `تطبيق قانون فاراداي في الحث الكهرومغناطيسي: ε = -N · (ΔΦ / Δt)`,
-              `التعويض العددي: ε = -(100) × (-0.02 / 0.2) = -(100) × (-0.1) = +10 V`
-            ] : isChemistry ? [
-              `كتابة معادلة التأين: HA + H2O ⇌ H3O+ + A-`,
-              `تطبيق قانون ثابت التأين: Ka = [H3O+]² / [HA] (بإهمال تأين الحمض لصغر Ka)`,
-              `التعويض العددي: [H3O+]² = 1.0 × 10⁻⁵ × 0.1 = 1.0 × 10⁻⁶ M² ← [H3O+] = 1.0 × 10⁻³ M`,
-              `حساب الرقم الهيدروجيني: pH = -log(1.0 × 10⁻³) = 3.0`
-            ] : [
-              `إجراء التكامل لكل حد: F(x) = 6(x³/3) + 4(x²/2) - 5x + C = 2x³ + 2x² - 5x + C`,
-              `التعويض بالنقطة (1, 8) لإيجاد C: 8 = 2(1)³ + 2(1)² - 5(1) + C ← 8 = -1 + C ← C = 9`,
-              `الصيغة النهائية للدالة الأصلية: F(x) = 2x³ + 2x² - 5x + 9`
-            ],
-            finalAnswer: isPhysics ? 'ε = +10 Volts (V)' : isChemistry ? 'pH = 3.0 | [H3O+] = 1.0 × 10⁻³ M' : 'F(x) = 2x³ + 2x² - 5x + 9'
-          }
+          exampleProblem: exampleProblem
         }
       }
     ];

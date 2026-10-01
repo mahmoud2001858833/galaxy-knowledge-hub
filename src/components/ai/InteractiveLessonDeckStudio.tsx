@@ -712,9 +712,32 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                   </p>
 
                   {currentSlide.content.exampleProblem.givens && (
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
-                      <strong className="text-slate-900 block font-bold">المعطيات والمطلوب:</strong>
-                      <p>{currentSlide.content.exampleProblem.givens}</p>
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+                      <strong className="text-slate-900 block font-bold">المعطيات:</strong>
+                      {Array.isArray(currentSlide.content.exampleProblem.givens) ? (
+                        <ul className="list-disc list-inside space-y-1 font-mono text-[11px] sm:text-xs text-slate-800">
+                          {currentSlide.content.exampleProblem.givens.map((g, i) => (
+                            <li key={i}>{g}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="font-mono">{currentSlide.content.exampleProblem.givens}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {currentSlide.content.exampleProblem.required && (
+                    <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-1">
+                      <strong className="text-amber-950 block font-bold">المطلوب إيجاده:</strong>
+                      {Array.isArray(currentSlide.content.exampleProblem.required) ? (
+                        <ul className="list-disc list-inside space-y-1">
+                          {currentSlide.content.exampleProblem.required.map((r, i) => (
+                            <li key={i}>{r}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>{currentSlide.content.exampleProblem.required}</p>
+                      )}
                     </div>
                   )}
 
