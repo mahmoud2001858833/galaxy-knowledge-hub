@@ -604,6 +604,55 @@ class SimulationCatalogService {
 
     return bestMatch;
   }
+
+  /**
+   * Strictly find a relevant scientific simulation with a confidence threshold.
+   * Returns null if no actual relevant experiment exists for this topic!
+   */
+  public findRelevantMatch(topic: string, discipline?: string): SimulationRecord | null {
+    const cleanTopic = topic.toLowerCase().trim();
+    let bestScore = 0;
+    let bestMatch: SimulationRecord | null = null;
+
+    for (const sim of this.simulations) {
+      let score = 0;
+
+      // Exact title contains topic or vice versa
+      const simTitle = sim.title.toLowerCase();
+      if (cleanTopic.includes(simTitle) || simTitle.includes(cleanTopic)) {
+        score += 50;
+      }
+
+      // Keyword matches
+      for (const kw of sim.keywords) {
+        const cleanKw = kw.toLowerCase();
+        if (cleanTopic.includes(cleanKw)) {
+          score += 25;
+        }
+      }
+
+      // Secondary description keyword search
+      const descWords = sim.description.toLowerCase().split(/\s+/);
+      for (const w of descWords) {
+        if (w.length > 3 && cleanTopic.includes(w)) {
+          score += 10;
+        }
+      }
+
+      // Discipline match
+      if (discipline && sim.discipline === discipline && score > 0) {
+        score += 5;
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = sim;
+      }
+    }
+
+    // Require at least a strong keyword or title match (score >= 25)
+    return bestScore >= 25 ? bestMatch : null;
+  }
 }
 
 export const simulationCatalogService = new SimulationCatalogService();

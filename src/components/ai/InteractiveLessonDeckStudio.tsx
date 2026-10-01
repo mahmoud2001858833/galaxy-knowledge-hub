@@ -660,10 +660,15 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-mono font-bold uppercase tracking-wider ${theme.accent}`}>
                     {currentSlide.type === 'objectives' && '🎯 الأهداف المعيارية والتهيئة الحافزة'}
-                    {currentSlide.type === 'concept' && '📐 المفاهيم والقوانين العلمية الحاكمة'}
+                    {currentSlide.type === 'concept' && '📐 المفاهيم والركائز العلمية التأسيسية'}
+                    {currentSlide.type === 'law' && '⚖️ القوانين الحاكمة والاشتقاق الرياضي'}
+                    {currentSlide.type === 'example' && '🔢 مسألة تطبيقية محلولة خطوة بخطوة'}
                     {currentSlide.type === 'simulation' && '🧪 الاستقصاء والتجريب العملي 3D'}
-                    {currentSlide.type === 'misconceptions' && '⚠️ المفاهيم المغلوطة الشائعة وتصحيحها'}
+                    {currentSlide.type === 'applications' && '🚀 التطبيقات التكنولوجية والصناعية ومسارات BTEC'}
+                    {currentSlide.type === 'misconceptions' && '⚠️ المفاهيم المغلوطة ومصائد امتحانات التوجيهي'}
+                    {currentSlide.type === 'challenge' && '💡 نشاط التفكير الناقد وسؤال التحدي الصفي'}
                     {currentSlide.type === 'exit_ticket' && '🎫 تذكرة الخروج والتقييم الختامي'}
+                    {currentSlide.type === 'summary' && '🏆 الخلاصة الذهبية وإتقان المفهوم'}
                   </span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-tight">
@@ -678,16 +683,75 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                 </p>
               )}
 
-              {/* Key Formula Card (Concept Slide) */}
+              {/* Key Formula Card (Concept or Law Slide) */}
               {currentSlide.content.keyFormula && (
                 <div className={`p-6 rounded-3xl border text-center space-y-2 ${theme.cardBg} ${theme.border} shadow-lg`}>
-                  <span className="text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5">
+                  <span className="text-xs font-bold text-amber-600 flex items-center justify-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>العلاقة الرياضية الأساسية الحاكمة:</span>
                   </span>
                   <div className={`text-2xl sm:text-3xl font-mono font-black ${theme.accent}`} dir="ltr">
                     {currentSlide.content.keyFormula}
                   </div>
+                </div>
+              )}
+
+              {/* Solved Example Problem Card */}
+              {currentSlide.content.exampleProblem && (
+                <div className={`p-6 rounded-3xl border-2 space-y-4 ${theme.cardBg} ${theme.border} shadow-lg text-right`}>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                    <span className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      <span>مسألة تدريبية تطبيقية معتمدة:</span>
+                    </span>
+                    <Badge className="bg-blue-100 text-blue-800 text-[10px]">تطبيق عددي مباشر</Badge>
+                  </div>
+
+                  <p className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed bg-blue-50/50 p-4 rounded-2xl border border-blue-200">
+                    {currentSlide.content.exampleProblem.problem}
+                  </p>
+
+                  {currentSlide.content.exampleProblem.givens && (
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+                      <strong className="text-slate-900 block font-bold">المعطيات والمطلوب:</strong>
+                      <p>{currentSlide.content.exampleProblem.givens}</p>
+                    </div>
+                  )}
+
+                  {currentSlide.content.exampleProblem.steps && currentSlide.content.exampleProblem.steps.length > 0 && (
+                    <div className="space-y-2">
+                      <strong className="text-xs font-bold text-slate-900 block">خطوات الحل التفصيلي والتعويض:</strong>
+                      {currentSlide.content.exampleProblem.steps.map((st, sIdx) => (
+                        <div key={sIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                          <span className="w-5 h-5 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-bold font-mono text-xs mt-0.5">{sIdx + 1}</span>
+                          <span className="leading-relaxed">{st}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentSlide.content.exampleProblem.finalAnswer && (
+                    <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-900 flex items-center justify-between font-bold text-xs sm:text-sm shadow-sm">
+                      <span>الناتج النهائي ووحدة القياس:</span>
+                      <span className="text-base font-black text-emerald-800 font-mono" dir="ltr">{currentSlide.content.exampleProblem.finalAnswer}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Critical Thinking Challenge Card */}
+              {currentSlide.content.challengeQuestion && (
+                <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 text-right space-y-3 shadow-lg">
+                  <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
+                    <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
+                    <span>سؤال التحدي الصفي (استراتيجية فكر - زاوج - شارك):</span>
+                  </div>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed">
+                    {currentSlide.content.challengeQuestion}
+                  </p>
+                  <p className="text-xs text-amber-800 bg-white/80 p-3 rounded-xl border border-amber-200">
+                    💡 توجيه للطلاب: ناقش مع زميلك المجاور لمدة دقيقة واحدة، ثم اقترح تفسيراً علمياً مدعماً بالقوانين الرياضية أو المشاهدات اليومية.
+                  </p>
                 </div>
               )}
 
@@ -702,7 +766,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                       transition={{ delay: idx * 0.1 }}
                       className={`p-4 rounded-2xl border flex items-start gap-3 ${theme.cardBg} ${theme.border}`}
                     >
-                      <div className="w-6 h-6 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold font-mono">
+                      <div className="w-6 h-6 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold font-mono">
                         {idx + 1}
                       </div>
                       <span className={`text-xs sm:text-sm leading-relaxed ${theme.subtext}`}>
@@ -713,8 +777,8 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                 </div>
               )}
 
-              {/* SLIDE 3: 180-DEGREE SIMULATION WORKBENCH CARD */}
-              {currentSlide.type === 'simulation' && (
+              {/* SIMULATION WORKBENCH CARD (Rendered ONLY if simulation link or slug exists) */}
+              {currentSlide.type === 'simulation' && (currentSlide.content.simulationLink || currentSlide.content.simulationSlug) && (
                 <div className={`p-6 md:p-8 rounded-3xl border text-center space-y-6 ${theme.cardBg} ${theme.border} relative overflow-hidden shadow-2xl`}>
                   
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-white/10">
