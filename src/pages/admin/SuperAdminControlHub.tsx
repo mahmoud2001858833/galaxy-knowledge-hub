@@ -56,7 +56,8 @@ import {
   Stethoscope,
   Volume2,
   Bot,
-  BarChart3
+  BarChart3,
+  Camera
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -712,6 +713,8 @@ export const SuperAdminControlHub: React.FC = () => {
     }));
 
     const actionMatches = [
+      { id: 'act-tutor', title: 'المعلم الصوتي والبصري الذكي (حل المسائل بالصورة)', subtitle: 'قراءة خط اليد وحل مسائل التوجيهي والحوار الصوتي المباشر', icon: Camera, action: () => { window.open('/voice-vision-tutor', '_blank'); setIsCommandPaletteOpen(false); } },
+      { id: 'act-mindmap', title: 'استوديو الخرائط الذهنية والدروس التفاعلية 2.0', subtitle: 'توليد خرائط مفاهيمية وشرائح وتذاكر خروج بالذكاء الاصطناعي', icon: BrainCircuit, action: () => { window.open('/lesson-mindmap-studio', '_blank'); setIsCommandPaletteOpen(false); } },
       { id: 'act-diag', title: 'تشغيل فاحص الأنظمة والجاهزية الشامل', subtitle: 'اختبار Supabase، الصوت، WebGL، وزمن الاستجابة', icon: Stethoscope, action: () => { setIsCommandPaletteOpen(false); setIsDiagnosticsOpen(true); runDiagnostics(); } },
       { id: 'act-sec', title: 'درع الأمان السيبراني وحماية النظام Zero-Trust', subtitle: 'إغلاق الطوارئ، جدار الحماية، وتدوير مفتاح الماستر', icon: ShieldCheck, action: () => { setCurrentTab('security'); setIsCommandPaletteOpen(false); } },
       { id: 'act-flags', title: 'محرك الرايات والميزات الحية (Feature Flags)', subtitle: 'التحكم الفوري بـ 12 قدرة وأنماط المنصة التشغيلية', icon: Sliders, action: () => { setCurrentTab('flags'); setIsCommandPaletteOpen(false); } },

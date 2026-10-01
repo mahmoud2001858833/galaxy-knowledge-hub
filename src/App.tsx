@@ -208,6 +208,8 @@ const InstitutionalPartnerships = wrap(lazy(() => import("./pages/InstitutionalP
 const PlatformSecurityReport = wrap(lazy(() => import("./pages/PlatformSecurityReport")));
 const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
+const MultimodalTutorPage = wrap(lazy(() => import("./pages/MultimodalTutorPage")));
+const AIConceptMindmapStudioPage = wrap(lazy(() => import("./pages/AIConceptMindmapStudioPage")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
 const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
 const ExamGeneratorStudio = wrap(lazy(() => import("./pages/ExamGeneratorStudio")));
@@ -1211,6 +1213,22 @@ const router = createBrowserRouter([
       {
         path: 'super-admin-control-hub',
         element: <SuperAdminControlHub />,
+      },
+      {
+        path: 'voice-vision-tutor',
+        element: <PublicRoute><MultimodalTutorPage /></PublicRoute>,
+      },
+      {
+        path: 'multimodal-tutor',
+        element: <PublicRoute><MultimodalTutorPage /></PublicRoute>,
+      },
+      {
+        path: 'lesson-mindmap-studio',
+        element: <PublicRoute><AIConceptMindmapStudioPage /></PublicRoute>,
+      },
+      {
+        path: 'mindmap-studio',
+        element: <PublicRoute><AIConceptMindmapStudioPage /></PublicRoute>,
       },
       
       {
