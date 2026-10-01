@@ -54,7 +54,8 @@ import {
   Filter,
   ArrowUpRight,
   Stethoscope,
-  Volume2
+  Volume2,
+  Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,6 +77,7 @@ import { CommunityModerationManager } from '@/components/admin/lcm/CommunityMode
 import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManagementHub';
 import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsManager';
 import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
+import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub';
 import SafeBoundary from '@/components/common/SafeBoundary';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -94,7 +96,8 @@ export type AdminTab =
   | 'support'
   | 'footer'
   | 'questions'
-  | 'copilot';
+  | 'copilot'
+  | 'ai-agents';
 
 // Navigation Categories for high-level structure
 interface NavCategory {
@@ -645,6 +648,7 @@ export const SuperAdminControlHub: React.FC = () => {
       title: 'إدارة النظام والبنية التحتية والذكاء',
       tabs: [
         { id: 'users', label: 'المستخدمين والصلاحيات (RBAC)', icon: Users, badge: `${realUsersCount} موثق`, description: 'إدارة حسابات الطلاب، المعلمين، وصلاحيات الوصول' },
+        { id: 'ai-agents', label: 'إدارة الوكلاء والذكاء الاصطناعي', icon: Bot, badge: '86 وكيل', description: 'لوحة التحكم المركزية لكافة وكلاء ونماذج الذكاء الاصطناعي بالمنصة' },
         { id: 'footer', label: 'محرر الفوتر وهوية المنصة', icon: Sliders, description: 'تعديل التذييل، نصوص المدرسة المنشئة، وروابط التواصل' },
         { id: 'copilot', label: 'مساعد تعديل المنصة الذكي', icon: Code2, badge: 'AI Copilot', description: 'مساعد الذكاء الاصطناعي لتعديل وهندسة مكونات المنصة' },
       ]
@@ -1732,6 +1736,13 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'copilot' && (
               <SafeBoundary name="PlatformCopilotWindow">
                 <PlatformCopilotWindow />
+              </SafeBoundary>
+            )}
+
+            {/* 10. AI Agents & Assistants Management Hub (86 Specialized Agents) */}
+            {currentTab === 'ai-agents' && (
+              <SafeBoundary name="AIAgentsManagementHub">
+                <AIAgentsManagementHub />
               </SafeBoundary>
             )}
           </div>
