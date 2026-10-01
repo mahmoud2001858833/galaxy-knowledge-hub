@@ -16,10 +16,13 @@ export interface HUDMetric {
 interface CyberLabHUDProps {
   title?: string;
   statusBadge?: string;
+  status?: string;
   metrics: HUDMetric[];
   showWaveform?: boolean;
   waveformColor?: string;
   waveformSpeed?: number;
+  waveformMode?: string;
+  oscilloscopeWaveform?: string;
   className?: string;
 }
 

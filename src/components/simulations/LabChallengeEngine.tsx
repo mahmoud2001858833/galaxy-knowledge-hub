@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
 
 export interface ChallengeDef {
+  // NOTE: 'Challenge' alias exported below for legacy pages
   id: string;
   title: string;
   description: string;
