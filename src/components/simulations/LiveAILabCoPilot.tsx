@@ -106,11 +106,11 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
   }, []);
 
   return (
-    <div className="rounded-2xl bg-slate-950/85 border border-purple-500/40 backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-300">
+    <div className="rounded-2xl bg-white/95 dark:bg-slate-950/85 border border-purple-200 dark:border-purple-500/40 backdrop-blur-xl shadow-xl dark:shadow-2xl overflow-hidden transition-all duration-300">
       {/* Header bar */}
       <div 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="px-4 py-3 bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 flex items-center justify-between cursor-pointer border-b border-white/[0.08]"
+        className="px-4 py-3 bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white dark:from-purple-950/60 dark:via-slate-900 dark:to-indigo-950/60 flex items-center justify-between cursor-pointer border-b border-purple-100 dark:border-white/[0.08]"
       >
         <div className="flex items-center gap-2.5">
           <div className="relative">
@@ -121,16 +121,16 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">المساعد المعملي الذكي 2.0</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30 font-semibold">
+              <span className="text-xs font-bold text-slate-900 dark:text-white">المساعد المعملي الذكي 2.0</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 border border-purple-200 dark:border-purple-400/30 font-semibold">
                 AI Co-Pilot
               </span>
             </div>
-            <span className="text-[10px] text-slate-400">مراقبة، تحليل فيزيائي ونطق صوتي فوري</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">مراقبة، تحليل فيزيائي ونطق صوتي فوري</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-slate-400">
+        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </div>
@@ -146,10 +146,10 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
           >
             {/* Live Observation Banner */}
             {liveHint && (
-              <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-start gap-2.5 text-xs text-cyan-200 leading-relaxed shadow-sm">
-                <Lightbulb className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5 animate-pulse" />
+              <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-200 dark:bg-cyan-950/30 dark:border-cyan-500/30 flex items-start gap-2.5 text-xs text-cyan-900 dark:text-cyan-200 leading-relaxed shadow-sm">
+                <Lightbulb className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5 animate-pulse" />
                 <div>
-                  <span className="font-bold text-cyan-300 ml-1">ملاحظة فورية:</span>
+                  <span className="font-bold text-cyan-700 dark:text-cyan-300 ml-1">ملاحظة فورية:</span>
                   <span>{liveHint}</span>
                 </div>
               </div>
@@ -157,10 +157,10 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
 
             {/* AI Analysis Content */}
             {aiAnalysis ? (
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-purple-500/20 text-xs text-slate-200 leading-relaxed space-y-2">
-                <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.08]">
-                  <span className="text-[11px] font-bold text-purple-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-purple-200 dark:border-purple-500/20 text-xs text-slate-800 dark:text-slate-200 leading-relaxed space-y-2">
+                <div className="flex items-center justify-between pb-1.5 border-b border-purple-100 dark:border-white/[0.08]">
+                  <span className="text-[11px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                     <span>التقرير العلمي التفاعلي</span>
                   </span>
                   
@@ -169,8 +169,8 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                     onClick={() => handleSpeak(aiAnalysis)}
                     className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] transition-colors ${
                       isSpeaking 
-                        ? 'text-cyan-300 bg-cyan-500/20 font-bold border border-cyan-500/30' 
-                        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                        ? 'text-cyan-600 bg-cyan-100 dark:text-cyan-300 dark:bg-cyan-500/20 font-bold border border-cyan-300 dark:border-cyan-500/30' 
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
                     }`}
                     title="قراءة صوتية بالذكاء الاصطناعي"
                   >
@@ -178,20 +178,20 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                     <span>{isSpeaking ? 'جاري القراءة' : 'استمع'}</span>
                     {isSpeaking && (
                       <span className="flex gap-0.5 items-center mr-0.5">
-                        <span className="w-0.5 h-2 bg-cyan-400 animate-pulse rounded-full" />
-                        <span className="w-0.5 h-3 bg-cyan-400 animate-pulse rounded-full" />
-                        <span className="w-0.5 h-1.5 bg-cyan-400 animate-pulse rounded-full" />
+                        <span className="w-0.5 h-2 bg-cyan-500 dark:bg-cyan-400 animate-pulse rounded-full" />
+                        <span className="w-0.5 h-3 bg-cyan-500 dark:bg-cyan-400 animate-pulse rounded-full" />
+                        <span className="w-0.5 h-1.5 bg-cyan-500 dark:bg-cyan-400 animate-pulse rounded-full" />
                       </span>
                     )}
                   </button>
                 </div>
 
-                <div className="whitespace-pre-line text-slate-300 text-[11px] sm:text-xs font-normal leading-relaxed">
+                <div className="whitespace-pre-line text-slate-700 dark:text-slate-300 text-[11px] sm:text-xs font-normal leading-relaxed">
                   {aiAnalysis}
                 </div>
               </div>
             ) : (
-              <p className="text-[11px] text-slate-400 text-center py-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 text-center py-1">
                 انقر أدناه ليقوم الذكاء الاصطناعي بقراءة معطياتك وشرح ما يحدث في المشهد الآن
               </p>
             )}
@@ -208,7 +208,7 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                     }
                   }}
                   placeholder="اسأل المرشد عن المعطيات الحالية..."
-                  className="h-8 text-xs bg-slate-900 border-purple-500/30 focus:border-purple-400 rounded-lg text-white"
+                  className="h-8 text-xs bg-slate-50 border-slate-300 text-slate-900 placeholder:text-slate-400 dark:bg-slate-900 dark:border-purple-500/30 focus:border-purple-400 rounded-lg dark:text-white"
                   disabled={isAnalyzing}
                 />
                 <Button
@@ -223,7 +223,7 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={() => setIsCustomMode(false)}
-                  className="h-8 px-2 text-slate-400 hover:text-white"
+                  className="h-8 px-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                 >
                   إلغاء
                 </Button>
@@ -234,7 +234,7 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                   size="sm"
                   onClick={() => handleRequestAnalysis()}
                   disabled={isAnalyzing}
-                  className="flex-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-500/20 border border-purple-400/30 flex items-center justify-center gap-2 h-8"
+                  className="flex-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/20 border border-purple-400/30 flex items-center justify-center gap-2 h-8"
                 >
                   {isAnalyzing ? (
                     <>
@@ -243,7 +243,7 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                      <Sparkles className="w-3.5 h-3.5 text-purple-200" />
                       <span>حلل ما أراه الآن بالذكاء الاصطناعي</span>
                     </>
                   )}
@@ -253,7 +253,7 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setIsCustomMode(true)}
-                  className="h-8 px-2.5 border-purple-500/30 bg-purple-950/20 hover:bg-purple-900/40 text-purple-300 hover:text-white rounded-xl text-xs flex items-center gap-1 shrink-0"
+                  className="h-8 px-2.5 border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 dark:border-purple-500/30 dark:bg-purple-950/20 dark:hover:bg-purple-900/40 dark:text-purple-300 dark:hover:text-white rounded-xl text-xs flex items-center gap-1 shrink-0"
                   title="اطرح سؤالاً محدداً"
                 >
                   <MessageSquarePlus className="w-3.5 h-3.5" />

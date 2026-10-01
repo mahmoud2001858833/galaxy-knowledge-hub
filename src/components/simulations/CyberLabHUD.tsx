@@ -97,19 +97,19 @@ export const CyberLabHUD: React.FC<CyberLabHUDProps> = ({
   }, [showWaveform, waveformColor, waveformSpeed]);
 
   return (
-    <div className={`p-4 rounded-2xl bg-slate-950/75 border border-white/10 backdrop-blur-xl shadow-2xl ${className}`}>
+    <div className={`p-4 rounded-2xl bg-white/95 dark:bg-slate-950/75 border border-slate-200/90 dark:border-white/10 backdrop-blur-xl shadow-xl dark:shadow-2xl text-slate-800 dark:text-slate-100 ${className}`}>
       {/* HUD Header */}
-      <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200/70 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
           </span>
-          <span className="text-xs font-black tracking-wider uppercase text-cyan-300">
+          <span className="text-xs font-black tracking-wider uppercase text-cyan-600 dark:text-cyan-300">
             {statusBadge}
           </span>
         </div>
-        <span className="text-xs font-bold text-slate-300">
+        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
           {title}
         </span>
       </div>
@@ -119,26 +119,26 @@ export const CyberLabHUD: React.FC<CyberLabHUDProps> = ({
         {metrics.map((m) => (
           <div
             key={m.id}
-            className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/15 transition-all flex flex-col justify-between"
+            className="p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] hover:border-cyan-500/30 transition-all flex flex-col justify-between shadow-xs"
           >
-            <div className="flex items-center justify-between text-xs text-slate-200 font-medium mb-1">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-200 font-medium mb-1">
               <span className="truncate">{m.label}</span>
-              {m.icon || <Activity className="w-3.5 h-3.5 text-cyan-400" />}
+              {m.icon || <Activity className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />}
             </div>
 
             <div className="flex items-baseline gap-1 my-1">
-              <span className={`text-xl font-black ${m.color || 'text-white'}`}>
+              <span className={`text-xl font-black ${m.color || 'text-slate-900 dark:text-white'}`}>
                 {m.value}
               </span>
               {m.unit && (
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
                   {m.unit}
                 </span>
               )}
             </div>
 
             {m.progressPercent !== undefined && (
-              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mt-1">
+              <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden mt-1">
                 <motion.div
                   className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"
                   initial={{ width: 0 }}
@@ -153,12 +153,12 @@ export const CyberLabHUD: React.FC<CyberLabHUDProps> = ({
 
       {/* Optional Embedded Live Waveform Oscilloscope */}
       {showWaveform && (
-        <div className="mt-3 pt-2 border-t border-white/[0.06] flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-cyan-400/80 font-mono whitespace-nowrap">
-            <Radio className="w-3.5 h-3.5 animate-pulse text-cyan-400" />
+        <div className="mt-3 pt-2 border-t border-slate-200/70 dark:border-white/[0.06] flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-cyan-600 dark:text-cyan-400/80 font-mono whitespace-nowrap">
+            <Radio className="w-3.5 h-3.5 animate-pulse text-cyan-500" />
             <span>SIGNAL</span>
           </div>
-          <div className="flex-1 h-8 rounded-lg overflow-hidden bg-slate-900/80 border border-cyan-500/20">
+          <div className="flex-1 h-8 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900/80 border border-slate-300/80 dark:border-cyan-500/20">
             <canvas ref={canvasRef} width={280} height={32} className="w-full h-full block" />
           </div>
         </div>

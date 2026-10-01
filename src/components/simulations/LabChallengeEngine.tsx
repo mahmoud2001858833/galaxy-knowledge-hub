@@ -105,21 +105,21 @@ export const LabChallengeEngine: React.FC<LabChallengeEngineProps> = ({
   };
 
   return (
-    <div className={`p-4 rounded-2xl bg-slate-950/80 border border-amber-500/30 backdrop-blur-xl shadow-2xl ${className}`}>
+    <div className={`p-4 rounded-2xl bg-white/95 dark:bg-slate-950/80 border border-amber-300/60 dark:border-amber-500/30 backdrop-blur-xl shadow-xl dark:shadow-2xl text-slate-800 dark:text-slate-100 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
             <Trophy className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-xs font-bold text-white block">وضع التحديات المعملية ضد الوقت</span>
-            <span className="text-[10px] text-amber-400/90 font-medium">Lab Challenge Mode</span>
+            <span className="text-xs font-bold text-slate-900 dark:text-white block">وضع التحديات المعملية ضد الوقت</span>
+            <span className="text-[10px] text-amber-600 dark:text-amber-400/90 font-medium">Lab Challenge Mode</span>
           </div>
         </div>
 
         {isRunning && (
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-mono font-black animate-pulse">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/15 dark:border-red-500/30 dark:text-red-300 text-xs font-mono font-black animate-pulse">
             <Timer className="w-3.5 h-3.5" />
             <span>00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}</span>
           </div>
@@ -139,7 +139,7 @@ export const LabChallengeEngine: React.FC<LabChallengeEngineProps> = ({
               className={`px-3 py-1 rounded-xl text-[11px] font-semibold transition-colors shrink-0 ${
                 selectedIdx === idx
                   ? 'bg-amber-500 text-slate-950 font-bold'
-                  : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10'
               }`}
             >
               {c.title}
@@ -149,16 +149,16 @@ export const LabChallengeEngine: React.FC<LabChallengeEngineProps> = ({
       )}
 
       {/* Mission details */}
-      <div className="my-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
-        <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-          <Flame className="w-3.5 h-3.5 text-amber-400" />
+      <div className="my-3 p-3 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-2">
+        <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <Flame className="w-3.5 h-3.5 text-amber-500" />
           {activeChallenge.title}
         </h4>
-        <p className="text-[11px] text-slate-300 leading-relaxed">
+        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
           {activeChallenge.description}
         </p>
-        <div className="p-2 rounded-lg bg-amber-950/30 border border-amber-500/20 text-[11px] text-amber-200">
-          <span className="font-bold text-amber-300 ml-1">الهدف المطلوب:</span>
+        <div className="p-2.5 rounded-lg bg-amber-50/90 border border-amber-200/90 text-[11px] text-amber-950 dark:bg-amber-950/30 dark:border-amber-500/20 dark:text-amber-200 shadow-xs">
+          <span className="font-bold text-amber-800 dark:text-amber-300 ml-1">الهدف المطلوب:</span>
           <span>{activeChallenge.targetDescription}</span>
         </div>
       </div>
@@ -166,11 +166,11 @@ export const LabChallengeEngine: React.FC<LabChallengeEngineProps> = ({
       {/* Live Hold Progress Bar when running */}
       {isRunning && (
         <div className="my-3 space-y-1">
-          <div className="flex justify-between text-[10px] text-slate-300 font-semibold">
+          <div className="flex justify-between text-[10px] text-slate-600 dark:text-slate-300 font-semibold">
             <span>تثبيت النتيجة المطلوبة:</span>
-            <span className="text-cyan-400 font-mono font-bold">{Math.round(holdProgress)}%</span>
+            <span className="text-cyan-600 dark:text-cyan-400 font-mono font-bold">{Math.round(holdProgress)}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-slate-900 overflow-hidden border border-white/10">
+          <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-900 overflow-hidden border border-slate-300/80 dark:border-white/10">
             <motion.div
               className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full"
               style={{ width: `${holdProgress}%` }}
@@ -185,22 +185,22 @@ export const LabChallengeEngine: React.FC<LabChallengeEngineProps> = ({
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="my-3 p-3 rounded-xl bg-gradient-to-br from-emerald-950/60 to-teal-950/40 border border-emerald-500/40 text-center space-y-1.5"
+          className="my-3 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/60 dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-500/40 text-center space-y-1.5 shadow-sm"
         >
-          <div className="inline-flex p-2 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/40 mb-1">
+          <div className="inline-flex p-2 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-400/40 mb-1">
             <Award className="w-6 h-6 animate-bounce" />
           </div>
-          <h4 className="text-sm font-extrabold text-emerald-300">أحسنت! تم إنجاز التحدي بنجاح مبهر!</h4>
-          <p className="text-xs text-slate-200">
-            النقاط المكتسبة: <span className="font-black text-amber-400 text-sm font-mono">{score}</span> نقطة
+          <h4 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300">أحسنت! تم إنجاز التحدي بنجاح مبهر!</h4>
+          <p className="text-xs text-slate-700 dark:text-slate-200">
+            النقاط المكتسبة: <span className="font-black text-amber-600 dark:text-amber-400 text-sm font-mono">{score}</span> نقطة
           </p>
         </motion.div>
       )}
 
       {/* Out of Time Message */}
       {!isRunning && !isSuccess && timeLeft === 0 && (
-        <div className="my-3 p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs text-center flex items-center justify-center gap-2">
-          <AlertCircle className="w-4 h-4 text-rose-400" />
+        <div className="my-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-500/30 dark:text-rose-300 text-xs text-center flex items-center justify-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-500" />
           <span>انتهى الوقت! حاول مجدداً لتحقيق المعيار المطلوب.</span>
         </div>
       )}
