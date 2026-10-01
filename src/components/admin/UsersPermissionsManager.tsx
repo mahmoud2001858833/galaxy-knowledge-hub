@@ -268,8 +268,7 @@ export const UsersPermissionsManager: React.FC = () => {
           access_level: newRole === 'admin' ? 'admin' : 'member',
           created_at: new Date().toISOString()
         }, { onConflict: 'email' })
-        .then(() => {})
-        .catch(() => {});
+        .then(() => {});
 
       // 2. Update state & localStorage
       setUsers(prev => prev.map(u => {

@@ -211,12 +211,12 @@ export default function AcousticChamber3D({
           </group>
 
           {/* Wave Envelope Boundary Lines */}
-          <mesh position={[0, (amplitude / 100) * 0.8 + 0.5, 0]}>
-            <cylinderGeometry args={[0.015, 0.015, 8.5, 8]} rotation={[0, 0, Math.PI / 2]} />
+          <mesh position={[0, (amplitude / 100) * 0.8 + 0.5, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.015, 0.015, 8.5, 8]} />
             <meshBasicMaterial color="#38bdf8" transparent opacity={0.3} />
           </mesh>
-          <mesh position={[0, -((amplitude / 100) * 0.8 + 0.5), 0]}>
-            <cylinderGeometry args={[0.015, 0.015, 8.5, 8]} rotation={[0, 0, Math.PI / 2]} />
+          <mesh position={[0, -((amplitude / 100) * 0.8 + 0.5), 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.015, 0.015, 8.5, 8]} />
             <meshBasicMaterial color="#38bdf8" transparent opacity={0.3} />
           </mesh>
         </group>

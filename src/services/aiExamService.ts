@@ -82,6 +82,8 @@ export interface StudentExamSubmission {
   examId: string;
   studentName: string;
   classSection: string;
+  studentClass?: string;
+  section?: string;
   seatNumber?: string;
   schoolName?: string;
   answers: Record<string, string>;
@@ -511,7 +513,7 @@ export class AIExamService {
         registration_config: pkg.registrationConfig as any
       }).then(({ error }) => {
         if (error) console.warn('Supabase exam package sync:', error.message);
-      }).catch(() => {});
+      });
     } catch {}
 
     return pkg;
@@ -550,8 +552,8 @@ export class AIExamService {
       if (!error && data) {
         const pkg: OnlineExamPackage = {
           id: data.id,
-          exam: data.exam_data as FullExamStructure,
-          registrationConfig: data.registration_config as OnlineExamRegistrationConfig,
+          exam: data.exam_data as unknown as FullExamStructure,
+          registrationConfig: data.registration_config as unknown as OnlineExamRegistrationConfig,
           createdAt: data.created_at,
           active: true,
           allowedMinutes: data.duration_minutes || 45
@@ -604,7 +606,7 @@ export class AIExamService {
         submitted_at: submission.submittedAt
       }).then(({ error }) => {
         if (error) console.warn('Supabase submission sync:', error.message);
-      }).catch(() => {});
+      });
     } catch {}
   }
 

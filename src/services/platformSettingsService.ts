@@ -35,6 +35,10 @@ export interface PlatformSettings {
   competitionBadgeUrl: string;
   footerLinks: FooterLink[];
   socialLinks: SocialLink[];
+  schoolName?: string;
+  principalName?: string;
+  officialEmail?: string;
+  officialPhone?: string;
 }
 
 const DEFAULT_SETTINGS: PlatformSettings = {

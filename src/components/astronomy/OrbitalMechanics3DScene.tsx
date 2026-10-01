@@ -108,14 +108,19 @@ export default function OrbitalMechanics3DScene({
       </mesh>
 
       {/* 3. DYNAMIC KEPLERIAN ORBIT PATH */}
-      <line geometry={orbitLineGeometry}>
-        <lineBasicMaterial
-          color={eccentricity > 0.4 ? '#f59e0b' : '#38bdf8'}
-          linewidth={2}
-          transparent
-          opacity={0.8}
-        />
-      </line>
+      {(() => {
+        const OrbitLine = 'line' as any;
+        return (
+          <OrbitLine geometry={orbitLineGeometry}>
+            <lineBasicMaterial
+              color={eccentricity > 0.4 ? '#f59e0b' : '#38bdf8'}
+              linewidth={2}
+              transparent
+              opacity={0.8}
+            />
+          </OrbitLine>
+        );
+      })()}
 
       {/* 4. PERIGEE & APOGEE MARKERS */}
       {/* Perigee Marker (Closest point to Earth) */}
@@ -175,8 +180,8 @@ export default function OrbitalMechanics3DScene({
 
         {/* Velocity Vector Arrow (Tangent to Motion) */}
         <group position={[0, 0, -0.2]}>
-          <mesh position={[0, 0, -Math.min(0.6, currentVelocityKms / 15)]}>
-            <cylinderGeometry args={[0.015, 0.015, Math.min(0.6, currentVelocityKms / 10), 8]} rotation={[Math.PI / 2, 0, 0]} />
+          <mesh position={[0, 0, -Math.min(0.6, currentVelocityKms / 15)]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, Math.min(0.6, currentVelocityKms / 10), 8]} />
             <meshBasicMaterial color="#10b981" />
           </mesh>
           <mesh position={[0, 0, -Math.min(0.6, currentVelocityKms / 10) * 1.5 - 0.05]} rotation={[-Math.PI / 2, 0, 0]}>

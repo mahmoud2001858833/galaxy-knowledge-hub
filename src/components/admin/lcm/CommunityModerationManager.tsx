@@ -117,7 +117,7 @@ export const CommunityModerationManager: React.FC = () => {
       await supabase.from('admin_audit_logs').insert({
         action: 'DELETE_FORUM_MESSAGE',
         details: { messageId: id }
-      });
+      } as any);
     } catch (err) {
       console.warn('Error deleting message from Supabase:', err);
     }
@@ -153,7 +153,7 @@ export const CommunityModerationManager: React.FC = () => {
       await supabase.from('admin_audit_logs').insert({
         action: 'ISSUE_STUDENT_WARNING',
         details: { studentName, timestamp: new Date().toISOString() }
-      });
+      } as any);
     } catch (err) {}
     toast({
       title: `⚠️ تم إصدار إنذار رسمي للطالب: ${studentName}`,
@@ -167,7 +167,7 @@ export const CommunityModerationManager: React.FC = () => {
       await supabase.from('admin_audit_logs').insert({
         action: 'BAN_STUDENT',
         details: { studentName, durationDays: 7, timestamp: new Date().toISOString() }
-      });
+      } as any);
     } catch (err) {}
     toast({
       title: `🚫 تم حظر الطالب: ${studentName}`,

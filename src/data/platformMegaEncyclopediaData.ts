@@ -21,6 +21,12 @@ export interface DetailedExperimentSpec {
     description: string;
     constants?: string;
   }>;
+  equations?: Array<{
+    name: string;
+    formula: string;
+    description?: string;
+    constants?: string;
+  }>;
   detailedControls: Array<{
     controlName: string;
     type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';
@@ -95,6 +101,7 @@ export interface DetailedDamejSpec {
 export interface DetailedAdminLMSSpec {
   id: string;
   systemName: string;
+  title?: string;
   operationalRole: string;
   mathematicalOptimizationEngine: string;
   featuresAndSubmodules: string[];

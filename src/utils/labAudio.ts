@@ -25,6 +25,19 @@ class LabSoundEffects {
     return this.isMuted;
   }
 
+  // Generic UI feedback helpers
+  public click() {
+    this.playGeigerClick();
+  }
+
+  public play(_name?: string) {
+    this.click();
+  }
+
+  public playBeepSuccess() {
+    this.playLaserPulse(880);
+  }
+
   // Laser pulse sound (Photoelectric)
   public playLaserPulse(freq: number = 600) {
     if (this.isMuted) return;

@@ -6,6 +6,7 @@ import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
 
 export interface ChallengeDef {
+  // NOTE: 'Challenge' alias exported below for legacy pages
   id: string;
   title: string;
   description: string;
@@ -15,9 +16,13 @@ export interface ChallengeDef {
   requiredHoldSeconds?: number; // how many consecutive seconds criteria must be met
 }
 
+export type Challenge = ChallengeDef;
+
 interface LabChallengeEngineProps {
   challenges: ChallengeDef[];
   onCompleteChallenge?: (challengeId: string, score: number) => void;
+  onChallengeComplete?: (challenge: ChallengeDef) => void;
+  currentMetrics?: Record<string, string | number | boolean>;
   className?: string;
 }
 

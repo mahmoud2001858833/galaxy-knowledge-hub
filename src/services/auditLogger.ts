@@ -21,7 +21,12 @@ export type AuditActionType =
   | 'FOOTER_EDIT'
   | 'PERMISSION_CHANGE'
   | 'SYSTEM_LOCKDOWN'
-  | 'CONFIG_CHANGE';
+  | 'CONFIG_CHANGE'
+  | 'SYSTEM_DIAGNOSTICS'
+  | 'ADMIN_PROMOTION'
+  | 'ADMIN_REVOCATION'
+  | 'BROADCAST_CREATE'
+  | 'BACKUP_EXPORT';
 
 export interface AuditLogEntry {
   id: string;
@@ -141,6 +146,10 @@ class AuditLoggerService {
     } catch (e) {
       console.warn('Failed to save audit logs to localStorage', e);
     }
+  }
+
+  public log(entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'client'> & { client?: Partial<AuditLogEntry['client']> }): AuditLogEntry {
+    return this.record(entry);
   }
 
   public record(entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'client'> & { client?: Partial<AuditLogEntry['client']> }): AuditLogEntry {

@@ -21,6 +21,7 @@ export type LocalFrameStats = {
   bottomMotion: number; // 0..1 (bottom row average)
   sceneChange: number;  // 0..1 large = scene swapped
   brightness: number;   // 0..1
+  avgLum: number;       // 0..1 average luminance (alias of brightness)
   corridor: CorridorStats;
 };
 
@@ -136,7 +137,7 @@ export class LocalVision {
     for (let p = 0; p < gray.length; p++) this.prev[p] = gray[p];
     this.lastEdgeMap = edge;
 
-    return { cells, globalMotion, bottomMotion, sceneChange, brightness, corridor };
+    return { cells, globalMotion, bottomMotion, sceneChange, brightness, avgLum: brightness, corridor };
   }
 
   reset() {

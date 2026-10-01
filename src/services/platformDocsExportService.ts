@@ -7,7 +7,7 @@ import {
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ALL_PLATFORM_SOURCES, TOTAL_SOURCES_COUNT, PlatformSource, SOURCE_CATEGORIES } from '@/data/platformSourcesData';
-import { PLATFORM_MENTIONS_CATALOG } from '@/data/platformMentionsData';
+import { PLATFORM_MENTION_RESOURCES as PLATFORM_MENTIONS_CATALOG } from '@/data/platformMentionsData';
 import { platformSettings, PlatformSettings } from '@/services/platformSettingsService';
 import { auditLogger } from '@/services/auditLogger';
 import { COMMUNITY_CHANNELS, INITIAL_COMMUNITY_MESSAGES } from '@/types/communityChat';

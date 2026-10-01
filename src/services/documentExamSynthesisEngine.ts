@@ -445,7 +445,7 @@ export class DocumentExamSynthesisEngine {
       const otherVocab = vocab.filter(v => v !== prop.subjectTerm && !prop.subjectTerm.includes(v) && !v.includes(prop.subjectTerm));
       const fallbackDistractors = analysis.domain === 'physics' 
         ? ['المجال المغناطيسي', 'القوة الدافعة الحثية', 'معامل الحث الذاتي', 'التيار التأثيري']
-        : analysis.domain === 'chemistry'
+        : (analysis.domain as string) === 'chemistry'
         ? ['طاقة التنشيط', 'الرقم الهيدروجيني', 'ثابت الاتزان', 'جهد الاختزال المعياري']
         : analysis.domain === 'biology'
         ? ['المورثات السائدة', 'الانقسام المنصف', 'الترجمة الجينية', 'السيال العصبي']

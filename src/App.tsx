@@ -36,11 +36,14 @@ const GlobalFallback = () => (
 );
 
 const wrap = <P extends object>(Comp: React.LazyExoticComponent<ComponentType<P>>) => {
-  const Wrapped: React.FC<P> = (props) => (
-    <Suspense fallback={<GlobalFallback />}>
-      <Comp {...props} />
-    </Suspense>
-  );
+  const Wrapped: React.FC<P> = (props) => {
+    const C = Comp as unknown as React.ComponentType<P>;
+    return (
+      <Suspense fallback={<GlobalFallback />}>
+        <C {...props} />
+      </Suspense>
+    );
+  };
   return Wrapped;
 };
 

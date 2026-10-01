@@ -9,8 +9,13 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LiveAILabCoPilotProps {
-  simName: string;
-  currentParameters: Record<string, string | number>;
+  simName?: string;
+  experimentName?: string;
+  currentParameters?: Record<string, string | number>;
+  currentMetrics?: Record<string, string | number | boolean>;
+  experimentContext?: { title?: string; currentStep?: string; userAction?: string; activeMetrics?: Record<string, string | number> };
+  suggestions?: string[];
+  hint?: string;
   liveHint?: string;
   defaultAnalysis?: string;
   subject?: 'physics' | 'chemistry' | 'biology' | 'general';

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, Gauge, Zap, TrendingUp, Radio } from 'lucide-react';
 
 export interface HUDMetric {
-  id: string;
+  id?: string;
   label: string;
   value: string | number;
   unit?: string;
@@ -11,15 +11,21 @@ export interface HUDMetric {
   icon?: React.ReactNode;
   progressPercent?: number; // 0 to 100
   trend?: 'up' | 'down' | 'stable';
+  status?: string;
+  min?: number;
+  max?: number;
 }
 
 interface CyberLabHUDProps {
   title?: string;
   statusBadge?: string;
+  status?: string;
   metrics: HUDMetric[];
   showWaveform?: boolean;
   waveformColor?: string;
   waveformSpeed?: number;
+  waveformMode?: string;
+  oscilloscopeWaveform?: string;
   className?: string;
 }
 
