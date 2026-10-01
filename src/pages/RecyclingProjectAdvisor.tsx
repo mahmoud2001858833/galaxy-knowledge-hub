@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,9 +15,12 @@ import {
   ArrowLeft, Recycle, Lightbulb, Camera, Send, Loader2, 
   Clock, AlertTriangle, Leaf, ChevronDown, ChevronUp,
   Star, Download, Share2, BookOpen, Wrench, Target, Shield,
-  Image, CheckCircle, Trophy, Calculator
+  Image, CheckCircle, Trophy, Calculator, Home, ChevronRight
 } from 'lucide-react';
 import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import SEO from '@/components/SEO';
 
 interface Project {
   name: string;
@@ -311,100 +314,127 @@ const RecyclingProjectAdvisor = () => {
   const impact = calculateImpact();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-950 via-emerald-950 to-teal-950 p-4">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Button
-            variant="outline"
-            onClick={() => {
-              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
-              navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
-            }}
-            className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            رجوع
-          </Button>
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-slate-100 transition-colors" dir="rtl">
+      <SEO 
+        title="خبير ومستشار مشاريع إعادة التدوير الذكي | منصة المعرفة"
+        description="حوّل نفاياتك ومخلفاتك إلى مشاريع ابتكارية متميزة بالذكاء الاصطناعي مع خطوات تفصيلية وتحليل الأثر البيئي."
+      />
 
-          {/* Environmental Points Badge */}
-          <div className="flex items-center gap-4">
-            <Badge className="bg-green-600/30 text-green-300 border-green-500/50 px-4 py-2">
-              <Trophy className="w-4 h-4 ml-2" />
-              {environmentalPoints} نقطة بيئية
-            </Badge>
-            <Badge className="bg-blue-600/30 text-blue-300 border-blue-500/50 px-4 py-2">
-              <CheckCircle className="w-4 h-4 ml-2" />
-              {completedProjects} مشروع منجز
-            </Badge>
-          </div>
-        </motion.div>
+      <Navbar />
 
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
-        >
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="p-4 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30 backdrop-blur-sm">
-              <Recycle className="w-12 h-12 text-green-400" />
+      <main className="flex-1 pb-16">
+        {/* Breadcrumb Bar */}
+        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md sticky top-16 z-30">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between text-xs sm:text-sm">
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Link to="/" className="hover:text-emerald-600 transition-colors flex items-center gap-1">
+                <Home className="w-3.5 h-3.5" />
+                <span>الرئيسية</span>
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180 text-slate-400" />
+              <Link to="/environmental-sustainability" className="hover:text-emerald-600 transition-colors">
+                الاستدامة البيئية
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180 text-slate-400" />
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">خبير إعادة التدوير الذكي</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-300 to-teal-400">
-              خبير إعادة التدوير الذكي
-            </h1>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const isGJU = sessionStorage.getItem('gju_mode') === 'true';
+                navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
+              }}
+              className="h-8 gap-1.5 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+              <span>العودة للبوابة</span>
+            </Button>
           </div>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            حوّل نفاياتك إلى مشاريع إبداعية مع مساعدة الذكاء الاصطناعي
-          </p>
-        </motion.div>
+        </div>
 
-        {/* Environmental Impact Card */}
-        {completedProjects > 0 && (
+        <div className="container mx-auto max-w-7xl px-4 pt-8">
+          {/* Header */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-8"
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between mb-8"
           >
-            <Card className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-center gap-8">
-                  <div className="text-center">
-                    <Calculator className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-green-400">{impact.wasteReduced.toFixed(1)} كغ</p>
-                    <p className="text-white/60 text-sm">نفايات تم إعادة تدويرها</p>
-                  </div>
-                  <div className="h-12 w-px bg-white/20" />
-                  <div className="text-center">
-                    <Leaf className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-emerald-400">{impact.co2Saved.toFixed(1)} كغ</p>
-                    <p className="text-white/60 text-sm">CO₂ تم توفيره</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+              <Recycle className="w-3.5 h-3.5" />
+              <span>مستشار إعادة الاستخدام بالذكاء الاصطناعي</span>
+            </div>
 
-        <Tabs defaultValue="generator" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8 bg-white/10">
-            <TabsTrigger value="generator" className="text-white data-[state=active]:bg-green-600">
-              <Lightbulb className="w-4 h-4 ml-2" />
-              إنشاء
-            </TabsTrigger>
-            <TabsTrigger value="saved" className="text-white data-[state=active]:bg-green-600">
-              <Star className="w-4 h-4 ml-2" />
-              المحفوظة ({savedProjects.length})
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="text-white data-[state=active]:bg-green-600">
-              <Send className="w-4 h-4 ml-2" />
-              اسأل الخبير
-            </TabsTrigger>
-          </TabsList>
+            {/* Environmental Points Badge */}
+            <div className="flex items-center gap-3">
+              <Badge className="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs">
+                <Trophy className="w-3.5 h-3.5 ml-1 text-amber-500" />
+                {environmentalPoints} نقطة بيئية
+              </Badge>
+              <Badge className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 px-3 py-1 text-xs">
+                <CheckCircle className="w-3.5 h-3.5 ml-1 text-blue-500" />
+                {completedProjects} منجز
+              </Badge>
+            </div>
+          </motion.div>
+
+          {/* Title */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8 max-w-3xl mx-auto"
+          >
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-2">
+              خبير إعادة التدوير والابتكار البيئي
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base">
+              حوّل المواد المهملة إلى مشاريع علمية، فنية، أو عملية مبتكرة بخطوات تفصيلية وتوجيه ذكي
+            </p>
+          </motion.div>
+
+          {/* Environmental Impact Card */}
+          {completedProjects > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-8"
+            >
+              <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 rounded-2xl">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-center gap-8">
+                    <div className="text-center">
+                      <Calculator className="w-6 h-6 text-emerald-600 mx-auto mb-1" />
+                      <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{impact.wasteReduced.toFixed(1)} كغ</p>
+                      <p className="text-slate-500 text-xs">نفايات تم إعادة تدويرها</p>
+                    </div>
+                    <div className="h-10 w-px bg-emerald-200 dark:bg-emerald-800" />
+                    <div className="text-center">
+                      <Leaf className="w-6 h-6 text-teal-600 mx-auto mb-1" />
+                      <p className="text-2xl font-bold text-teal-700 dark:text-teal-400">{impact.co2Saved.toFixed(1)} كغ</p>
+                      <p className="text-slate-500 text-xs">CO₂ تم توفيره</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          <Tabs defaultValue="generator" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <TabsTrigger value="generator" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold">
+                <Lightbulb className="w-3.5 h-3.5 ml-1.5" />
+                إنشاء
+              </TabsTrigger>
+              <TabsTrigger value="saved" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold">
+                <Star className="w-3.5 h-3.5 ml-1.5" />
+                المحفوظة ({savedProjects.length})
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold">
+                <Send className="w-3.5 h-3.5 ml-1.5" />
+                اسأل الخبير
+              </TabsTrigger>
+            </TabsList>
 
           {/* Generator Tab */}
           <TabsContent value="generator">
@@ -414,29 +444,29 @@ const RecyclingProjectAdvisor = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
               >
-                <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-green-400" />
-                      أدخل المواد المتوفرة
+                <Card className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm rounded-2xl overflow-hidden">
+                  <CardHeader className="bg-slate-50/60 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
+                    <CardTitle className="text-slate-900 dark:text-white flex items-center gap-2 text-base font-bold">
+                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                      أدخل المواد المتوفرة لديك
                     </CardTitle>
-                    <CardDescription className="text-white/60">
-                      اختر من القائمة أو أدخل المواد يدوياً
+                    <CardDescription className="text-slate-500 text-xs">
+                      اختر من المواد الشائعة أو اكتب مواد مخصصة لديك في المنزل أو المدرسة
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-5 p-6">
                     {/* Common Materials */}
                     <div>
-                      <label className="text-white/80 text-sm mb-3 block">المواد الشائعة:</label>
-                      <div className="flex flex-wrap gap-2">
+                      <label className="text-slate-700 dark:text-slate-300 text-xs font-semibold mb-2.5 block">المواد والمخلفات الشائعة:</label>
+                      <div className="flex flex-wrap gap-1.5">
                         {COMMON_MATERIALS.map(material => (
                           <Badge
                             key={material}
                             variant={selectedMaterials.includes(material) ? "default" : "outline"}
-                            className={`cursor-pointer transition-all ${
+                            className={`cursor-pointer transition-all text-xs py-1 px-2.5 rounded-lg ${
                               selectedMaterials.includes(material)
-                                ? 'bg-green-600 hover:bg-green-700 text-white'
-                                : 'border-white/30 text-white/70 hover:bg-white/10'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
+                                : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                             onClick={() => toggleMaterial(material)}
                           >
@@ -448,42 +478,42 @@ const RecyclingProjectAdvisor = () => {
 
                     {/* Custom Materials */}
                     <div>
-                      <label className="text-white/80 text-sm mb-2 block">أو أدخل مواد أخرى:</label>
+                      <label className="text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1.5 block">أو أدخل مواد أخرى يدوياً:</label>
                       <Textarea
                         value={materials}
                         onChange={(e) => setMaterials(e.target.value)}
-                        placeholder="أدخل المواد مفصولة بفاصلة..."
-                        className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
-                        rows={3}
+                        placeholder="أدخل المواد مفصولة بفاصلة (مثال: علب ألمنيوم، قماش جينز قديم)..."
+                        className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-xl text-xs"
+                        rows={2}
                       />
                     </div>
 
                     {/* Options */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-white/80 text-sm mb-2 block">المستوى:</label>
+                        <label className="text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1.5 block">الفئة العمرية:</label>
                         <Select value={userLevel} onValueChange={setUserLevel}>
-                          <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                          <SelectTrigger className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs">
                             <SelectValue placeholder="اختر المستوى" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="child">طفل (6-12 سنة)</SelectItem>
-                            <SelectItem value="teen">مراهق (13-17 سنة)</SelectItem>
-                            <SelectItem value="adult">بالغ (18+ سنة)</SelectItem>
+                            <SelectItem value="child">أطفال (6-12 سنة)</SelectItem>
+                            <SelectItem value="teen">ناشئة ومراهقون (13-17 سنة)</SelectItem>
+                            <SelectItem value="adult">بالغون (18+ سنة)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <label className="text-white/80 text-sm mb-2 block">نوع المشروع:</label>
+                        <label className="text-slate-700 dark:text-slate-300 text-xs font-semibold mb-1.5 block">طابع المشروع:</label>
                         <Select value={projectType} onValueChange={setProjectType}>
-                          <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                          <SelectTrigger className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs">
                             <SelectValue placeholder="اختر النوع" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="scientific">علمي</SelectItem>
-                            <SelectItem value="artistic">فني</SelectItem>
-                            <SelectItem value="practical">عملي</SelectItem>
-                            <SelectItem value="group">جماعي</SelectItem>
+                            <SelectItem value="scientific">علمي واستكشافي</SelectItem>
+                            <SelectItem value="artistic">فني وديكور</SelectItem>
+                            <SelectItem value="practical">عملي ومنزلي</SelectItem>
+                            <SelectItem value="group">نشاط مدرسي جماعي</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -501,18 +531,18 @@ const RecyclingProjectAdvisor = () => {
                       <Button
                         variant="outline"
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20"
+                        className="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 rounded-xl text-xs"
                         disabled={isLoading}
                       >
                         {imageUploaded ? (
                           <>
-                            <CheckCircle className="w-4 h-4 ml-2 text-green-400" />
-                            تم رفع الصورة، جاري التحليل...
+                            <CheckCircle className="w-4 h-4 ml-2 text-emerald-600" />
+                            تم رفع الصورة بنجاح
                           </>
                         ) : (
                           <>
-                            <Camera className="w-4 h-4 ml-2" />
-                            📸 ارفع صورة للمواد
+                            <Camera className="w-4 h-4 ml-2 text-slate-500" />
+                            التقاط أو رفع صورة للمواد المتوفرة
                           </>
                         )}
                       </Button>
@@ -522,17 +552,17 @@ const RecyclingProjectAdvisor = () => {
                     <Button
                       onClick={generateProjects}
                       disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-5 rounded-xl shadow-xs text-xs"
                     >
                       {isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                          جاري التحليل والإنشاء...
+                          جارٍ التفكير والتحليل الذكي...
                         </>
                       ) : (
                         <>
                           <Lightbulb className="w-4 h-4 ml-2" />
-                          🚀 اقترح مشاريع إبداعية
+                          توليد الأفكار والمشاريع المقترحة
                         </>
                       )}
                     </Button>
@@ -547,10 +577,13 @@ const RecyclingProjectAdvisor = () => {
               >
                 <ScrollArea className="h-[700px]">
                   {projects.length === 0 ? (
-                    <Card className="bg-white/5 border-white/10 h-full flex items-center justify-center">
-                      <CardContent className="text-center py-20">
-                        <Recycle className="w-16 h-16 text-white/20 mx-auto mb-4" />
-                        <p className="text-white/50">أدخل المواد المتوفرة لعرض المشاريع المقترحة</p>
+                    <Card className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 h-full flex items-center justify-center rounded-2xl shadow-xs">
+                      <CardContent className="text-center py-24">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center mx-auto mb-3 text-emerald-600">
+                          <Recycle className="w-7 h-7" />
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">بانتظار تحديد المواد</h4>
+                        <p className="text-slate-500 text-xs">أدخل المواد المتوفرة وانقر على زر التوليد للاقتراح</p>
                       </CardContent>
                     </Card>
                   ) : (
@@ -558,28 +591,28 @@ const RecyclingProjectAdvisor = () => {
                       {projects.map((project, index) => (
                         <motion.div
                           key={index}
-                          initial={{ opacity: 0, y: 20 }}
+                          initial={{ opacity: 0, y: 15 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
+                          transition={{ delay: index * 0.08 }}
                         >
-                          <Card className="bg-white/5 border-white/10 overflow-hidden">
+                          <Card className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs hover:shadow-md transition-all overflow-hidden">
                             <CardHeader 
-                              className="cursor-pointer hover:bg-white/5 transition-colors"
+                              className="cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors p-4"
                               onClick={() => setExpandedProject(expandedProject === index ? null : index)}
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className="p-2 rounded-lg bg-green-500/20">
-                                    <Lightbulb className="w-5 h-5 text-green-400" />
+                                  <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-200/60 dark:border-emerald-800/40">
+                                    <Lightbulb className="w-5 h-5" />
                                   </div>
                                   <div>
-                                    <CardTitle className="text-white text-lg">{project.name}</CardTitle>
-                                    <div className="flex gap-2 mt-2">
+                                    <CardTitle className="text-slate-900 dark:text-white text-base font-bold">{project.name}</CardTitle>
+                                    <div className="flex gap-2 mt-1.5">
                                       <Badge className={getDifficultyColor(project.difficulty)}>
                                         {project.difficulty}
                                       </Badge>
                                       {project.time && (
-                                        <Badge variant="outline" className="border-white/30 text-white/70">
+                                        <Badge variant="outline" className="border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-[11px]">
                                           <Clock className="w-3 h-3 ml-1" />
                                           {project.time}
                                         </Badge>
@@ -588,9 +621,9 @@ const RecyclingProjectAdvisor = () => {
                                   </div>
                                 </div>
                                 {expandedProject === index ? (
-                                  <ChevronUp className="w-5 h-5 text-white/50" />
+                                  <ChevronUp className="w-5 h-5 text-slate-400" />
                                 ) : (
-                                  <ChevronDown className="w-5 h-5 text-white/50" />
+                                  <ChevronDown className="w-5 h-5 text-slate-400" />
                                 )}
                               </div>
                             </CardHeader>
@@ -602,10 +635,10 @@ const RecyclingProjectAdvisor = () => {
                                   animate={{ height: 'auto', opacity: 1 }}
                                   exit={{ height: 0, opacity: 0 }}
                                 >
-                                  <CardContent className="space-y-4 border-t border-white/10 pt-4">
+                                  <CardContent className="space-y-4 border-t border-slate-100 dark:border-slate-800/80 p-5">
                                     {/* Generated Image */}
                                     {project.generatedImage && (
-                                      <div className="rounded-lg overflow-hidden">
+                                      <div className="rounded-xl overflow-hidden shadow-xs border border-slate-200 dark:border-slate-800">
                                         <img 
                                           src={project.generatedImage} 
                                           alt={project.name}
@@ -621,17 +654,17 @@ const RecyclingProjectAdvisor = () => {
                                         variant="outline"
                                         onClick={() => generateProjectImage(project, index)}
                                         disabled={generatingImageFor === index}
-                                        className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                                        className="w-full bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-100 rounded-xl text-xs"
                                       >
                                         {generatingImageFor === index ? (
                                           <>
-                                            <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                            جاري إنشاء الصورة...
+                                            <Loader2 className="w-3.5 h-3.5 ml-1.5 animate-spin" />
+                                            جاري إنشاء وتوليد الصورة الذكية...
                                           </>
                                         ) : (
                                           <>
-                                            <Image className="w-4 h-4 ml-2" />
-                                            🎨 إنشاء صورة توضيحية
+                                            <Image className="w-3.5 h-3.5 ml-1.5" />
+                                            إنشاء صورة توضيحية للمشروع بالذكاء الاصطناعي
                                           </>
                                         )}
                                       </Button>
@@ -639,32 +672,32 @@ const RecyclingProjectAdvisor = () => {
 
                                     {/* Idea */}
                                     <div>
-                                      <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
-                                        <Target className="w-4 h-4" /> الفكرة
+                                      <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-xs mb-1 flex items-center gap-1.5">
+                                        <Target className="w-3.5 h-3.5" /> الفكرة الأساسية
                                       </h4>
-                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.idea}</p>
+                                      <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{project.idea}</p>
                                     </div>
 
                                     {/* Materials */}
                                     <div>
-                                      <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
-                                        <BookOpen className="w-4 h-4" /> المواد المطلوبة
+                                      <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-xs mb-1 flex items-center gap-1.5">
+                                        <BookOpen className="w-3.5 h-3.5" /> المواد المطلوبة
                                       </h4>
-                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.materials}</p>
+                                      <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{project.materials}</p>
                                     </div>
 
                                     {/* Tools */}
                                     <div>
-                                      <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
-                                        <Wrench className="w-4 h-4" /> الأدوات
+                                      <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-xs mb-1 flex items-center gap-1.5">
+                                        <Wrench className="w-3.5 h-3.5" /> الأدوات المساعدة
                                       </h4>
-                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.tools}</p>
+                                      <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{project.tools}</p>
                                     </div>
 
                                     {/* Steps */}
                                     <div>
-                                      <h4 className="text-green-400 font-semibold mb-2">📝 خطوات العمل</h4>
-                                      <div className="text-white/80 text-sm whitespace-pre-line bg-white/5 p-3 rounded-lg">
+                                      <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-xs mb-1.5">خطوات العمل والتنفيذ</h4>
+                                      <div className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed whitespace-pre-line bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 font-mono">
                                         {project.steps}
                                       </div>
                                     </div>
@@ -672,71 +705,63 @@ const RecyclingProjectAdvisor = () => {
                                     {/* Principle */}
                                     {project.principle && (
                                       <div>
-                                        <h4 className="text-blue-400 font-semibold mb-2">🔬 المبدأ العلمي/البيئي</h4>
-                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.principle}</p>
+                                        <h4 className="text-blue-600 dark:text-blue-400 font-bold text-xs mb-1">المبدأ العلمي والبيئي</h4>
+                                        <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{project.principle}</p>
                                       </div>
                                     )}
 
                                     {/* Safety */}
                                     {project.safety && (
-                                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                                        <h4 className="text-red-400 font-semibold mb-2 flex items-center gap-2">
-                                          <Shield className="w-4 h-4" /> تحذيرات الأمان
+                                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3">
+                                        <h4 className="text-amber-700 dark:text-amber-400 font-bold text-xs mb-1 flex items-center gap-1.5">
+                                          <Shield className="w-3.5 h-3.5" /> إرشادات السلامة
                                         </h4>
-                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.safety}</p>
+                                        <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed whitespace-pre-line">{project.safety}</p>
                                       </div>
                                     )}
 
                                     {/* Results */}
                                     {project.results && (
                                       <div>
-                                        <h4 className="text-yellow-400 font-semibold mb-2">🎯 النتائج المتوقعة</h4>
-                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.results}</p>
-                                      </div>
-                                    )}
-
-                                    {/* Development Ideas */}
-                                    {project.development && (
-                                      <div>
-                                        <h4 className="text-purple-400 font-semibold mb-2">💡 أفكار للتطوير</h4>
-                                        <p className="text-white/80 text-sm whitespace-pre-line">{project.development}</p>
+                                        <h4 className="text-amber-600 dark:text-amber-400 font-bold text-xs mb-1">النتائج المتوقعة والمخرجات</h4>
+                                        <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed whitespace-pre-line">{project.results}</p>
                                       </div>
                                     )}
 
                                     {/* Sustainability */}
-                                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-                                      <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
-                                        <Leaf className="w-4 h-4" /> الأثر البيئي
+                                    <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-3">
+                                      <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-xs mb-1 flex items-center gap-1.5">
+                                        <Leaf className="w-3.5 h-3.5" /> الأثر البيئي المستدام
                                       </h4>
-                                      <p className="text-white/80 text-sm whitespace-pre-line">{project.sustainability}</p>
+                                      <p className="text-slate-700 dark:text-slate-300 text-xs leading-relaxed whitespace-pre-line">{project.sustainability}</p>
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex flex-wrap gap-2 pt-2">
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => saveProject(project)}
-                                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                        className="border-slate-200 dark:border-slate-700 rounded-xl text-xs gap-1.5"
                                       >
-                                        <Star className="w-4 h-4 ml-1" />
-                                        حفظ
+                                        <Star className="w-3.5 h-3.5 text-amber-500" />
+                                        حفظ في المفضلة
                                       </Button>
                                       <Button
                                         size="sm"
                                         variant="outline"
                                         onClick={() => shareProject(project)}
-                                        className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                                        className="border-slate-200 dark:border-slate-700 rounded-xl text-xs gap-1.5"
                                       >
-                                        <Share2 className="w-4 h-4 ml-1" />
+                                        <Share2 className="w-3.5 h-3.5 text-blue-500" />
                                         مشاركة
                                       </Button>
                                       <Button
                                         size="sm"
                                         onClick={() => markProjectCompleted(project)}
-                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs gap-1.5"
                                       >
-                                        <CheckCircle className="w-4 h-4 ml-1" />
+                                        <CheckCircle className="w-3.5 h-3.5" />
                                         أنجزت المشروع! 🎉
                                       </Button>
                                     </div>
@@ -750,15 +775,15 @@ const RecyclingProjectAdvisor = () => {
 
                       {/* Follow-up Questions */}
                       {followUpQuestions.length > 0 && (
-                        <Card className="bg-blue-500/10 border-blue-500/30">
-                          <CardHeader>
-                            <CardTitle className="text-blue-400 text-lg">💬 أسئلة لتخصيص أفضل</CardTitle>
+                        <Card className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-2xl">
+                          <CardHeader className="py-3 px-4">
+                            <CardTitle className="text-blue-700 dark:text-blue-400 text-sm font-bold">💬 أسئلة لتخصيص أفضل للمشروع</CardTitle>
                           </CardHeader>
-                          <CardContent>
-                            <ul className="space-y-2">
+                          <CardContent className="px-4 pb-4">
+                            <ul className="space-y-1.5">
                               {followUpQuestions.map((q, i) => (
-                                <li key={i} className="text-white/80 text-sm flex items-start gap-2">
-                                  <span className="text-blue-400">•</span> {q}
+                                <li key={i} className="text-slate-600 dark:text-slate-400 text-xs flex items-start gap-2">
+                                  <span className="text-blue-500">•</span> {q}
                                 </li>
                               ))}
                             </ul>
@@ -774,48 +799,49 @@ const RecyclingProjectAdvisor = () => {
 
           {/* Saved Projects Tab */}
           <TabsContent value="saved">
-            <Card className="bg-white/5 border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white">⭐ المشاريع المحفوظة</CardTitle>
+            <Card className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4">
+                <CardTitle className="text-slate-900 dark:text-white text-base font-bold flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500" />
+                  المشاريع المحفوظة
+                </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 {savedProjects.length === 0 ? (
-                  <div className="text-center py-10">
-                    <Star className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                    <p className="text-white/50">لا توجد مشاريع محفوظة بعد</p>
+                  <div className="text-center py-12">
+                    <Star className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                    <p className="text-slate-500 text-xs">لا توجد مشاريع محفوظة في قائمتك بعد</p>
                   </div>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-4">
                     {savedProjects.map((project, index) => (
-                      <Card key={index} className="bg-white/5 border-white/10">
-                        <CardHeader>
-                          <CardTitle className="text-white text-lg">{project.name}</CardTitle>
+                      <Card key={index} className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <CardTitle className="text-slate-900 dark:text-white text-sm font-bold">{project.name}</CardTitle>
                           <Badge className={getDifficultyColor(project.difficulty)}>
                             {project.difficulty}
                           </Badge>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-white/70 text-sm whitespace-pre-line">{project.idea}</p>
-                          <div className="flex gap-2 mt-4">
-                            <Button
-                              size="sm"
-                              onClick={() => markProjectCompleted(project)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle className="w-4 h-4 ml-1" />
-                              أنجزته!
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => shareProject(project)}
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                            >
-                              <Share2 className="w-4 h-4 ml-1" />
-                              مشاركة
-                            </Button>
-                          </div>
-                        </CardContent>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 text-xs whitespace-pre-line line-clamp-3 mb-4">{project.idea}</p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => markProjectCompleted(project)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 ml-1" />
+                            أنجزته!
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => shareProject(project)}
+                            className="border-slate-200 dark:border-slate-700 rounded-lg text-xs"
+                          >
+                            <Share2 className="w-3.5 h-3.5 ml-1" />
+                            مشاركة
+                          </Button>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -826,46 +852,46 @@ const RecyclingProjectAdvisor = () => {
 
           {/* Chat Tab */}
           <TabsContent value="chat">
-            <Card className="bg-white/5 border-white/10">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Send className="w-5 h-5 text-green-400" />
-                  اسأل خبير إعادة التدوير
+            <Card className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs">
+              <CardHeader className="border-b border-slate-100 dark:border-slate-800 py-4">
+                <CardTitle className="text-slate-900 dark:text-white text-base font-bold flex items-center gap-2">
+                  <Send className="w-4 h-4 text-emerald-600" />
+                  اسأل مستشار إعادة التدوير الذكي
                 </CardTitle>
-                <CardDescription className="text-white/60">
-                  اسأل أي سؤال عن إعادة التدوير أو المشاريع البيئية
+                <CardDescription className="text-slate-500 text-xs">
+                  اطرح أي استفسار حول كيفية الاستفادة من مادة معينة أو تقنيات إعادة الاستخدام
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[400px] mb-4 border border-white/10 rounded-lg p-4">
+              <CardContent className="p-6">
+                <ScrollArea className="h-[400px] mb-4 border border-slate-100 dark:border-slate-800 rounded-xl p-4 bg-slate-50/50 dark:bg-slate-800/20">
                   {chatMessages.length === 0 ? (
-                    <div className="text-center py-10">
-                      <Recycle className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                      <p className="text-white/50">ابدأ محادثة مع الخبير</p>
-                      <p className="text-white/40 text-sm mt-2">اسأل عن أي مادة أو مشروع أو فكرة بيئية!</p>
+                    <div className="text-center py-16">
+                      <Recycle className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                      <p className="text-slate-700 dark:text-slate-300 text-xs font-semibold">ابدأ محادثة مع المستشار البيئي</p>
+                      <p className="text-slate-400 text-xs mt-1">اسأل عن أي خامة أو عبوة بلاستيكية أو مشروع بيئي!</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {chatMessages.map((msg, index) => (
                         <div
                           key={index}
                           className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-lg ${
+                            className={`max-w-[80%] p-3.5 rounded-2xl text-xs leading-relaxed ${
                               msg.role === 'user'
-                                ? 'bg-green-600 text-white'
-                                : 'bg-white/10 text-white/90'
+                                ? 'bg-emerald-600 text-white rounded-br-xs'
+                                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-bl-xs shadow-2xs'
                             }`}
                           >
-                            <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                            <p className="whitespace-pre-line">{msg.content}</p>
                           </div>
                         </div>
                       ))}
                       {isChatLoading && (
                         <div className="flex justify-start">
-                          <div className="bg-white/10 p-3 rounded-lg">
-                            <Loader2 className="w-5 h-5 text-green-400 animate-spin" />
+                          <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
                           </div>
                         </div>
                       )}
@@ -882,13 +908,13 @@ const RecyclingProjectAdvisor = () => {
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-                    placeholder="اكتب سؤالك هنا..."
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                    placeholder="اكتب استفسارك البيئي هنا..."
+                    className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl text-xs"
                   />
                   <Button
                     onClick={sendChatMessage}
                     disabled={isChatLoading || !chatInput.trim()}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                   >
                     <Send className="w-4 h-4" />
                   </Button>
@@ -898,8 +924,11 @@ const RecyclingProjectAdvisor = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </main>
+
+    <Footer />
+  </div>
+);
 };
 
 export default RecyclingProjectAdvisor;
