@@ -552,8 +552,8 @@ export class AIExamService {
       if (!error && data) {
         const pkg: OnlineExamPackage = {
           id: data.id,
-          exam: data.exam_data as FullExamStructure,
-          registrationConfig: data.registration_config as OnlineExamRegistrationConfig,
+          exam: data.exam_data as unknown as FullExamStructure,
+          registrationConfig: data.registration_config as unknown as OnlineExamRegistrationConfig,
           createdAt: data.created_at,
           active: true,
           allowedMinutes: data.duration_minutes || 45

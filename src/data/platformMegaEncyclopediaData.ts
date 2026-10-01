@@ -95,6 +95,7 @@ export interface DetailedDamejSpec {
 export interface DetailedAdminLMSSpec {
   id: string;
   systemName: string;
+  title?: string;
   operationalRole: string;
   mathematicalOptimizationEngine: string;
   featuresAndSubmodules: string[];
