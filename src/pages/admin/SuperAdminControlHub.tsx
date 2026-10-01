@@ -55,7 +55,8 @@ import {
   ArrowUpRight,
   Stethoscope,
   Volume2,
-  Bot
+  Bot,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,11 +79,16 @@ import { AdminPuzzlesManagementHub } from '@/components/admin/AdminPuzzlesManage
 import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsManager';
 import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
 import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub';
+import AdvancedFeatureFlagsManager from '@/components/admin/AdvancedFeatureFlagsManager';
+import SystemSecurityShieldManager from '@/components/admin/SystemSecurityShieldManager';
+import DisasterRecoveryManager from '@/components/admin/DisasterRecoveryManager';
+import InstitutionalLearningAnalytics from '@/components/admin/InstitutionalLearningAnalytics';
 import SafeBoundary from '@/components/common/SafeBoundary';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AdminTab = 
   | 'overview'
+  | 'analytics'
   | 'lcm'
   | 'faculty'
   | 'broadcasts'
@@ -92,6 +98,9 @@ export type AdminTab =
   | 'puzzles'
   | 'users'
   | 'partnerships'
+  | 'security'
+  | 'flags'
+  | 'backup'
   | 'audit'
   | 'support'
   | 'footer'
@@ -322,20 +331,30 @@ export const SuperAdminControlHub: React.FC = () => {
     fetchRealCounts();
   }, []);
 
+  // Emergency Lockdown State
+  const [isEmergencyLockdown, setIsEmergencyLockdown] = useState<boolean>(() => {
+    return localStorage.getItem('galaxy_emergency_lockdown') === 'true';
+  });
+
   // Event Listeners for Live Updates
   useEffect(() => {
     const handleLogs = () => setAuditLogs(auditLogger.getAll());
     const handleSupport = () => setSupportSessions(liveSupportService.getSessions());
     const handleSettings = (e: CustomEvent<PlatformSettings>) => setSettings(e.detail || platformSettings.getSettings());
+    const handleLockdown = (e: any) => {
+      setIsEmergencyLockdown(e.detail?.active ?? (localStorage.getItem('galaxy_emergency_lockdown') === 'true'));
+    };
 
     window.addEventListener('galaxy_audit_log_added' as any, handleLogs);
     window.addEventListener('galaxy_live_support_updated' as any, handleSupport);
     window.addEventListener('galaxy_platform_settings_updated' as any, handleSettings);
+    window.addEventListener('galaxy_emergency_lockdown_changed' as any, handleLockdown);
 
     return () => {
       window.removeEventListener('galaxy_audit_log_added' as any, handleLogs);
       window.removeEventListener('galaxy_live_support_updated' as any, handleSupport);
       window.removeEventListener('galaxy_platform_settings_updated' as any, handleSettings);
+      window.removeEventListener('galaxy_emergency_lockdown_changed' as any, handleLockdown);
     };
   }, []);
 
@@ -621,6 +640,7 @@ export const SuperAdminControlHub: React.FC = () => {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
+        { id: 'analytics', label: 'ذكاء الأعمال والتحليلات الأكاديمية BI', icon: BarChart3, badge: 'رادار بلوم', description: 'تحليلات تفاعل التخصصات، رادار كفايات بلوم، ورصد التعثر المبكر' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
         { id: 'audit', label: 'سجل النشاط والأمان ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}`, description: 'رصد كل حركة وتعديل بالثانية مع التفاصيل' },
       ]
@@ -648,6 +668,9 @@ export const SuperAdminControlHub: React.FC = () => {
       title: 'إدارة النظام والبنية التحتية والذكاء',
       tabs: [
         { id: 'users', label: 'المستخدمين والصلاحيات (RBAC)', icon: Users, badge: `${realUsersCount} موثق`, description: 'إدارة حسابات الطلاب، المعلمين، وصلاحيات الوصول' },
+        { id: 'security', label: 'درع الأمان السيبراني Zero-Trust', icon: ShieldCheck, badge: 'درع نشط', description: 'إغلاق الطوارئ للمنصة، جدار حماية العناوين، وتدوير مفتاح السيادة' },
+        { id: 'flags', label: 'محرك الرايات والميزات الحية (Feature Flags)', icon: Sliders, badge: '12 ميزة', description: 'تفعيل وتعطيل ميزات المنصة فوريًا، وأنماط الاختبارات والاقتصاد' },
+        { id: 'backup', label: 'النسخ الاحتياطي والإنقاذ من الكوارث (DR)', icon: Database, badge: 'لقطة كاملة', description: 'تصدير لقطة المنصة، استعادة فورية، وصيانة سلامة الجداول' },
         { id: 'ai-agents', label: 'إدارة الوكلاء والذكاء الاصطناعي', icon: Bot, badge: '86 وكيل', description: 'لوحة التحكم المركزية لكافة وكلاء ونماذج الذكاء الاصطناعي بالمنصة' },
         { id: 'footer', label: 'محرر الفوتر وهوية المنصة', icon: Sliders, description: 'تعديل التذييل، نصوص المدرسة المنشئة، وروابط التواصل' },
         { id: 'copilot', label: 'مساعد تعديل المنصة الذكي', icon: Code2, badge: 'AI Copilot', description: 'مساعد الذكاء الاصطناعي لتعديل وهندسة مكونات المنصة' },
@@ -690,6 +713,10 @@ export const SuperAdminControlHub: React.FC = () => {
 
     const actionMatches = [
       { id: 'act-diag', title: 'تشغيل فاحص الأنظمة والجاهزية الشامل', subtitle: 'اختبار Supabase، الصوت، WebGL، وزمن الاستجابة', icon: Stethoscope, action: () => { setIsCommandPaletteOpen(false); setIsDiagnosticsOpen(true); runDiagnostics(); } },
+      { id: 'act-sec', title: 'درع الأمان السيبراني وحماية النظام Zero-Trust', subtitle: 'إغلاق الطوارئ، جدار الحماية، وتدوير مفتاح الماستر', icon: ShieldCheck, action: () => { setCurrentTab('security'); setIsCommandPaletteOpen(false); } },
+      { id: 'act-flags', title: 'محرك الرايات والميزات الحية (Feature Flags)', subtitle: 'التحكم الفوري بـ 12 قدرة وأنماط المنصة التشغيلية', icon: Sliders, action: () => { setCurrentTab('flags'); setIsCommandPaletteOpen(false); } },
+      { id: 'act-dr', title: 'استعادة لقطة النظام والإنقاذ من الكوارث (DR)', subtitle: 'أخذ لقطة كاملة أو استرجاع النظام بضغطة زر وتصليح الجداول', icon: Database, action: () => { setCurrentTab('backup'); setIsCommandPaletteOpen(false); } },
+      { id: 'act-bi', title: 'تحليلات التعلم وذكاء الأعمال المؤسسي BI', subtitle: 'رادار كفايات بلوم وتفاعل المواد ورصد التعثر الأكاديمي', icon: BarChart3, action: () => { setCurrentTab('analytics'); setIsCommandPaletteOpen(false); } },
       { id: 'act-broadcast', title: 'بث تعميم مدرسي عاجل وفوري', subtitle: 'نشر إشعار إلزامي لجميع زوار المنصة', icon: Megaphone, action: () => { setIsCommandPaletteOpen(false); setIsUrgentBroadcastOpen(true); } },
       { id: 'act-backup', title: 'تصدير نسخة احتياطية كاملة (Full Backup JSON)', subtitle: 'تحميل أرشيف كامل لبيانات وإعدادات المنصة', icon: Download, action: () => { setIsCommandPaletteOpen(false); handleExportFullBackup(); } },
       { id: 'act-cache', title: 'تفريغ الكاش وإعادة بناء الفهارس', subtitle: 'تنظيف الذاكرة المؤقتة ومزامنة الخادم', icon: RefreshCw, action: () => { setIsCommandPaletteOpen(false); handlePurgeCache(); } },
@@ -848,6 +875,46 @@ export const SuperAdminControlHub: React.FC = () => {
 
         {/* Executive Action Toolbar */}
         <div className="flex items-center gap-2">
+          {/* Security Shield Quick Button */}
+          <Button
+            onClick={() => setCurrentTab('security')}
+            variant={currentTab === 'security' ? 'default' : 'outline'}
+            size="sm"
+            className={`rounded-xl text-xs gap-1.5 hidden md:flex ${
+              isEmergencyLockdown 
+                ? 'bg-rose-600 text-white border-rose-500 animate-pulse' 
+                : 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+            }`}
+            title="درع الأمان السيبراني Zero-Trust"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>درع الأمان</span>
+          </Button>
+
+          {/* Feature Flags Quick Button */}
+          <Button
+            onClick={() => setCurrentTab('flags')}
+            variant={currentTab === 'flags' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-xl text-xs gap-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 hidden lg:flex"
+            title="محرك الرايات والميزات الحية"
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>الرايات (Flags)</span>
+          </Button>
+
+          {/* Institutional BI Quick Button */}
+          <Button
+            onClick={() => setCurrentTab('analytics')}
+            variant={currentTab === 'analytics' ? 'default' : 'outline'}
+            size="sm"
+            className="rounded-xl text-xs gap-1.5 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 hidden xl:flex"
+            title="ذكاء الأعمال والتحليلات الأكاديمية"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>التحليلات BI</span>
+          </Button>
+
           {/* Diagnostics Button */}
           <Button
             onClick={() => {
@@ -922,6 +989,24 @@ export const SuperAdminControlHub: React.FC = () => {
           </Button>
         </div>
       </header>
+
+      {/* Emergency Platform Lockdown Alert Banner */}
+      {isEmergencyLockdown && (
+        <div className="bg-gradient-to-r from-rose-700 via-rose-600 to-rose-700 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-lg shadow-rose-900/30 z-30 animate-pulse border-b border-rose-500/40">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 shrink-0 text-white animate-bounce" />
+            <span>حالة طوارئ قصوى: نظام الإغلاق الشامل للمنصة مفعل الآن (Emergency Platform Lockdown Active)</span>
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => setCurrentTab('security')} 
+            className="h-7 text-xs bg-white text-rose-700 border-white hover:bg-rose-50 font-bold rounded-xl shadow-xs"
+          >
+            إدارة وتعديل درع الأمان 🛡️
+          </Button>
+        </div>
+      )}
 
       {/* 2. Main Executive Layout: Categorized Sidebar + Tab Workspace */}
       <div className="flex-1 flex overflow-hidden">
@@ -1743,6 +1828,34 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'ai-agents' && (
               <SafeBoundary name="AIAgentsManagementHub">
                 <AIAgentsManagementHub />
+              </SafeBoundary>
+            )}
+
+            {/* 11. Institutional Learning Analytics & BI Tab */}
+            {currentTab === 'analytics' && (
+              <SafeBoundary name="InstitutionalLearningAnalytics">
+                <InstitutionalLearningAnalytics />
+              </SafeBoundary>
+            )}
+
+            {/* 12. Zero-Trust Security & Access Shield Tab */}
+            {currentTab === 'security' && (
+              <SafeBoundary name="SystemSecurityShieldManager">
+                <SystemSecurityShieldManager />
+              </SafeBoundary>
+            )}
+
+            {/* 13. Live Feature Flags & Capabilities Engine Tab */}
+            {currentTab === 'flags' && (
+              <SafeBoundary name="AdvancedFeatureFlagsManager">
+                <AdvancedFeatureFlagsManager />
+              </SafeBoundary>
+            )}
+
+            {/* 14. Disaster Recovery & Snapshot Studio Tab */}
+            {currentTab === 'backup' && (
+              <SafeBoundary name="DisasterRecoveryManager">
+                <DisasterRecoveryManager />
               </SafeBoundary>
             )}
           </div>
