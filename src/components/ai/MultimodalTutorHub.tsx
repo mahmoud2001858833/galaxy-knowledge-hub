@@ -45,6 +45,45 @@ interface ChatMessage {
   discipline?: string;
 }
 
+interface SampleProblemItem {
+  id: string;
+  title: string;
+  discipline: string;
+  badge: string;
+  prompt: string;
+}
+
+const SAMPLE_PROBLEMS: SampleProblemItem[] = [
+  {
+    id: 'sample-kirchhoff',
+    title: 'قاعدتا كيرشوف للدارات الكهربائية',
+    discipline: 'فيزياء توجيهي',
+    badge: 'توجيهي وزاري',
+    prompt: 'دارة كهربائية تحوي عقدتين وعروتين مغلقتين، مع بطاريتين ε1 = 12V و ε2 = 6V ومقاومات 4Ω, 6Ω, 2Ω. المطلوب: كتابة معادلتي كيرشوف للتيار والجهد وحساب شدة التيار في كل فرع.'
+  },
+  {
+    id: 'sample-projectile',
+    title: 'حركة المقذوفات بزاوية مع الأفق',
+    discipline: 'فيزياء توجيهي',
+    badge: 'ميكانيكا',
+    prompt: 'أطلقت قذيفة بسرعة ابتدائية v0 = 50 m/s وبزاوية θ = 37° مع الأفق. بافتراض g = 10 m/s² وإهمال مقاومة الهواء، احسب: أقصى ارتفاع رأسي H، زمن الصعود، والمدى الأفقي R.'
+  },
+  {
+    id: 'sample-ph-buffer',
+    title: 'معايرة حمض وقاعدة وحساب pH',
+    discipline: 'كيمياء توجيهي',
+    badge: 'كيمياء تحليلية',
+    prompt: 'عوير 25 mL من حمض الهيدروكلوريك HCl تركيزه 0.1 M بمحلول هيدروكسيد الصوديوم NaOH تركيزه 0.1 M. احسب الرقم الهيدروجيني pH: أولاً قبل إضافة القاعدة، وثانياً بعد إضافة 10 mL من NaOH.'
+  },
+  {
+    id: 'sample-calculus',
+    title: 'تكامل بالكسور الجزئية',
+    discipline: 'رياضيات علمي',
+    badge: 'تفاضل وتكامل',
+    prompt: 'احسب قيمة التكامل غير المحدود: ∫ (3x + 5) / (x² + x - 6) dx بتفكيك الكسر إلى كسور جزئية وإيجاد الثوابت A و B.'
+  }
+];
+
 export const MultimodalTutorHub: React.FC = () => {
   // Mode & Discipline State
   const [activeTab, setActiveTab] = useState<'vision' | 'voice'>('vision');
@@ -239,6 +278,70 @@ export const MultimodalTutorHub: React.FC = () => {
     } finally {
       setIsProcessingVoice(false);
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Load Sample Problem Card
+  const loadSampleProblem = (sample: SampleProblemItem) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 720;
+    canvas.height = 420;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Dark slate background
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 720, 420);
+
+      // Border
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(15, 15, 690, 390);
+
+      // Top colored bar
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(15, 15, 690, 70);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(sample.title, 680, 56);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(`[ ${sample.discipline} • ${sample.badge} ]`, 220, 56);
+
+      // Prompt Content Box
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '18px sans-serif';
+      ctx.textAlign = 'right';
+
+      const words = sample.prompt.split(' ');
+      let line = '';
+      let y = 135;
+      for (const w of words) {
+        if ((line + w).length > 38) {
+          ctx.fillText(line, 670, y);
+          y += 34;
+          line = w + ' ';
+        } else {
+          line += w + ' ';
+        }
+      }
+      if (line) ctx.fillText(line, 670, y);
+
+      // Footer
+      ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('منصة ذروة العلم 2.0 • مسألة نموذجية معتمدة لمنظومة الرؤية الحاسوبية', 360, 385);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      setSelectedImage(dataUrl);
+      setImageMimeType('image/png');
+      setVisionPrompt(sample.prompt);
+      setSelectedDiscipline(sample.discipline);
+      setImageAnalysisResult(null);
+      toast.success(`تم تحميل نموذج: ${sample.title}`);
     }
   };
 
@@ -561,6 +664,30 @@ export const MultimodalTutorHub: React.FC = () => {
                   <PenTool className="w-4 h-4 text-purple-500" />
                   <span>لوحة الرسم والخط اليدوي</span>
                 </Button>
+              </div>
+
+              {/* Quick Sample Problems for Instant Test */}
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
+                  💡 أو جرّب مسألة نموذجية جاهزة بضغطة زر:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {SAMPLE_PROBLEMS.map((sample) => (
+                    <button
+                      key={sample.id}
+                      type="button"
+                      onClick={() => loadSampleProblem(sample)}
+                      className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 border border-slate-200 dark:border-slate-700 hover:border-cyan-400 text-right transition-all group"
+                    >
+                      <div className="text-[11px] font-bold text-slate-700 dark:text-slate-200 group-hover:text-cyan-500 leading-snug">
+                        {sample.title}
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">
+                        {sample.badge}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Pedagogical Strategy Toggle */}
