@@ -21,7 +21,10 @@ export type AuditActionType =
   | 'FOOTER_EDIT'
   | 'PERMISSION_CHANGE'
   | 'SYSTEM_LOCKDOWN'
-  | 'CONFIG_CHANGE';
+  | 'CONFIG_CHANGE'
+  | 'SYSTEM_DIAGNOSTICS'
+  | 'BROADCAST_CREATE'
+  | 'BACKUP_EXPORT';
 
 export interface AuditLogEntry {
   id: string;

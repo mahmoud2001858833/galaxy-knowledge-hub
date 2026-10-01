@@ -16,9 +16,13 @@ export interface ChallengeDef {
   requiredHoldSeconds?: number; // how many consecutive seconds criteria must be met
 }
 
+export type Challenge = ChallengeDef;
+
 interface LabChallengeEngineProps {
   challenges: ChallengeDef[];
   onCompleteChallenge?: (challengeId: string, score: number) => void;
+  onChallengeComplete?: (challenge: ChallengeDef) => void;
+  currentMetrics?: Record<string, string | number | boolean>;
   className?: string;
 }
 
