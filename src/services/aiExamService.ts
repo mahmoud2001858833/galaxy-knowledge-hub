@@ -82,6 +82,8 @@ export interface StudentExamSubmission {
   examId: string;
   studentName: string;
   classSection: string;
+  studentClass?: string;
+  section?: string;
   seatNumber?: string;
   schoolName?: string;
   answers: Record<string, string>;
