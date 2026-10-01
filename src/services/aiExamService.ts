@@ -513,7 +513,7 @@ export class AIExamService {
         registration_config: pkg.registrationConfig as any
       }).then(({ error }) => {
         if (error) console.warn('Supabase exam package sync:', error.message);
-      }).catch(() => {});
+      });
     } catch {}
 
     return pkg;
@@ -606,7 +606,7 @@ export class AIExamService {
         submitted_at: submission.submittedAt
       }).then(({ error }) => {
         if (error) console.warn('Supabase submission sync:', error.message);
-      }).catch(() => {});
+      });
     } catch {}
   }
 
