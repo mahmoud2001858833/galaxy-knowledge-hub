@@ -836,7 +836,7 @@ export const RoboticsSection: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950" dir="rtl">
+    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white relative selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-slate-900 transition-colors duration-300 font-sans" dir="rtl">
       <SEO
         title="مختبرات الروبوتات والذكاء الاصطناعي والأتمتة | ذروة العلم 2.0"
         description="مختبرات افتراضية هندسية لمحاكاة حركيات الأذرع الروبوتية (Kinematics)، برمجة أنظمة ROS 2 و Python، وملاحة الروبوتات المستقلة بالـ LiDAR والذكاء الاصطناعي."
@@ -846,63 +846,69 @@ export const RoboticsSection: React.FC = () => {
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Breadcrumb Header */}
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400">
-          <Link to="/" className="hover:text-cyan-400 transition-colors">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+          <Link to="/" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
             الرئيسية
           </Link>
           <span>/</span>
-          <span className="text-white font-bold">
+          <span className="text-slate-900 dark:text-white font-bold">
             قسم الروبوتات والذكاء الاصطناعي 2.0
           </span>
         </div>
 
         {/* Hero Banner */}
-        <div className="relative rounded-3xl overflow-hidden border border-cyan-500/30 bg-gradient-to-r from-blue-950/80 via-slate-900/90 to-indigo-950/80 shadow-2xl shadow-cyan-950/20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
+        <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-cyan-500/30 bg-gradient-to-br from-white via-cyan-50/40 to-blue-50/50 dark:from-slate-900 dark:via-slate-900/95 dark:to-indigo-950/80 shadow-md dark:shadow-cyan-950/20">
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-15"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(14, 165, 233, 0.25) 1px, transparent 0)`,
+              backgroundSize: '24px 24px'
+            }}
+          />
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 items-center">
             <div className="lg:col-span-7 p-6 sm:p-10 space-y-4">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/15 text-cyan-300 text-xs font-bold border border-cyan-400/30">
-                <Cpu className="w-4 h-4 animate-spin-slow text-cyan-400" />
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 text-xs font-bold border border-cyan-500/25">
+                <Cpu className="w-4 h-4 animate-spin-slow text-cyan-600 dark:text-cyan-400" />
                 <span>الجيل القادم من الهندسة التطبيقية 2.0</span>
               </div>
 
-              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-snug">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-snug">
                 قسم الروبوتات والذكاء الاصطناعي والأتمتة
               </h1>
 
-              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
                 بيئة تعليمية وهندسية متكاملة تدمج الحركيات المباشرة والعكسية (Kinematics)، أنظمة الملاحة الذاتية عبر مستشعرات LiDAR و SLAM، محاكيات الدوائر ومتحكمات ESP32/Arduino، وبرمجة روبوتات ROS 2، مصممة في عرض أفقي رحب ومفيد للطالب.
               </p>
 
               {/* Badges / Metrics */}
               <div className="flex flex-wrap gap-2 pt-1">
-                <Badge variant="outline" className="bg-slate-900/80 text-blue-300 border-blue-500/40 px-2.5 py-1 text-xs">
-                  <Layers className="w-3.5 h-3.5 ml-1.5" /> 4 مسارات معتمدة
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <Layers className="w-3.5 h-3.5 ml-1.5 text-blue-500" /> 4 مسارات معتمدة
                 </Badge>
-                <Badge variant="outline" className="bg-slate-900/80 text-emerald-300 border-emerald-500/40 px-2.5 py-1 text-xs">
-                  <Cpu className="w-3.5 h-3.5 ml-1.5" /> محاكي Wokwi والأوسيلوسكوب
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <Cpu className="w-3.5 h-3.5 ml-1.5 text-emerald-500" /> محاكي Wokwi والأوسيلوسكوب
                 </Badge>
-                <Badge variant="outline" className="bg-slate-900/80 text-cyan-300 border-cyan-500/40 px-2.5 py-1 text-xs">
-                  <Radar className="w-3.5 h-3.5 ml-1.5" /> 360° LiDAR & A* Navigation
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-cyan-700 dark:text-cyan-300 border-cyan-300 dark:border-cyan-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <Radar className="w-3.5 h-3.5 ml-1.5 text-cyan-500" /> 360° LiDAR & A* Navigation
                 </Badge>
-                <Badge variant="outline" className="bg-slate-900/80 text-purple-300 border-purple-500/40 px-2.5 py-1 text-xs">
-                  <BrainCircuit className="w-3.5 h-3.5 ml-1.5" /> رؤية YOLOv8
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <BrainCircuit className="w-3.5 h-3.5 ml-1.5 text-purple-500" /> رؤية YOLOv8
                 </Badge>
-                <Badge variant="outline" className="bg-slate-900/80 text-amber-300 border-amber-500/40 px-2.5 py-1 text-xs">
-                  <Swords className="w-3.5 h-3.5 ml-1.5" /> حلبة منافسات المتاهة
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <Swords className="w-3.5 h-3.5 ml-1.5 text-amber-500" /> حلبة منافسات المتاهة
                 </Badge>
-                <Badge variant="outline" className="bg-slate-900/80 text-indigo-300 border-indigo-500/40 px-2.5 py-1 text-xs">
-                  <Printer className="w-3.5 h-3.5 ml-1.5" /> 5 مشاريع توأم رقمي
+                <Badge variant="outline" className="bg-white/90 dark:bg-slate-900/80 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/40 px-2.5 py-1 text-xs shadow-xs">
+                  <Printer className="w-3.5 h-3.5 ml-1.5 text-indigo-500" /> 5 مشاريع توأم رقمي
                 </Badge>
               </div>
             </div>
 
-            <div className="lg:col-span-5 h-52 sm:h-64 lg:h-full relative overflow-hidden">
+            <div className="lg:col-span-5 h-52 sm:h-64 lg:h-full relative overflow-hidden flex items-center justify-center p-4">
               <img
                 src={roboticsHeroBg}
                 alt="قسم الروبوتات والذكاء الاصطناعي"
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-center rounded-2xl shadow-md border border-slate-200/60 dark:border-slate-800"
               />
-              <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-transparent to-slate-950/90" />
             </div>
           </div>
         </div>
@@ -950,14 +956,14 @@ export const RoboticsSection: React.FC = () => {
               {activeMainTab === 'arm' && (
                 <div className="space-y-6">
                   {/* Top Action Ribbon for Arm */}
-                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                      <span className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
                         <Bot className="w-4 h-4" />
                       </span>
                       <div>
-                        <span className="font-bold text-white block">مختبر الذراع الروبوتية ونقل القطع (Pick & Place)</span>
-                        <span className="text-slate-400 text-[11px]">حساب الحركيات العكسية، مصفوفات التحويل D-H، وتفادي النقاط الانفرادية</span>
+                        <span className="font-bold text-slate-900 dark:text-white block">مختبر الذراع الروبوتية ونقل القطع (Pick & Place)</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">حساب الحركيات العكسية، مصفوفات التحويل D-H، وتفادي النقاط الانفرادية</span>
                       </div>
                     </div>
 
@@ -966,7 +972,7 @@ export const RoboticsSection: React.FC = () => {
                         size="sm"
                         onClick={handleRunPickAndPlaceSequence}
                         disabled={isPlayingTrajectory}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl gap-1 shadow-md shadow-emerald-600/20"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl gap-1 shadow-sm"
                       >
                         <Play className="w-3.5 h-3.5 ml-1 fill-current" />
                         تحدي النقل الآلي للقطعة (Auto Pick & Place)
@@ -976,7 +982,7 @@ export const RoboticsSection: React.FC = () => {
                         size="sm"
                         variant={isAutomated ? "destructive" : "outline"}
                         onClick={() => setIsAutomated(!isAutomated)}
-                        className="text-xs rounded-xl border-slate-700"
+                        className="text-xs rounded-xl border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
                       >
                         {isAutomated ? 'إيقاف التذبذب' : 'مسار تذبذبي'}
                       </Button>
@@ -985,7 +991,7 @@ export const RoboticsSection: React.FC = () => {
                         size="sm"
                         variant="outline"
                         onClick={handleResetArm}
-                        className="text-xs rounded-xl border-slate-700 hover:bg-slate-800 text-slate-300"
+                        className="text-xs rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                       >
                         <RotateCcw className="w-3.5 h-3.5 ml-1" /> إعادة تعيين
                       </Button>
@@ -995,29 +1001,29 @@ export const RoboticsSection: React.FC = () => {
                   {/* Dual Column Widescreen Setup */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left Column (7 cols): High-Def Kinematics Canvas + Telemetry */}
-                    <div className="lg:col-span-7 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="lg:col-span-7 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div className="flex items-center gap-2">
                           <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-                          <h3 className="font-bold text-sm sm:text-base text-white">
+                          <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                             المحاكاة الحية للذراع الصناعية والتقاط المكعب
                           </h3>
                         </div>
 
                         {/* Singularity Alert Badge */}
                         {isSingularity ? (
-                          <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/40 text-[10px] animate-pulse">
+                          <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-300 border-rose-500/30 text-[10px] animate-pulse">
                             ⚠️ نقطة انفرادية (Singularity Warning)
                           </Badge>
                         ) : (
-                          <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px]">
+                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 text-[10px]">
                             ✓ مجال حركة آمن وطبيعي
                           </Badge>
                         )}
                       </div>
 
                       {/* Canvas Container */}
-                      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 flex items-center justify-center">
                         <canvas
                           ref={armCanvasRef}
                           width={720}
@@ -1026,19 +1032,19 @@ export const RoboticsSection: React.FC = () => {
                         />
 
                         {/* Coordinates HUD Overlay */}
-                        <div className="absolute top-4 start-4 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-3 text-xs font-mono space-y-1 shadow-lg text-slate-200">
-                          <div className="text-slate-400 text-[11px] font-bold">إحداثيات نقطة العمل (TCP):</div>
-                          <div className="text-blue-400 font-bold">X: {endX} mm</div>
-                          <div className="text-cyan-400 font-bold">Y: {endY} mm</div>
-                          <div className="text-purple-400 font-bold">Z: {endZ} mm</div>
-                          <div className="text-emerald-400 font-bold pt-1 border-t border-slate-700 text-[10px]">
+                        <div className="absolute top-4 start-4 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl p-3 text-xs font-mono space-y-1 shadow-md text-slate-800 dark:text-slate-200">
+                          <div className="text-slate-500 dark:text-slate-400 text-[11px] font-bold">إحداثيات نقطة العمل (TCP):</div>
+                          <div className="text-blue-600 dark:text-blue-400 font-bold">X: {endX} mm</div>
+                          <div className="text-cyan-600 dark:text-cyan-400 font-bold">Y: {endY} mm</div>
+                          <div className="text-purple-600 dark:text-purple-400 font-bold">Z: {endZ} mm</div>
+                          <div className="text-emerald-600 dark:text-emerald-400 font-bold pt-1 border-t border-slate-200 dark:border-slate-700 text-[10px]">
                             القطع المنقولة: {deliveredCount}
                           </div>
                         </div>
 
                         {/* Singularity Notice Overlay */}
                         {isSingularity && (
-                          <div className="absolute bottom-4 inset-x-4 bg-rose-950/80 backdrop-blur-md border border-rose-500/40 rounded-xl p-2.5 text-xs text-rose-200 text-center">
+                          <div className="absolute bottom-4 inset-x-4 bg-rose-50/95 dark:bg-rose-950/80 backdrop-blur-md border border-rose-300 dark:border-rose-500/40 rounded-xl p-2.5 text-xs text-rose-800 dark:text-rose-200 text-center">
                             💡 <strong>تنبيه هندسي للطالب:</strong> مفصل الكتف θ₂ يقترب من الصفر مما يؤدي إلى امتداد كامل للذراع وفقدان مصفوفة الجاكوبي (Jacobian Determinant) لرتبتها الكاملة!
                           </div>
                         )}
@@ -1046,30 +1052,30 @@ export const RoboticsSection: React.FC = () => {
 
                       {/* Angle Metrics Grid */}
                       <div className="grid grid-cols-4 gap-3 text-center text-xs">
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">مفصل القاعدة (θ₁)</span>
-                          <span className="text-base font-black text-blue-400 font-mono">{theta1}°</span>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">مفصل القاعدة (θ₁)</span>
+                          <span className="text-base font-black text-blue-600 dark:text-blue-400 font-mono">{theta1}°</span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">مفصل الكتف (θ₂)</span>
-                          <span className="text-base font-black text-cyan-400 font-mono">{theta2}°</span>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">مفصل الكتف (θ₂)</span>
+                          <span className="text-base font-black text-cyan-600 dark:text-cyan-400 font-mono">{theta2}°</span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">مفصل الكوع (θ₃)</span>
-                          <span className="text-base font-black text-purple-400 font-mono">{theta3}°</span>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">مفصل الكوع (θ₃)</span>
+                          <span className="text-base font-black text-purple-600 dark:text-purple-400 font-mono">{theta3}°</span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">فتحة القابض</span>
-                          <span className="text-base font-black text-amber-400 font-mono">{gripper}%</span>
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">فتحة القابض</span>
+                          <span className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">{gripper}%</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Right Column (5 cols): Controls, D-H Matrix, Teach & Repeat */}
-                    <div className="lg:col-span-5 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5">
-                      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-                        <Sliders className="w-5 h-5 text-cyan-400" />
-                        <h3 className="font-bold text-sm sm:text-base text-white">
+                    <div className="lg:col-span-5 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <Sliders className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                           التحكم المباشر والمصفوفات الحركية (D-H Matrix)
                         </h3>
                       </div>
@@ -1079,8 +1085,8 @@ export const RoboticsSection: React.FC = () => {
                         {/* Slider 1: Theta 1 */}
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-300">مفصل القاعدة θ₁ (Base Angle)</span>
-                            <span className="font-mono text-blue-400">{theta1}°</span>
+                            <span className="text-slate-700 dark:text-slate-300">مفصل القاعدة θ₁ (Base Angle)</span>
+                            <span className="font-mono text-blue-600 dark:text-blue-400 font-bold">{theta1}°</span>
                           </div>
                           <Slider
                             value={[theta1]}
@@ -1094,8 +1100,8 @@ export const RoboticsSection: React.FC = () => {
                         {/* Slider 2: Theta 2 */}
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-300">مفصل الكتف θ₂ (Shoulder Angle)</span>
-                            <span className="font-mono text-cyan-400">{theta2}°</span>
+                            <span className="text-slate-700 dark:text-slate-300">مفصل الكتف θ₂ (Shoulder Angle)</span>
+                            <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{theta2}°</span>
                           </div>
                           <Slider
                             value={[theta2]}
@@ -1109,8 +1115,8 @@ export const RoboticsSection: React.FC = () => {
                         {/* Slider 3: Theta 3 */}
                         <div className="space-y-1.5">
                           <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-300">مفصل الكوع θ₃ (Elbow Angle)</span>
-                            <span className="font-mono text-purple-400">{theta3}°</span>
+                            <span className="text-slate-700 dark:text-slate-300">مفصل الكوع θ₃ (Elbow Angle)</span>
+                            <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">{theta3}°</span>
                           </div>
                           <Slider
                             value={[theta3]}
@@ -1122,10 +1128,10 @@ export const RoboticsSection: React.FC = () => {
                         </div>
 
                         {/* Slider 4: Gripper */}
-                        <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                        <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
                           <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-300">فتحة القابض (Gripper Claws)</span>
-                            <span className="font-mono text-amber-400">{gripper}%</span>
+                            <span className="text-slate-700 dark:text-slate-300">فتحة القابض (Gripper Claws)</span>
+                            <span className="font-mono text-amber-600 dark:text-amber-400 font-bold">{gripper}%</span>
                           </div>
                           <Slider
                             value={[gripper]}
@@ -1138,42 +1144,42 @@ export const RoboticsSection: React.FC = () => {
                       </div>
 
                       {/* Denavit-Hartenberg Live Matrix Display */}
-                      <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-cyan-300">مصفوفة التحويل المتجانسة T₀³:</span>
-                          <span className="font-mono text-[10px] text-slate-400">Homogeneous D-H 4x4</span>
+                          <span className="font-bold text-cyan-800 dark:text-cyan-300">مصفوفة التحويل المتجانسة T₀³:</span>
+                          <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">Homogeneous D-H 4x4</span>
                         </div>
-                        <div className="grid grid-cols-4 gap-1 p-2 rounded-xl bg-slate-900 font-mono text-[10px] text-center">
-                          <span className="text-cyan-400">{r11}</span>
-                          <span className="text-cyan-400">{r12}</span>
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-emerald-400 font-bold">{endX}</span>
+                        <div className="grid grid-cols-4 gap-1 p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-transparent font-mono text-[10px] text-center">
+                          <span className="text-cyan-600 dark:text-cyan-400">{r11}</span>
+                          <span className="text-cyan-600 dark:text-cyan-400">{r12}</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{endX}</span>
 
-                          <span className="text-cyan-400">{r21}</span>
-                          <span className="text-cyan-400">{r22}</span>
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-emerald-400 font-bold">{endY}</span>
+                          <span className="text-cyan-600 dark:text-cyan-400">{r21}</span>
+                          <span className="text-cyan-600 dark:text-cyan-400">{r22}</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{endY}</span>
 
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-cyan-400">1.00</span>
-                          <span className="text-emerald-400 font-bold">{endZ}</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-cyan-600 dark:text-cyan-400">1.00</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{endZ}</span>
 
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-slate-500">0.00</span>
-                          <span className="text-slate-300 font-bold">1.00</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-slate-400 dark:text-slate-500">0.00</span>
+                          <span className="text-slate-700 dark:text-slate-300 font-bold">1.00</span>
                         </div>
                       </div>
 
                       {/* Waypoint Sequencer (Teach & Repeat) */}
-                      <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-white flex items-center gap-1.5">
-                            <Workflow className="w-3.5 h-3.5 text-blue-400" />
+                          <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <Workflow className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
                             برمجة المسار المتسلسل (Teach & Repeat):
                           </span>
-                          <span className="text-[10px] text-slate-400">{waypoints.length} نقاط مسجلة</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400">{waypoints.length} نقاط مسجلة</span>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
@@ -1181,9 +1187,9 @@ export const RoboticsSection: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={handleSaveWaypoint}
-                            className="text-xs h-7 rounded-lg border-slate-700 hover:bg-slate-800"
+                            className="text-xs h-7 rounded-lg border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                           >
-                            <Plus className="w-3 h-3 ml-1 text-cyan-400" />
+                            <Plus className="w-3 h-3 ml-1 text-cyan-600 dark:text-cyan-400" />
                             حفظ الوضعية الحالية
                           </Button>
                           <Button
@@ -1199,7 +1205,7 @@ export const RoboticsSection: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => setWaypoints([])}
-                            className="text-[11px] h-7 px-2 text-slate-400 hover:text-rose-400"
+                            className="text-[11px] h-7 px-2 text-slate-500 hover:text-rose-600 dark:hover:text-rose-400"
                           >
                             مسح
                           </Button>
@@ -1208,7 +1214,7 @@ export const RoboticsSection: React.FC = () => {
                         {waypoints.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             {waypoints.map((wp, idx) => (
-                              <Badge key={wp.id} variant="outline" className="text-[10px] border-slate-700 bg-slate-900 text-slate-300">
+                              <Badge key={wp.id} variant="outline" className="text-[10px] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300">
                                 P{idx + 1}: ({wp.theta1}°, {wp.theta2}°, {wp.theta3}°)
                               </Badge>
                             ))}
@@ -1224,14 +1230,14 @@ export const RoboticsSection: React.FC = () => {
               {activeMainTab === 'amr' && (
                 <div className="space-y-6">
                   {/* Top Action Ribbon for AMR */}
-                  <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400">
+                      <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
                         <Radar className="w-4 h-4 animate-spin-slow" />
                       </span>
                       <div>
-                        <span className="font-bold text-white block">مختبر الملاحة بالليدار وتخطيط المسارات (A* SLAM)</span>
-                        <span className="text-slate-400 text-[11px]">انقر في أي مكان على الخريطة لتحديد نقطة الهدف 🚩 وسيقوم الروبوت بتفادي العقبات</span>
+                        <span className="font-bold text-slate-900 dark:text-white block">مختبر الملاحة بالليدار وتخطيط المسارات (A* SLAM)</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">انقر في أي مكان على الخريطة لتحديد نقطة الهدف 🚩 وسيقوم الروبوت بتفادي العقبات</span>
                       </div>
                     </div>
 
@@ -1239,7 +1245,7 @@ export const RoboticsSection: React.FC = () => {
                       <Button
                         size="sm"
                         onClick={handleAddObstacle}
-                        className="bg-amber-600 hover:bg-amber-500 text-white text-xs rounded-xl font-bold gap-1"
+                        className="bg-amber-600 hover:bg-amber-500 text-white text-xs rounded-xl font-bold gap-1 shadow-sm"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         إضافة صندوق عائق
@@ -1249,7 +1255,7 @@ export const RoboticsSection: React.FC = () => {
                         size="sm"
                         variant={isAutopilot ? "destructive" : "default"}
                         onClick={() => setIsAutopilot(!isAutopilot)}
-                        className="text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
+                        className="text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-sm"
                       >
                         <Navigation className="w-3.5 h-3.5 ml-1" />
                         {isAutopilot ? 'إيقاف التجوال التلقائي' : 'تفعيل الاستكشاف الذاتي'}
@@ -1264,7 +1270,7 @@ export const RoboticsSection: React.FC = () => {
                           setRobotHeading(0);
                           setTargetGoal(null);
                         }}
-                        className="text-xs rounded-xl border-slate-700 hover:bg-slate-800 text-slate-300"
+                        className="text-xs rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                       >
                         <RotateCcw className="w-3.5 h-3.5 ml-1" /> إعادة تموضع
                       </Button>
@@ -1274,21 +1280,21 @@ export const RoboticsSection: React.FC = () => {
                   {/* Dual Column Widescreen Setup */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left Column (7 cols): High-Def LiDAR Radar Canvas */}
-                    <div className="lg:col-span-7 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="lg:col-span-7 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div className="flex items-center gap-2">
-                          <Radar className="w-5 h-5 text-cyan-400 animate-spin-slow" />
-                          <h3 className="font-bold text-sm sm:text-base text-white">
+                          <Radar className="w-5 h-5 text-cyan-600 dark:text-cyan-400 animate-spin-slow" />
+                          <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                             مسح البيئة ثنائي الأبعاد بالليدار (360° LiDAR Point Cloud)
                           </h3>
                         </div>
-                        <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/40 text-[10px]">
+                        <Badge className="bg-cyan-50 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/40 text-[10px]">
                           انقر على الخريطة لتحديد الهدف 🎯
                         </Badge>
                       </div>
 
                       {/* Canvas Container */}
-                      <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center cursor-crosshair">
+                      <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 flex items-center justify-center cursor-crosshair">
                         <canvas
                           ref={lidarCanvasRef}
                           width={720}
@@ -1300,13 +1306,13 @@ export const RoboticsSection: React.FC = () => {
 
                       {/* Manual Steering Buttons */}
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
-                        <span className="text-slate-400">التوجيه اليدوي للروبوت (Teleoperation):</span>
+                        <span className="text-slate-500 dark:text-slate-400">التوجيه اليدوي للروبوت (Teleoperation):</span>
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setRobotHeading(h => h - 0.2)}
-                            className="rounded-xl border-slate-700 text-slate-300 hover:text-white"
+                            className="rounded-xl border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
                             دوران يسار ↺
                           </Button>
@@ -1327,7 +1333,7 @@ export const RoboticsSection: React.FC = () => {
                               setRobotX(x => Math.min(540, Math.max(50, x - Math.cos(robotHeading) * 20)));
                               setRobotY(y => Math.min(320, Math.max(50, y - Math.sin(robotHeading) * 20)));
                             }}
-                            className="rounded-xl border-slate-700 text-slate-300 hover:text-white"
+                            className="rounded-xl border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
                             تراجع للخلف ↓
                           </Button>
@@ -1335,7 +1341,7 @@ export const RoboticsSection: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => setRobotHeading(h => h + 0.2)}
-                            className="rounded-xl border-slate-700 text-slate-300 hover:text-white"
+                            className="rounded-xl border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                           >
                             دوران يمين ↻
                           </Button>
@@ -1344,10 +1350,10 @@ export const RoboticsSection: React.FC = () => {
                     </div>
 
                     {/* Right Column (5 cols): Sensor Telemetry, SLAM Progress, Mission Tasks */}
-                    <div className="lg:col-span-5 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5">
-                      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-                        <Settings2 className="w-5 h-5 text-cyan-400" />
-                        <h3 className="font-bold text-sm sm:text-base text-white">
+                    <div className="lg:col-span-5 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5">
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <Settings2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                           لوحة قياسات المستشعرات وبناء الخريطة (Telemetry)
                         </h3>
                       </div>
@@ -1355,8 +1361,8 @@ export const RoboticsSection: React.FC = () => {
                       {/* Slider: LiDAR Range */}
                       <div className="space-y-1.5">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-300">مدى شعاع الليزر (LiDAR Max Range)</span>
-                          <span className="font-mono text-cyan-400">{lidarRange} cm</span>
+                          <span className="text-slate-700 dark:text-slate-300">مدى شعاع الليزر (LiDAR Max Range)</span>
+                          <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">{lidarRange} cm</span>
                         </div>
                         <Slider
                           value={[lidarRange]}
@@ -1369,48 +1375,48 @@ export const RoboticsSection: React.FC = () => {
 
                       {/* Sensor Metrics Grid */}
                       <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">موقع الروبوت (X, Y)</span>
-                          <span className="font-mono font-bold text-white text-sm">
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">موقع الروبوت (X, Y)</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
                             {Math.round(robotX)}, {Math.round(robotY)}
                           </span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">زاوية التوجيه (Heading)</span>
-                          <span className="font-mono font-bold text-cyan-400 text-sm">
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">زاوية التوجيه (Heading)</span>
+                          <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400 text-sm">
                             {Math.round((robotHeading * 180) / Math.PI) % 360}°
                           </span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">السرعة الخطية (v)</span>
-                          <span className="font-mono font-bold text-emerald-400 text-sm">
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">السرعة الخطية (v)</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
                             {linearVelocity} m/s
                           </span>
                         </div>
-                        <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800">
-                          <span className="text-slate-400 block text-[11px]">السرعة الزاوية (ω)</span>
-                          <span className="font-mono font-bold text-purple-400 text-sm">
+                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">السرعة الزاوية (ω)</span>
+                          <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-sm">
                             {angularVelocity} rad/s
                           </span>
                         </div>
                       </div>
 
                       {/* SLAM Exploration Progress */}
-                      <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-white">نسبة مساحة المستودع المستكشفة (Occupancy Grid):</span>
-                          <span className="font-mono font-bold text-cyan-400">{Math.round(exploredPercent)}%</span>
+                          <span className="font-bold text-slate-900 dark:text-white">نسبة مساحة المستودع المستكشفة (Occupancy Grid):</span>
+                          <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">{Math.round(exploredPercent)}%</span>
                         </div>
-                        <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 rounded-full transition-all duration-300"
                             style={{ width: `${exploredPercent}%` }}
                           />
                         </div>
                       </div>
 
                       {/* Educational Note */}
-                      <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-800/40 text-xs text-slate-300 leading-relaxed">
+                      <div className="p-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                         💡 <strong>فائدة تعليمية:</strong> يعتمد نظام SLAM على خوارزمية ICP (Iterative Closest Point) لمطابقة قراءات شعاع الليزر المتتالية وبناء خريطة المستودع دون الحاجة لنظام GPS الداخلي.
                       </div>
                     </div>
@@ -1438,11 +1444,11 @@ export const RoboticsSection: React.FC = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* Left: Code Editor Panel */}
-                    <div className="lg:col-span-7 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="lg:col-span-7 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                         <div className="flex items-center gap-2">
-                          <Code2 className="w-5 h-5 text-purple-400" />
-                          <h3 className="font-bold text-sm sm:text-base text-white">
+                          <Code2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                          <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                             محرر برمجة الروبوتات الصناعية (ROS 2 & Python)
                           </h3>
                         </div>
@@ -1451,14 +1457,14 @@ export const RoboticsSection: React.FC = () => {
                             size="sm"
                             variant="outline"
                             onClick={handleCopyCode}
-                            className="text-xs rounded-xl border-slate-700 hover:bg-slate-800"
+                            className="text-xs rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                           >
                             <Copy className="w-3.5 h-3.5 ml-1" /> نسخ الكود
                           </Button>
                           <Button
                             size="sm"
                             onClick={handleRunCode}
-                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md"
+                            className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-sm"
                           >
                             <Play className="w-3.5 h-3.5 ml-1 fill-current" /> تنفيذ الكود
                           </Button>
@@ -1471,8 +1477,8 @@ export const RoboticsSection: React.FC = () => {
                           onClick={() => setActiveCodeTab('ros2')}
                           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                             activeCodeTab === 'ros2'
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
-                              : 'bg-slate-800 text-slate-400'
+                              ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-400/40 font-bold'
+                              : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
                           }`}
                         >
                           ROS 2 Node (Python)
@@ -1481,8 +1487,8 @@ export const RoboticsSection: React.FC = () => {
                           onClick={() => setActiveCodeTab('python')}
                           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                             activeCodeTab === 'python'
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
-                              : 'bg-slate-800 text-slate-400'
+                              ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-400/40 font-bold'
+                              : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
                           }`}
                         >
                           Kinematics Solver
@@ -1491,8 +1497,8 @@ export const RoboticsSection: React.FC = () => {
                           onClick={() => setActiveCodeTab('vision')}
                           className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                             activeCodeTab === 'vision'
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
-                              : 'bg-slate-800 text-slate-400'
+                              ? 'bg-purple-50 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-400/40 font-bold'
+                              : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-400'
                           }`}
                         >
                           YOLOv8 Vision AI
@@ -1561,10 +1567,10 @@ for box in results[0].boxes:
                     </div>
 
                     {/* Right: Live Terminal & ROS2 rqt_graph visualizer */}
-                    <div className="lg:col-span-5 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-4">
-                      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-                        <Terminal className="w-5 h-5 text-emerald-400" />
-                        <h3 className="font-bold text-sm sm:text-base text-white">
+                    <div className="lg:col-span-5 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <Terminal className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                           طرفية النظام التفاعلية (Live Terminal)
                         </h3>
                       </div>
@@ -1587,21 +1593,21 @@ for box in results[0].boxes:
                       </div>
 
                       {/* ROS 2 Node Graph Visualization */}
-                      <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-                        <div className="flex items-center justify-between text-slate-400">
-                          <span className="font-bold text-white">مخطط شبكة ROS 2 (rqt_graph):</span>
-                          <span className="font-mono text-[10px] text-cyan-400">3 Nodes • 2 Topics</span>
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                          <span className="font-bold text-slate-900 dark:text-white">مخطط شبكة ROS 2 (rqt_graph):</span>
+                          <span className="font-mono text-[10px] text-cyan-600 dark:text-cyan-400">3 Nodes • 2 Topics</span>
                         </div>
-                        <div className="p-3 rounded-xl bg-slate-900 flex items-center justify-around text-center text-[10px] font-mono">
-                          <div className="p-2 rounded-lg bg-blue-600/30 border border-blue-500/40 text-blue-300">
+                        <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-around text-center text-[10px] font-mono">
+                          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-600/30 border border-blue-200 dark:border-blue-500/40 text-blue-700 dark:text-blue-300">
                             /camera_node
                           </div>
-                          <span className="text-cyan-400">→ /image_raw →</span>
-                          <div className="p-2 rounded-lg bg-purple-600/30 border border-purple-500/40 text-purple-300">
+                          <span className="text-cyan-600 dark:text-cyan-400 font-bold">→ /image_raw →</span>
+                          <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-600/30 border border-purple-200 dark:border-purple-500/40 text-purple-700 dark:text-purple-300">
                             /arm_planner
                           </div>
-                          <span className="text-emerald-400">→ /joint_states →</span>
-                          <div className="p-2 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-emerald-300">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold">→ /joint_states →</span>
+                          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-600/30 border border-emerald-200 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
                             /hardware_driver
                           </div>
                         </div>
@@ -1640,18 +1646,18 @@ for box in results[0].boxes:
               )}
               {activeMainTab === 'wokwi' && <HardwareCircuitSandbox />}
               {activeMainTab === 'arm' && (
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 text-center space-y-4">
-                  <h4 className="font-bold text-white text-base">مختبر الذراع الروبوتية</h4>
-                  <p className="text-xs text-slate-400">بدل إلى العرض العرضي البانورامي من الشريط الجانبي للاستمتاع بالمحاكاة الكاملة وحاوية النقل.</p>
+                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">مختبر الذراع الروبوتية</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">بدل إلى العرض العرضي البانورامي من الشريط الجانبي للاستمتاع بالمحاكاة الكاملة وحاوية النقل.</p>
                   <Button onClick={() => setLayoutMode('horizontal')} className="bg-cyan-600 text-white text-xs rounded-xl">
                     تفعيل العرض العرضي البانورامي 🖥️
                   </Button>
                 </div>
               )}
               {activeMainTab === 'amr' && (
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 text-center space-y-4">
-                  <h4 className="font-bold text-white text-base">مختبر الملاحة بالليدار</h4>
-                  <p className="text-xs text-slate-400">بدل إلى العرض العرضي البانورامي للتحكم بكامل شاشة الرادار ومسارات A*.</p>
+                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">مختبر الملاحة بالليدار</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">بدل إلى العرض العرضي البانورامي للتحكم بكامل شاشة الرادار ومسارات A*.</p>
                   <Button onClick={() => setLayoutMode('horizontal')} className="bg-cyan-600 text-white text-xs rounded-xl">
                     تفعيل العرض العرضي البانورامي 🖥️
                   </Button>
@@ -1661,8 +1667,8 @@ for box in results[0].boxes:
               {activeMainTab === 'arena' && <CodeArenaMaze />}
               {activeMainTab === 'digital-twin' && <DigitalTwinProjects />}
               {activeMainTab === 'code' && (
-                <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 text-center space-y-4">
-                  <h4 className="font-bold text-white text-base">استوديو ROS 2 المتقدم</h4>
+                <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">استوديو ROS 2 المتقدم</h4>
                   <Button onClick={() => setLayoutMode('horizontal')} className="bg-cyan-600 text-white text-xs rounded-xl">
                     تفعيل العرض العرضي البانورامي 🖥️
                   </Button>

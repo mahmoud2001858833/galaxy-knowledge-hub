@@ -184,23 +184,23 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
     return (
       <div className="w-full space-y-4">
         {/* Top Control & Filter Header */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 dark:bg-slate-900/95 border-2 border-cyan-500/30 backdrop-blur-xl shadow-xl space-y-4 text-white">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/95 border border-slate-200/80 dark:border-cyan-500/30 shadow-md dark:shadow-xl space-y-4 text-slate-900 dark:text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
             {/* Title & Brand */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/25">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-cyan-500/25">
                 <Bot className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="font-black text-base sm:text-lg text-white">
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
                     منصة مختبرات الروبوتات والذكاء الاصطناعي
                   </h3>
-                  <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-[10px] font-bold">
+                  <Badge className="bg-cyan-50 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/30 text-[10px] font-bold">
                     8 مختبرات متكاملة
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   اختر التجربة من القائمة العرضية أدناه لمشاهدة المحاكاة والتحكم الفيزيائي الكامل
                 </p>
               </div>
@@ -209,15 +209,15 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
             {/* Right Action Tools: Progress + Mode Switch + Reset */}
             <div className="flex flex-wrap items-center gap-2.5">
               {/* Student Completion Progress */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs">
-                <GraduationCap className="w-4 h-4 text-cyan-400" />
-                <span className="text-slate-300 font-semibold">الإنجاز:</span>
-                <span className="font-mono font-bold text-cyan-300">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
+                <GraduationCap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                <span className="text-slate-600 dark:text-slate-300 font-semibold">الإنجاز:</span>
+                <span className="font-mono font-bold text-cyan-700 dark:text-cyan-300">
                   {completedTabs.length}/8 ({progressPercentage}%)
                 </span>
-                <div className="w-16 h-2 rounded-full bg-slate-700 overflow-hidden">
+                <div className="w-16 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-500"
                     style={{ width: `${progressPercentage}%` }}
                   />
                 </div>
@@ -225,10 +225,10 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
 
               {/* View Switcher Toggle */}
               {onToggleLayoutMode && (
-                <div className="flex items-center rounded-xl bg-slate-800/80 border border-slate-700 p-0.5">
+                <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-0.5">
                   <button
                     onClick={() => onToggleLayoutMode('horizontal')}
-                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-cyan-600 text-white shadow-sm flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-cyan-600 text-white shadow-xs flex items-center gap-1"
                     title="العرض الأفقي البانورامي (كامل الشاشة)"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -236,7 +236,7 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                   </button>
                   <button
                     onClick={() => onToggleLayoutMode('vertical')}
-                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1"
                     title="التبديل إلى عرض القائمة الجانبية"
                   >
                     <PanelLeft className="w-3.5 h-3.5" />
@@ -251,7 +251,7 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onResetAll}
-                  className="h-8 px-2.5 text-xs rounded-xl border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white"
+                  className="h-8 px-2.5 text-xs rounded-xl border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   title="إعادة ضبط كافة التجارب والمحاكيات"
                 >
                   <RotateCcw className="w-3.5 h-3.5 ml-1" />
@@ -263,13 +263,13 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
 
           {/* Academic Track Filter Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-slate-400 text-xs font-bold shrink-0 ml-1">التصنيف:</span>
+            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold shrink-0 ml-1">التصنيف:</span>
             <button
               onClick={() => setSelectedGroupFilter('all')}
               className={`px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all border ${
                 selectedGroupFilter === 'all'
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-sm'
-                  : 'bg-slate-800/60 text-slate-400 hover:text-white border-transparent'
+                  ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                  : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-transparent'
               }`}
             >
               كافة المختبرات (8)
@@ -280,8 +280,8 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                 onClick={() => setSelectedGroupFilter(grp.id)}
                 className={`px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all border ${
                   selectedGroupFilter === grp.id
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-sm'
-                    : 'bg-slate-800/60 text-slate-400 hover:text-white border-transparent'
+                    ? 'bg-cyan-600 text-white border-cyan-600 shadow-xs'
+                    : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border-slate-200/80 dark:border-transparent'
                 }`}
               >
                 {grp.label} ({grp.count})
@@ -302,15 +302,15 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                   onClick={() => handleSelect(item.id)}
                   className={`text-right p-3 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden group min-h-[110px] text-xs ${
                     isActive
-                      ? 'bg-gradient-to-b from-cyan-600/30 to-blue-700/40 border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.3)] text-white'
-                      : 'bg-slate-800/50 hover:bg-slate-800 border-slate-700/70 hover:border-slate-600 text-slate-300 hover:text-white'
+                      ? 'bg-cyan-50/90 dark:bg-cyan-950/40 border-cyan-500 shadow-md shadow-cyan-500/10 text-slate-900 dark:text-white ring-1 ring-cyan-400'
+                      : 'bg-white dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/70 hover:border-cyan-300 dark:hover:border-slate-600 text-slate-800 dark:text-slate-300 shadow-xs hover:shadow-sm'
                   }`}
                 >
                   {/* Active Top Glow Line */}
                   {isActive && (
                     <motion.div
                       layoutId="activeDeckBar"
-                      className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-400 to-blue-500"
+                      className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-600"
                     />
                   )}
 
@@ -319,34 +319,34 @@ export const RoboticsSidebar: React.FC<RoboticsSidebarProps> = ({
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
                         isActive
-                          ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/30'
-                          : 'bg-slate-700/60 text-slate-300 group-hover:bg-cyan-500/20 group-hover:text-cyan-400'
+                          ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
+                          : 'bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-500/20 group-hover:text-cyan-600 dark:group-hover:text-cyan-400'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
 
                     {isCompleted && (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                     )}
                   </div>
 
                   {/* Title & Subtitle */}
                   <div className="w-full space-y-1">
-                    <h4 className={`font-bold line-clamp-1 text-xs ${isActive ? 'text-white' : 'text-slate-200'}`}>
+                    <h4 className={`font-bold line-clamp-1 text-xs ${isActive ? 'text-cyan-900 dark:text-white' : 'text-slate-900 dark:text-slate-200'}`}>
                       {item.shortTitle}
                     </h4>
-                    <p className="text-[10px] text-slate-400 line-clamp-1">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
                       {item.badge}
                     </p>
                   </div>
 
                   {/* Active Indicator status */}
-                  <div className="pt-2 flex items-center justify-between w-full border-t border-slate-700/50 mt-2 text-[10px]">
-                    <span className={`font-semibold ${isActive ? 'text-cyan-300' : 'text-slate-400'}`}>
+                  <div className="pt-2 flex items-center justify-between w-full border-t border-slate-100 dark:border-slate-700/50 mt-2 text-[10px]">
+                    <span className={`font-semibold ${isActive ? 'text-cyan-700 dark:text-cyan-300' : 'text-slate-400 dark:text-slate-500'}`}>
                       {isActive ? 'نشط الآن' : 'استعراض'}
                     </span>
-                    <Sparkles className={`w-2.5 h-2.5 ${isActive ? 'text-amber-300' : 'text-slate-500'}`} />
+                    <Sparkles className={`w-2.5 h-2.5 ${isActive ? 'text-amber-500' : 'text-slate-400'}`} />
                   </div>
                 </button>
               );

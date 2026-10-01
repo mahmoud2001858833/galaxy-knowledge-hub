@@ -429,16 +429,16 @@ export const HardwareCircuitSandbox: React.FC = () => {
   return (
     <div className="space-y-6 text-right w-full">
       {/* Header and Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl text-white">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl text-slate-900 dark:text-white">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-            <Cpu className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/25">
+            <Cpu className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>مختبر العتاد المدمج والأوسيلوسكوب الذكي</span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-black text-white">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
             المختبر الافتراضي للدوائر الإلكترونية ومتحكمات Arduino & ESP32
           </h3>
-          <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+          <p className="text-slate-600 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
             برمج واختبر الدوائر والحساسات ومحركات السيرفو مع راسم الإشارة (Oscilloscope) لتحليل إشارات PWM بدقة كهربائية متناهية.
           </p>
         </div>
@@ -448,7 +448,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
           <Button
             variant={showWokwiEmbed ? 'default' : 'outline'}
             onClick={() => setShowWokwiEmbed(!showWokwiEmbed)}
-            className="text-xs rounded-xl font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white"
+            className="text-xs rounded-xl font-bold gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs"
           >
             <Radio className="w-3.5 h-3.5" />
             <span>{showWokwiEmbed ? 'عرض لوحة التجارب الافتراضية' : 'تضمين بيئة Wokwi السحابية'}</span>
@@ -457,7 +457,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
             href={activeSketch.wokwiUrl || 'https://wokwi.com'}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors border border-slate-700"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors border border-slate-200 dark:border-slate-700"
           >
             <span>فتح Wokwi الخارجي</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -473,13 +473,13 @@ export const HardwareCircuitSandbox: React.FC = () => {
             onClick={() => setSelectedSketchId(sketch.id)}
             className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 border ${
               selectedSketchId === sketch.id
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20 border-emerald-400'
-                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm border-emerald-400'
+                : 'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800 shadow-xs'
             }`}
           >
-            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+            <Cpu className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>{sketch.name}</span>
-            <Badge variant="outline" className="text-[10px] uppercase font-mono border-white/20">
+            <Badge variant="outline" className="text-[10px] uppercase font-mono border-slate-200 dark:border-white/20">
               {sketch.board}
             </Badge>
           </button>
@@ -489,7 +489,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
       {/* Main Interactive Workstation */}
       {showWokwiEmbed ? (
         /* Wokwi Cloud Embedded Simulator */
-        <div className="rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 p-2 shadow-2xl">
+        <div className="rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-2 shadow-lg">
           <div className="p-3 bg-slate-900 rounded-2xl flex items-center justify-between text-xs text-slate-300 mb-2 font-mono">
             <span className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -510,11 +510,11 @@ export const HardwareCircuitSandbox: React.FC = () => {
         /* Built-in Virtual Breadboard & Instruments Visualizer (Wide Horizontal Landscape) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column (7 cols): Virtual Hardware Breadboard & Oscilloscope */}
-          <div className="lg:col-span-7 bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-6 shadow-xl space-y-5 text-white">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="lg:col-span-7 bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-5 text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className={`w-3 h-3 rounded-full ${isRunning ? 'bg-emerald-500 animate-ping' : 'bg-rose-500'}`} />
-                <h4 className="font-bold text-sm sm:text-base text-white">
+                <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
                   لوحة التجارب والمكونات التفاعلية (Virtual Breadboard)
                 </h4>
               </div>
@@ -523,7 +523,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                   size="sm"
                   variant={isRunning ? 'destructive' : 'default'}
                   onClick={() => setIsRunning(!isRunning)}
-                  className="rounded-xl text-xs font-bold gap-1"
+                  className="rounded-xl text-xs font-bold gap-1 shadow-xs"
                 >
                   {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                   <span>{isRunning ? 'إيقاف مؤقت' : 'تشغيل الدائرة'}</span>
@@ -537,7 +537,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                     setSimTemperature(25.6);
                     setSimHumidity(54.2);
                   }}
-                  className="rounded-xl text-xs border-slate-700 hover:bg-slate-800"
+                  className="rounded-xl text-xs border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 >
                   <RotateCcw className="w-3.5 h-3.5 ml-1" /> إعادة تعيين
                 </Button>
@@ -545,21 +545,21 @@ export const HardwareCircuitSandbox: React.FC = () => {
             </div>
 
             {/* Microcontroller Header Strip */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-blue-600/25 text-blue-400 border border-blue-500/30">
+                <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
                   <Cpu className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="font-bold text-xs sm:text-sm text-white">
+                  <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white">
                     {activeSketch.board === 'esp32' ? 'ESP32 Wi-Fi NodeMCU (Dual Core 240MHz)' : 'Arduino Uno R3 (ATmega328P)'}
                   </h5>
-                  <p className="text-[10px] text-slate-400 font-mono">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                     GPIO Logic: 3.3V/5V • Clock: 16MHz • PWM Channels: 6x
                   </p>
                 </div>
               </div>
-              <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 font-mono text-[10px]">
+              <Badge variant="outline" className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px]">
                 {isRunning ? '● RUNNING 50Hz' : '○ HALTED'}
               </Badge>
             </div>
@@ -567,8 +567,8 @@ export const HardwareCircuitSandbox: React.FC = () => {
             {/* Interactive Component Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* 1. LEDs Bank */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
-                <span className="text-xs font-bold text-slate-300 block">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
                   مصفوفة مصابيح LED والحالة المنطقية:
                 </span>
                 <div className="flex items-center justify-around py-1">
@@ -579,7 +579,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                         ? 'bg-rose-500 border-rose-300 shadow-[0_0_16px_rgba(244,63,94,0.9)] animate-pulse' 
                         : 'bg-rose-950/40 border-rose-900/50'
                     }`} />
-                    <span className="text-[9px] text-slate-400 font-mono">D13 (Red)</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">D13 (Red)</span>
                   </div>
 
                   {/* Green LED */}
@@ -589,7 +589,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                         ? 'bg-emerald-500 border-emerald-300 shadow-[0_0_16px_rgba(16,185,129,0.9)]' 
                         : 'bg-emerald-950/40 border-emerald-900/50'
                     }`} />
-                    <span className="text-[9px] text-slate-400 font-mono">D12 (Green)</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">D12 (Green)</span>
                   </div>
 
                   {/* Blue LED */}
@@ -599,7 +599,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                         ? 'bg-cyan-500 border-cyan-300 shadow-[0_0_16px_rgba(6,182,212,0.9)]' 
                         : 'bg-cyan-950/40 border-cyan-900/50'
                     }`} />
-                    <span className="text-[9px] text-slate-400 font-mono">D2 (Blue)</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">D2 (Blue)</span>
                   </div>
 
                   {/* Yellow LED */}
@@ -609,25 +609,25 @@ export const HardwareCircuitSandbox: React.FC = () => {
                         ? 'bg-amber-500 border-amber-300 shadow-[0_0_16px_rgba(245,158,11,0.9)]' 
                         : 'bg-amber-950/40 border-amber-900/50'
                     }`} />
-                    <span className="text-[9px] text-slate-400 font-mono">D5 (Yellow)</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-mono">D5 (Yellow)</span>
                   </div>
                 </div>
               </div>
 
               {/* 2. Micro Servo Angle Gauge */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">محرك السيرفو المؤازر (SG90):</span>
-                  <span className="text-amber-400 font-mono font-bold">{servoAngle}°</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">محرك السيرفو المؤازر (SG90):</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-mono font-bold">{servoAngle}°</span>
                 </div>
                 <div className="relative h-16 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full border-2 border-slate-700 bg-slate-800 flex items-center justify-center relative shadow-inner">
+                  <div className="w-14 h-14 rounded-full border-2 border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 flex items-center justify-center relative shadow-inner">
                     <motion.div
                       animate={{ rotate: servoAngle - 90 }}
                       transition={{ type: "spring", stiffness: 120, damping: 15 }}
-                      className="w-1.5 h-8 bg-amber-400 rounded-full origin-bottom absolute bottom-7 shadow-[0_0_8px_rgba(251,191,36,0.8)]"
+                      className="w-1.5 h-8 bg-amber-500 rounded-full origin-bottom absolute bottom-7 shadow-[0_0_8px_rgba(251,191,36,0.8)]"
                     />
-                    <div className="w-3.5 h-3.5 rounded-full bg-slate-950 border border-slate-600 z-10" />
+                    <div className="w-3.5 h-3.5 rounded-full bg-white dark:bg-slate-950 border border-slate-400 dark:border-slate-600 z-10" />
                   </div>
                 </div>
                 <div className="flex justify-between text-[9px] text-slate-500 font-mono">
@@ -638,10 +638,10 @@ export const HardwareCircuitSandbox: React.FC = () => {
               </div>
 
               {/* 3. Ultrasonic Distance Sensor Slider */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">مستشعر المسافة (HC-SR04):</span>
-                  <span className="text-cyan-400 font-mono font-bold">{ultrasonicDistance} سم</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300">مستشعر المسافة (HC-SR04):</span>
+                  <span className="text-cyan-600 dark:text-cyan-400 font-mono font-bold">{ultrasonicDistance} سم</span>
                 </div>
                 <Slider
                   value={[ultrasonicDistance]}
@@ -651,17 +651,17 @@ export const HardwareCircuitSandbox: React.FC = () => {
                   onValueChange={vals => setUltrasonicDistance(vals[0])}
                   className="py-1"
                 />
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span className="text-rose-400 font-semibold">عائق قريب (&lt;30cm)</span>
-                  <span className="text-emerald-400 font-semibold">مسار آمن (&gt;30cm)</span>
+                <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="text-rose-600 dark:text-rose-400 font-semibold">عائق قريب (&lt;30cm)</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">مسار آمن (&gt;30cm)</span>
                 </div>
               </div>
 
               {/* 4. OLED SSD1306 Display Simulation */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">شاشة العرض I2C OLED (0.96"):</span>
-                  <Badge variant="outline" className="text-[10px] border-cyan-500/40 text-cyan-400 font-mono">
+                  <span className="font-bold text-slate-700 dark:text-slate-300">شاشة العرض I2C OLED (0.96"):</span>
+                  <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-600 dark:text-cyan-400 font-mono">
                     Addr: 0x3C
                   </Badge>
                 </div>
@@ -683,17 +683,17 @@ export const HardwareCircuitSandbox: React.FC = () => {
             </div>
 
             {/* 5. Virtual Oscilloscope (PWM Waveform Analyzer) */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-cyan-400">
-                  <Activity className="w-4 h-4 text-cyan-400" />
+                <div className="flex items-center gap-2 text-xs font-bold text-cyan-700 dark:text-cyan-400">
+                  <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                   <span>راسم الإشارة الرقمي (Virtual Oscilloscope — PWM Pin 6):</span>
                 </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  T_high: <strong className="text-cyan-300">{pulseWidthMs} ms</strong> ({dutyCyclePercent}%)
+                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                  T_high: <strong className="text-cyan-600 dark:text-cyan-300">{pulseWidthMs} ms</strong> ({dutyCyclePercent}%)
                 </span>
               </div>
-              <div className="relative rounded-xl overflow-hidden border border-slate-800">
+              <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
                 <canvas
                   ref={oscCanvasRef}
                   width={640}
@@ -701,20 +701,20 @@ export const HardwareCircuitSandbox: React.FC = () => {
                   className="w-full h-[130px] block"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 💡 <strong>فائدة تعليمية:</strong> محركات السيرفو تستقبل نبضة بعرض يتراوح بين 1.0 مللي ثانية (الزاوية 0°) إلى 2.0 مللي ثانية (الزاوية 180°) كل 20 مللي ثانية (بتردد 50Hz).
               </p>
             </div>
           </div>
 
           {/* Right Column (5 cols): Code Editor & Serial Monitor */}
-          <div className="lg:col-span-5 space-y-5 text-white">
+          <div className="lg:col-span-5 space-y-5 text-slate-900 dark:text-white">
             {/* Code Panel */}
-            <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-5 shadow-xl space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-xl space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-emerald-400" />
-                  <h4 className="font-bold text-sm text-white">
+                  <Code2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                     الكود المصدري للدائرة (C++ / Arduino)
                   </h4>
                 </div>
@@ -722,7 +722,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                   size="sm"
                   variant="outline"
                   onClick={copyCode}
-                  className="rounded-xl text-xs gap-1 border-slate-700 hover:bg-slate-800 h-8"
+                  className="rounded-xl text-xs gap-1 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 h-8"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>نسخ الكود</span>
@@ -738,11 +738,11 @@ export const HardwareCircuitSandbox: React.FC = () => {
             </div>
 
             {/* Serial Monitor Console */}
-            <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-5 shadow-xl space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-xl space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-cyan-400" />
-                  <h5 className="font-bold text-xs text-white">
+                  <Terminal className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <h5 className="font-bold text-xs text-slate-900 dark:text-white">
                     الشاشة التسلسلية (Serial Monitor @ 115200 Baud)
                   </h5>
                 </div>
@@ -750,7 +750,7 @@ export const HardwareCircuitSandbox: React.FC = () => {
                   size="sm"
                   variant="ghost"
                   onClick={() => setSerialLogs(['[CLEARED] Monitor reset.'])}
-                  className="text-[10px] h-7 px-2 text-slate-400 hover:text-white"
+                  className="text-[10px] h-7 px-2 text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 >
                   مسح السجل
                 </Button>
