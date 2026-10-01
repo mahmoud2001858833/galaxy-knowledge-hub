@@ -341,7 +341,7 @@ export const InteractiveCapabilitiesDemo: React.FC = () => {
           </div>
 
           <Button
-            onClick={() => navigate('/exam-generator')}
+            onClick={() => navigate('/exam-creator')}
             className="w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-bold text-xs rounded-xl shadow-sm"
           >
             <span>دخول استوديو توليد الامتحانات الورقية والإلكترونية المتكامل</span>

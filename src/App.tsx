@@ -214,6 +214,8 @@ const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
 const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
 const ExamGeneratorStudio = wrap(lazy(() => import("./pages/ExamGeneratorStudio")));
 const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
+const ExamCreator = wrap(lazy(() => import("./pages/ExamCreator")));
+const OnlineExam = wrap(lazy(() => import("./pages/OnlineExam")));
 const ApiKeysDeveloperPortal = wrap(lazy(() => import("./pages/ApiKeysDeveloperPortal")));
 const SmartCitySection = wrap(lazy(() => import("./pages/SmartCitySection")));
 const AIArchitecturalDesign = wrap(lazy(() => import("./pages/AIArchitecturalDesign")));
@@ -556,12 +558,25 @@ const router = createBrowserRouter([
         element: <AuthGuard><ExamScannerPage /></AuthGuard>,
       },
       {
+        path: 'exam-creator',
+        element: <AuthGuard><ExamCreator /></AuthGuard>,
+      },
+      {
+        // الصفحة القديمة كانت تولّد أسئلة بقوالب جاهزة لا بذكاء اصطناعي؛ أُعيد توجيه مساريها للنظام الجديد
         path: 'exam-generator',
-        element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+        element: <Navigate to="/exam-creator" replace />,
       },
       {
         path: 'exam-studio',
+        element: <Navigate to="/exam-creator" replace />,
+      },
+      {
+        path: 'exam-generator-legacy',
         element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+      },
+      {
+        path: 'exam/:token',
+        element: <PublicRoute><OnlineExam /></PublicRoute>,
       },
       {
         path: 'live-exam/:examId',
