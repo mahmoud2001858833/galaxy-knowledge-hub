@@ -137,7 +137,7 @@ export class LocalVision {
     for (let p = 0; p < gray.length; p++) this.prev[p] = gray[p];
     this.lastEdgeMap = edge;
 
-    return { cells, globalMotion, bottomMotion, sceneChange, brightness, corridor };
+    return { cells, globalMotion, bottomMotion, sceneChange, brightness, avgLum: brightness, corridor };
   }
 
   reset() {

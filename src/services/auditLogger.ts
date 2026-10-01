@@ -146,6 +146,10 @@ class AuditLoggerService {
     }
   }
 
+  public log(entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'client'> & { client?: Partial<AuditLogEntry['client']> }): AuditLogEntry {
+    return this.record(entry);
+  }
+
   public record(entry: Omit<AuditLogEntry, 'id' | 'timestamp' | 'client'> & { client?: Partial<AuditLogEntry['client']> }): AuditLogEntry {
     const clientData: AuditLogEntry['client'] = {
       ipApprox: entry.client?.ipApprox || '192.168.1.' + Math.floor(Math.random() * 250 + 2),
