@@ -9,12 +9,14 @@ import { Loader2, FileQuestion, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ExamFromFilePanel from "@/components/exam/ExamFromFilePanel";
 
 interface ExamGenerationTabProps {
   grade: string;
 }
 
-export default function ExamGenerationTab({ grade: defaultGrade }: ExamGenerationTabProps) {
+function BookExamPanel({ grade: defaultGrade }: ExamGenerationTabProps) {
   const [grade, setGrade] = useState(defaultGrade);
   const [subject, setSubject] = useState("");
   const [contentType, setContentType] = useState("book");
@@ -436,5 +438,22 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
         </div>
       )}
     </div>
+  );
+}
+
+export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
+  return (
+    <Tabs defaultValue="file" dir="rtl" className="w-full">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="file">من ملف مرفوع</TabsTrigger>
+        <TabsTrigger value="book">من الكتاب المدرسي</TabsTrigger>
+      </TabsList>
+      <TabsContent value="file" className="mt-4">
+        <ExamFromFilePanel defaultGrade={grade} />
+      </TabsContent>
+      <TabsContent value="book" className="mt-4">
+        <BookExamPanel grade={grade} />
+      </TabsContent>
+    </Tabs>
   );
 }
