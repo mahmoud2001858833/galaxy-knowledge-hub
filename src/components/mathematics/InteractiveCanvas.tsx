@@ -387,7 +387,7 @@ const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
 
     // 9. Interactive Cursor Crosshair & Tangent Line
     if (mousePos && cursorMath) {
-      const { px: curPx, py: curPy } = mousePos;
+      const { x: curPx, y: curPy } = mousePos;
 
       // Dashed crosshairs
       ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';

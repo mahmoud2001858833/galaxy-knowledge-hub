@@ -184,8 +184,8 @@ export default function RelativityLab3DScene({
 
           {/* Reference Rest Frame Ghost Spaceship Outline (Above) */}
           <group position={[0, 1.4, 0]}>
-            <mesh>
-              <coneGeometry args={[0.6, 3.2, 16]} rotation={[0, 0, -Math.PI / 2]} />
+            <mesh rotation={[0, 0, -Math.PI / 2]}>
+              <coneGeometry args={[0.6, 3.2, 16]} />
               <meshStandardMaterial color="#10b981" wireframe transparent opacity={0.4} />
             </mesh>
             <Html position={[0, 0.9, 0]} center>

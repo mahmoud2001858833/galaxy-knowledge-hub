@@ -21,6 +21,12 @@ export interface DetailedExperimentSpec {
     description: string;
     constants?: string;
   }>;
+  equations?: Array<{
+    name: string;
+    formula: string;
+    description?: string;
+    constants?: string;
+  }>;
   detailedControls: Array<{
     controlName: string;
     type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';

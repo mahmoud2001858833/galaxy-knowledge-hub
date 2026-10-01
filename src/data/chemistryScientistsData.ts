@@ -13,6 +13,7 @@ export interface ChemistryScientistItem {
   famousFor: string;
   avatarEmoji: string;
   keyReactionOrFormula?: string;
+  keyFormula?: string;
   historicalQuote?: string;
 }
 
