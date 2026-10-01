@@ -22,33 +22,26 @@ const MathAIAssistantPage = () => {
       
       <Navbar />
       
-      <main className="flex-1 container mx-auto px-4 py-12 relative z-10">
+      <main className="flex-1 max-w-[1700px] w-full mx-auto px-2 sm:px-6 py-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
           <Button
             onClick={() => navigate('/mathematics')}
             variant="ghost"
-            className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30 mb-6"
+            className="text-cyan-400 hover:text-cyan-300 hover:bg-blue-900/30 gap-2 self-start"
           >
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 rotate-180" />
             العودة لعالم الرياضيات
           </Button>
-          
-          <h1 className="text-4xl md:text-6xl font-bold text-glow-purple mb-4">
-            المساعد الذكي للرياضيات
-          </h1>
-          <p className="text-xl text-white/80 max-w-2xl">
-            مساعد ذكي لحل المسائل الرياضية والإجابة على الأسئلة
-          </p>
         </motion.div>
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-blue-900/20 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 shadow-glow-sm shadow-purple-500/10"
+          className="w-full"
         >
           <MathAIAssistant />
         </motion.div>
