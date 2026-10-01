@@ -21,6 +21,7 @@ export type LocalFrameStats = {
   bottomMotion: number; // 0..1 (bottom row average)
   sceneChange: number;  // 0..1 large = scene swapped
   brightness: number;   // 0..1
+  avgLum: number;       // 0..1 average luminance (alias of brightness)
   corridor: CorridorStats;
 };
 
