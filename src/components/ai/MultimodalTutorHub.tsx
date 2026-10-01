@@ -35,6 +35,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { geminiMultimodalService } from '@/services/geminiMultimodalService';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatMessage {
   id: string;
@@ -819,8 +820,40 @@ export const MultimodalTutorHub: React.FC = () => {
                     </div>
                   </div>
                 ) : imageAnalysisResult ? (
-                  <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed whitespace-pre-line text-slate-800 dark:text-slate-200 space-y-3 bg-slate-50/50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 font-sans">
-                    {imageAnalysisResult}
+                  <div className="bg-slate-50/80 dark:bg-slate-800/40 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/60 font-sans text-slate-800 dark:text-slate-200 space-y-4 shadow-inner">
+                    <ReactMarkdown
+                      components={{
+                        h3: ({ node, ...props }) => (
+                          <h3 className="text-base sm:text-lg font-black text-indigo-700 dark:text-indigo-400 mt-5 mb-2 pb-1.5 border-b border-indigo-100 dark:border-indigo-900/50 flex items-center gap-2" {...props} />
+                        ),
+                        h4: ({ node, ...props }) => (
+                          <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 mt-3 mb-1" {...props} />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 my-1.5" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300 my-2 pr-2" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="list-decimal list-inside space-y-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300 my-2 pr-2 font-medium" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="leading-relaxed" {...props} />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-bold text-slate-900 dark:text-white" {...props} />
+                        ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote className="bg-amber-50 dark:bg-amber-950/30 border-r-4 border-amber-500 p-3.5 rounded-2xl text-xs sm:text-sm text-amber-900 dark:text-amber-200 my-3 shadow-sm" {...props} />
+                        ),
+                        code: ({ node, ...props }) => (
+                          <code className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-mono text-xs font-bold border border-indigo-200 dark:border-indigo-800" {...props} />
+                        )
+                      }}
+                    >
+                      {imageAnalysisResult}
+                    </ReactMarkdown>
                   </div>
                 ) : (
                   <div className="py-24 text-center space-y-3 text-slate-400">
@@ -909,7 +942,13 @@ export const MultimodalTutorHub: React.FC = () => {
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-none border border-slate-200/60 dark:border-slate-700/60'
                       }`}
                     >
-                      <p className="whitespace-pre-line">{msg.text}</p>
+                      {msg.sender === 'user' ? (
+                        <p className="whitespace-pre-line">{msg.text}</p>
+                      ) : (
+                        <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed">
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between gap-3 mt-2 pt-1 border-t border-white/20 dark:border-slate-700/40 text-[10px] opacity-75">
                         <span>{msg.discipline || 'علمي'}</span>

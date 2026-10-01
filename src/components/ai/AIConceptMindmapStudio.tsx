@@ -329,28 +329,28 @@ export const AIConceptMindmapStudio: React.FC = () => {
   };
 
   /**
-   * Resilient Fallback Direct HTML5 Canvas Renderer
-   * Guarantees 100% PNG download success in all browsers without DOM dependencies!
+   * Resilient Pure Light HTML5 Canvas Renderer
+   * Renders in high-resolution light mode (white/slate-50 background, dark typography)
    */
-  const exportViaDirectCanvas = (mindmap: typeof currentMindmap) => {
+  const renderDirectLightCanvas = (mindmap: typeof currentMindmap): HTMLCanvasElement => {
     const canvas = document.createElement('canvas');
     const width = 2400;
     const height = 1450;
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return canvas;
 
-    // Background Gradient
+    // Pure Light Background
     const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-    bgGrad.addColorStop(0, '#070919');
-    bgGrad.addColorStop(0.5, '#0b112c');
-    bgGrad.addColorStop(1, '#050713');
+    bgGrad.addColorStop(0, '#f8fafc');
+    bgGrad.addColorStop(0.5, '#ffffff');
+    bgGrad.addColorStop(1, '#f1f5f9');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // Subtle Grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    // Subtle Slate Grid
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.04)';
     ctx.lineWidth = 1;
     for (let x = 0; x < width; x += 60) {
       ctx.beginPath();
@@ -366,49 +366,49 @@ export const AIConceptMindmapStudio: React.FC = () => {
     }
 
     // Header Branding
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = '#475569';
     ctx.font = 'bold 22px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`منصة ذروة العلم 2.0 • ${mindmap.discipline} • ${mindmap.grade}`, width / 2, 60);
+    ctx.fillText(`منصة ذروة العلم 2.0 • مدرسة عنبه الثانوية للبنين • ${mindmap.discipline} • ${mindmap.grade}`, width / 2, 60);
 
-    // Central Root Node Card
+    // Central Root Node Card (Vibrant Royal Gradient with Crisp White Text)
     const rootX = width / 2;
-    const rootY = 100;
-    const rootW = 760;
-    const rootH = 110;
+    const rootY = 95;
+    const rootW = 780;
+    const rootH = 115;
 
     const rootGrad = ctx.createLinearGradient(rootX - rootW / 2, rootY, rootX + rootW / 2, rootY + rootH);
     rootGrad.addColorStop(0, '#2563eb');
     rootGrad.addColorStop(0.5, '#4f46e5');
-    rootGrad.addColorStop(1, '#9333ea');
+    rootGrad.addColorStop(1, '#7c3aed');
     ctx.fillStyle = rootGrad;
     ctx.beginPath();
     ctx.roundRect(rootX - rootW / 2, rootY, rootW, rootH, 24);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.lineWidth = 3;
     ctx.stroke();
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 34px sans-serif';
-    ctx.fillText(mindmap.rootTitle, rootX, rootY + 52);
+    ctx.fillText(mindmap.rootTitle, rootX, rootY + 54);
 
     ctx.fillStyle = '#e0e7ff';
     ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('الخريطة المفاهيمية الذكية • القوانين والمعادلات والتطبيقات', rootX, rootY + 88);
+    ctx.fillText('الخريطة المفاهيمية الذكية • القوانين والمعادلات والتطبيقات المعملية', rootX, rootY + 90);
 
     // Branch Cards Layout
     const branches = mindmap.nodes;
     const n = Math.max(branches.length, 1);
     const cardW = Math.min(460, (width - 120) / n - 20);
-    const cardH = 880;
+    const cardH = 890;
     const totalW = n * cardW + (n - 1) * 24;
     const startX = (width - totalW) / 2;
     const cardY = 320;
 
     branches.forEach((branch, idx) => {
       const cardX = startX + idx * (cardW + 24);
-      const branchColor = branch.color || '#38bdf8';
+      const branchColor = branch.color || '#3b82f6';
 
       // Curved Bezier Connection Line from Root Node
       ctx.beginPath();
@@ -422,19 +422,19 @@ export const AIConceptMindmapStudio: React.FC = () => {
       ctx.lineWidth = 4;
       ctx.stroke();
 
-      // Card Body
-      ctx.fillStyle = '#0f172a';
+      // Card Body (Pure Crisp White)
+      ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.roundRect(cardX, cardY, cardW, cardH, 20);
       ctx.fill();
-      ctx.strokeStyle = branchColor;
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
       ctx.stroke();
 
       // Card Header colored ribbon
       ctx.fillStyle = branchColor;
       ctx.beginPath();
-      ctx.roundRect(cardX, cardY, cardW, 12, [20, 20, 0, 0]);
+      ctx.roundRect(cardX, cardY, cardW, 10, [20, 20, 0, 0]);
       ctx.fill();
 
       // Category Pill
@@ -444,7 +444,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
       ctx.fillText(`[ ${branch.category || 'فرع رئيسي'} ]`, cardX + cardW - 20, cardY + 44);
 
       // Branch Title
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 22px sans-serif';
       ctx.fillText(branch.label, cardX + cardW - 20, cardY + 78);
 
@@ -452,15 +452,15 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
       // Formula Box
       if (branch.formula) {
-        ctx.fillStyle = '#020617';
+        ctx.fillStyle = '#f8fafc';
         ctx.beginPath();
         ctx.roundRect(cardX + 16, currentY, cardW - 32, 46, 12);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+        ctx.strokeStyle = 'rgba(79, 70, 229, 0.25)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#4338ca';
         ctx.font = 'bold 18px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(branch.formula, cardX + cardW / 2, currentY + 30);
@@ -469,7 +469,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
       // Description text (word wrapped)
       if (branch.description) {
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#334155';
         ctx.font = '16px sans-serif';
         ctx.textAlign = 'right';
         const words = branch.description.split(' ');
@@ -493,28 +493,28 @@ export const AIConceptMindmapStudio: React.FC = () => {
       if (branch.children && branch.children.length > 0) {
         branch.children.forEach((child) => {
           if (currentY + 100 > cardY + cardH) return;
-          ctx.fillStyle = '#1e293b';
+          ctx.fillStyle = '#f1f5f9';
           ctx.beginPath();
           ctx.roundRect(cardX + 16, currentY, cardW - 32, 88, 14);
           ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
           ctx.lineWidth = 1;
           ctx.stroke();
 
-          ctx.fillStyle = '#38bdf8';
+          ctx.fillStyle = '#1e293b';
           ctx.font = 'bold 16px sans-serif';
           ctx.textAlign = 'right';
           ctx.fillText(child.label, cardX + cardW - 30, currentY + 28);
 
           if (child.description) {
-            ctx.fillStyle = '#cbd5e1';
+            ctx.fillStyle = '#475569';
             ctx.font = '13px sans-serif';
             const subStr = child.description.length > 38 ? child.description.substring(0, 38) + '...' : child.description;
             ctx.fillText(subStr, cardX + cardW - 30, currentY + 52);
           }
 
           if (child.formula) {
-            ctx.fillStyle = '#22d3ee';
+            ctx.fillStyle = '#0284c7';
             ctx.font = 'bold 13px monospace';
             ctx.textAlign = 'left';
             ctx.fillText(child.formula, cardX + 30, currentY + 74);
@@ -531,21 +531,12 @@ export const AIConceptMindmapStudio: React.FC = () => {
     ctx.textAlign = 'center';
     ctx.fillText('منصة ذروة العلم 2.0 • مدرسة عنبه الثانوية الشاملة للبنين • استوديو الخرائط المفاهيمية الذكي', width / 2, height - 30);
 
-    // Export image blob
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `mindmap-${mindmap.rootTitle.replace(/\s+/g, '_')}-${Date.now()}.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success('تم تنزيل صورة الخريطة الذهنية بجودة فائقة HD!');
-    }, 'image/png');
+    return canvas;
   };
 
   /**
    * Export as PNG with double-resilience
+   * Preserves 100% Arabic text perfection and sharp light-mode rendering
    */
   const handleExportPNG = async () => {
     toast.info('جاري إعداد وتحميل صورة الخريطة الذهنية...');
@@ -562,7 +553,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
         const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(container, {
           scale: 2,
-          backgroundColor: '#070919',
+          backgroundColor: '#f8fafc',
           useCORS: true,
           allowTaint: true,
           logging: false
@@ -582,86 +573,92 @@ export const AIConceptMindmapStudio: React.FC = () => {
     }
 
     // Direct Canvas Fallback (100% guaranteed)
-    exportViaDirectCanvas(currentMindmap);
+    const canvas = renderDirectLightCanvas(currentMindmap);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `mindmap-${currentMindmap.rootTitle.replace(/\s+/g, '_')}-${Date.now()}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('تم تنزيل صورة الخريطة الذهنية بجودة فائقة HD!');
+    }, 'image/png');
   };
 
   /**
-   * Export as PDF via jsPDF
+   * Export as PDF via Image-Embedded jsPDF
+   * ELIMINATES corrupt/unreadable Arabic text completely by rendering 
+   * the exact browser-rasterized Arabic glyphs into high-resolution PDF pages!
    */
   const handleExportPDF = async () => {
-    toast.info('جاري إعداد وثيقة PDF للطباعة...');
+    toast.info('جاري إعداد وثيقة PDF للطباعة بدقة عالية وبدون أي تشويه للحروف...');
     try {
       const { default: jsPDF } = await import('jspdf');
+      const { default: html2canvas } = await import('html2canvas');
+
+      let imgData: string | null = null;
+      let canvasW = 2400;
+      let canvasH = 1450;
+
+      if (mindmapContainerRef.current) {
+        const container = mindmapContainerRef.current;
+        const contentEl = canvasContentRef.current;
+        const prevTransform = contentEl?.style.transform || '';
+
+        try {
+          if (contentEl) contentEl.style.transform = 'none';
+
+          const canvas = await html2canvas(container, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true,
+            logging: false
+          });
+          imgData = canvas.toDataURL('image/png');
+          canvasW = canvas.width;
+          canvasH = canvas.height;
+        } catch (domErr) {
+          console.warn('html2canvas issue during PDF export, falling back to direct canvas renderer:', domErr);
+        } finally {
+          if (contentEl) contentEl.style.transform = prevTransform;
+        }
+      }
+
+      if (!imgData) {
+        const fallbackCanvas = renderDirectLightCanvas(currentMindmap);
+        imgData = fallbackCanvas.toDataURL('image/png');
+        canvasW = fallbackCanvas.width;
+        canvasH = fallbackCanvas.height;
+      }
+
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
 
-      // Background
-      doc.setFillColor(7, 9, 25);
-      doc.rect(0, 0, 297, 210, 'F');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Header card
-      doc.setFillColor(15, 23, 42);
-      doc.roundedRect(10, 10, 277, 26, 4, 4, 'F');
+      const imgRatio = canvasW / canvasH;
+      let renderW = pageWidth - 10;
+      let renderH = renderW / imgRatio;
 
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.text(currentMindmap.rootTitle, 148, 21, { align: 'center' });
+      if (renderH > pageHeight - 10) {
+        renderH = pageHeight - 10;
+        renderW = renderH * imgRatio;
+      }
 
-      doc.setFontSize(9);
-      doc.setTextColor(148, 163, 184);
-      doc.text(`Zarwat Al-Elm 2.0 Mindmap • ${currentMindmap.discipline} • ${currentMindmap.grade} • Generated: ${new Date().toLocaleDateString('ar-JO')}`, 148, 30, { align: 'center' });
+      const x = (pageWidth - renderW) / 2;
+      const y = (pageHeight - renderH) / 2;
 
-      // Columns
-      const n = currentMindmap.nodes.length;
-      const colW = (277 - (n - 1) * 6) / n;
-      let colX = 10;
-
-      currentMindmap.nodes.forEach((branch) => {
-        doc.setFillColor(15, 23, 42);
-        doc.roundedRect(colX, 42, colW, 155, 3, 3, 'F');
-
-        // Color ribbon
-        doc.setFillColor(56, 189, 248);
-        doc.rect(colX, 42, colW, 3, 'F');
-
-        doc.setFontSize(11);
-        doc.setTextColor(255, 255, 255);
-        doc.text(branch.label.substring(0, 28), colX + colW / 2, 52, { align: 'center' });
-
-        if (branch.formula) {
-          doc.setFontSize(8);
-          doc.setTextColor(56, 189, 248);
-          doc.text(branch.formula.substring(0, 32), colX + colW / 2, 60, { align: 'center' });
-        }
-
-        let childY = 70;
-        if (branch.children) {
-          branch.children.forEach(child => {
-            if (childY > 185) return;
-            doc.setFillColor(30, 41, 59);
-            doc.roundedRect(colX + 3, childY, colW - 6, 22, 2, 2, 'F');
-
-            doc.setFontSize(8);
-            doc.setTextColor(226, 232, 240);
-            doc.text(child.label.substring(0, 24), colX + (colW - 6) / 2 + 3, childY + 9, { align: 'center' });
-
-            if (child.formula) {
-              doc.setFontSize(7);
-              doc.setTextColor(34, 211, 238);
-              doc.text(child.formula.substring(0, 28), colX + (colW - 6) / 2 + 3, childY + 17, { align: 'center' });
-            }
-            childY += 26;
-          });
-        }
-
-        colX += colW + 6;
-      });
-
-      doc.save(`mindmap-${currentMindmap.rootTitle.replace(/\s+/g, '_')}.pdf`);
-      toast.success('تم تنزيل مستند PDF بنجاح!');
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      doc.addImage(imgData, 'PNG', x, y, renderW, renderH, undefined, 'FAST');
+      doc.save(`mindmap-${currentMindmap.rootTitle.replace(/\s+/g, '_')}-${Date.now()}.pdf`);
+      toast.success('تم تنزيل مستند PDF بنجاح بحروف عربية واضحة ومقروءة 100%!');
     } catch (err) {
       console.error('PDF error:', err);
       toast.error('حدث خطأ أثناء إعداد مستند PDF');
@@ -860,24 +857,24 @@ export const AIConceptMindmapStudio: React.FC = () => {
       {/* Main Mindmap Canvas Container */}
       <div 
         ref={mindmapContainerRef}
-        className={`p-6 md:p-8 rounded-3xl bg-slate-950 text-white border border-slate-800 shadow-2xl relative overflow-hidden transition-all ${
-          isFullscreen ? 'fixed inset-0 z-50 rounded-none p-10 overflow-y-auto' : 'min-h-[700px]'
+        className={`p-6 md:p-8 rounded-3xl bg-slate-50 text-slate-900 border-2 border-slate-200/90 shadow-2xl relative overflow-hidden transition-all ${
+          isFullscreen ? 'fixed inset-0 z-50 rounded-none p-10 overflow-y-auto bg-slate-50 text-slate-900' : 'min-h-[700px]'
         }`}
       >
         {/* Canvas Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-2xl bg-gradient-to-tr from-purple-600 to-cyan-500 text-white shadow-md">
+            <div className="p-3 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white shadow-md">
               <BrainCircuit className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-[10px]">
+                <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200 text-[10px]">
                   خريطة مفاهيمية نشطة
                 </Badge>
-                <span className="text-xs text-slate-400">{currentMindmap.discipline} • {currentMindmap.grade}</span>
+                <span className="text-xs text-slate-500 font-medium">{currentMindmap.discipline} • {currentMindmap.grade}</span>
               </div>
-              <h2 className="text-xl md:text-2xl font-black mt-0.5 text-white">
+              <h2 className="text-xl md:text-2xl font-black mt-0.5 text-slate-900">
                 {currentMindmap.rootTitle}
               </h2>
             </div>
@@ -885,23 +882,23 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
           {/* Stats Badges */}
           <div className="hidden lg:flex items-center gap-2">
-            <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+            <span className="px-3 py-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 shadow-sm">
               <strong>{totalBranches}</strong> فروع رئيسية
             </span>
-            <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs text-cyan-400">
+            <span className="px-3 py-1 rounded-xl bg-white border border-slate-200 text-xs text-indigo-600 shadow-sm">
               <strong>{totalSubNodes}</strong> مفاهيم فرعية
             </span>
-            <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs text-amber-400">
+            <span className="px-3 py-1 rounded-xl bg-white border border-slate-200 text-xs text-amber-600 shadow-sm">
               <strong>{totalFormulas}</strong> صيغ وقوانين
             </span>
           </div>
 
           {/* View Mode Switcher */}
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-900 border border-slate-800">
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-200/70 border border-slate-300/80">
             <button
               onClick={() => setViewMode('tree')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'tree' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                viewMode === 'tree' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="عرض الشجرة العنكبوتية المترابطة"
             >
@@ -912,7 +909,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
             <button
               onClick={() => setViewMode('cards')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'cards' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                viewMode === 'cards' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="عرض مصفوفة البطاقات"
             >
@@ -923,7 +920,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
             <button
               onClick={() => setViewMode('outline')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                viewMode === 'outline' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                viewMode === 'outline' ? 'bg-indigo-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="عرض المخطط الهيكلي الدراسي"
             >
@@ -936,18 +933,18 @@ export const AIConceptMindmapStudio: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute right-3 top-3 text-slate-500" />
+              <Search className="w-3.5 h-3.5 absolute right-3 top-3 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="بحث في الخريطة..."
-                className="h-9 w-32 sm:w-40 pl-3 pr-8 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                className="h-9 w-32 sm:w-40 pl-3 pr-8 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-sm"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute left-2.5 top-2.5 text-slate-400 hover:text-white text-xs"
+                  className="absolute left-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs"
                 >
                   ✕
                 </button>
@@ -962,7 +959,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
                 setNewNodeBranchId(currentMindmap.nodes[0]?.id || '');
                 setIsAddNodeModalOpen(true);
               }}
-              className="rounded-xl border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/40 h-9 px-2.5 gap-1 text-xs"
+              className="rounded-xl border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 h-9 px-2.5 gap-1 text-xs shadow-sm"
               title="إضافة مفهوم فرعي مخصص"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -974,7 +971,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setZoomLevel(prev => Math.min(prev + 0.15, 1.6))}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title="تكبير الخريطة"
             >
               <ZoomIn className="w-4 h-4" />
@@ -984,7 +981,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setZoomLevel(prev => Math.max(prev - 0.15, 0.7))}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title="تصغير الخريطة"
             >
               <ZoomOut className="w-4 h-4" />
@@ -994,7 +991,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setZoomLevel(1)}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title="إعادة ضبط الحجم"
             >
               <RotateCcw className="w-4 h-4" />
@@ -1005,7 +1002,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={handleExportPNG}
-              className="rounded-xl border-purple-500/40 text-purple-300 hover:bg-purple-950/40 h-9 px-3 gap-1.5 text-xs font-bold shadow-sm"
+              className="rounded-xl border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 h-9 px-3 gap-1.5 text-xs font-bold shadow-sm"
               title="تنزيل الخريطة الذهنية كصورة PNG عالية الدقة"
             >
               <Download className="w-4 h-4" />
@@ -1016,7 +1013,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={handleExportPDF}
-              className="rounded-xl border-indigo-500/40 text-indigo-300 hover:bg-indigo-950/40 h-9 px-2.5 gap-1.5 text-xs font-bold"
+              className="rounded-xl border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 h-9 px-2.5 gap-1.5 text-xs font-bold shadow-sm"
               title="تصدير وثيقة PDF جاهزة للطباعة"
             >
               <FileText className="w-4 h-4" />
@@ -1027,7 +1024,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={handleExportJSON}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title="تصدير بنية JSON"
             >
               <FileCode className="w-4 h-4" />
@@ -1037,7 +1034,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => window.print()}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title="طباعة الخريطة"
             >
               <Printer className="w-4 h-4" />
@@ -1047,7 +1044,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="rounded-xl border-slate-700 text-slate-300 hover:text-white h-9 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 h-9 px-2.5 shadow-sm"
               title={isFullscreen ? 'تصغير' : 'ملء الشاشة'}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1062,7 +1059,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
           style={{ transform: `scale(${zoomLevel})` }}
         >
           {/* ROOT CONCEPT NODE */}
-          <div className="p-6 md:p-7 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl text-center max-w-xl border-2 border-white/20 relative z-20 group">
+          <div className="p-6 md:p-7 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl text-center max-w-xl border-2 border-white/40 relative z-20 group">
             <div className="flex items-center justify-center gap-2 mb-1">
               <span className="text-[11px] px-3 py-0.5 rounded-full bg-white/20 backdrop-blur-md font-bold uppercase tracking-wider">
                 المفهوم المركزي للدرس
@@ -1111,13 +1108,13 @@ export const AIConceptMindmapStudio: React.FC = () => {
                         <path
                           d={`M 50% 0 C 50% 32, ${targetX}% 32, ${targetX}% 100%`}
                           fill="none"
-                          stroke={branch.color || '#38bdf8'}
+                          stroke={branch.color || '#3b82f6'}
                           strokeWidth="3"
                           strokeDasharray="5 5"
                           className="animate-pulse"
-                          strokeOpacity="0.8"
+                          strokeOpacity="0.75"
                         />
-                        <circle cx={`${targetX}%`} cy="100%" r="5" fill={branch.color || '#38bdf8'} />
+                        <circle cx={`${targetX}%`} cy="100%" r="5" fill={branch.color || '#3b82f6'} />
                       </g>
                     );
                   })}
@@ -1139,12 +1136,12 @@ export const AIConceptMindmapStudio: React.FC = () => {
                     <motion.div 
                       key={branch.id || idx}
                       layout
-                      className={`rounded-3xl bg-slate-900/95 border shadow-xl overflow-hidden flex flex-col justify-between transition-all ${
+                      className={`rounded-3xl bg-white border shadow-md hover:shadow-xl overflow-hidden flex flex-col justify-between transition-all ${
                         isBranchMatched 
-                          ? 'ring-2 ring-cyan-400 bg-slate-800/90 border-cyan-400' 
-                          : 'border-slate-800'
+                          ? 'ring-2 ring-indigo-500 bg-indigo-50/20 border-indigo-400' 
+                          : 'border-slate-200/90'
                       }`}
-                      style={{ borderTopColor: branch.color || '#38bdf8', borderTopWidth: 4 }}
+                      style={{ borderTopColor: branch.color || '#3b82f6', borderTopWidth: 4 }}
                     >
                       <div className="p-5 space-y-3">
                         {/* Branch Title & Toggle */}
@@ -1152,11 +1149,11 @@ export const AIConceptMindmapStudio: React.FC = () => {
                           <div className="space-y-1 flex-1">
                             <span 
                               className="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold inline-block"
-                              style={{ backgroundColor: `${branch.color || '#38bdf8'}20`, color: branch.color || '#38bdf8' }}
+                              style={{ backgroundColor: `${branch.color || '#3b82f6'}15`, color: branch.color || '#3b82f6' }}
                             >
                               {branch.category || 'فرع رئيسي'}
                             </span>
-                            <h4 className="font-bold text-base text-white">
+                            <h4 className="font-bold text-base text-slate-900">
                               {branch.label}
                             </h4>
                           </div>
@@ -1164,7 +1161,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => speakNode(branch)}
-                              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                               title="استمع للنطق"
                             >
                               <Volume2 className="w-3.5 h-3.5" />
@@ -1172,7 +1169,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
                             <button
                               onClick={() => toggleNode(branch.id)}
-                              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                              className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                               title={isExpanded ? 'طي الفرع' : 'توسيع الفرع'}
                             >
                               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1182,7 +1179,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
                         {/* Description */}
                         {branch.description && (
-                          <p className="text-xs text-slate-400 leading-relaxed">
+                          <p className="text-xs text-slate-600 leading-relaxed">
                             {branch.description}
                           </p>
                         )}
@@ -1191,11 +1188,11 @@ export const AIConceptMindmapStudio: React.FC = () => {
                         {branch.formula && (
                           <div 
                             onClick={() => handleCopyFormula(branch.formula!)}
-                            className="p-2.5 rounded-2xl bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-xs flex items-center justify-between cursor-pointer hover:border-cyan-500/50 transition-colors group"
+                            className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-indigo-700 font-mono text-xs flex items-center justify-between cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/50 transition-colors group"
                             title="انقر لنسخ القانون"
                           >
                             <span className="font-bold truncate" dir="ltr">{branch.formula}</span>
-                            <Copy className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 shrink-0 mr-1" />
+                            <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 shrink-0 mr-1" />
                           </div>
                         )}
 
@@ -1206,9 +1203,9 @@ export const AIConceptMindmapStudio: React.FC = () => {
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="space-y-2 pt-2 border-t border-slate-800"
+                              className="space-y-2 pt-2 border-t border-slate-100"
                             >
-                              <span className="text-[10px] text-slate-500 font-bold block">العقد الفرعية والتطبيقات:</span>
+                              <span className="text-[10px] text-slate-400 font-bold block">العقد الفرعية والتطبيقات:</span>
                               {branch.children.map((subNode, subIdx) => {
                                 const isSubMatched = isNodeMatched(subNode.label, subNode.description, subNode.formula);
                                 return (
@@ -1217,29 +1214,29 @@ export const AIConceptMindmapStudio: React.FC = () => {
                                     onClick={() => setSelectedNodeDetails(subNode)}
                                     className={`p-3 rounded-2xl border cursor-pointer transition-all text-right group ${
                                       isSubMatched 
-                                        ? 'bg-cyan-950/40 border-cyan-400' 
-                                        : 'bg-slate-950/80 hover:bg-slate-800/80 border-slate-800/80'
+                                        ? 'bg-indigo-50 border-indigo-400' 
+                                        : 'bg-slate-50/90 hover:bg-indigo-50/40 border-slate-200/80'
                                     }`}
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="font-bold text-xs text-slate-200 group-hover:text-cyan-400 transition-colors">
+                                      <span className="font-bold text-xs text-slate-800 group-hover:text-indigo-600 transition-colors">
                                         {subNode.label}
                                       </span>
-                                      <Badge className="text-[9px] bg-slate-800 text-slate-400 font-normal">
+                                      <Badge className="text-[9px] bg-slate-200/80 text-slate-700 font-normal">
                                         {subNode.category}
                                       </Badge>
                                     </div>
                                     {subNode.description && (
-                                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                                      <p className="text-[11px] text-slate-600 mt-1 line-clamp-2">
                                         {subNode.description}
                                       </p>
                                     )}
                                     {subNode.formula && (
-                                      <div className="text-[10px] text-cyan-400 font-mono mt-1 flex items-center justify-between" dir="ltr">
+                                      <div className="text-[10px] text-indigo-600 font-mono mt-1 flex items-center justify-between" dir="ltr">
                                         <span>{subNode.formula}</span>
                                         <button 
                                           onClick={(e) => handleCopyFormula(subNode.formula!, e)}
-                                          className="text-slate-500 hover:text-cyan-300"
+                                          className="text-slate-400 hover:text-indigo-600"
                                         >
                                           <Copy className="w-3 h-3" />
                                         </button>
@@ -1253,11 +1250,11 @@ export const AIConceptMindmapStudio: React.FC = () => {
                         </AnimatePresence>
                       </div>
 
-                      <div className="p-3 bg-slate-950/50 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500">
+                      <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                         <span>{branch.children?.length || 0} مفاهيم فرعية</span>
                         <button 
                           onClick={() => setSelectedNodeDetails(branch)}
-                          className="text-cyan-400 hover:underline font-bold"
+                          className="text-indigo-600 hover:underline font-bold"
                         >
                           عرض التفاصيل
                         </button>
@@ -1275,31 +1272,31 @@ export const AIConceptMindmapStudio: React.FC = () => {
               {currentMindmap.nodes.map((branch, idx) => (
                 <div 
                   key={branch.id || idx}
-                  className="rounded-3xl bg-slate-900 border border-slate-800 p-6 space-y-4 shadow-xl"
-                  style={{ borderRightColor: branch.color || '#38bdf8', borderRightWidth: 4 }}
+                  className="rounded-3xl bg-white border border-slate-200 p-6 space-y-4 shadow-md hover:shadow-lg transition-all"
+                  style={{ borderRightColor: branch.color || '#3b82f6', borderRightWidth: 4 }}
                 >
                   <div className="flex items-center justify-between">
                     <span 
                       className="text-xs px-2.5 py-0.5 rounded-full font-bold"
-                      style={{ backgroundColor: `${branch.color || '#38bdf8'}25`, color: branch.color || '#38bdf8' }}
+                      style={{ backgroundColor: `${branch.color || '#3b82f6'}15`, color: branch.color || '#3b82f6' }}
                     >
                       {branch.category}
                     </span>
                     <button
                       onClick={() => speakNode(branch)}
-                      className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
+                      className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600"
                     >
                       <Volume2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
-                  <h3 className="text-lg font-black text-white">{branch.label}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">{branch.description}</p>
+                  <h3 className="text-lg font-black text-slate-900">{branch.label}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">{branch.description}</p>
 
                   {branch.formula && (
                     <div 
                       onClick={() => handleCopyFormula(branch.formula!)}
-                      className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-cyan-300 font-mono text-xs cursor-pointer hover:border-cyan-400"
+                      className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-indigo-700 font-mono text-xs cursor-pointer hover:border-indigo-400"
                       dir="ltr"
                     >
                       {branch.formula}
@@ -1307,16 +1304,16 @@ export const AIConceptMindmapStudio: React.FC = () => {
                   )}
 
                   {branch.children && (
-                    <div className="space-y-2 pt-2 border-t border-slate-800">
-                      <span className="text-xs font-bold text-slate-400">التفريعات التابعة:</span>
+                    <div className="space-y-2 pt-2 border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-500">التفريعات التابعة:</span>
                       {branch.children.map((sub, sIdx) => (
                         <div 
                           key={sIdx}
                           onClick={() => setSelectedNodeDetails(sub)}
-                          className="p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800 text-xs cursor-pointer"
+                          className="p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/80 text-xs cursor-pointer"
                         >
-                          <div className="font-bold text-slate-200">{sub.label}</div>
-                          {sub.formula && <div className="text-[10px] text-cyan-400 font-mono" dir="ltr">{sub.formula}</div>}
+                          <div className="font-bold text-slate-800">{sub.label}</div>
+                          {sub.formula && <div className="text-[10px] text-indigo-600 font-mono" dir="ltr">{sub.formula}</div>}
                         </div>
                       ))}
                     </div>
@@ -1328,14 +1325,14 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
           {/* VIEW MODE 3: ACADEMIC OUTLINE (CURRICULUM TREE) */}
           {viewMode === 'outline' && (
-            <div className="w-full max-w-4xl p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <span className="text-sm font-bold text-purple-300">الهيكل الأكاديمي التفصيلي للدرس:</span>
+            <div className="w-full max-w-4xl p-6 rounded-3xl bg-white border border-slate-200 shadow-md space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <span className="text-sm font-bold text-indigo-700">الهيكل الأكاديمي التفصيلي للدرس:</span>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" onClick={() => toggleAllNodes(true)} className="text-xs text-slate-400 hover:text-white">
+                  <Button size="sm" variant="ghost" onClick={() => toggleAllNodes(true)} className="text-xs text-slate-600 hover:text-slate-900">
                     توسيع الكل
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => toggleAllNodes(false)} className="text-xs text-slate-400 hover:text-white">
+                  <Button size="sm" variant="ghost" onClick={() => toggleAllNodes(false)} className="text-xs text-slate-600 hover:text-slate-900">
                     طي الكل
                   </Button>
                 </div>
@@ -1345,46 +1342,46 @@ export const AIConceptMindmapStudio: React.FC = () => {
                 {currentMindmap.nodes.map((branch, bIdx) => {
                   const isExpanded = !!expandedNodes[branch.id];
                   return (
-                    <div key={bIdx} className="rounded-2xl bg-slate-950 border border-slate-800/80 overflow-hidden">
+                    <div key={bIdx} className="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden">
                       <div 
                         onClick={() => toggleNode(branch.id)}
-                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-850"
+                        className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-100/70"
                       >
                         <div className="flex items-center gap-3">
                           <span 
                             className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: branch.color || '#38bdf8' }} 
+                            style={{ backgroundColor: branch.color || '#3b82f6' }} 
                           />
-                          <span className="font-bold text-sm text-white">{branch.label}</span>
-                          <span className="text-xs text-slate-400">({branch.category})</span>
+                          <span className="font-bold text-sm text-slate-900">{branch.label}</span>
+                          <span className="text-xs text-slate-500">({branch.category})</span>
                         </div>
                         <div className="flex items-center gap-2">
                           {branch.formula && (
-                            <span className="text-xs font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded-lg" dir="ltr">
+                            <span className="text-xs font-mono text-indigo-700 bg-white border border-slate-200 px-2 py-0.5 rounded-lg" dir="ltr">
                               {branch.formula}
                             </span>
                           )}
-                          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
                         </div>
                       </div>
 
                       {isExpanded && (
-                        <div className="p-4 pt-0 border-t border-slate-800/50 space-y-2 mt-2">
-                          <p className="text-xs text-slate-400">{branch.description}</p>
+                        <div className="p-4 pt-0 border-t border-slate-200/80 space-y-2 mt-2">
+                          <p className="text-xs text-slate-600">{branch.description}</p>
                           {branch.children && (
-                            <div className="mr-4 space-y-2 border-r-2 border-slate-800 pr-3">
+                            <div className="mr-4 space-y-2 border-r-2 border-slate-200 pr-3">
                               {branch.children.map((child, cIdx) => (
                                 <div 
                                   key={cIdx} 
                                   onClick={() => setSelectedNodeDetails(child)}
-                                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 cursor-pointer flex items-center justify-between"
+                                  className="p-2.5 rounded-xl bg-white hover:bg-indigo-50 border border-slate-200/80 cursor-pointer flex items-center justify-between"
                                 >
                                   <div>
-                                    <div className="text-xs font-bold text-slate-200">{child.label}</div>
-                                    <div className="text-[11px] text-slate-400">{child.description}</div>
+                                    <div className="text-xs font-bold text-slate-800">{child.label}</div>
+                                    <div className="text-[11px] text-slate-500">{child.description}</div>
                                   </div>
                                   {child.formula && (
-                                    <span className="text-[11px] font-mono text-cyan-400 mr-2" dir="ltr">
+                                    <span className="text-[11px] font-mono text-indigo-600 mr-2" dir="ltr">
                                       {child.formula}
                                     </span>
                                   )}
@@ -1407,21 +1404,21 @@ export const AIConceptMindmapStudio: React.FC = () => {
       {/* ADD CUSTOM NODE MODAL */}
       <AnimatePresence>
         {isAddNodeModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-4 text-white shadow-2xl"
+              className="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-6 space-y-4 text-slate-900 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <Plus className="w-5 h-5 text-cyan-400" />
-                  <h3 className="font-bold text-base text-white">إضافة عقدة ومفهوم مخصص للخريطة</h3>
+                  <Plus className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-bold text-base text-slate-900">إضافة عقدة ومفهوم مخصص للخريطة</h3>
                 </div>
                 <button 
                   onClick={() => setIsAddNodeModalOpen(false)} 
-                  className="text-slate-400 hover:text-white"
+                  className="text-slate-400 hover:text-slate-600"
                 >
                   ✕
                 </button>
@@ -1429,11 +1426,11 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">الفرع الرئيسي التابع له:</label>
+                  <label className="text-xs font-bold text-slate-700">الفرع الرئيسي التابع له:</label>
                   <select
                     value={newNodeBranchId}
                     onChange={(e) => setNewNodeBranchId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl bg-slate-800 border border-slate-700 text-xs text-white"
+                    className="w-full h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {currentMindmap.nodes.map(b => (
                       <option key={b.id} value={b.id}>{b.label}</option>
@@ -1442,60 +1439,60 @@ export const AIConceptMindmapStudio: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">عنوان المفهوم الجديد:</label>
+                  <label className="text-xs font-bold text-slate-700">عنوان المفهوم الجديد:</label>
                   <Input
                     value={newNodeLabel}
                     onChange={(e) => setNewNodeLabel(e.target.value)}
                     placeholder="مثال: قانون سنيل في الانكسار"
-                    className="h-10 rounded-xl bg-slate-800 text-xs"
+                    className="h-10 rounded-xl bg-slate-50 border-slate-200 text-xs text-slate-900"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">التصنيف أو الفئة:</label>
+                  <label className="text-xs font-bold text-slate-700">التصنيف أو الفئة:</label>
                   <Input
                     value={newNodeCategory}
                     onChange={(e) => setNewNodeCategory(e.target.value)}
                     placeholder="مثال: قانون بصري، تطبيق هندسي"
-                    className="h-10 rounded-xl bg-slate-800 text-xs"
+                    className="h-10 rounded-xl bg-slate-50 border-slate-200 text-xs text-slate-900"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">القانون الرياضي (اختياري):</label>
+                  <label className="text-xs font-bold text-slate-700">القانون الرياضي (اختياري):</label>
                   <Input
                     value={newNodeFormula}
                     onChange={(e) => setNewNodeFormula(e.target.value)}
                     placeholder="مثال: n1 · sin(θ1) = n2 · sin(θ2)"
-                    className="h-10 rounded-xl bg-slate-800 text-xs font-mono text-cyan-300"
+                    className="h-10 rounded-xl bg-slate-50 border-slate-200 text-xs font-mono text-indigo-700"
                     dir="ltr"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-300">الشرح والتوضيح العلمي:</label>
+                  <label className="text-xs font-bold text-slate-700">الشرح والتوضيح العلمي:</label>
                   <textarea
                     value={newNodeDescription}
                     onChange={(e) => setNewNodeDescription(e.target.value)}
                     placeholder="اكتب شرحاً مختصراً للمفهوم..."
-                    className="w-full h-20 p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs text-slate-200 resize-none"
+                    className="w-full h-20 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => setIsAddNodeModalOpen(false)}
-                  className="rounded-xl text-xs text-slate-400"
+                  className="rounded-xl text-xs text-slate-500"
                 >
                   إلغاء
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleAddCustomNode}
-                  className="rounded-xl text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
+                  className="rounded-xl text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
                 >
                   إضافة العقدة للخريطة 🚀
                 </Button>
@@ -1508,29 +1505,29 @@ export const AIConceptMindmapStudio: React.FC = () => {
       {/* NODE DETAILS INSPECTOR MODAL */}
       <AnimatePresence>
         {selectedNodeDetails && (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 space-y-4 text-white shadow-2xl"
+              className="bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 space-y-4 text-slate-900 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div 
                     className="w-3.5 h-3.5 rounded-full" 
-                    style={{ backgroundColor: selectedNodeDetails.color || '#38bdf8' }} 
+                    style={{ backgroundColor: selectedNodeDetails.color || '#3b82f6' }} 
                   />
                   <div>
-                    <span className="text-[10px] text-slate-400 font-bold">{selectedNodeDetails.category}</span>
-                    <h3 className="font-bold text-base text-white">{selectedNodeDetails.label}</h3>
+                    <span className="text-[10px] text-slate-500 font-bold">{selectedNodeDetails.category}</span>
+                    <h3 className="font-bold text-base text-slate-900">{selectedNodeDetails.label}</h3>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => speakNode(selectedNodeDetails)}
-                    className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                    className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
                     title="استمع للنطق الصوتي"
                   >
                     <Volume2 className="w-4 h-4" />
@@ -1538,7 +1535,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
                   <button 
                     onClick={() => setSelectedNodeDetails(null)} 
-                    className="text-slate-400 hover:text-white"
+                    className="text-slate-400 hover:text-slate-600"
                   >
                     ✕
                   </button>
@@ -1547,8 +1544,8 @@ export const AIConceptMindmapStudio: React.FC = () => {
 
               {/* Description */}
               <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-400">التوضيح العلمي والمفهوم:</span>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                <span className="text-xs font-bold text-slate-500">التوضيح العلمي والمفهوم:</span>
+                <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-200">
                   {selectedNodeDetails.description || 'لا يوجد شرح إضافي'}
                 </p>
               </div>
@@ -1556,15 +1553,15 @@ export const AIConceptMindmapStudio: React.FC = () => {
               {/* Formula */}
               {selectedNodeDetails.formula && (
                 <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400">القانون الرياضي أو الصيغة:</span>
+                  <span className="text-xs font-bold text-slate-500">القانون الرياضي أو الصيغة:</span>
                   <div 
                     onClick={() => handleCopyFormula(selectedNodeDetails.formula!)}
-                    className="p-3.5 rounded-2xl bg-cyan-950/30 border border-cyan-500/40 text-cyan-300 font-mono text-sm flex items-center justify-between cursor-pointer hover:border-cyan-400" 
+                    className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono text-sm flex items-center justify-between cursor-pointer hover:border-indigo-400" 
                     dir="ltr"
                     title="انقر لنسخ القانون"
                   >
                     <span>{selectedNodeDetails.formula}</span>
-                    <Copy className="w-4 h-4 text-cyan-400" />
+                    <Copy className="w-4 h-4 text-indigo-600" />
                   </div>
                 </div>
               )}
@@ -1573,7 +1570,7 @@ export const AIConceptMindmapStudio: React.FC = () => {
                 <Button
                   size="sm"
                   onClick={() => setSelectedNodeDetails(null)}
-                  className="rounded-xl text-xs bg-slate-800 hover:bg-slate-700 text-white"
+                  className="rounded-xl text-xs bg-slate-100 hover:bg-slate-200 text-slate-800"
                 >
                   إغلاق
                 </Button>

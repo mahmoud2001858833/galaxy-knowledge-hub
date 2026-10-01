@@ -42,8 +42,8 @@ import { toast } from 'sonner';
 import { geminiMultimodalService, type LessonSlideData } from '@/services/geminiMultimodalService';
 import { simulationCatalogService, type SimulationRecord } from '@/services/simulationCatalogService';
 
-// Slide Visual Themes
-type SlideTheme = 'cyber-cosmic' | 'royal-academic' | 'emerald-biolab' | 'bright-classroom';
+// Slide Visual Themes (All Pure Light & Modern)
+type SlideTheme = 'bright-classroom' | 'royal-academic' | 'emerald-biolab' | 'amber-warm';
 
 const THEME_STYLES: Record<SlideTheme, {
   name: string;
@@ -55,45 +55,45 @@ const THEME_STYLES: Record<SlideTheme, {
   subtext: string;
   badgeBg: string;
 }> = {
-  'cyber-cosmic': {
-    name: '🌌 الكوني النيوني (Cyber Cosmic)',
-    bg: 'bg-gradient-to-br from-[#060814] via-[#0b0e24] to-[#050716]',
-    cardBg: 'bg-slate-900/80 backdrop-blur-md',
-    accent: 'text-cyan-400',
-    border: 'border-cyan-500/30',
-    text: 'text-white',
-    subtext: 'text-slate-300',
-    badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40'
+  'bright-classroom': {
+    name: '☀️ الصفي الساطع (Classroom Blue)',
+    bg: 'bg-gradient-to-br from-slate-50 via-white to-blue-50/70',
+    cardBg: 'bg-white shadow-md border-slate-200',
+    accent: 'text-blue-600',
+    border: 'border-blue-200',
+    text: 'text-slate-900',
+    subtext: 'text-slate-700',
+    badgeBg: 'bg-blue-50 text-blue-700 border-blue-300'
   },
   'royal-academic': {
     name: '🏛️ الأكاديمي الملكي (Royal Indigo)',
-    bg: 'bg-gradient-to-br from-[#0a0f2c] via-[#10194a] to-[#070b1f]',
-    cardBg: 'bg-indigo-950/60 backdrop-blur-md',
-    accent: 'text-amber-400',
-    border: 'border-amber-500/30',
-    text: 'text-white',
-    subtext: 'text-indigo-200',
-    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-400/40'
+    bg: 'bg-gradient-to-br from-slate-50 via-white to-indigo-50/70',
+    cardBg: 'bg-white shadow-md border-indigo-100',
+    accent: 'text-indigo-600',
+    border: 'border-indigo-200',
+    text: 'text-slate-900',
+    subtext: 'text-slate-700',
+    badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-300'
   },
   'emerald-biolab': {
-    name: '🌿 المختبر الأخضر (Emerald BioLab)',
-    bg: 'bg-gradient-to-br from-[#041510] via-[#08231b] to-[#03110d]',
-    cardBg: 'bg-emerald-950/60 backdrop-blur-md',
-    accent: 'text-emerald-400',
-    border: 'border-emerald-500/30',
-    text: 'text-white',
-    subtext: 'text-emerald-200',
-    badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-  },
-  'bright-classroom': {
-    name: '☀️ النهاري الصفي (High-Contrast Projector)',
-    bg: 'bg-gradient-to-br from-slate-100 via-white to-slate-200',
-    cardBg: 'bg-white shadow-xl',
-    accent: 'text-blue-700',
-    border: 'border-slate-300',
+    name: '🌿 الزمرد العلمي (Emerald Light)',
+    bg: 'bg-gradient-to-br from-slate-50 via-white to-emerald-50/70',
+    cardBg: 'bg-white shadow-md border-emerald-100',
+    accent: 'text-emerald-600',
+    border: 'border-emerald-200',
     text: 'text-slate-900',
-    subtext: 'text-slate-600',
-    badgeBg: 'bg-blue-100 text-blue-800 border-blue-300'
+    subtext: 'text-slate-700',
+    badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-300'
+  },
+  'amber-warm': {
+    name: '✨ الإشراق الكهرماني (Warm Amber)',
+    bg: 'bg-gradient-to-br from-slate-50 via-white to-amber-50/70',
+    cardBg: 'bg-white shadow-md border-amber-100',
+    accent: 'text-amber-700',
+    border: 'border-amber-200',
+    text: 'text-slate-900',
+    subtext: 'text-slate-700',
+    badgeBg: 'bg-amber-50 text-amber-800 border-amber-300'
   }
 };
 
@@ -208,7 +208,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
   const [slides, setSlides] = useState<LessonSlideData[]>(INITIAL_VERIFIED_DECK);
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [activeTheme, setActiveTheme] = useState<SlideTheme>('cyber-cosmic');
+  const [activeTheme, setActiveTheme] = useState<SlideTheme>('bright-classroom');
 
   // Teacher Presentation Enhancements
   const [showTeacherNotes, setShowTeacherNotes] = useState<boolean>(false);
@@ -399,7 +399,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
             {/* Theme Picker Dropdown */}
             <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white/20 backdrop-blur-md text-xs">
               <Palette className="w-4 h-4 ml-1" />
-              {(['cyber-cosmic', 'royal-academic', 'emerald-biolab', 'bright-classroom'] as SlideTheme[]).map(t => (
+              {(['bright-classroom', 'royal-academic', 'emerald-biolab', 'amber-warm'] as SlideTheme[]).map(t => (
                 <button
                   key={t}
                   onClick={() => setActiveTheme(t)}
@@ -407,7 +407,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                     activeTheme === t ? 'bg-white text-slate-900 shadow-sm' : 'text-white/80 hover:text-white'
                   }`}
                 >
-                  {t === 'cyber-cosmic' ? '🌌 كوني' : t === 'royal-academic' ? '🏛️ ملكي' : t === 'emerald-biolab' ? '🌿 بيولوجي' : '☀️ نهاري'}
+                  {t === 'bright-classroom' ? '☀️ صفي ساطع' : t === 'royal-academic' ? '🏛️ نيلي ملكي' : t === 'emerald-biolab' ? '🌿 زمردي' : '✨ كهرماني'}
                 </button>
               ))}
             </div>
@@ -522,12 +522,12 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
 
       {/* Main Presentation Stage */}
       <div 
-        className={`rounded-3xl ${theme.bg} ${theme.text} border ${theme.border} shadow-2xl relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${
+        className={`rounded-3xl ${theme.bg} ${theme.text} border-2 ${theme.border} shadow-xl relative overflow-hidden flex flex-col justify-between transition-all duration-300 ${
           isFullscreen ? 'fixed inset-0 z-50 rounded-none p-6 md:p-10' : 'min-h-[640px] p-6 sm:p-8'
         }`}
       >
         {/* Top Control Bar: Meta + Classroom Timer + Audio Speaker + Notes */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/10 mb-4 relative z-20">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200/90 mb-4 relative z-20">
           
           <div className="flex items-center gap-3">
             <span className={`text-xs px-3 py-1 rounded-full font-mono font-bold border ${theme.badgeBg}`}>
@@ -539,19 +539,19 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
           </div>
 
           {/* Interactive Classroom Timer */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-black/40 border border-white/10 text-xs">
-            <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="font-mono font-bold text-amber-300">{formatTimer(timerSeconds)}</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white border border-slate-200 text-xs shadow-sm">
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
+            <span className="font-mono font-bold text-slate-800">{formatTimer(timerSeconds)}</span>
             <button
               onClick={() => setIsTimerRunning(!isTimerRunning)}
-              className="p-1 rounded-lg hover:bg-white/10 text-slate-300"
+              className="p-1 rounded-lg hover:bg-slate-100 text-slate-600"
               title={isTimerRunning ? 'إيقاف مؤقت' : 'بدء المؤقت'}
             >
               {isTimerRunning ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
             </button>
             <button
               onClick={() => { setTimerSeconds(300); setIsTimerRunning(false); }}
-              className="p-1 rounded-lg hover:bg-white/10 text-slate-400"
+              className="p-1 rounded-lg hover:bg-slate-100 text-slate-400"
               title="إعادة ضبط 5 دقائق"
             >
               <RotateCcw className="w-3 h-3" />
@@ -573,14 +573,14 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                   speakSlideNarration(speech);
                 }
               }}
-              className={`rounded-xl text-xs gap-1.5 h-8.5 px-3 border-white/20 transition-all ${
+              className={`rounded-xl text-xs gap-1.5 h-8.5 px-3 border-slate-200 transition-all shadow-sm ${
                 isSpeaking 
-                  ? 'bg-rose-500 text-white border-rose-400 animate-pulse' 
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                  ? 'bg-rose-500 text-white border-rose-500 animate-pulse' 
+                  : 'bg-white text-slate-700 hover:bg-slate-100'
               }`}
               title="الاستماع للشرح الصوتي للشريحة"
             >
-              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-cyan-400" />}
+              {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-blue-600" />}
               <span>{isSpeaking ? 'إيقاف الصوت' : 'استمع للشريحة'}</span>
             </Button>
 
@@ -589,12 +589,12 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setShowTeacherNotes(!showTeacherNotes)}
-              className={`rounded-xl text-xs gap-1 h-8.5 px-3 border-white/20 ${
-                showTeacherNotes ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-white/10 text-white hover:bg-white/20'
+              className={`rounded-xl text-xs gap-1 h-8.5 px-3 border-slate-200 shadow-sm ${
+                showTeacherNotes ? 'bg-amber-500 text-white font-bold border-amber-500' : 'bg-white text-slate-700 hover:bg-slate-100'
               }`}
               title="دليل المعلم والأسئلة السابرة (T)"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 text-amber-500" />
               <span>ملاحظات المعلم</span>
             </Button>
 
@@ -602,7 +602,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => window.print()}
-              className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 h-8.5 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 h-8.5 px-2.5 shadow-sm"
               title="طباعة الشرائح"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -612,7 +612,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setIsFullscreen(!isFullscreen)}
-              className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 h-8.5 px-2.5"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 h-8.5 px-2.5 shadow-sm"
             >
               {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
             </Button>
@@ -628,13 +628,13 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
               exit={{ height: 0, opacity: 0 }}
               className="mb-4 overflow-hidden"
             >
-              <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-1.5 backdrop-blur-md">
-                <div className="flex items-center justify-between font-bold text-amber-300">
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 shadow-sm">
+                <div className="flex items-center justify-between font-bold text-amber-800">
                   <div className="flex items-center gap-1.5">
-                    <Lightbulb className="w-4 h-4 text-amber-400" />
+                    <Lightbulb className="w-4 h-4 text-amber-600" />
                     <span>دليل المعلم واستراتيجية التدريس المقترحة لهذه الشريحة:</span>
                   </div>
-                  <span className="text-[10px] bg-amber-400/20 px-2 py-0.5 rounded-full">استراتيجيات التعلم النشط</span>
+                  <span className="text-[10px] bg-amber-100 px-2 py-0.5 rounded-full text-amber-800">استراتيجيات التعلم النشط</span>
                 </div>
                 <p className="leading-relaxed">
                   {currentSlide.teacherNotes || 'وجه الطلاب لملاحظة العلاقات والمتغيرات وطرح أسئلة استقصائية تعزز التفكير الناقد.'}
@@ -756,31 +756,31 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                       <Button
                         variant="outline"
                         onClick={() => setIsLiveSimModalOpen(true)}
-                        className="rounded-2xl border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs h-11 px-4 gap-1.5"
+                        className="rounded-2xl border-slate-300 bg-white text-slate-800 hover:bg-slate-50 text-xs h-11 px-4 gap-1.5 shadow-sm"
                       >
-                        <Eye className="w-4 h-4 text-cyan-400" />
+                        <Eye className="w-4 h-4 text-cyan-600" />
                         <span>معاينة داخل الحصة</span>
                       </Button>
                     </div>
                   </div>
 
                   {/* Guided Inquiry Lab Checklist */}
-                  <div className="p-4 rounded-2xl bg-black/30 border border-white/10 text-right space-y-2.5">
-                    <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-right space-y-2.5">
+                    <span className="text-xs font-bold text-cyan-700 flex items-center gap-1.5">
                       <Target className="w-4 h-4" />
                       <span>خطوات الاستقصاء العملي المقترحة للتجريب في الحصة:</span>
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-300">
-                      <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold font-mono">1</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-700">
+                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-start gap-2 shadow-sm">
+                        <span className="w-5 h-5 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center shrink-0 font-bold font-mono">1</span>
                         <span>غيّر المتغير المستقل وراقب المؤشرات الرقمية في المختبر.</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 font-bold font-mono">2</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-start gap-2 shadow-sm">
+                        <span className="w-5 h-5 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-bold font-mono">2</span>
                         <span>سجل قراءات فرق الجهد أو السرعة عند نقاط محددة.</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold font-mono">3</span>
+                      <div className="p-2.5 rounded-xl bg-white border border-slate-200 flex items-start gap-2 shadow-sm">
+                        <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-bold font-mono">3</span>
                         <span>قارن النتائج المقاسة مع القيمة النظرية المحسوبة بالقانون.</span>
                       </div>
                     </div>
@@ -794,14 +794,14 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                   {currentSlide.content.misconceptions.map((item, idx) => (
                     <div 
                       key={idx}
-                      className={`p-5 rounded-2xl border space-y-2 text-xs sm:text-sm ${theme.cardBg} ${theme.border}`}
+                      className="p-5 rounded-2xl border-2 border-slate-200 bg-white shadow-md space-y-2 text-xs sm:text-sm"
                     >
-                      <div className="flex items-center gap-2 text-rose-400 font-bold">
-                        <XCircle className="w-5 h-5 shrink-0" />
+                      <div className="flex items-center gap-2 text-rose-700 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                        <XCircle className="w-5 h-5 shrink-0 text-rose-600" />
                         <span>تصور خاطئ شائع: "{item.misconception}"</span>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-400 font-bold mr-7">
-                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                      <div className="flex items-center gap-2 text-emerald-800 font-bold bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 mr-2">
+                        <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600" />
                         <span>التصحيح العلمي الدقيق: {item.correction}</span>
                       </div>
                     </div>
@@ -818,14 +818,14 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                     <motion.div
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className={`p-4 rounded-2xl border flex items-center justify-between ${
+                      className={`p-4 rounded-2xl border-2 flex items-center justify-between shadow-md ${
                         scoreResult.percent >= 70 
-                          ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300' 
-                          : 'bg-amber-600/20 border-amber-500/40 text-amber-300'
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                          : 'bg-amber-50 border-amber-300 text-amber-900'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <Award className="w-6 h-6 text-amber-400" />
+                        <Award className="w-6 h-6 text-amber-500" />
                         <div>
                           <span className="font-bold text-sm">
                             النتيجة: {scoreResult.correct} من {scoreResult.total} ({scoreResult.percent}%)
@@ -853,10 +853,10 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                   {currentSlide.content.quiz.map((q, qIdx) => (
                     <div 
                       key={qIdx} 
-                      className={`p-5 rounded-2xl border space-y-3 ${theme.cardBg} ${theme.border}`}
+                      className={`p-5 rounded-2xl border-2 space-y-3 ${theme.cardBg} ${theme.border} shadow-md`}
                     >
-                      <p className="font-bold text-sm text-white flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-mono">
+                      <p className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-mono font-bold">
                           {qIdx + 1}
                         </span>
                         <span>{q.question}</span>
@@ -866,13 +866,13 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                         {q.options.map((opt, optIdx) => {
                           const isSelected = userQuizAnswers[qIdx] === optIdx;
                           const isCorrect = q.correctIndex === optIdx;
-                          let btnStyle = 'bg-black/30 text-slate-300 border-white/10 hover:bg-white/10';
+                          let btnStyle = 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100 shadow-sm';
 
                           if (isQuizSubmitted) {
-                            if (isCorrect) btnStyle = 'bg-emerald-600/40 text-emerald-300 border-emerald-500 shadow-md shadow-emerald-500/20';
-                            else if (isSelected && !isCorrect) btnStyle = 'bg-rose-600/40 text-rose-300 border-rose-500';
+                            if (isCorrect) btnStyle = 'bg-emerald-100 text-emerald-900 border-emerald-400 font-bold shadow-sm';
+                            else if (isSelected && !isCorrect) btnStyle = 'bg-rose-100 text-rose-900 border-rose-300';
                           } else if (isSelected) {
-                            btnStyle = 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-500/30';
+                            btnStyle = 'bg-blue-600 text-white border-blue-600 shadow-md font-bold';
                           }
 
                           return (
@@ -889,7 +889,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                       </div>
 
                       {isQuizSubmitted && (
-                        <p className="text-xs text-cyan-300 bg-cyan-950/40 p-3 rounded-xl border border-cyan-500/30">
+                        <p className="text-xs text-blue-900 bg-blue-50 p-3 rounded-xl border border-blue-200 font-medium">
                           💡 التفسير العلمي: {q.explanation}
                         </p>
                       )}
@@ -903,7 +903,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                         value={studentName}
                         onChange={(e) => setStudentName(e.target.value)}
                         placeholder="اسم الطالب للشهادة..."
-                        className="h-9 w-44 rounded-xl bg-black/40 border-white/20 text-xs"
+                        className="h-9 w-48 rounded-xl bg-white border-slate-300 text-xs text-slate-900 shadow-sm"
                       />
                     </div>
 
@@ -914,7 +914,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                             setIsQuizSubmitted(true);
                             toast.success('تم تصحيح تذكرة الخروج!');
                           }}
-                          className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md shadow-emerald-500/20"
+                          className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-md"
                         >
                           تصحيح تذكرة الخروج والتحقق من الإتقان
                         </Button>
@@ -926,7 +926,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                             setShowCertificate(false);
                           }}
                           variant="outline"
-                          className="rounded-xl border-white/20 text-white text-xs bg-white/10 hover:bg-white/20"
+                          className="rounded-xl border-slate-300 text-slate-700 text-xs bg-white hover:bg-slate-50 shadow-sm"
                         >
                           إعادة المحاولة
                         </Button>
@@ -940,14 +940,14 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
         </div>
 
         {/* Bottom Slide Navigation Bar */}
-        <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4 relative z-20">
+        <div className="pt-4 border-t border-slate-200/90 flex items-center justify-between gap-4 relative z-20">
           <div className="flex items-center gap-2">
             <Button
               onClick={goToPrevSlide}
               disabled={currentSlideIndex === 0}
               variant="outline"
               size="sm"
-              className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 h-9 px-3.5 gap-1.5 text-xs font-bold"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 h-9 px-3.5 gap-1.5 text-xs font-bold shadow-sm"
             >
               <ChevronRight className="w-4 h-4" />
               <span>السابق</span>
@@ -958,7 +958,7 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
               disabled={currentSlideIndex === slides.length - 1}
               variant="outline"
               size="sm"
-              className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 h-9 px-3.5 gap-1.5 text-xs font-bold"
+              className="rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-100 h-9 px-3.5 gap-1.5 text-xs font-bold shadow-sm"
             >
               <span>التالي</span>
               <ChevronLeft className="w-4 h-4" />
@@ -976,8 +976,8 @@ export const InteractiveLessonDeckStudio: React.FC = () => {
                 }}
                 className={`h-2.5 rounded-full transition-all duration-300 ${
                   i === currentSlideIndex 
-                    ? 'w-8 bg-cyan-400 shadow-md shadow-cyan-400/50' 
-                    : 'w-2.5 bg-white/30 hover:bg-white/60'
+                    ? 'w-8 bg-blue-600 shadow-md shadow-blue-500/30' 
+                    : 'w-2.5 bg-slate-300 hover:bg-slate-400'
                 }`}
                 title={`الشريحة ${i + 1}: ${slide.title}`}
               />
