@@ -468,6 +468,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          module: string
+          severity: string | null
+          user_info: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          module: string
+          severity?: string | null
+          user_info?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          module?: string
+          severity?: string | null
+          user_info?: Json | null
+        }
+        Relationships: []
+      }
       admin_teacher_access: {
         Row: {
           access_level: Database["public"]["Enums"]["admin_teacher_access_level"]
@@ -649,6 +682,113 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_exam_packages: {
+        Row: {
+          academic_year: string | null
+          created_at: string | null
+          created_by: string | null
+          duration_minutes: number | null
+          exam_data: Json
+          exam_title: string
+          grade_level: string
+          id: string
+          registration_config: Json | null
+          school_name: string | null
+          source_document_name: string | null
+          subject: string
+          topic: string
+          total_marks: number | null
+        }
+        Insert: {
+          academic_year?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_minutes?: number | null
+          exam_data: Json
+          exam_title: string
+          grade_level: string
+          id: string
+          registration_config?: Json | null
+          school_name?: string | null
+          source_document_name?: string | null
+          subject: string
+          topic: string
+          total_marks?: number | null
+        }
+        Update: {
+          academic_year?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duration_minutes?: number | null
+          exam_data?: Json
+          exam_title?: string
+          grade_level?: string
+          id?: string
+          registration_config?: Json | null
+          school_name?: string | null
+          source_document_name?: string | null
+          subject?: string
+          topic?: string
+          total_marks?: number | null
+        }
+        Relationships: []
+      }
+      ai_exam_submissions: {
+        Row: {
+          answers: Json
+          exam_id: string
+          id: string
+          percentage: number
+          school_name: string | null
+          score: number
+          seat_number: string | null
+          section: string | null
+          student_class: string | null
+          student_name: string
+          submitted_at: string | null
+          time_taken_minutes: number | null
+          total_possible: number
+        }
+        Insert: {
+          answers: Json
+          exam_id: string
+          id: string
+          percentage: number
+          school_name?: string | null
+          score: number
+          seat_number?: string | null
+          section?: string | null
+          student_class?: string | null
+          student_name: string
+          submitted_at?: string | null
+          time_taken_minutes?: number | null
+          total_possible: number
+        }
+        Update: {
+          answers?: Json
+          exam_id?: string
+          id?: string
+          percentage?: number
+          school_name?: string | null
+          score?: number
+          seat_number?: string | null
+          section?: string | null
+          student_class?: string | null
+          student_name?: string
+          submitted_at?: string | null
+          time_taken_minutes?: number | null
+          total_possible?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_exam_submissions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "ai_exam_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -2055,7 +2195,7 @@ export type Database = {
           message_text: string
           school_name: string
           section: string
-          user_id: string
+          user_id: string | null
           user_type: string
           username: string
         }
@@ -2067,7 +2207,7 @@ export type Database = {
           message_text: string
           school_name: string
           section: string
-          user_id: string
+          user_id?: string | null
           user_type: string
           username: string
         }
@@ -2079,7 +2219,7 @@ export type Database = {
           message_text?: string
           school_name?: string
           section?: string
-          user_id?: string
+          user_id?: string | null
           user_type?: string
           username?: string
         }
@@ -2570,6 +2710,93 @@ export type Database = {
           },
         ]
       }
+      community_forum_messages: {
+        Row: {
+          author_avatar: string | null
+          author_grade: string | null
+          author_name: string
+          author_role: string | null
+          channel: string
+          channel_id: string | null
+          content: string
+          created_at: string | null
+          flag_reason: string | null
+          id: string
+          image_url: string | null
+          is_flagged: boolean | null
+          is_pinned: boolean | null
+          likes_count: number | null
+          mention: Json | null
+          moderation_status: string | null
+          platform_mention: Json | null
+          raw_data: Json | null
+          reactions: Json | null
+          reply_to: Json | null
+          safety_score: number | null
+          status: string | null
+          student_avatar: string | null
+          student_grade: string | null
+          student_name: string | null
+          student_role: string | null
+        }
+        Insert: {
+          author_avatar?: string | null
+          author_grade?: string | null
+          author_name: string
+          author_role?: string | null
+          channel?: string
+          channel_id?: string | null
+          content: string
+          created_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          image_url?: string | null
+          is_flagged?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          mention?: Json | null
+          moderation_status?: string | null
+          platform_mention?: Json | null
+          raw_data?: Json | null
+          reactions?: Json | null
+          reply_to?: Json | null
+          safety_score?: number | null
+          status?: string | null
+          student_avatar?: string | null
+          student_grade?: string | null
+          student_name?: string | null
+          student_role?: string | null
+        }
+        Update: {
+          author_avatar?: string | null
+          author_grade?: string | null
+          author_name?: string
+          author_role?: string | null
+          channel?: string
+          channel_id?: string | null
+          content?: string
+          created_at?: string | null
+          flag_reason?: string | null
+          id?: string
+          image_url?: string | null
+          is_flagged?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          mention?: Json | null
+          moderation_status?: string | null
+          platform_mention?: Json | null
+          raw_data?: Json | null
+          reactions?: Json | null
+          reply_to?: Json | null
+          safety_score?: number | null
+          status?: string | null
+          student_avatar?: string | null
+          student_grade?: string | null
+          student_name?: string | null
+          student_role?: string | null
+        }
+        Relationships: []
+      }
       contact_messages: {
         Row: {
           created_at: string
@@ -2699,6 +2926,90 @@ export type Database = {
           role?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      developer_api_keys: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          key_hash: string
+          last_used_at: string | null
+          name: string
+          prefix: string
+          rate_limit_per_minute: number | null
+          revoked: boolean | null
+          scopes: Json
+          total_usage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id: string
+          key_hash: string
+          last_used_at?: string | null
+          name: string
+          prefix: string
+          rate_limit_per_minute?: number | null
+          revoked?: boolean | null
+          scopes?: Json
+          total_usage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          key_hash?: string
+          last_used_at?: string | null
+          name?: string
+          prefix?: string
+          rate_limit_per_minute?: number | null
+          revoked?: boolean | null
+          scopes?: Json
+          total_usage?: number | null
+        }
+        Relationships: []
+      }
+      developer_api_logs: {
+        Row: {
+          client_ip: string | null
+          endpoint: string
+          error: string | null
+          id: string
+          key_prefix: string | null
+          latency_ms: number
+          method: string
+          request_body: Json | null
+          response_body: Json | null
+          status_code: number
+          timestamp: string | null
+        }
+        Insert: {
+          client_ip?: string | null
+          endpoint: string
+          error?: string | null
+          id: string
+          key_prefix?: string | null
+          latency_ms: number
+          method: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code: number
+          timestamp?: string | null
+        }
+        Update: {
+          client_ip?: string | null
+          endpoint?: string
+          error?: string | null
+          id?: string
+          key_prefix?: string | null
+          latency_ms?: number
+          method?: string
+          request_body?: Json | null
+          response_body?: Json | null
+          status_code?: number
+          timestamp?: string | null
         }
         Relationships: []
       }
@@ -2972,6 +3283,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      institutional_partnerships: {
+        Row: {
+          admin_notes: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          email: string
+          estimated_users: number | null
+          id: string
+          organization_name: string
+          organization_type: string
+          partnership_goals: string | null
+          phone: string | null
+          raw_data: Json | null
+          representative_name: string
+          representative_title: string | null
+          status: string | null
+          website: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email: string
+          estimated_users?: number | null
+          id: string
+          organization_name: string
+          organization_type: string
+          partnership_goals?: string | null
+          phone?: string | null
+          raw_data?: Json | null
+          representative_name: string
+          representative_title?: string | null
+          status?: string | null
+          website?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          email?: string
+          estimated_users?: number | null
+          id?: string
+          organization_name?: string
+          organization_type?: string
+          partnership_goals?: string | null
+          phone?: string | null
+          raw_data?: Json | null
+          representative_name?: string
+          representative_title?: string | null
+          status?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      items: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
       }
       jordanian_assistant_chat_history: {
         Row: {
@@ -3274,6 +3666,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_chat_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string | null
+          message_text: string
+          metadata: Json | null
+          room_id: string
+          sender_avatar: string | null
+          sender_id: string | null
+          sender_name: string
+          sender_role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          message_text: string
+          metadata?: Json | null
+          room_id?: string
+          sender_avatar?: string | null
+          sender_id?: string | null
+          sender_name: string
+          sender_role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          message_text?: string
+          metadata?: Json | null
+          room_id?: string
+          sender_avatar?: string | null
+          sender_id?: string | null
+          sender_name?: string
+          sender_role?: string | null
+        }
+        Relationships: []
+      }
       platform_complaints: {
         Row: {
           category: string | null
@@ -3350,6 +3781,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      posts: {
+        Row: {
+          author_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          title: string
+        }
+        Insert: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          title: string
+        }
+        Update: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          title?: string
+        }
+        Relationships: []
       }
       private_chat_participants: {
         Row: {
@@ -3574,6 +4032,48 @@ export type Database = {
           schedule_days?: string[]
           subject?: string
           topic_description?: string
+        }
+        Relationships: []
+      }
+      school_broadcasts: {
+        Row: {
+          acknowledged_count: number | null
+          audience_label: string | null
+          author: string | null
+          category: string | null
+          category_label: string | null
+          content: string
+          created_at: string | null
+          id: string
+          target_audience: string | null
+          title: string
+          views_count: number | null
+        }
+        Insert: {
+          acknowledged_count?: number | null
+          audience_label?: string | null
+          author?: string | null
+          category?: string | null
+          category_label?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          target_audience?: string | null
+          title: string
+          views_count?: number | null
+        }
+        Update: {
+          acknowledged_count?: number | null
+          audience_label?: string | null
+          author?: string | null
+          category?: string | null
+          category_label?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          target_audience?: string | null
+          title?: string
+          views_count?: number | null
         }
         Relationships: []
       }
@@ -4572,6 +5072,30 @@ export type Database = {
           solved_at?: string
           subject?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          role?: string | null
         }
         Relationships: []
       }
