@@ -7,6 +7,7 @@ import SafeBoundary from '@/components/common/SafeBoundary';
 
 // Executive Product Tour Enhanced Architecture
 import ProductTourHero from '@/components/home/ProductTourHero';
+import ExamCreatorShowcase from '@/components/home/ExamCreatorShowcase';
 import PlatformMissionSection from '@/components/home/PlatformMissionSection';
 import InteractivePersonaTour from '@/components/home/InteractivePersonaTour';
 import EcosystemBentoGrid from '@/components/home/EcosystemBentoGrid';
@@ -50,6 +51,11 @@ const Index = () => {
           </SafeBoundary>
         </div>
         
+        {/* إنشاء الامتحانات من ملف المعلم */}
+        <SafeBoundary name="ExamCreatorShowcase">
+          <ExamCreatorShowcase />
+        </SafeBoundary>
+
         {/* Stage 2: Mission & Core Value (الرسالة الأكاديمية والمفتش الحي) */}
         <SafeBoundary name="PlatformMissionSection">
           <PlatformMissionSection />

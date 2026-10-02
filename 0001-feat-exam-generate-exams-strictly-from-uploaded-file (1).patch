@@ -1,0 +1,979 @@
+From 546a6b8b6b004f06810d663b69095bbe134a57fa Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 1 Oct 2026 00:16:19 +0000
+Subject: [PATCH 1/4] feat(exam): generate exams strictly from uploaded files
+ with evidence + verification
+
+---
+ src/components/ExamGenerationTab.tsx          |  21 +-
+ src/components/exam/ExamFromFilePanel.tsx     | 379 +++++++++++++++++
+ src/components/exam/examFromFileTypes.ts      | 121 ++++++
+ supabase/config.toml                          |   3 +
+ .../generate-exam-from-file/index.ts          | 389 ++++++++++++++++++
+ 5 files changed, 912 insertions(+), 1 deletion(-)
+ create mode 100644 src/components/exam/ExamFromFilePanel.tsx
+ create mode 100644 src/components/exam/examFromFileTypes.ts
+ create mode 100644 supabase/functions/generate-exam-from-file/index.ts
+
+diff --git a/src/components/ExamGenerationTab.tsx b/src/components/ExamGenerationTab.tsx
+index e74358ac..7062dd80 100644
+--- a/src/components/ExamGenerationTab.tsx
++++ b/src/components/ExamGenerationTab.tsx
+@@ -9,12 +9,14 @@ import { Loader2, FileQuestion, Copy } from "lucide-react";
+ import { supabase } from "@/integrations/supabase/client";
+ import { useToast } from "@/hooks/use-toast";
+ import { Checkbox } from "@/components/ui/checkbox";
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import ExamFromFilePanel from "@/components/exam/ExamFromFilePanel";
+ 
+ interface ExamGenerationTabProps {
+   grade: string;
+ }
+ 
+-export default function ExamGenerationTab({ grade: defaultGrade }: ExamGenerationTabProps) {
++function BookExamPanel({ grade: defaultGrade }: ExamGenerationTabProps) {
+   const [grade, setGrade] = useState(defaultGrade);
+   const [subject, setSubject] = useState("");
+   const [contentType, setContentType] = useState("book");
+@@ -438,3 +440,20 @@ export default function ExamGenerationTab({ grade: defaultGrade }: ExamGeneratio
+     </div>
+   );
+ }
++
++export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
++  return (
++    <Tabs defaultValue="file" dir="rtl" className="w-full">
++      <TabsList className="grid w-full grid-cols-2">
++        <TabsTrigger value="file">من ملف مرفوع</TabsTrigger>
++        <TabsTrigger value="book">من الكتاب المدرسي</TabsTrigger>
++      </TabsList>
++      <TabsContent value="file" className="mt-4">
++        <ExamFromFilePanel defaultGrade={grade} />
++      </TabsContent>
++      <TabsContent value="book" className="mt-4">
++        <BookExamPanel grade={grade} />
++      </TabsContent>
++    </Tabs>
++  );
++}
+diff --git a/src/components/exam/ExamFromFilePanel.tsx b/src/components/exam/ExamFromFilePanel.tsx
+new file mode 100644
+index 00000000..c6892aa7
+--- /dev/null
++++ b/src/components/exam/ExamFromFilePanel.tsx
+@@ -0,0 +1,379 @@
++import { useCallback, useRef, useState } from "react";
++import { Button } from "@/components/ui/button";
++import { Card } from "@/components/ui/card";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import { Textarea } from "@/components/ui/textarea";
++import { Badge } from "@/components/ui/badge";
++import { Alert, AlertDescription } from "@/components/ui/alert";
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
++import { Loader2, UploadCloud, FileText, X, Copy, Printer, Eye, EyeOff, Sparkles, AlertTriangle } from "lucide-react";
++import { supabase } from "@/integrations/supabase/client";
++import { useToast } from "@/hooks/use-toast";
++import {
++  DIFFICULTY_AR,
++  QTYPE_META,
++  examToPrintHtml,
++  examToText,
++  type ExamFromFileResponse,
++  type QType,
++} from "./examFromFileTypes";
++
++const MAX_FILES = 5;
++const MAX_INLINE_MB = 10; // أكبر ملف PDF/صورة نرسله كما هو للذكاء الاصطناعي
++const MAX_TOTAL_INLINE_BYTES = 14 * 1024 * 1024;
++const MAX_FILE_MB = 30;
++const LETTERS = ["أ", "ب", "ج", "د"];
++
++interface PreparedFile {
++  name: string;
++  mimeType?: string;
++  base64?: string;
++  text?: string;
++  approxBytes: number;
++}
++
++const readBase64 = (file: File) =>
++  new Promise<string>((resolve, reject) => {
++    const r = new FileReader();
++    r.onload = () => resolve(String(r.result).split(",")[1] ?? "");
++    r.onerror = () => reject(new Error(`تعذّرت قراءة الملف ${file.name}`));
++    r.readAsDataURL(file);
++  });
++
++async function prepareFile(file: File): Promise<PreparedFile> {
++  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
++  if (file.size > MAX_FILE_MB * 1024 * 1024) {
++    throw new Error(`الملف "${file.name}" أكبر من ${MAX_FILE_MB} ميجابايت`);
++  }
++
++  const imageMime: Record<string, string> = {
++    png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp",
++  };
++
++  // صور و PDF: يقرؤها الذكاء الاصطناعي مباشرة (يدعم الملفات الممسوحة والعربية)
++  if (ext === "pdf" || imageMime[ext]) {
++    if (file.size <= MAX_INLINE_MB * 1024 * 1024) {
++      return {
++        name: file.name,
++        mimeType: ext === "pdf" ? "application/pdf" : imageMime[ext],
++        base64: await readBase64(file),
++        approxBytes: file.size,
++      };
++    }
++    if (ext !== "pdf") throw new Error(`الصورة "${file.name}" أكبر من ${MAX_INLINE_MB} ميجابايت`);
++    // PDF كبير: استخرج النص محلياً
++  }
++
++  if (["pdf", "docx", "txt", "md"].includes(ext)) {
++    const { fileParserService } = await import("@/services/fileParserService");
++    const parsed = await fileParserService.parseFile(file);
++    const text = parsed.extractedText?.trim() ?? "";
++    if (text.length < 80 || fileParserService.isCorruptedPdfText(text, file.name)) {
++      throw new Error(`لم أستطع استخراج نص مقروء من "${file.name}". جرّب نسخة أصغر أو ملف DOCX/صورة.`);
++    }
++    return { name: file.name, text, approxBytes: 0 };
++  }
++
++  throw new Error(`صيغة "${file.name}" غير مدعومة. المسموح: PDF, DOCX, TXT, MD, PNG, JPG, WEBP`);
++}
++
++export default function ExamFromFilePanel({ defaultGrade = "" }: { defaultGrade?: string }) {
++  const { toast } = useToast();
++  const inputRef = useRef<HTMLInputElement>(null);
++
++  const [files, setFiles] = useState<File[]>([]);
++  const [dragOver, setDragOver] = useState(false);
++  const [counts, setCounts] = useState<Record<QType, number>>({
++    multiple_choice: 5, true_false: 3, fill_blank: 2, short_answer: 0, essay: 0,
++  });
++  const [difficulty, setDifficulty] = useState("mixed");
++  const [language, setLanguage] = useState("auto");
++  const [grade, setGrade] = useState(defaultGrade);
++  const [subject, setSubject] = useState("");
++  const [notes, setNotes] = useState("");
++  const [generating, setGenerating] = useState(false);
++  const [stage, setStage] = useState("");
++  const [result, setResult] = useState<ExamFromFileResponse | null>(null);
++  const [showAnswers, setShowAnswers] = useState(true);
++
++  const total = Object.values(counts).reduce((a, b) => a + b, 0);
++
++  const addFiles = useCallback((list: FileList | File[]) => {
++    const incoming = Array.from(list);
++    setFiles((prev) => {
++      const merged = [...prev];
++      for (const f of incoming) {
++        if (merged.length >= MAX_FILES) {
++          toast({ title: "⚠️ الحد الأقصى", description: `يمكن رفع ${MAX_FILES} ملفات كحد أقصى`, variant: "destructive" });
++          break;
++        }
++        if (!merged.some((m) => m.name === f.name && m.size === f.size)) merged.push(f);
++      }
++      return merged;
++    });
++  }, [toast]);
++
++  const setCount = (k: QType, v: string) => {
++    const n = Math.max(0, Math.min(50, parseInt(v || "0", 10) || 0));
++    setCounts((c) => ({ ...c, [k]: n }));
++  };
++
++  const handleGenerate = async () => {
++    if (files.length === 0) {
++      toast({ title: "⚠️ ارفع ملفاً", description: "ارفع الملف الذي تريد إنشاء الامتحان منه", variant: "destructive" });
++      return;
++    }
++    if (total < 1 || total > 50) {
++      toast({ title: "⚠️ عدد الأسئلة", description: "اختر من 1 إلى 50 سؤالاً بمجموع الأنواع", variant: "destructive" });
++      return;
++    }
++
++    setGenerating(true);
++    setResult(null);
++    try {
++      setStage("جارٍ قراءة الملفات...");
++      const prepared: PreparedFile[] = [];
++      for (const f of files) prepared.push(await prepareFile(f));
++      if (prepared.reduce((s, p) => s + p.approxBytes, 0) > MAX_TOTAL_INLINE_BYTES) {
++        throw new Error("مجموع حجم الملفات كبير جداً (الحد 14 ميجابايت). قلّل عدد الملفات أو حجمها.");
++      }
++
++      setStage("الذكاء الاصطناعي يقرأ الملف ويصيغ الأسئلة ثم يتحقق منها (قد يستغرق دقيقة)...");
++      const { data, error } = await supabase.functions.invoke("generate-exam-from-file", {
++        body: {
++          files: prepared.map(({ approxBytes: _a, ...rest }) => rest),
++          counts,
++          difficulty,
++          language,
++          grade: grade.trim() || undefined,
++          subject: subject.trim() || undefined,
++          notes: notes.trim() || undefined,
++        },
++      });
++
++      if (error) {
++        // حاول استخراج رسالة الخطأ الفعلية من الدالة
++        let msg = error.message;
++        try {
++          const body = await (error as any).context?.json?.();
++          if (body?.error) msg = body.error;
++        } catch { /* ignore */ }
++        throw new Error(msg);
++      }
++      if (data?.error) throw new Error(data.error);
++
++      setResult(data as ExamFromFileResponse);
++      toast({ title: "✅ تم إنشاء الامتحان", description: `${data.delivered} سؤال من الملف المرفق` });
++    } catch (e: any) {
++      console.error("exam-from-file:", e);
++      toast({ title: "⚠️ تعذّر إنشاء الامتحان", description: e.message || "حدث خطأ غير متوقع", variant: "destructive" });
++    } finally {
++      setGenerating(false);
++      setStage("");
++    }
++  };
++
++  const copy = (text: string, label: string) => {
++    navigator.clipboard.writeText(text);
++    toast({ title: "✅ تم النسخ", description: label });
++  };
++
++  const print = (withAnswers: boolean) => {
++    if (!result) return;
++    const w = window.open("", "_blank");
++    if (!w) {
++      toast({ title: "⚠️ النافذة محجوبة", description: "اسمح بالنوافذ المنبثقة ثم أعد المحاولة", variant: "destructive" });
++      return;
++    }
++    w.document.write(examToPrintHtml(result.exam, withAnswers));
++    w.document.close();
++  };
++
++  return (
++    <div className="space-y-6" dir="rtl">
++      <Alert>
++        <AlertDescription className="text-sm">
++          ارفع ملفاً (PDF / Word / نص / صورة) وسيُنشأ الامتحان من محتوى الملف فقط دون أي معلومة من خارجه،
++          وكل سؤال يأتي مع اقتباس من الملف يثبت إجابته، ويُدقَّق تلقائياً قبل عرضه.
++        </AlertDescription>
++      </Alert>
++
++      {/* رفع الملفات */}
++      <div
++        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
++        onDragLeave={() => setDragOver(false)}
++        onDrop={(e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }}
++        onClick={() => inputRef.current?.click()}
++        className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
++          dragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/60"
++        }`}
++      >
++        <UploadCloud className="mx-auto mb-2 h-10 w-10 text-muted-foreground" />
++        <p className="font-medium">اسحب الملف هنا أو اضغط للاختيار</p>
++        <p className="mt-1 text-xs text-muted-foreground">PDF, DOCX, TXT, MD, PNG, JPG — حتى {MAX_FILES} ملفات</p>
++        <input
++          ref={inputRef}
++          type="file"
++          multiple
++          hidden
++          accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp"
++          onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
++        />
++      </div>
++
++      {files.length > 0 && (
++        <div className="space-y-2">
++          {files.map((f, i) => (
++            <Card key={`${f.name}-${i}`} className="flex items-center justify-between p-3">
++              <div className="flex min-w-0 items-center gap-2">
++                <FileText className="h-4 w-4 shrink-0" />
++                <span className="truncate text-sm">{f.name}</span>
++                <span className="shrink-0 text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
++              </div>
++              <Button size="icon" variant="ghost" onClick={() => setFiles(files.filter((_, j) => j !== i))}>
++                <X className="h-4 w-4" />
++              </Button>
++            </Card>
++          ))}
++        </div>
++      )}
++
++      {/* عدد الأسئلة لكل نوع */}
++      <div className="space-y-2">
++        <Label>عدد الأسئلة لكل نوع <span className="text-muted-foreground">(المجموع: {total})</span></Label>
++        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
++          {QTYPE_META.map(({ key, label }) => (
++            <div key={key} className="space-y-1">
++              <span className="text-xs text-muted-foreground">{label}</span>
++              <Input type="number" min={0} max={50} value={counts[key]} onChange={(e) => setCount(key, e.target.value)} />
++            </div>
++          ))}
++        </div>
++      </div>
++
++      <div className="grid gap-4 sm:grid-cols-2">
++        <div className="space-y-2">
++          <Label>مستوى الصعوبة</Label>
++          <Select value={difficulty} onValueChange={setDifficulty}>
++            <SelectTrigger><SelectValue /></SelectTrigger>
++            <SelectContent>
++              <SelectItem value="mixed">متنوع</SelectItem>
++              <SelectItem value="easy">سهل</SelectItem>
++              <SelectItem value="medium">متوسط</SelectItem>
++              <SelectItem value="hard">صعب</SelectItem>
++            </SelectContent>
++          </Select>
++        </div>
++        <div className="space-y-2">
++          <Label>لغة الامتحان</Label>
++          <Select value={language} onValueChange={setLanguage}>
++            <SelectTrigger><SelectValue /></SelectTrigger>
++            <SelectContent>
++              <SelectItem value="auto">نفس لغة الملف</SelectItem>
++              <SelectItem value="العربية">العربية</SelectItem>
++              <SelectItem value="English">English</SelectItem>
++            </SelectContent>
++          </Select>
++        </div>
++        <div className="space-y-2">
++          <Label>الصف (اختياري)</Label>
++          <Input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="مثال: الصف العاشر" />
++        </div>
++        <div className="space-y-2">
++          <Label>المادة (اختياري)</Label>
++          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="مثال: الأحياء" />
++        </div>
++      </div>
++
++      <div className="space-y-2">
++        <Label>ملاحظات إضافية (اختياري)</Label>
++        <Textarea
++          value={notes}
++          onChange={(e) => setNotes(e.target.value)}
++          placeholder="مثال: ركّز على الفصل الثاني، أو اجعل الأسئلة تطبيقية..."
++          className="min-h-[70px]"
++        />
++      </div>
++
++      <Button className="w-full" onClick={handleGenerate} disabled={generating || files.length === 0}>
++        {generating ? (
++          <><Loader2 className="ml-2 h-4 w-4 animate-spin" />{stage || "جارٍ المعالجة..."}</>
++        ) : (
++          <><Sparkles className="ml-2 h-4 w-4" />أنشئ الامتحان من الملف</>
++        )}
++      </Button>
++
++      {/* النتيجة */}
++      {result && (
++        <div className="space-y-4">
++          {result.warnings.map((w, i) => (
++            <Alert key={i} variant="destructive">
++              <AlertTriangle className="h-4 w-4" />
++              <AlertDescription>{w}</AlertDescription>
++            </Alert>
++          ))}
++
++          <div className="flex flex-wrap items-center justify-between gap-2">
++            <h3 className="text-lg font-bold">{result.exam.title}</h3>
++            <div className="flex flex-wrap gap-2">
++              <Button size="sm" variant="outline" onClick={() => setShowAnswers((s) => !s)}>
++                {showAnswers ? <EyeOff className="ml-1 h-4 w-4" /> : <Eye className="ml-1 h-4 w-4" />}
++                {showAnswers ? "إخفاء الإجابات" : "إظهار الإجابات"}
++              </Button>
++              <Button size="sm" variant="outline" onClick={() => copy(examToText(result.exam, false), "نسخة الطالب")}>
++                <Copy className="ml-1 h-4 w-4" />نسخ (بدون إجابات)
++              </Button>
++              <Button size="sm" variant="outline" onClick={() => copy(examToText(result.exam, true), "الامتحان مع الإجابات")}>
++                <Copy className="ml-1 h-4 w-4" />نسخ (مع الإجابات)
++              </Button>
++              <Button size="sm" variant="outline" onClick={() => print(false)}>
++                <Printer className="ml-1 h-4 w-4" />طباعة / PDF للطالب
++              </Button>
++              <Button size="sm" onClick={() => print(true)}>
++                <Printer className="ml-1 h-4 w-4" />طباعة مع الإجابات
++              </Button>
++            </div>
++          </div>
++
++          {result.exam.questions.map((q) => (
++            <Card key={q.id} className="space-y-3 p-4">
++              <div className="flex flex-wrap items-center gap-2">
++                <Badge variant="secondary">سؤال {q.id}</Badge>
++                <Badge variant="outline">{QTYPE_META.find((t) => t.key === q.type)?.label}</Badge>
++                <Badge variant="outline">{DIFFICULTY_AR[q.difficulty]}</Badge>
++              </div>
++              <p className="leading-relaxed">{q.question}</p>
++
++              {q.type === "multiple_choice" && q.options && (
++                <ul className="space-y-1 pr-2">
++                  {q.options.map((o, i) => {
++                    const correct = showAnswers && o === q.answer;
++                    return (
++                      <li key={i} className={`rounded px-2 py-1 text-sm ${correct ? "bg-green-100 font-semibold text-green-900 dark:bg-green-900/30 dark:text-green-200" : ""}`}>
++                        {LETTERS[i]}. {o}
++                      </li>
++                    );
++                  })}
++                </ul>
++              )}
++
++              {showAnswers && q.type !== "multiple_choice" && (
++                <p className="rounded bg-green-100 px-2 py-1 text-sm text-green-900 dark:bg-green-900/30 dark:text-green-200">
++                  <b>الإجابة:</b> {q.answer}
++                </p>
++              )}
++
++              {showAnswers && (
++                <div className="space-y-1 border-t pt-2 text-xs text-muted-foreground">
++                  {q.explanation && <p><b>ملاحظة التصحيح:</b> {q.explanation}</p>}
++                  <p><b>الدليل من الملف:</b> «{q.evidence}»{q.location ? ` — ${q.location}` : ""}</p>
++                </div>
++              )}
++            </Card>
++          ))}
++        </div>
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/exam/examFromFileTypes.ts b/src/components/exam/examFromFileTypes.ts
+new file mode 100644
+index 00000000..bb2127b1
+--- /dev/null
++++ b/src/components/exam/examFromFileTypes.ts
+@@ -0,0 +1,121 @@
++export type QType = "multiple_choice" | "true_false" | "short_answer" | "essay" | "fill_blank";
++
++export const QTYPE_META: { key: QType; label: string }[] = [
++  { key: "multiple_choice", label: "اختيار من متعدد" },
++  { key: "true_false", label: "صح / خطأ" },
++  { key: "fill_blank", label: "أكمل الفراغ" },
++  { key: "short_answer", label: "إجابة قصيرة" },
++  { key: "essay", label: "مقالي" },
++];
++
++export const DIFFICULTY_AR: Record<string, string> = { easy: "سهل", medium: "متوسط", hard: "صعب" };
++
++export interface ExamQuestion {
++  id: number;
++  type: QType;
++  question: string;
++  options?: string[];
++  answer: string;
++  explanation?: string;
++  evidence: string;
++  location?: string;
++  difficulty: "easy" | "medium" | "hard";
++}
++
++export interface GeneratedExam {
++  title: string;
++  questions: ExamQuestion[];
++}
++
++export interface ExamFromFileResponse {
++  exam: GeneratedExam;
++  requested: number;
++  delivered: number;
++  dropped: number;
++  warnings: string[];
++}
++
++const LETTERS = ["أ", "ب", "ج", "د"];
++
++export function examToText(exam: GeneratedExam, withAnswers: boolean): string {
++  const lines: string[] = [exam.title, ""];
++  for (const q of exam.questions) {
++    lines.push(`${q.id}) ${q.question}`);
++    if (q.type === "multiple_choice" && q.options) {
++      q.options.forEach((o, i) => lines.push(`   ${LETTERS[i]}. ${o}`));
++    } else if (q.type === "true_false") {
++      lines.push("   (   ) صح        (   ) خطأ");
++    }
++    lines.push("");
++  }
++  if (withAnswers) {
++    lines.push("الإجابات النموذجية", "");
++    for (const q of exam.questions) {
++      let a = q.answer;
++      if (q.type === "multiple_choice" && q.options) {
++        const i = q.options.indexOf(q.answer);
++        if (i >= 0) a = `${LETTERS[i]}. ${q.answer}`;
++      }
++      lines.push(`${q.id}) ${a}${q.location ? `  [${q.location}]` : ""}`);
++    }
++  }
++  return lines.join("\n");
++}
++
++const esc = (s: string) =>
++  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
++
++export function examToPrintHtml(exam: GeneratedExam, withAnswers: boolean): string {
++  const qs = exam.questions
++    .map((q) => {
++      let body = `<div class="q"><b>${q.id})</b> ${esc(q.question)}`;
++      if (q.type === "multiple_choice" && q.options) {
++        body += `<ol class="opts">${q.options.map((o, i) => `<li><span>${LETTERS[i]}.</span> ${esc(o)}</li>`).join("")}</ol>`;
++      } else if (q.type === "true_false") {
++        body += `<div class="tf">( &nbsp; ) صح &emsp; ( &nbsp; ) خطأ</div>`;
++      } else if (q.type === "short_answer") {
++        body += `<div class="lines"></div>`;
++      } else if (q.type === "essay") {
++        body += `<div class="lines"></div><div class="lines"></div><div class="lines"></div>`;
++      }
++      return body + "</div>";
++    })
++    .join("");
++
++  const ans = withAnswers
++    ? `<div class="pb"></div><h2>الإجابات النموذجية</h2>` +
++      exam.questions
++        .map((q) => {
++          let a = q.answer;
++          if (q.type === "multiple_choice" && q.options) {
++            const i = q.options.indexOf(q.answer);
++            if (i >= 0) a = `${LETTERS[i]}. ${q.answer}`;
++          }
++          return `<div class="a"><b>${q.id})</b> ${esc(a)}${
++            q.location ? ` <small>[${esc(q.location)}]</small>` : ""
++          }${q.explanation ? `<div class="ex">${esc(q.explanation)}</div>` : ""}</div>`;
++        })
++        .join("")
++    : "";
++
++  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(exam.title)}</title>
++<style>
++body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;margin:32px;line-height:1.9;color:#111}
++h1{text-align:center;font-size:22px;border-bottom:2px solid #111;padding-bottom:8px}
++h2{font-size:18px}
++.meta{display:flex;justify-content:space-between;margin:12px 0 20px;font-size:14px}
++.q{margin:16px 0;page-break-inside:avoid}
++.opts{list-style:none;padding:0 18px;margin:6px 0}
++.opts span{display:inline-block;width:22px;font-weight:bold}
++.tf{padding:4px 18px}
++.lines{border-bottom:1px dotted #555;height:26px;margin:2px 18px}
++.a{margin:8px 0}.ex{font-size:13px;color:#444;margin-right:18px}
++.pb{page-break-before:always}
++@media print{body{margin:14mm}}
++</style></head><body>
++<h1>${esc(exam.title)}</h1>
++<div class="meta"><span>اسم الطالب: ....................................</span><span>العلامة: ........ / ${exam.questions.length}</span></div>
++${qs}${ans}
++<script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
++</body></html>`;
++}
+diff --git a/supabase/config.toml b/supabase/config.toml
+index c0dfc589..d61ef3cc 100644
+--- a/supabase/config.toml
++++ b/supabase/config.toml
+@@ -269,3 +269,6 @@ verify_jwt = false
+ 
+ [functions.damij-carbon-advisor]
+ verify_jwt = false
++
++[functions.generate-exam-from-file]
++verify_jwt = true
+diff --git a/supabase/functions/generate-exam-from-file/index.ts b/supabase/functions/generate-exam-from-file/index.ts
+new file mode 100644
+index 00000000..05088326
+--- /dev/null
++++ b/supabase/functions/generate-exam-from-file/index.ts
+@@ -0,0 +1,389 @@
++// generate-exam-from-file
++// يولّد امتحاناً من الملف/الملفات المرفوعة فقط (لا يستخدم أي معرفة خارجية)،
++// ثم يتحقق من كل سؤال مقابل الملف نفسه ويحذف أي سؤال غير مدعوم بالنص.
++import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
++
++const corsHeaders = {
++  "Access-Control-Allow-Origin": "*",
++  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
++};
++
++type QType = "multiple_choice" | "true_false" | "short_answer" | "essay" | "fill_blank";
++const QTYPES: QType[] = ["multiple_choice", "true_false", "short_answer", "essay", "fill_blank"];
++const TYPE_LABEL: Record<QType, string> = {
++  multiple_choice: "اختيار من متعدد (4 خيارات، إجابة صحيحة واحدة فقط)",
++  true_false: "صح أو خطأ (الإجابة بالضبط: صح أو خطأ)",
++  short_answer: "إجابة قصيرة (جملة أو جملتان)",
++  essay: "سؤال مقالي (يحتاج شرحاً أو تعليلاً)",
++  fill_blank: "أكمل الفراغ (ضع ______ مكان الكلمة المحذوفة)",
++};
++const DIFFICULTY_LABEL: Record<string, string> = {
++  easy: "سهل", medium: "متوسط", hard: "صعب",
++  mixed: "متنوع (سهل 30% ، متوسط 50% ، صعب 20%)",
++};
++
++const MAX_TOTAL_QUESTIONS = 50;
++const MAX_INLINE_BYTES = 14 * 1024 * 1024; // مجموع الملفات المضمّنة (base64 المفكوك)
++const MAX_TEXT_CHARS = 600_000;
++const INLINE_MIME = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
++
++interface InFile { name: string; mimeType?: string; base64?: string; text?: string }
++
++// ───────────────────────── Gemini ─────────────────────────
++function apiKeys(): string[] {
++  return [
++    Deno.env.get("GEMINI_API_KEY"),
++    Deno.env.get("GEMINI_API_KEY_NEW"),
++    Deno.env.get("GOOGLE_AI_API_KEY"),
++  ].filter(Boolean) as string[];
++}
++
++async function callGemini(opts: {
++  system: string; parts: any[]; schema: any; temperature: number; maxTokens?: number;
++}): Promise<any> {
++  const keys = apiKeys();
++  if (keys.length === 0) throw new Error("GEMINI_API_KEY غير مضبوط في أسرار الدالة");
++  const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
++  let lastErr = "";
++  for (const model of models) {
++    for (const key of keys) {
++      for (let attempt = 0; attempt < 3; attempt++) {
++        const r = await fetch(
++          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
++          {
++            method: "POST",
++            headers: { "Content-Type": "application/json" },
++            body: JSON.stringify({
++              systemInstruction: { parts: [{ text: opts.system }] },
++              contents: [{ role: "user", parts: opts.parts }],
++              generationConfig: {
++                temperature: opts.temperature,
++                maxOutputTokens: opts.maxTokens ?? 24000,
++                responseMimeType: "application/json",
++                responseSchema: opts.schema,
++                thinkingConfig: { thinkingBudget: 1024 },
++              },
++            }),
++          },
++        );
++        if (r.ok) {
++          const j = await r.json();
++          const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
++          try {
++            return JSON.parse(txt);
++          } catch {
++            const m = txt.match(/\{[\s\S]*\}/);
++            if (m) { try { return JSON.parse(m[0]); } catch { /* fallthrough */ } }
++            lastErr = "رد غير صالح من النموذج";
++            continue;
++          }
++        }
++        const t = await r.text();
++        lastErr = `${model} ${r.status}: ${t.slice(0, 200)}`;
++        if (r.status === 429 || r.status >= 500) {
++          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
++          continue;
++        }
++        break; // أخطاء 4xx الأخرى: جرّب المفتاح/النموذج التالي
++      }
++    }
++  }
++  throw new Error(`فشل الاتصال بالذكاء الاصطناعي: ${lastErr}`);
++}
++
++// ───────────────────────── Schemas ─────────────────────────
++const GEN_SCHEMA = {
++  type: "OBJECT",
++  properties: {
++    insufficient_content: { type: "BOOLEAN" },
++    note: { type: "STRING" },
++    title: { type: "STRING" },
++    questions: {
++      type: "ARRAY",
++      items: {
++        type: "OBJECT",
++        properties: {
++          type: { type: "STRING", enum: QTYPES },
++          question: { type: "STRING" },
++          options: { type: "ARRAY", items: { type: "STRING" } },
++          answer: { type: "STRING" },
++          explanation: { type: "STRING" },
++          evidence: { type: "STRING" },
++          location: { type: "STRING" },
++          difficulty: { type: "STRING", enum: ["easy", "medium", "hard"] },
++        },
++        required: ["type", "question", "answer", "evidence", "difficulty"],
++      },
++    },
++  },
++  required: ["questions"],
++};
++
++const VERIFY_SCHEMA = {
++  type: "OBJECT",
++  properties: {
++    results: {
++      type: "ARRAY",
++      items: {
++        type: "OBJECT",
++        properties: {
++          index: { type: "INTEGER" },
++          valid: { type: "BOOLEAN" },
++          reason: { type: "STRING" },
++        },
++        required: ["index", "valid"],
++      },
++    },
++  },
++  required: ["results"],
++};
++
++// ───────────────────────── Prompts ─────────────────────────
++function generationSystem(p: {
++  counts: Partial<Record<QType, number>>; difficulty: string; language: string;
++  grade?: string; subject?: string; notes?: string; avoid: string[];
++}): string {
++  const typesList = QTYPES.filter((t) => (p.counts[t] ?? 0) > 0)
++    .map((t) => `- ${p.counts[t]} سؤال من نوع: ${TYPE_LABEL[t]}`).join("\n");
++  const total = QTYPES.reduce((s, t) => s + (p.counts[t] ?? 0), 0);
++  return `أنت معلم خبير في إعداد الامتحانات. مهمتك: إعداد امتحان من "الملف المرفق" حصراً.
++
++المطلوب (المجموع ${total} سؤالاً):
++${typesList}
++- مستوى الصعوبة: ${DIFFICULTY_LABEL[p.difficulty] ?? DIFFICULTY_LABEL.mixed}
++- لغة الامتحان: ${p.language === "auto" ? "نفس لغة الملف" : p.language}
++${p.grade ? `- الصف: ${p.grade}\n` : ""}${p.subject ? `- المادة: ${p.subject}\n` : ""}${p.notes ? `- ملاحظات المعلم: ${p.notes}\n` : ""}
++قواعد صارمة لا يجوز كسرها:
++1. المصدر الوحيد للأسئلة والإجابات هو الملف المرفق. يُمنع منعاً باتاً استخدام أي معلومة من خارجه حتى لو كانت صحيحة ومعروفة.
++2. كل سؤال يجب أن يكون إجابته موجودة صراحة في الملف. لا تخمّن ولا تستنتج ما لا يدعمه النص.
++3. في الحقل evidence ضع اقتباساً حرفياً قصيراً (حتى 25 كلمة) من الملف يدعم الإجابة، وفي location ضع رقم الصفحة أو اسم القسم/الفقرة إن أمكن.
++4. لا تسأل عن بيانات شكلية: اسم الملف، الغلاف، الفهرس، اسم المؤلف أو الناشر، أرقام الصفحات، تاريخ الطباعة.
++5. وزّع الأسئلة على كامل محتوى الملف (البداية والوسط والنهاية) ولا تركّز على جزء واحد، ولا تكرر السؤال نفسه بصيغ مختلفة.
++6. اختيار من متعدد: 4 خيارات بالضبط، خيار واحد صحيح، والمشتتات معقولة ومن نفس المجال، وضع نص الإجابة الصحيحة في answer مطابقاً حرفياً لأحد الخيارات. نوّع موضع الإجابة الصحيحة، وتجنّب "كل ما سبق/لا شيء مما سبق".
++7. صح/خطأ: answer هي "صح" أو "خطأ" فقط (بالإنجليزية True/False إن كانت لغة الامتحان الإنجليزية). عبارة واضحة غير ملتبسة.
++8. أكمل الفراغ: ضع ______ مكان مصطلح مهم، والحقل answer هو المصطلح المحذوف فقط.
++9. السؤال المقالي والقصير: ضع في answer إجابة نموذجية مختصرة مبنية على الملف، وفي explanation نقاط التصحيح.
++10. نص عادي بدون أي تنسيق markdown (لا ** ولا ##).
++11. إذا كان محتوى الملف لا يكفي لإنتاج العدد المطلوب بجودة، أنتج ما يمكن دعمه فقط، واجعل insufficient_content=true واشرح السبب في note. لا تملأ العدد بأسئلة مخترعة.
++12. إذا كان الملف غير مقروء أو فارغاً أو لا يحتوي مادة تعليمية، أعد questions فارغة مع insufficient_content=true.
++${p.avoid.length ? `\nأسئلة سبق إنتاجها (لا تكررها ولا تكرر أفكارها):\n${p.avoid.map((q, i) => `${i + 1}. ${q}`).join("\n")}\n` : ""}`;
++}
++
++const VERIFY_SYSTEM = `أنت مدقق امتحانات صارم. ستُعطى الملف المرفق وقائمة أسئلة مرقمة مع إجاباتها.
++لكل سؤال، تحقق من الملف نفسه فقط (لا من معرفتك الخارجية):
++- هل الإجابة مذكورة أو مدعومة صراحة في الملف؟
++- هل الإجابة المعطاة صحيحة بحسب الملف؟
++- في أسئلة الاختيار من متعدد: هل يوجد خيار صحيح واحد فقط بحسب الملف؟
++- هل السؤال واضح وغير ملتبس ولا يسأل عن بيانات شكلية (اسم الملف، الغلاف، الناشر)؟
++أعد valid=false لأي سؤال يفشل في أي شرط، مع سبب مختصر بالعربية.`;
++
++// ───────────────────────── Helpers ─────────────────────────
++function buildFileParts(files: InFile[]): any[] {
++  const parts: any[] = [];
++  for (const f of files) {
++    if (f.base64) {
++      parts.push({ text: `=== الملف: ${f.name} ===` });
++      parts.push({ inlineData: { mimeType: f.mimeType!, data: f.base64.replace(/^data:[^;]+;base64,/, "") } });
++    } else if (f.text) {
++      parts.push({ text: `=== الملف: ${f.name} ===\n${f.text.slice(0, MAX_TEXT_CHARS)}\n=== نهاية الملف ===` });
++    }
++  }
++  return parts;
++}
++
++const norm = (s: string) => (s || "").replace(/[\s\u064B-\u0652\u0640]+/g, " ").trim().toLowerCase();
++
++function normalizeQuestion(q: any): any | null {
++  if (!q || !QTYPES.includes(q.type)) return null;
++  const question = String(q.question ?? "").trim();
++  let answer = String(q.answer ?? "").trim();
++  if (question.length < 5 || !answer) return null;
++  const out: any = {
++    type: q.type,
++    question,
++    answer,
++    explanation: String(q.explanation ?? "").trim(),
++    evidence: String(q.evidence ?? "").trim(),
++    location: String(q.location ?? "").trim(),
++    difficulty: ["easy", "medium", "hard"].includes(q.difficulty) ? q.difficulty : "medium",
++  };
++  if (!out.evidence) return null; // بدون دليل من الملف = مرفوض
++
++  if (q.type === "multiple_choice") {
++    const opts = Array.isArray(q.options)
++      ? q.options.map((o: any) => String(o).replace(/^\s*([A-Dأ-د]|[١-٤1-4])\s*[\.\)\-:]\s*/, "").trim()).filter(Boolean)
++      : [];
++    const uniq = Array.from(new Map(opts.map((o: string) => [norm(o), o])).values()) as string[];
++    if (uniq.length !== 4) return null;
++    let idx = uniq.findIndex((o) => norm(o) === norm(answer));
++    if (idx < 0) {
++      const letters = ["أ", "ب", "ج", "د"], latin = ["a", "b", "c", "d"];
++      const a = norm(answer).replace(/[\.\)\s]/g, "");
++      idx = letters.indexOf(a) >= 0 ? letters.indexOf(a) : latin.indexOf(a);
++    }
++    if (idx < 0) return null;
++    out.options = uniq;
++    out.answer = uniq[idx];
++  } else if (q.type === "true_false") {
++    const a = norm(answer);
++    if (/^(صح|صحيح|true|t)$/.test(a)) out.answer = /[a-z]/.test(a) ? "True" : "صح";
++    else if (/^(خطأ|خطا|خاطئ|false|f)$/.test(a)) out.answer = /[a-z]/.test(a) ? "False" : "خطأ";
++    else return null;
++  } else if (q.type === "fill_blank") {
++    if (!/_{2,}|…{2,}|\.{4,}/.test(question)) return null;
++  }
++  return out;
++}
++
++// ───────────────────────── Handler ─────────────────────────
++serve(async (req) => {
++  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
++  const json = (body: unknown, status = 200) =>
++    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
++
++  try {
++    const body = await req.json();
++    const files: InFile[] = Array.isArray(body.files) ? body.files : [];
++    const counts: Partial<Record<QType, number>> = {};
++    for (const t of QTYPES) {
++      const n = Math.floor(Number(body.counts?.[t] ?? 0));
++      if (n > 0) counts[t] = Math.min(n, MAX_TOTAL_QUESTIONS);
++    }
++    const requested = QTYPES.reduce((s, t) => s + (counts[t] ?? 0), 0);
++    if (requested < 1) return json({ error: "حدّد عدد الأسئلة لنوع واحد على الأقل" }, 400);
++    if (requested > MAX_TOTAL_QUESTIONS) return json({ error: `الحد الأقصى ${MAX_TOTAL_QUESTIONS} سؤالاً في الامتحان الواحد` }, 400);
++    if (files.length === 0 || files.length > 5) return json({ error: "ارفع من 1 إلى 5 ملفات" }, 400);
++
++    let inlineBytes = 0;
++    for (const f of files) {
++      if (f.base64) {
++        if (!INLINE_MIME.includes(f.mimeType || "")) return json({ error: `نوع الملف غير مدعوم: ${f.name}` }, 400);
++        inlineBytes += Math.floor(f.base64.length * 0.75);
++      } else if (!f.text || f.text.trim().length < 80) {
++        return json({ error: `لم يُستخرج نص كافٍ من الملف: ${f.name}` }, 400);
++      }
++    }
++    if (inlineBytes > MAX_INLINE_BYTES) return json({ error: "حجم الملفات كبير جداً (الحد 14 ميجابايت)" }, 413);
++
++    const difficulty = String(body.difficulty || "mixed");
++    const language = String(body.language || "auto");
++    const meta = {
++      grade: body.grade ? String(body.grade).slice(0, 80) : undefined,
++      subject: body.subject ? String(body.subject).slice(0, 80) : undefined,
++      notes: body.notes ? String(body.notes).slice(0, 1000) : undefined,
++    };
++    const fileParts = buildFileParts(files);
++
++    const accepted: any[] = [];
++    const seen = new Set<string>();
++    const warnings: string[] = [];
++    let dropped = 0;
++    let insufficient = false;
++    let note = "";
++    let title = "";
++
++    const remaining = () => {
++      const r: Partial<Record<QType, number>> = {};
++      for (const t of QTYPES) {
++        const have = accepted.filter((q) => q.type === t).length;
++        const need = (counts[t] ?? 0) - have;
++        if (need > 0) r[t] = need;
++      }
++      return r;
++    };
++
++    // جولتان كحدّ أقصى: توليد ثم تعويض النقص بعد التحقق
++    for (let round = 0; round < 2; round++) {
++      const need = remaining();
++      if (Object.keys(need).length === 0) break;
++
++      const gen = await callGemini({
++        system: generationSystem({
++          counts: need, difficulty, language, ...meta,
++          avoid: accepted.map((q) => q.question),
++        }),
++        parts: [...fileParts, { text: "أنشئ الامتحان الآن من الملف المرفق فقط." }],
++        schema: GEN_SCHEMA,
++        temperature: round === 0 ? 0.4 : 0.6,
++      });
++
++      if (gen.insufficient_content) { insufficient = true; note = String(gen.note || ""); }
++      if (!title && gen.title) title = String(gen.title);
++
++      const candidates: any[] = [];
++      for (const raw of gen.questions ?? []) {
++        const q = normalizeQuestion(raw);
++        if (!q) { dropped++; continue; }
++        const key = norm(q.question);
++        if (seen.has(key)) { dropped++; continue; }
++        // لا تتجاوز العدد المطلوب لكل نوع
++        const wantOfType = need[q.type as QType] ?? 0;
++        if (candidates.filter((c) => c.type === q.type).length >= wantOfType) continue;
++        seen.add(key);
++        candidates.push(q);
++      }
++      if (candidates.length === 0) { if (insufficient) break; else continue; }
++
++      // مرحلة التحقق مقابل الملف
++      const listing = candidates.map((q, i) =>
++        `#${i}\nالنوع: ${q.type}\nالسؤال: ${q.question}\n${q.options ? `الخيارات: ${q.options.join(" | ")}\n` : ""}الإجابة: ${q.answer}\nالدليل المقتبس: ${q.evidence}`,
++      ).join("\n\n");
++
++      let verdicts: Map<number, { valid: boolean; reason?: string }> | null = null;
++      try {
++        const v = await callGemini({
++          system: VERIFY_SYSTEM,
++          parts: [...fileParts, { text: `الأسئلة المطلوب تدقيقها:\n\n${listing}` }],
++          schema: VERIFY_SCHEMA,
++          temperature: 0,
++          maxTokens: 6000,
++        });
++        verdicts = new Map((v.results ?? []).map((r: any) => [Number(r.index), r]));
++      } catch (e) {
++        console.warn("verification failed, keeping unverified:", (e as Error).message);
++        warnings.push("تعذّر التحقق الآلي النهائي من الأسئلة، يُرجى مراجعتها يدوياً.");
++      }
++
++      candidates.forEach((q, i) => {
++        const verdict = verdicts?.get(i);
++        if (verdicts && verdict && verdict.valid === false) {
++          dropped++;
++          seen.delete(norm(q.question));
++        } else {
++          accepted.push(q);
++        }
++      });
++      if (insufficient && round === 0) break; // لا فائدة من التعويض إن كان المحتوى لا يكفي
++    }
++
++    if (accepted.length === 0) {
++      return json({
++        error: insufficient && note
++          ? `لا يمكن إنشاء امتحان من هذا الملف: ${note}`
++          : "لم أستطع إنشاء أسئلة موثوقة من هذا الملف. تأكد أنه يحتوي مادة تعليمية مقروءة.",
++      }, 422);
++    }
++
++    // ترتيب: حسب نوع السؤال بالترتيب المعتاد
++    accepted.sort((a, b) => QTYPES.indexOf(a.type) - QTYPES.indexOf(b.type));
++    const questions = accepted.map((q, i) => ({ id: i + 1, ...q }));
++    if (questions.length < requested) {
++      warnings.push(
++        insufficient
++          ? `أُنشئ ${questions.length} من ${requested} سؤالاً فقط لأن محتوى الملف لا يكفي لعدد أكبر من الأسئلة الموثوقة${note ? ` (${note})` : ""}.`
++          : `أُنشئ ${questions.length} من ${requested} سؤالاً؛ حُذفت أسئلة لم تجتز التحقق من الملف.`,
++      );
++    }
++
++    return json({
++      exam: { title: title || files.map((f) => f.name.replace(/\.[^.]+$/, "")).join(" + "), questions },
++      requested,
++      delivered: questions.length,
++      dropped,
++      warnings,
++    });
++  } catch (e: any) {
++    console.error("generate-exam-from-file error:", e);
++    return json({ error: e?.message || "حدث خطأ أثناء إنشاء الامتحان" }, 500);
++  }
++});
+-- 
+2.43.0
+

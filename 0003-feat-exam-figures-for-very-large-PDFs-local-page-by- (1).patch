@@ -1,0 +1,530 @@
+From 7b1c29a94939a2d31f9b93311bb1734f99ee35af Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 1 Oct 2026 22:49:21 +0000
+Subject: [PATCH 3/4] feat(exam): figures for very large PDFs (local
+ page-by-page read, smart page-image selection)
+
+- Large PDFs (>10MB, up to 400MB / 2500 pages) are read locally via pdf.js range loading
+- Analysis: per-page text snippets, or page thumbnails for scanned books
+- Generation: full text of selected pages + images of figure-bearing pages (scored by raster/vector ops), 11MB budget
+- Server accepts page images and rejects figure refs to pages that were not sent
+---
+ .../exam-creator/ExamCreatorWizard.tsx        |  11 +-
+ src/components/exam-creator/StepSettings.tsx  |   2 +-
+ src/components/exam-creator/StepUpload.tsx    |   2 +-
+ src/lib/examCreator/api.ts                    |   6 +-
+ src/lib/examCreator/fileUtils.ts              | 212 ++++++++++++++++--
+ supabase/functions/_shared/exam-common.ts     |  33 ++-
+ supabase/functions/_shared/exam-normalize.ts  |   8 +-
+ .../functions/analyze-file-units/index.ts     |   5 +-
+ .../generate-exam-from-file/index.ts          |   8 +-
+ 9 files changed, 245 insertions(+), 42 deletions(-)
+
+diff --git a/src/components/exam-creator/ExamCreatorWizard.tsx b/src/components/exam-creator/ExamCreatorWizard.tsx
+index 9f1ac731..e91cd0ff 100644
+--- a/src/components/exam-creator/ExamCreatorWizard.tsx
++++ b/src/components/exam-creator/ExamCreatorWizard.tsx
+@@ -2,7 +2,7 @@ import { useState } from "react";
+ import { Check } from "lucide-react";
+ import { useToast } from "@/hooks/use-toast";
+ import { analyzeUnits, generateExam } from "@/lib/examCreator/api";
+-import { cropAllFigures, MAX_FILES, MAX_TOTAL_INLINE_BYTES, prepareFile, type PreparedFile } from "@/lib/examCreator/fileUtils";
++import { buildGenerationFiles, cropAllFigures, MAX_FILES, MAX_TOTAL_INLINE_BYTES, payloadBytes, prepareFile, type PreparedFile } from "@/lib/examCreator/fileUtils";
+ import type { AnalyzeResponse, GeneratedExam } from "@/lib/examCreator/types";
+ import StepUpload from "./StepUpload";
+ import StepUnits from "./StepUnits";
+@@ -46,8 +46,8 @@ export default function ExamCreatorWizard() {
+     try {
+       setStage("جارٍ قراءة الملفات...");
+       const prep: PreparedFile[] = [];
+-      for (const f of files) prep.push(await prepareFile(f));
+-      if (prep.reduce((s, p) => s + (p.payload.base64 ? Math.floor(p.payload.base64.length * 0.75) : 0), 0) > MAX_TOTAL_INLINE_BYTES) {
++      for (const f of files) prep.push(await prepareFile(f, setStage));
++      if (prep.reduce((s, p) => s + payloadBytes(p.payload), 0) > MAX_TOTAL_INLINE_BYTES) {
+         throw new Error("مجموع حجم الملفات كبير (الحد 14 ميجابايت). قلّل عدد الملفات أو حجمها.");
+       }
+       prep.filter((p) => p.note).forEach((p) => toast({ title: `ℹ️ ${p.name}`, description: p.note }));
+@@ -72,8 +72,11 @@ export default function ExamCreatorWizard() {
+       setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
+       const units = analysis.units.filter((u) => selected.has(u.id));
+       const canFigures = prepared.some((p) => p.figurable);
++      const gf = await buildGenerationFiles(prepared, units, setStage);
++      gf.notes.forEach((n) => toast({ title: "ℹ️ ملف كبير", description: n }));
++      setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
+       const res = await generateExam({
+-        files: prepared, units, counts: settings.counts, difficulty: settings.difficulty, language: settings.language,
++        payloads: gf.payloads, units, counts: settings.counts, difficulty: settings.difficulty, language: settings.language,
+         grade: settings.grade, subject: settings.subject, request: settings.request,
+         includeFigures: settings.includeFigures && canFigures, includeTables: settings.includeTables,
+       });
+diff --git a/src/components/exam-creator/StepSettings.tsx b/src/components/exam-creator/StepSettings.tsx
+index 4b955205..c0f69ff2 100644
+--- a/src/components/exam-creator/StepSettings.tsx
++++ b/src/components/exam-creator/StepSettings.tsx
+@@ -125,7 +125,7 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
+             <div className="font-medium">أشكال وصور من الملف الأصلي</div>
+             <p className="text-xs text-muted-foreground">
+               لا يرسم الذكاء الاصطناعي الصور (فهو لا يضمن دقتها العلمية). بدلاً من ذلك يحدد الشكل المناسب في ملفك فيُقصّ منه كما هو بدقة عالية.
+-              {!canFigures && " غير متاح: الملف نصي/Word أو كبير؛ ارفع PDF أصغر من 10MB أو صورة."}
++              {!canFigures && " غير متاح: الملفات المرفوعة نصية (Word/TXT)؛ احفظ ملفك PDF لتفعيلها."}
+               {canFigures && !unitsHaveFigures && " (لم يُرصد في الوحدات المختارة أشكال واضحة)"}
+             </p>
+           </div>
+diff --git a/src/components/exam-creator/StepUpload.tsx b/src/components/exam-creator/StepUpload.tsx
+index c57f0c29..ea647a8a 100644
+--- a/src/components/exam-creator/StepUpload.tsx
++++ b/src/components/exam-creator/StepUpload.tsx
+@@ -31,7 +31,7 @@ export default function StepUpload({ files, busy, stage, onAdd, onRemove, onAnal
+         <UploadCloud className="mx-auto mb-3 h-12 w-12 text-primary/70" />
+         <p className="text-lg font-semibold">ارفع كتابك أو ملزمتك هنا</p>
+         <p className="mt-1 text-sm text-muted-foreground">اسحب الملف أو اضغط للاختيار — PDF · Word · نص · صورة (حتى {MAX_FILES} ملفات)</p>
+-        <p className="mt-1 text-xs text-muted-foreground">يُفضَّل PDF أصغر من 10 ميجابايت لاستخراج الأشكال والجداول بدقة</p>
++        <p className="mt-1 text-xs text-muted-foreground">الملفات الكبيرة جداً مقبولة (حتى 400MB)؛ تُقرأ محلياً في متصفحك</p>
+         <input ref={ref} type="file" multiple hidden accept={ACCEPT}
+           onChange={(e) => { if (e.target.files) onAdd(Array.from(e.target.files)); e.target.value = ""; }} />
+       </div>
+diff --git a/src/lib/examCreator/api.ts b/src/lib/examCreator/api.ts
+index 8ae2f60e..c95d5d4b 100644
+--- a/src/lib/examCreator/api.ts
++++ b/src/lib/examCreator/api.ts
+@@ -1,6 +1,6 @@
+ import { supabase } from "@/integrations/supabase/client";
+ import type { AnalyzeResponse, ExamQuestion, GenerateResponse, GeneratedExam, OnlineSettings, QType, UnitInfo } from "./types";
+-import type { PreparedFile } from "./fileUtils";
++import type { FilePayload, PreparedFile } from "./fileUtils";
+ 
+ // الجداول الجديدة غير موجودة في types.ts المولَّد؛ نستعمل عميلاً غير مُنمَّط لها.
+ const db = supabase as any;
+@@ -23,7 +23,7 @@ export const analyzeUnits = (files: PreparedFile[]) =>
+   callFn<AnalyzeResponse>("analyze-file-units", { files: files.map((f) => f.payload) });
+ 
+ export interface GenerateParams {
+-  files: PreparedFile[];
++  payloads: FilePayload[];
+   units: UnitInfo[];
+   counts: Record<QType, number>;
+   difficulty: string;
+@@ -37,7 +37,7 @@ export interface GenerateParams {
+ 
+ export const generateExam = (p: GenerateParams) =>
+   callFn<GenerateResponse>("generate-exam-from-file", {
+-    files: p.files.map((f) => f.payload),
++    files: p.payloads,
+     units: p.units.map(({ title, summary, fileIndex, pageStart, pageEnd }) => ({ title, summary, fileIndex, pageStart, pageEnd })),
+     counts: p.counts,
+     difficulty: p.difficulty,
+diff --git a/src/lib/examCreator/fileUtils.ts b/src/lib/examCreator/fileUtils.ts
+index a8e35f11..6e056162 100644
+--- a/src/lib/examCreator/fileUtils.ts
++++ b/src/lib/examCreator/fileUtils.ts
+@@ -1,16 +1,32 @@
+-import type { FigureRef } from "./types";
++import type { FigureRef, UnitInfo } from "./types";
+ 
+ export const MAX_FILES = 5;
+ export const MAX_INLINE_BYTES_PER_FILE = 10 * 1024 * 1024;
+ export const MAX_TOTAL_INLINE_BYTES = 14 * 1024 * 1024;
+-export const MAX_FILE_BYTES = 40 * 1024 * 1024;
++export const MAX_FILE_BYTES = 400 * 1024 * 1024;
++const MAX_PDF_PAGES = 2500;
++const MAX_SEND_PAGES = 36;            // صور صفحات مفصّلة للتوليد
++const MAX_THUMB_PAGES = 120;          // مصغّرات للتحليل (الكتب الممسوحة ضوئياً)
++const MAX_PAGE_IMAGE_BYTES = 11 * 1024 * 1024;
++const MAX_GEN_TEXT_CHARS = 450_000;
++
++export interface PagePayload { page: number; mimeType: string; base64: string }
++export interface FilePayload { name: string; mimeType?: string; base64?: string; text?: string; pages?: PagePayload[] }
++
++/** بيانات الملف الكبير (PDF > 10MB): نقرؤه صفحةً صفحة محلياً ولا نرسله كاملاً. */
++export interface LargePdfInfo {
++  numPages: number;
++  pageTexts: string[]; // نص كل صفحة (فهرسها = رقم الصفحة - 1)
++  scanned: boolean;    // بلا طبقة نصية: يعتمد على صور الصفحات
++}
+ 
+ export interface PreparedFile {
+   name: string;
+   size: number;
+   kind: "pdf" | "image" | "docx" | "text";
+-  /** ما يُرسل للخادم */
+-  payload: { name: string; mimeType?: string; base64?: string; text?: string };
++  /** ما يُرسل للخادم (للتحليل). للتوليد يُعاد بناؤه حسب الوحدات المختارة. */
++  payload: FilePayload;
++  large?: LargePdfInfo;
+   /** الملف الأصلي (لقص الأشكال منه) */
+   source: File;
+   /** هل يمكن قص الأشكال منه (PDF/صورة أُرسلت كما هي) */
+@@ -49,6 +65,11 @@ async function loadPdf(file: File) {
+   if (!p) {
+     p = (async () => {
+       const pdfjs = await getPdfjs();
++      if (file.size > 40 * 1024 * 1024) {
++        // ملف ضخم: نقرأ منه بالنطاقات عبر blob URL بدل نسخه كاملاً إلى ذاكرة JS
++        const url = URL.createObjectURL(file);
++        return pdfjs.getDocument({ url, useSystemFonts: true, isEvalSupported: false, rangeChunkSize: 1 << 20 }).promise;
++      }
+       const data = new Uint8Array(await file.arrayBuffer());
+       return pdfjs.getDocument({ data, useSystemFonts: true, isEvalSupported: false }).promise;
+     })();
+@@ -57,21 +78,80 @@ async function loadPdf(file: File) {
+   return p;
+ }
+ 
+-/** استخراج نص PDF مع علامات الصفحات (للملفات الكبيرة فقط). لا يستبدل المحتوى بأي منهج مدمج. */
+-async function extractPdfText(file: File): Promise<string> {
++async function renderPageCanvas(file: File, pageNum: number, targetWidth: number): Promise<HTMLCanvasElement> {
+   const pdf = await loadPdf(file);
+-  let out = "";
+-  const max = Math.min(pdf.numPages, 200);
+-  for (let i = 1; i <= max; i++) {
++  const page = await pdf.getPage(pageNum);
++  const base = page.getViewport({ scale: 1 });
++  const viewport = page.getViewport({ scale: Math.min(3, targetWidth / base.width) });
++  const canvas = document.createElement("canvas");
++  canvas.width = Math.floor(viewport.width);
++  canvas.height = Math.floor(viewport.height);
++  const ctx = canvas.getContext("2d")!;
++  ctx.fillStyle = "#fff";
++  ctx.fillRect(0, 0, canvas.width, canvas.height);
++  await page.render({ canvas, canvasContext: ctx, viewport }).promise;
++  page.cleanup();
++  return canvas;
++}
++
++async function pageJpeg(file: File, pageNum: number, width: number, quality: number): Promise<PagePayload> {
++  const c = await renderPageCanvas(file, pageNum, width);
++  const base64 = c.toDataURL("image/jpeg", quality).split(",")[1] ?? "";
++  c.width = c.height = 0; // حرّر الذاكرة
++  return { page: pageNum, mimeType: "image/jpeg", base64 };
++}
++
++const b64Bytes = (b64: string) => Math.floor(b64.length * 0.75);
++export const payloadBytes = (p: FilePayload) =>
++  (p.base64 ? b64Bytes(p.base64) : 0) + (p.pages ?? []).reduce((s, x) => s + b64Bytes(x.base64), 0);
++
++type Progress = (msg: string) => void;
++
++/** قراءة PDF كبير: نص كل صفحة محلياً + حمولة تحليل خفيفة (مقتطفات، أو مصغّرات إن كان ممسوحاً). */
++async function prepareLargePdf(file: File, onProgress?: Progress): Promise<PreparedFile> {
++  const pdf = await loadPdf(file);
++  const numPages: number = pdf.numPages;
++  if (numPages > MAX_PDF_PAGES) throw new Error(`"${file.name}" يحتوي ${numPages} صفحة (الحد ${MAX_PDF_PAGES}). قسّمه إلى جزأين.`);
++
++  const pageTexts: string[] = [];
++  for (let i = 1; i <= numPages; i++) {
+     const page = await pdf.getPage(i);
+     const tc = await page.getTextContent();
+-    const t = tc.items.map((it: any) => it.str || "").join(" ").replace(/\s+/g, " ").trim();
+-    if (t) out += `[صفحة ${i}]\n${t}\n\n`;
++    pageTexts.push(tc.items.map((it: any) => it.str || "").join(" ").replace(/\s+/g, " ").trim());
++    page.cleanup();
++    if (i % 10 === 0 || i === numPages) onProgress?.(`قراءة الصفحة ${i} من ${numPages} في «${file.name}»...`);
++  }
++
++  const totalChars = pageTexts.reduce((s, t) => s + t.length, 0);
++  const scanned = totalChars / numPages < 40;
++  const payload: FilePayload = { name: file.name };
++
++  if (!scanned) {
++    // مقتطف من أول كل صفحة (العناوين غالباً في الأعلى) ضمن ميزانية ثابتة
++    const per = Math.max(150, Math.min(1500, Math.floor(450_000 / numPages)));
++    payload.text = pageTexts.map((t, i) => (t ? `[صفحة ${i + 1}]\n${t.slice(0, per)}` : "")).filter(Boolean).join("\n\n");
++  } else {
++    // كتاب ممسوح: مصغّرات صفحات موزّعة بالتساوي
++    const step = Math.max(1, Math.ceil(numPages / MAX_THUMB_PAGES));
++    const pages: PagePayload[] = [];
++    for (let p = 1; p <= numPages; p += step) {
++      pages.push(await pageJpeg(file, p, 520, 0.55));
++      if (pages.length % 5 === 0) onProgress?.(`تجهيز مصغّرات الصفحات (${pages.length}/${Math.ceil(numPages / step)})...`);
++    }
++    payload.pages = pages;
++    payload.text = `هذا كتاب ممسوح ضوئياً من ${numPages} صفحة؛ تصلك مصغّرات لبعض صفحاته فقط (كل ${step} صفحة).`;
+   }
+-  return out;
++
++  return {
++    name: file.name, size: file.size, kind: "pdf", source: file, figurable: true, payload,
++    large: { numPages, pageTexts, scanned },
++    note: scanned
++      ? `ملف كبير ممسوح ضوئياً (${numPages} صفحة): يُقسَّم من مصغّرات صفحاته، وتُرسل صور الصفحات المختارة عند إنشاء الامتحان.`
++      : `ملف كبير (${numPages} صفحة): يُقرأ هنا محلياً، ويُرسل للذكاء الاصطناعي نصُّ وحداتك المختارة مع صور الصفحات التي فيها أشكال.`,
++  };
+ }
+ 
+-export async function prepareFile(file: File): Promise<PreparedFile> {
++export async function prepareFile(file: File, onProgress?: Progress): Promise<PreparedFile> {
+   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+   if (file.size > MAX_FILE_BYTES) throw new Error(`الملف "${file.name}" أكبر من ${MAX_FILE_BYTES / 1024 / 1024} ميجابايت`);
+   const inlineOk = file.size <= MAX_INLINE_BYTES_PER_FILE;
+@@ -91,15 +171,7 @@ export async function prepareFile(file: File): Promise<PreparedFile> {
+         payload: { name: file.name, mimeType: "application/pdf", base64: await readBase64(file) },
+       };
+     }
+-    const text = await extractPdfText(file);
+-    if (text.replace(/\[صفحة \d+\]/g, "").trim().length < 200) {
+-      throw new Error(`"${file.name}" كبير وممسوح ضوئياً (بلا نص). قسّمه إلى ملفات أصغر من 10 ميجابايت.`);
+-    }
+-    return {
+-      name: file.name, size: file.size, kind: "pdf", source: file, figurable: false,
+-      payload: { name: file.name, text },
+-      note: "ملف كبير: يُقرأ كنص، فلن تُستخرج منه الأشكال. اقسمه لملفات أصغر من 10 ميجابايت للحصول على الأشكال.",
+-    };
++    return prepareLargePdf(file, onProgress);
+   }
+ 
+   if (ext === "docx") {
+@@ -213,3 +285,99 @@ export async function cropAllFigures<T extends { id: number; figure?: FigureRef
+   }
+   return { questions: out, removed };
+ }
++
++// ───────── حمولة التوليد للملفات الكبيرة ─────────
++/** درجة "بصرية" للصفحة: صور نقطية ورسوم متجهة (مخططات) تعني احتمال وجود شكل. */
++async function pageVisualScore(file: File, pageNum: number): Promise<number> {
++  const pdfjs = await getPdfjs();
++  const pdf = await loadPdf(file);
++  const page = await pdf.getPage(pageNum);
++  try {
++    const list = await page.getOperatorList();
++    const O = pdfjs.OPS;
++    const imageOps = new Set([O.paintImageXObject, O.paintInlineImageXObject, O.paintImageMaskXObject, O.paintJpegXObject].filter((x) => x !== undefined));
++    let img = 0, paths = 0;
++    for (const fn of list.fnArray) {
++      if (imageOps.has(fn)) img++;
++      else if (fn === O.constructPath) paths++;
++    }
++    return img * 10 + Math.min(paths, 600) / 30;
++  } finally {
++    page.cleanup();
++  }
++}
++
++export interface GenerationFiles { payloads: FilePayload[]; notes: string[] }
++
++/**
++ * يبني ما يُرسل لتوليد الامتحان: الملفات الصغيرة كما هي، والملفات الكبيرة = نص الوحدات المختارة كاملاً
++ * + صور الصفحات المهمة (الممسوحة أولاً ثم الأكثر أشكالاً) ضمن ميزانية حجم ثابتة.
++ */
++export async function buildGenerationFiles(
++  files: PreparedFile[], units: UnitInfo[], onProgress?: Progress,
++): Promise<GenerationFiles> {
++  const payloads: FilePayload[] = [];
++  const notes: string[] = [];
++
++  for (let fi = 0; fi < files.length; fi++) {
++    const f = files[fi];
++    if (!f.large) { payloads.push(f.payload); continue; }
++
++    const { numPages, pageTexts, scanned } = f.large;
++    const mine = units.filter((u) => u.fileIndex === fi);
++    const selected = new Set<number>();
++    if (mine.length === 0 || mine.some((u) => !u.pageStart)) {
++      for (let p = 1; p <= numPages; p++) selected.add(p);
++    } else {
++      for (const u of mine) {
++        for (let p = Math.max(1, u.pageStart!); p <= Math.min(numPages, u.pageEnd ?? u.pageStart!); p++) selected.add(p);
++      }
++    }
++    const pages = [...selected].sort((a, b) => a - b);
++
++    // نص الصفحات المختارة كاملاً (بميزانية: نقصّ المقتطف المتساوي إن زاد)
++    const perPage = Math.max(300, Math.floor(MAX_GEN_TEXT_CHARS / Math.max(1, pages.length)));
++    const text = pages.map((p) => (pageTexts[p - 1] ? `[صفحة ${p}]\n${pageTexts[p - 1].slice(0, perPage)}` : "")).filter(Boolean).join("\n\n");
++
++    // اختيار صفحات الصور
++    let imagePages: number[];
++    let sampled = false;
++    if (pages.length <= MAX_SEND_PAGES) {
++      imagePages = pages;
++    } else {
++      const scored: { p: number; score: number }[] = [];
++      let i = 0;
++      for (const p of pages) {
++        const noText = (pageTexts[p - 1] ?? "").length < 40;
++        scored.push({ p, score: noText || scanned ? 1000 : await pageVisualScore(f.source, p) });
++        if (++i % 15 === 0) onProgress?.(`فحص الصفحات بحثاً عن الأشكال (${i}/${pages.length})...`);
++      }
++      const cands = scored.filter((x) => x.score >= 1);
++      if (cands.length > MAX_SEND_PAGES && cands.every((x) => x.score >= 1000)) {
++        // كل الصفحات صور بلا نص: نوزّع العيّنة بالتساوي على كامل المحدّد بدل أخذ أوله فقط
++        const step = cands.length / MAX_SEND_PAGES;
++        imagePages = Array.from({ length: MAX_SEND_PAGES }, (_, i) => cands[Math.floor(i * step)].p);
++        sampled = true;
++      } else {
++        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p).sort((a, b) => a - b);
++      }
++    }
++
++    const out: PagePayload[] = [];
++    let bytes = 0;
++    for (const p of imagePages) {
++      const img = await pageJpeg(f.source, p, 1000, 0.78);
++      bytes += b64Bytes(img.base64);
++      if (bytes > MAX_PAGE_IMAGE_BYTES) break;
++      out.push(img);
++      onProgress?.(`تجهيز صور الصفحات (${out.length}/${imagePages.length}) من «${f.name}»...`);
++    }
++
++    payloads.push({ name: f.name, text: text || `ملف ممسوح ضوئياً من ${numPages} صفحة.`, pages: out });
++    notes.push(
++      `«${f.name}»: اعتُمدت ${pages.length} صفحة من ${numPages}` +
++      (out.length ? `، وأُرسلت صور ${out.length} صفحة منها (${sampled ? "عيّنة موزعة بالتساوي لأن الكتاب ممسوح ضوئياً؛ اختر وحدات أقل لتغطية أدق" : "الأكثر احتمالاً لاحتواء أشكال"})` : "") + ".",
++    );
++  }
++  return { payloads, notes };
++}
+diff --git a/supabase/functions/_shared/exam-common.ts b/supabase/functions/_shared/exam-common.ts
+index f29b18d6..fc561b05 100644
+--- a/supabase/functions/_shared/exam-common.ts
++++ b/supabase/functions/_shared/exam-common.ts
+@@ -23,11 +23,14 @@ export async function requireUser(req: Request): Promise<string | null> {
+   }
+ }
+ 
+-export interface InFile { name: string; mimeType?: string; base64?: string; text?: string }
++export interface InPage { page: number; mimeType: string; base64: string }
++/** ملف: إمّا مضمّن كاملاً (base64) أو نص، أو نص + صور صفحات محددة (للملفات الكبيرة جداً). */
++export interface InFile { name: string; mimeType?: string; base64?: string; text?: string; pages?: InPage[] }
+ 
+ export const MAX_INLINE_BYTES = 14 * 1024 * 1024;
+ export const MAX_TEXT_CHARS = 600_000;
+ export const INLINE_MIME = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
++export const MAX_PAGE_IMAGES = 160; // للتحليل (مصغّرات) أو للتوليد (صفحات مختارة)
+ 
+ /** يعيد رسالة خطأ بالعربية أو null إذا كانت الملفات سليمة. */
+ export function validateFiles(files: unknown): string | null {
+@@ -38,11 +41,19 @@ export function validateFiles(files: unknown): string | null {
+     if (f.base64) {
+       if (!INLINE_MIME.includes(f.mimeType || "")) return `نوع الملف غير مدعوم: ${f.name}`;
+       inline += Math.floor(f.base64.length * 0.75);
++    } else if (Array.isArray(f.pages) && f.pages.length > 0) {
++      if (f.pages.length > MAX_PAGE_IMAGES) return `عدد صفحات الصور كبير جداً في الملف: ${f.name}`;
++      for (const pg of f.pages) {
++        if (!pg || !Number.isInteger(pg.page) || pg.page < 1 || pg.mimeType !== "image/jpeg" || typeof pg.base64 !== "string") {
++          return `صورة صفحة غير صالحة في الملف: ${f.name}`;
++        }
++        inline += Math.floor(pg.base64.length * 0.75);
++      }
+     } else if (!f.text || f.text.trim().length < 80) {
+       return `لم يُستخرج نص كافٍ من الملف: ${f.name}`;
+     }
+   }
+-  if (inline > MAX_INLINE_BYTES) return "حجم الملفات كبير جداً (الحد 14 ميجابايت)";
++  if (inline > MAX_INLINE_BYTES) return "حجم الملفات كبير جداً (الحد 14 ميجابايت). اختر وحدات أقل.";
+   return null;
+ }
+ 
+@@ -52,8 +63,22 @@ export function buildFileParts(files: InFile[]): any[] {
+     if (f.base64) {
+       parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` });
+       parts.push({ inlineData: { mimeType: f.mimeType!, data: f.base64.replace(/^data:[^;]+;base64,/, "") } });
+-    } else if (f.text) {
+-      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===\n${f.text.slice(0, MAX_TEXT_CHARS)}\n=== نهاية الملف رقم ${i} ===` });
++      return;
++    }
++    const hasPages = Array.isArray(f.pages) && f.pages.length > 0;
++    if (f.text) {
++      parts.push({
++        text: `=== الملف رقم ${i}: ${f.name} ===\n${f.text.slice(0, MAX_TEXT_CHARS)}\n=== نهاية نص الملف رقم ${i} ===` +
++          (hasPages ? "\nالصور التالية هي صور لصفحات محددة من هذا الملف نفسه، وكل صورة معنونة برقم صفحتها الفعلي." : ""),
++      });
++    } else if (hasPages) {
++      parts.push({ text: `=== الملف رقم ${i}: ${f.name} (صور صفحات) ===` });
++    }
++    if (hasPages) {
++      for (const pg of f.pages!) {
++        parts.push({ text: `[صورة الصفحة ${pg.page} من الملف رقم ${i}]` });
++        parts.push({ inlineData: { mimeType: pg.mimeType, data: pg.base64.replace(/^data:[^;]+;base64,/, "") } });
++      }
+     }
+   });
+   return parts;
+diff --git a/supabase/functions/_shared/exam-normalize.ts b/supabase/functions/_shared/exam-normalize.ts
+index 00929849..9c880f9c 100644
+--- a/supabase/functions/_shared/exam-normalize.ts
++++ b/supabase/functions/_shared/exam-normalize.ts
+@@ -19,7 +19,9 @@ const TBL_REF = /(الجدول)\s*(ال)?(أدناه|ادناه|التالي|ا
+ 
+ export interface NormCtx {
+   nFiles: number;
+-  figurable: boolean[]; // هل الملف i يمكن قصّ أشكال منه (PDF/صورة مضمّنة)
++  figurable: boolean[]; // هل الملف i يمكن قصّ أشكال منه (PDF/صورة مضمّنة أو صور صفحات)
++  /** للملفات الكبيرة: الصفحات التي أُرسلت صورها فقط. null = كل صفحات الملف مرئية للنموذج. */
++  figPages?: (Set<number> | null)[];
+   allowFigures: boolean;
+   allowTables: boolean;
+ }
+@@ -42,7 +44,9 @@ function normFigure(f: any, ctx: NormCtx) {
+   const fileIndex = Number.isInteger(f.file_index) ? f.file_index : 0;
+   const page = Number.isInteger(f.page) ? f.page : 0;
+   if (fileIndex < 0 || fileIndex >= ctx.nFiles || !ctx.figurable[fileIndex]) return null;
+-  if (page < 1 || page > 3000) return null;
++  if (page < 1 || page > 5000) return null;
++  const allowed = ctx.figPages?.[fileIndex];
++  if (allowed && !allowed.has(page)) return null; // لم يرَ النموذج هذه الصفحة؛ الإحداثيات تخمين
+   const b = Array.isArray(f.box_2d) ? f.box_2d.map(Number) : [];
+   if (b.length !== 4 || b.some((n: number) => !Number.isFinite(n))) return null;
+   const [y0, x0, y1, x1] = b.map((n: number) => Math.max(0, Math.min(1000, Math.round(n))));
+diff --git a/supabase/functions/analyze-file-units/index.ts b/supabase/functions/analyze-file-units/index.ts
+index 399fa385..7f4908c6 100644
+--- a/supabase/functions/analyze-file-units/index.ts
++++ b/supabase/functions/analyze-file-units/index.ts
+@@ -36,8 +36,9 @@ const SYSTEM = `أنت محلل مناهج وكتب تعليمية. مهمتك:
+ القواعد:
+ 1. اتبع البنية الفعلية للملف: الوحدات/الفصول/الدروس/العناوين الرئيسية كما تظهر فيه. اكتب عنوان كل وحدة كما هو في الملف حرفياً.
+ 2. إن كان الملف بلا عناوين واضحة، قسّمه موضوعياً إلى 3 – 12 وحدة متوازنة تغطي كل محتواه من أوله إلى آخره بلا فجوات ولا تداخل.
+-3. لا تتجاوز 30 وحدة. إن كان الكتاب كبيراً فاعتمد مستوى "الوحدة/الفصل" لا مستوى الفقرة.
++3. لا تتجاوز 30 وحدة (60 وحدة إن كان الكتاب ضخماً جداً). إن كان الكتاب كبيراً فاعتمد مستوى "الوحدة/الفصل" لا مستوى الفقرة.
+ 4. page_start و page_end: رقم الصفحة الفعلي داخل ملف PDF (الصفحة الأولى = 1) وليس الرقم المطبوع على الصفحة. للملفات النصية بلا صفحات ضع 0 للاثنين. للصور ضع 1.
++4b. في الكتب الكبيرة قد يصلك مقتطف من أول كل صفحة بعلامة «[صفحة N]» أو مصغّرات صفحات معنونة برقمها: استعمل هذه الأرقام كما هي لتحديد page_start/page_end، ولا تُهمل أي جزء من الكتاب.
+ 5. file_index: رقم الملف كما ورد في العنوان "الملف رقم N".
+ 6. summary: جملتان على الأكثر تصفان محتوى الوحدة من الملف فقط.
+ 7. has_figures: هل في الوحدة رسوم/أشكال/صور/مخططات توضيحية؟ has_tables: هل فيها جداول بيانات؟
+@@ -70,7 +71,7 @@ serve(async (req) => {
+     }
+ 
+     const nFiles = (files as InFile[]).length;
+-    const units = parsed.units.slice(0, 30).map((u: any, i: number) => {
++    const units = parsed.units.slice(0, 60).map((u: any, i: number) => {
+       const fi = Number.isInteger(u.file_index) && u.file_index >= 0 && u.file_index < nFiles ? u.file_index : 0;
+       let ps = Number.isInteger(u.page_start) && u.page_start > 0 ? u.page_start : 0;
+       let pe = Number.isInteger(u.page_end) && u.page_end > 0 ? u.page_end : 0;
+diff --git a/supabase/functions/generate-exam-from-file/index.ts b/supabase/functions/generate-exam-from-file/index.ts
+index 9fdbc222..c5b1c16c 100644
+--- a/supabase/functions/generate-exam-from-file/index.ts
++++ b/supabase/functions/generate-exam-from-file/index.ts
+@@ -115,7 +115,7 @@ function generationSystem(p: {
+     ? `الجداول: إن كان في الملف جدول بيانات مناسب فاستعمله في بعض الأسئلة بوضعه في الحقل table. انسخ الجدول من الملف خلية بخلية حرفياً (العناوين والقيم والوحدات) دون أي تعديل أو إكمال أو حساب أو اختصار، ولا تُنشئ جدولاً من عندك أبداً. إن كان السؤال يطلب إكمال خلية فاستبدل قيمتها في الجدول بـ "؟" وضع القيمة الصحيحة في answer. عدد الخلايا في كل صف يساوي عدد العناوين تماماً.`
+     : `الجداول: ممنوع إرفاق جداول، وممنوع أن يشير نص السؤال إلى "الجدول" أو "الجدول أدناه".`;
+   const figureRules = p.allowFigures
+-    ? `الأشكال والصور العلمية: لا ترسم أي شكل ولا تصفه ولا تولّده أبداً. إن كان في الملف شكل/صورة/مخطط مناسب لسؤال فأشِر إليه في الحقل figure: file_index (رقم الملف) و page (رقم الصفحة الفعلي في PDF، الأولى = 1) و box_2d = [ymin, xmin, ymax, xmax] بإحداثيات من 0 إلى 1000 تحيط بالشكل نفسه فقط (بدون النص المجاور والعنوان) و caption وصف قصير لما في الشكل. لا تضع إحداثيات إلا إذا رأيت الشكل بوضوح في تلك الصفحة. إن كانت التسميات المكتوبة داخل الشكل تكشف إجابة السؤال فضع reveals_answer=true أو الأفضل اختر سؤالاً آخر لا يكشفها. لا تُشِر لشكل في ملف نصّي (بلا صفحات).`
++    ? `الأشكال والصور العلمية: لا ترسم أي شكل ولا تصفه ولا تولّده أبداً. إن كان في الملف شكل/صورة/مخطط مناسب لسؤال فأشِر إليه في الحقل figure: file_index (رقم الملف) و page (رقم الصفحة الفعلي في PDF، الأولى = 1) و box_2d = [ymin, xmin, ymax, xmax] بإحداثيات من 0 إلى 1000 تحيط بالشكل نفسه فقط (بدون النص المجاور والعنوان) و caption وصف قصير لما في الشكل. لا تضع إحداثيات إلا إذا رأيت الشكل بوضوح في تلك الصفحة. إن كانت التسميات المكتوبة داخل الشكل تكشف إجابة السؤال فضع reveals_answer=true أو الأفضل اختر سؤالاً آخر لا يكشفها. لا تُشِر لشكل في ملف نصّي (بلا صفحات). في الملفات الكبيرة لا تُشِر إلا إلى صفحات وصلتك صورتها (ترد بعنوان «[صورة الصفحة N ...]»)، واستعمل رقم الصفحة المكتوب في ذلك العنوان.`
+     : `الأشكال: ممنوع إرفاق أشكال، وممنوع أن يشير نص السؤال إلى "الشكل" أو "الصورة" أو "المخطط".`;
+ 
+   return `أنت معلم خبير في إعداد الامتحانات. مهمتك: إعداد امتحان من "الملف المرفق" حصراً.
+@@ -187,10 +187,12 @@ serve(async (req) => {
+       pageEnd: Number.isInteger(u?.pageEnd) ? u.pageEnd : null,
+     })).filter((u: UnitIn) => u.title);
+ 
+-    const figurable = files.map((f) => !!f.base64);
++    const figurable = files.map((f) => !!f.base64 || (Array.isArray(f.pages) && f.pages.length > 0));
++    const figPages = files.map((f) => (Array.isArray(f.pages) && f.pages.length > 0 ? new Set(f.pages.map((p) => p.page)) : null));
+     const ctx = {
+       nFiles: files.length,
+       figurable,
++      figPages,
+       allowFigures: body.includeFigures !== false && figurable.some(Boolean),
+       allowTables: body.includeTables !== false,
+     };
+@@ -303,7 +305,7 @@ serve(async (req) => {
+       );
+     }
+     if (body.includeFigures !== false && !ctx.allowFigures) {
+-      warnings.push("الأشكال من الملف غير متاحة لأن الملف نصّي أو كبير جداً؛ ارفع PDF أصغر من 10 ميجابايت أو صورة لتفعيلها.");
++      warnings.push("الأشكال من الملف غير متاحة لأن الملف نصّي (مثل Word)؛ احفظه PDF لتفعيلها.");
+     }
+ 
+     return jsonResponse({
+-- 
+2.43.0
+

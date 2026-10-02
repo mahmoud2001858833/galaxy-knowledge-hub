@@ -407,10 +407,10 @@ const Navbar = () => {
                   <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block px-2 mb-2">
                     الأدوات والمراجع
                   </span>
-                  <Link to="/exam-generator" className="px-3 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-cyan-950/40 flex items-center justify-between">
+                  <Link to="/exam-creator" className="px-3 py-2 rounded-xl text-xs font-semibold text-blue-600 dark:text-cyan-400 hover:bg-blue-50 dark:hover:bg-cyan-950/40 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <FileText className="w-3.5 h-3.5 text-blue-500" />
-                      <span>استوديو الامتحانات الذكي (ورقي وإلكتروني)</span>
+                      <span>إنشاء امتحان من ملفك (PDF ورابط إلكتروني)</span>
                     </div>
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 font-bold">
                       جديد
