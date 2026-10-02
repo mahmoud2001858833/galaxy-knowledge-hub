@@ -2,11 +2,13 @@ import React from 'react';
 import { Eye, Microscope, Zap, RotateCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export type CameraPreset = 'overview' | 'microscopic' | 'flow' | 'orbit';
+export type CameraPreset = 'overview' | 'microscopic' | 'flow' | 'orbit' | 'orbit360';
 
 interface CinematicCameraControllerProps {
-  currentPreset: CameraPreset;
-  onSelectPreset: (preset: CameraPreset) => void;
+  currentPreset?: CameraPreset;
+  activePreset?: CameraPreset;
+  preset?: CameraPreset;
+  onSelectPreset?: (preset: CameraPreset) => void;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
   className?: string;
@@ -14,6 +16,8 @@ interface CinematicCameraControllerProps {
 
 export const CinematicCameraController: React.FC<CinematicCameraControllerProps> = ({
   currentPreset,
+  activePreset,
+  preset,
   onSelectPreset,
   isFullscreen = false,
   onToggleFullscreen,
