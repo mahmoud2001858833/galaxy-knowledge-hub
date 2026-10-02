@@ -105,7 +105,7 @@ function scopeText(units: UnitIn[]): string {
 function generationSystem(p: {
   counts: Partial<Record<QType, number>>; difficulty: string; language: string; units: UnitIn[];
   grade?: string; subject?: string; request?: string; avoid: string[];
-  allowFigures: boolean; allowTables: boolean;
+  allowFigures: boolean; allowTables: boolean; nFiles: number; distribution: string;
 }): string {
   const typesList = QTYPES.filter((t) => (p.counts[t] ?? 0) > 0)
     .map((t) => `- ${p.counts[t]} سؤال من نوع: ${TYPE_LABEL[t]}`).join("\n");
@@ -132,7 +132,11 @@ ${p.grade ? `- الصف: ${p.grade}\n` : ""}${p.subject ? `- المادة: ${p.s
 2. كل سؤال إجابته موجودة صراحة في الملف. لا تخمّن ولا تستنتج ما لا يدعمه النص.
 3. evidence: اقتباس حرفي قصير (حتى 25 كلمة) من الملف يدعم الإجابة. location: رقم الصفحة أو اسم القسم. unit: عنوان الوحدة التي أُخذ منها السؤال كما ورد في النطاق.
 4. لا تسأل عن بيانات شكلية: اسم الملف، الغلاف، الفهرس، اسم المؤلف أو الناشر، أرقام الصفحات، تاريخ الطباعة.
-5. وزّع الأسئلة بالتساوي تقريباً على الوحدات المحددة وعلى كامل محتوى كل وحدة، ولا تكرر السؤال نفسه بصيغ مختلفة.
+5. ${p.distribution === "by_file" && p.nFiles > 1
+    ? "وزّع الأسئلة بالتساوي تقريباً بين الملفات أولاً (لكل ملف نصيب متقارب)، ثم على وحدات كل ملف وعلى كامل محتواها"
+    : "وزّع الأسئلة بالتساوي تقريباً على الوحدات المحددة وعلى كامل محتوى كل وحدة"}، ولا تكرر السؤال نفسه بصيغ مختلفة.${p.nFiles > 1
+    ? " هذا امتحان مدمج من عدة ملفات: ابدأ location دائماً باسم الملف ثم الصفحة أو القسم، ولا تبنِ إجابة سؤال من ملف على معلومة وردت في ملف آخر."
+    : ""}
 6. اختيار من متعدد: 4 خيارات بالضبط، خيار واحد صحيح، والمشتتات معقولة ومن نفس المجال، وanswer نص الخيار الصحيح مطابقاً حرفياً لأحد الخيارات. نوّع موضع الصحيح وتجنّب "كل ما سبق/لا شيء مما سبق".
 7. صح/خطأ: answer هي "صح" أو "خطأ" فقط (True/False إن كانت اللغة إنجليزية). عبارة واضحة غير ملتبسة.
 8. أكمل الفراغ: ضع ______ مكان مصطلح مهم، وanswer هو المصطلح المحذوف فقط.
@@ -179,7 +183,7 @@ serve(async (req) => {
     if (requested < 1) return jsonResponse({ error: "حدّد عدد الأسئلة لنوع واحد على الأقل" }, 400);
     if (requested > MAX_TOTAL_QUESTIONS) return jsonResponse({ error: `الحد الأقصى ${MAX_TOTAL_QUESTIONS} سؤالاً في الامتحان الواحد` }, 400);
 
-    const units: UnitIn[] = (Array.isArray(body.units) ? body.units : []).slice(0, 30).map((u: any) => ({
+    const units: UnitIn[] = (Array.isArray(body.units) ? body.units : []).slice(0, 80).map((u: any) => ({
       title: String(u?.title ?? "").slice(0, 200),
       summary: String(u?.summary ?? "").slice(0, 300),
       fileIndex: Number.isInteger(u?.fileIndex) ? u.fileIndex : 0,
@@ -232,6 +236,7 @@ serve(async (req) => {
         system: generationSystem({
           counts: need, difficulty, language, units, ...meta,
           allowFigures: ctx.allowFigures, allowTables: ctx.allowTables,
+          nFiles: files.length, distribution: String(body.distribution || "by_unit"),
           avoid: accepted.map((q) => q.question),
         }),
         parts: [...fileParts, { text: "أنشئ الامتحان الآن من الملف المرفق فقط." }],

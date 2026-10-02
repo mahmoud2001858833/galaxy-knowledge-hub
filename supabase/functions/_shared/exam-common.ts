@@ -34,7 +34,7 @@ export const MAX_PAGE_IMAGES = 160; // للتحليل (مصغّرات) أو لل
 
 /** يعيد رسالة خطأ بالعربية أو null إذا كانت الملفات سليمة. */
 export function validateFiles(files: unknown): string | null {
-  if (!Array.isArray(files) || files.length === 0 || files.length > 5) return "ارفع من 1 إلى 5 ملفات";
+  if (!Array.isArray(files) || files.length === 0 || files.length > 8) return "ارفع من 1 إلى 8 ملفات";
   let inline = 0;
   for (const f of files as InFile[]) {
     if (!f || typeof f.name !== "string") return "بيانات الملف غير صالحة";

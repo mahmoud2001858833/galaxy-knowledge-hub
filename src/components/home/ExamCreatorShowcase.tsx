@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { FileUp, ListChecks, SlidersHorizontal, FileDown, Globe, ArrowLeft, ShieldCheck, Table2, Image as ImageIcon } from "lucide-react";
+import { FileUp, ListChecks, SlidersHorizontal, FileDown, Globe, ArrowLeft, ShieldCheck, Table2, Image as ImageIcon, BookMarked } from "lucide-react";
 
 const STEPS = [
-  { icon: FileUp, label: "ارفع ملفك" },
+  { icon: FileUp, label: "اختر من المكتبة أو ارفع ملفك" },
   { icon: ListChecks, label: "اختر الوحدات" },
   { icon: SlidersHorizontal, label: "حدّد الأسئلة وطلبك" },
   { icon: FileDown, label: "نزّل PDF" },
@@ -10,6 +10,7 @@ const STEPS = [
 ];
 
 const FEATURES = [
+  { icon: BookMarked, text: "اختر من مكتبة ملفات المنصة بلا رفع، أو ادمج عدة ملفات في امتحان واحد" },
   { icon: ShieldCheck, text: "أسئلة من ملفك فقط، وكل سؤال مرفق باقتباس يثبت إجابته ويُدقَّق آلياً" },
   { icon: Table2, text: "جداول تُنقل من ملفك خلية بخلية وتُدقَّق مقابله" },
   { icon: ImageIcon, text: "أشكال علمية تُقصّ من ملفك الأصلي بدقة، بلا رسوم مولَّدة قد تخطئ" },

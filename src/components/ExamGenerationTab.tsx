@@ -444,7 +444,7 @@ function BookExamPanel({ grade: defaultGrade }: ExamGenerationTabProps) {
 export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
   return (
     <Tabs defaultValue="file" dir="rtl" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
+      <TabsList className="grid h-auto w-full grid-cols-2 bg-muted text-muted-foreground">
         <TabsTrigger value="file">من ملف مرفوع</TabsTrigger>
         <TabsTrigger value="book">من الكتاب المدرسي</TabsTrigger>
       </TabsList>

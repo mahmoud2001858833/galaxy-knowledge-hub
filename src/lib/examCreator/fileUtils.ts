@@ -1,6 +1,6 @@
 import type { FigureRef, UnitInfo } from "./types";
 
-export const MAX_FILES = 5;
+export const MAX_FILES = 8;
 export const MAX_INLINE_BYTES_PER_FILE = 10 * 1024 * 1024;
 export const MAX_TOTAL_INLINE_BYTES = 14 * 1024 * 1024;
 export const MAX_FILE_BYTES = 400 * 1024 * 1024;
@@ -149,6 +149,27 @@ async function prepareLargePdf(file: File, onProgress?: Progress): Promise<Prepa
       ? `ملف كبير ممسوح ضوئياً (${numPages} صفحة): يُقسَّم من مصغّرات صفحاته، وتُرسل صور الصفحات المختارة عند إنشاء الامتحان.`
       : `ملف كبير (${numPages} صفحة): يُقرأ هنا محلياً، ويُرسل للذكاء الاصطناعي نصُّ وحداتك المختارة مع صور الصفحات التي فيها أشكال.`,
   };
+}
+
+/**
+ * عند دمج عدة ملفات قد يتجاوز مجموع الـ PDF المضمَّنة حدّ الطلب. نحوّل الأكبر فالأكبر إلى القراءة المحلية
+ * (نص + صور صفحات مختارة) حتى يدخل المجموع في الحد.
+ */
+export async function shrinkToBudget(prep: PreparedFile[], onProgress?: Progress): Promise<PreparedFile[]> {
+  const out = [...prep];
+  for (;;) {
+    const total = out.reduce((s, p) => s + payloadBytes(p.payload), 0);
+    if (total <= MAX_TOTAL_INLINE_BYTES) return out;
+    let idx = -1, size = 0;
+    out.forEach((p, i) => {
+      if (p.kind === "pdf" && !p.large && p.payload.base64) {
+        const b = payloadBytes(p.payload);
+        if (b > size) { size = b; idx = i; }
+      }
+    });
+    if (idx < 0) throw new Error("مجموع حجم الملفات كبير (الحد 14 ميجابايت للملفات المضمَّنة). قلّل عدد الصور أو حجمها.");
+    out[idx] = await prepareLargePdf(out[idx].source, onProgress);
+  }
 }
 
 export async function prepareFile(file: File, onProgress?: Progress): Promise<PreparedFile> {
@@ -319,6 +340,11 @@ export async function buildGenerationFiles(
   const payloads: FilePayload[] = [];
   const notes: string[] = [];
 
+  // ميزانية صور الصفحات مشتركة بين الملفات الكبيرة (حدّ الطلب 14MB، ويُخصم منه ما أُرسل مضمَّناً)
+  const smallBytes = files.filter((f) => !f.large).reduce((s, f) => s + payloadBytes(f.payload), 0);
+  const largeCount = Math.max(1, files.filter((f) => f.large).length);
+  const budgetPerFile = Math.min(MAX_PAGE_IMAGE_BYTES, Math.max(1.5 * 1024 * 1024, Math.floor((13 * 1024 * 1024 - smallBytes) / largeCount)));
+
   for (let fi = 0; fi < files.length; fi++) {
     const f = files[fi];
     if (!f.large) { payloads.push(f.payload); continue; }
@@ -359,7 +385,7 @@ export async function buildGenerationFiles(
         imagePages = Array.from({ length: MAX_SEND_PAGES }, (_, i) => cands[Math.floor(i * step)].p);
         sampled = true;
       } else {
-        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p).sort((a, b) => a - b);
+        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p); // بترتيب الأولوية
       }
     }
 
@@ -368,11 +394,12 @@ export async function buildGenerationFiles(
     for (const p of imagePages) {
       const img = await pageJpeg(f.source, p, 1000, 0.78);
       bytes += b64Bytes(img.base64);
-      if (bytes > MAX_PAGE_IMAGE_BYTES) break;
+      if (bytes > budgetPerFile) break;
       out.push(img);
       onProgress?.(`تجهيز صور الصفحات (${out.length}/${imagePages.length}) من «${f.name}»...`);
     }
 
+    out.sort((a, b) => a.page - b.page);
     payloads.push({ name: f.name, text: text || `ملف ممسوح ضوئياً من ${numPages} صفحة.`, pages: out });
     notes.push(
       `«${f.name}»: اعتُمدت ${pages.length} صفحة من ${numPages}` +

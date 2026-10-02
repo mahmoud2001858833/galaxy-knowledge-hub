@@ -11,12 +11,13 @@ import { ArrowRight, BarChart3, Copy, ExternalLink, FileDown, Globe, Loader2, Pr
 import { useToast } from "@/hooks/use-toast";
 import { downloadExamPdf, openPrintWindow, type PdfMode } from "@/lib/examCreator/pdfExport";
 import { publishOnlineExam } from "@/lib/examCreator/api";
+import { updateHistory } from "@/lib/examCreator/history";
 import type { GeneratedExam, OnlineSettings } from "@/lib/examCreator/types";
 import ExamResultsDialog from "./ExamResultsDialog";
 
-interface Props { exam: GeneratedExam; onBack: () => void }
+interface Props { exam: GeneratedExam; historyId: string | null; onBack: () => void }
 
-export default function StepPublish({ exam, onBack }: Props) {
+export default function StepPublish({ exam, historyId, onBack }: Props) {
   const { toast } = useToast();
   const [pdfBusy, setPdfBusy] = useState<PdfMode | null>(null);
   const [pdfProgress, setPdfProgress] = useState("");
@@ -51,7 +52,9 @@ export default function StepPublish({ exam, onBack }: Props) {
   const publish = async () => {
     setPubBusy(true);
     try {
-      const r = await publishOnlineExam(finalExam(), os);
+      const fe = finalExam();
+      const r = await publishOnlineExam(fe, os);
+      await updateHistory(historyId, fe, r.id); // يربط سجل الامتحان برابطه ليراه الأدمن
       setPublished(r);
       toast({ title: "✅ تم إنشاء رابط الامتحان" });
     } catch (e: any) {

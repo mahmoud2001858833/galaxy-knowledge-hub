@@ -28,6 +28,7 @@ export interface GenerateParams {
   counts: Record<QType, number>;
   difficulty: string;
   language: string;
+  distribution: string;
   grade: string;
   subject: string;
   request: string;
@@ -42,6 +43,7 @@ export const generateExam = (p: GenerateParams) =>
     counts: p.counts,
     difficulty: p.difficulty,
     language: p.language,
+    distribution: p.distribution,
     grade: p.grade || undefined,
     subject: p.subject || undefined,
     request: p.request.trim() || undefined,

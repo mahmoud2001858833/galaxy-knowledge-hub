@@ -12,6 +12,7 @@ export interface SettingsState {
   counts: Record<QType, number>;
   difficulty: string;
   language: string;
+  distribution: "by_unit" | "by_file";
   grade: string;
   subject: string;
   request: string;
@@ -24,7 +25,7 @@ export interface SettingsState {
 
 export const DEFAULT_SETTINGS: SettingsState = {
   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
-  difficulty: "mixed", language: "auto", grade: "", subject: "", request: "",
+  difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
   includeFigures: true, includeTables: true, schoolName: "", teacherName: "", durationMinutes: 45,
 };
 
@@ -48,13 +49,14 @@ interface Props {
   canFigures: boolean;
   unitsHaveFigures: boolean;
   unitsHaveTables: boolean;
+  filesUsed: number;
   busy: boolean;
   stage: string;
   onBack: () => void;
   onGenerate: () => void;
 }
 
-export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, busy, stage, onBack, onGenerate }: Props) {
+export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, filesUsed, busy, stage, onBack, onGenerate }: Props) {
   const total = Object.values(s.counts).reduce((a, b) => a + b, 0);
   const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
   const setCount = (k: QType, v: string) =>
@@ -104,6 +106,23 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
           </div>
         </div>
       </Card>
+
+      {filesUsed > 1 && (
+        <Card className="space-y-3 p-4">
+          <Label className="text-base">توزيع الأسئلة بين الملفات ({filesUsed} ملفات مدمجة)</Label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {([
+              ["by_unit", "حسب الوحدات المختارة", "كل وحدة تأخذ نصيباً متساوياً (الملف الذي فيه وحدات أكثر يظهر أكثر)."],
+              ["by_file", "بالتساوي بين الملفات", "كل ملف ينال نصيباً متقارباً مهما كان عدد وحداته المختارة."],
+            ] as const).map(([v, t, d]) => (
+              <button key={v} type="button" onClick={() => set("distribution", v)}
+                className={`rounded-lg border p-3 text-right transition-colors ${s.distribution === v ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
+                <div className="font-semibold">{t}</div><div className="text-xs text-muted-foreground">{d}</div>
+              </button>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <Card className="space-y-3 p-4">
         <Label className="text-base">طلب خاص للذكاء الاصطناعي (اختياري)</Label>

@@ -69,6 +69,7 @@ import { platformSettings, type PlatformSettings, type FooterLink } from '@/serv
 import { liveSupportService, type SupportSession } from '@/services/liveSupportService';
 import { QuantumQuestionGenerator } from '@/components/admin/QuantumQuestionGenerator';
 import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow';
+import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
 import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
 import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
@@ -632,6 +633,7 @@ export const SuperAdminControlHub: React.FC = () => {
         { id: 'faculty', label: 'الكوادر والصلاحيات الأكاديمية', icon: GraduationCap, badge: `${realFacultyCount}`, description: 'إدارة المعلمين، المشرفين، ورتب التدريس' },
         { id: 'simulations', label: 'إدارة المحاكيات العلمية 3D', icon: Atom, badge: '49 تجربة', description: 'الفهرس المتكامل لكافة المختبرات ثلاثية الأبعاد' },
         { id: 'puzzles', label: 'إدارة الألغاز والذكاء الاصطناعي', icon: HelpCircle, badge: `${realPuzzlesCount} لغز`, description: 'بنك الألغاز التفاعلية ومسائل التفكير الناقد' },
+        { id: 'exam-library', label: 'مكتبة ملفات الامتحانات وكل الامتحانات', icon: BookOpen, badge: 'جديد', description: 'ارفع ملفات يختارها كل المستخدمين، وراجع كل امتحان أُنشئ ونتائجه' },
         { id: 'questions', label: 'مولد الأسئلة الذكي 2.0', icon: BrainCircuit, badge: 'بلوم', description: 'توليد امتحانات وبنوك أسئلة بمستويات بلوم المعرفية' },
       ]
     },
@@ -1729,6 +1731,13 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'questions' && (
               <SafeBoundary name="QuantumQuestionGenerator">
                 <QuantumQuestionGenerator />
+              </SafeBoundary>
+            )}
+
+            {/* مكتبة ملفات الامتحانات + كل الامتحانات المُنشأة */}
+            {currentTab === 'exam-library' && (
+              <SafeBoundary name="ExamLibraryAdmin">
+                <ExamLibraryAdmin />
               </SafeBoundary>
             )}
 
