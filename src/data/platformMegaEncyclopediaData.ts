@@ -7,6 +7,7 @@
  */
 
 export interface DetailedExperimentSpec {
+  [key: string]: unknown;
   id: string;
   title: string;
   englishTitle: string;

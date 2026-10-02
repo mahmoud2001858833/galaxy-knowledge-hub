@@ -7,6 +7,7 @@ import { labSound } from '@/utils/labAudio';
 
 export interface ChallengeDef {
   // NOTE: 'Challenge' alias exported below for legacy pages
+  [key: string]: unknown;
   id: string;
   title: string;
   description: string;
