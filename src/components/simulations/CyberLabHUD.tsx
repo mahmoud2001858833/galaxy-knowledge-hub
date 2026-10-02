@@ -22,6 +22,7 @@ interface CyberLabHUDProps {
   status?: string;
   metrics: HUDMetric[];
   showWaveform?: boolean;
+  waveformData?: number[];
   waveformColor?: string;
   waveformSpeed?: number;
   waveformMode?: string;
