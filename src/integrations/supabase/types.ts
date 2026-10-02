@@ -3630,6 +3630,95 @@ export type Database = {
           },
         ]
       }
+      online_exam_submissions: {
+        Row: {
+          answers: Json
+          auto_score: number
+          auto_total: number
+          exam_id: string
+          id: string
+          manual_pending: number
+          student_info: Json
+          student_name: string
+          student_name_norm: string
+          submitted_at: string
+          time_taken_seconds: number | null
+        }
+        Insert: {
+          answers?: Json
+          auto_score?: number
+          auto_total?: number
+          exam_id: string
+          id?: string
+          manual_pending?: number
+          student_info?: Json
+          student_name: string
+          student_name_norm: string
+          submitted_at?: string
+          time_taken_seconds?: number | null
+        }
+        Update: {
+          answers?: Json
+          auto_score?: number
+          auto_total?: number
+          exam_id?: string
+          id?: string
+          manual_pending?: number
+          student_info?: Json
+          student_name?: string
+          student_name_norm?: string
+          submitted_at?: string
+          time_taken_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_exam_submissions_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "online_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      online_exams: {
+        Row: {
+          created_at: string
+          exam: Json
+          grade: string | null
+          id: string
+          is_active: boolean
+          owner_id: string
+          settings: Json
+          subject: string | null
+          title: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          exam: Json
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          owner_id: string
+          settings?: Json
+          subject?: string | null
+          title: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          exam?: Json
+          grade?: string | null
+          id?: string
+          is_active?: boolean
+          owner_id?: string
+          settings?: Json
+          subject?: string | null
+          title?: string
+          token?: string
+        }
+        Relationships: []
+      }
       parents: {
         Row: {
           created_at: string
