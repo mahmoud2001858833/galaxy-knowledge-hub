@@ -23,6 +23,8 @@ export const CinematicCameraController: React.FC<CinematicCameraControllerProps>
   onToggleFullscreen,
   className = ""
 }) => {
+  const resolvedPreset: CameraPreset = currentPreset ?? activePreset ?? preset ?? 'overview';
+  const handleSelect = onSelectPreset ?? (() => {});
   const presets: { id: CameraPreset; label: string; icon: React.ReactNode; desc: string }[] = [
     { id: 'overview', label: 'نظرة عامة', icon: <Eye className="w-3.5 h-3.5" />, desc: 'رؤية المنظومة كاملة' },
     { id: 'microscopic', label: 'منظور مجهري', icon: <Microscope className="w-3.5 h-3.5" />, desc: 'تركيز دقيق مقرب' },
