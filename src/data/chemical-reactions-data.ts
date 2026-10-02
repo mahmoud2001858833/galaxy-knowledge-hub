@@ -19,6 +19,8 @@ export interface Molecule {
 
 export interface ChemicalReaction {
   id: string;
+  name?: string;
+  type?: string;
   nameAr: string;
   nameEn: string;
   equation: string;

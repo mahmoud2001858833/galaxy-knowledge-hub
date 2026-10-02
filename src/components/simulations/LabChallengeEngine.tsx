@@ -7,13 +7,16 @@ import { labSound } from '@/utils/labAudio';
 
 export interface ChallengeDef {
   // NOTE: 'Challenge' alias exported below for legacy pages
+  [key: string]: unknown;
   id: string;
   title: string;
   description: string;
-  targetDescription: string;
-  durationSeconds: number;
-  checkSuccess: () => boolean; // return true if currently meeting criteria
+  targetDescription?: string;
+  durationSeconds?: number;
+  checkSuccess?: () => boolean; // return true if currently meeting criteria
   requiredHoldSeconds?: number; // how many consecutive seconds criteria must be met
+  points?: number;
+  targetMetric?: string;
 }
 
 export type Challenge = ChallengeDef;
@@ -22,6 +25,7 @@ interface LabChallengeEngineProps {
   challenges: ChallengeDef[];
   onCompleteChallenge?: (challengeId: string, score: number) => void;
   onChallengeComplete?: (challenge: ChallengeDef) => void;
+  currentParams?: Record<string, unknown>;
   currentMetrics?: Record<string, string | number | boolean>;
   className?: string;
 }

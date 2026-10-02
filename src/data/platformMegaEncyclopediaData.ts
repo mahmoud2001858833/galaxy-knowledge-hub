@@ -7,6 +7,7 @@
  */
 
 export interface DetailedExperimentSpec {
+  [key: string]: unknown;
   id: string;
   title: string;
   englishTitle: string;
@@ -15,7 +16,7 @@ export interface DetailedExperimentSpec {
   route: string;
   summary: string;
   scientificFoundation: string;
-  governingEquations: Array<{
+  governingEquations?: Array<{
     name: string;
     formula: string;
     description: string;
@@ -27,33 +28,46 @@ export interface DetailedExperimentSpec {
     description?: string;
     constants?: string;
   }>;
-  detailedControls: Array<{
+  detailedControls?: Array<{
     controlName: string;
     type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';
     rangeOrOptions: string;
     physicalEffect: string;
     pedagogicalGuidance: string;
   }>;
-  telemetryMetrics: Array<{
+  controls?: Array<{
+    controlName: string;
+    type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';
+    rangeOrOptions: string;
+    physicalEffect: string;
+    pedagogicalGuidance?: string;
+  }>;
+  telemetryMetrics?: Array<{
     metricName: string;
     symbol: string;
     unit: string;
     scientificMeaning: string;
   }>;
-  labProcedureSteps: string[];
-  labMissions: Array<{
+  telemetry?: Array<{
+    metricName: string;
+    symbol: string;
+    unit: string;
+    scientificMeaning: string;
+  }>;
+  labProcedureSteps?: string[];
+  labMissions?: Array<{
     title: string;
     objective: string;
     successCondition: string;
     solutionHint: string;
   }>;
-  comprehensionQuiz: Array<{
+  comprehensionQuiz?: Array<{
     question: string;
     options: string[];
     correctIndex: number;
     explanation: string;
   }>;
-  industrialApplications: string[];
+  industrialApplications?: string[];
 }
 
 export interface DetailedRoboticsModule {
@@ -61,7 +75,7 @@ export interface DetailedRoboticsModule {
   title: string;
   trackNumber: number;
   durationHours: number;
-  level: 'مبتدئ' | 'متوسط' | 'متقدم' | 'احترافي صناعي';
+  level: 'مبتدئ' | 'متوسط' | 'متقدم' | 'احترافي صناعي' | 'متوسط إلى متقدم';
   targetAudience: string;
   pedagogicalObjectives: string[];
   theoreticalFoundations: string;
@@ -100,7 +114,7 @@ export interface DetailedDamejSpec {
 
 export interface DetailedAdminLMSSpec {
   id: string;
-  systemName: string;
+  systemName?: string;
   title?: string;
   operationalRole: string;
   mathematicalOptimizationEngine: string;

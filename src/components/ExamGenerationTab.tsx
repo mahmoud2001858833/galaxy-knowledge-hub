@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import ExamFromFilePanel from "@/components/exam/ExamFromFilePanel";
 
 interface ExamGenerationTabProps {
   grade: string;
@@ -449,13 +449,7 @@ export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
         <TabsTrigger value="book">من الكتاب المدرسي</TabsTrigger>
       </TabsList>
       <TabsContent value="file" className="mt-4">
-        <Card className="space-y-3 p-6 text-center">
-          <h3 className="text-lg font-bold">إنشاء امتحان من ملفك</h3>
-          <p className="text-sm text-muted-foreground">
-            ارفع الملف، اختر الوحدات، وحدّد الأسئلة وطلبك الخاص، ثم نزّل PDF أو شارك رابط امتحان إلكتروني.
-          </p>
-          <Button asChild><Link to="/exam-creator">افتح استوديو إنشاء الامتحانات</Link></Button>
-        </Card>
+        <ExamFromFilePanel defaultGrade={grade} />
       </TabsContent>
       <TabsContent value="book" className="mt-4">
         <BookExamPanel grade={grade} />

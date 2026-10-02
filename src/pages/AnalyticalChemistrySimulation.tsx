@@ -118,8 +118,8 @@ const TitrationRig3D: React.FC<{
         </mesh>
 
         {/* Magnetic Stir Flea (rotating bar) */}
-        <mesh ref={stirRef} position={[0, -0.72, 0]}>
-          <cylinderGeometry args={[0.06, 0.06, 0.4, 16]} rotation={[0, 0, Math.PI / 2]} />
+        <mesh ref={stirRef} position={[0, -0.72, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.06, 0.06, 0.4, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.1} />
         </mesh>
 
@@ -174,8 +174,8 @@ const TitrationRig3D: React.FC<{
           <meshStandardMaterial color="#3b82f6" metalness={0.6} />
         </mesh>
         {/* Burette Fine Dispensing Tip */}
-        <mesh position={[0, -1.65, 0]}>
-          <coneGeometry args={[0.1, 0.4, 16]} rotation={[Math.PI, 0, 0]} />
+        <mesh position={[0, -1.65, 0]} rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.1, 0.4, 16]} />
           <meshPhysicalMaterial color="#ffffff" transmission={0.9} transparent roughness={0.1} />
         </mesh>
       </group>

@@ -25,7 +25,8 @@ import {
 interface PlatformMentionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectResource: (resource: PlatformResourceMention) => void;
+  onSelectResource?: (resource: PlatformResourceMention) => void;
+  onSelectMention?: (mention: PlatformResourceMention) => void;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
