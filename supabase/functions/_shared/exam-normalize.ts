@@ -19,7 +19,9 @@ const TBL_REF = /(الجدول)\s*(ال)?(أدناه|ادناه|التالي|ا�
 
 export interface NormCtx {
   nFiles: number;
-  figurable: boolean[]; // هل الملف i يمكن قصّ أشكال منه (PDF/صورة مضمّنة)
+  figurable: boolean[]; // هل الملف i يمكن قصّ أشكال منه (PDF/صورة مضمّنة أو صور صفحات)
+  /** للملفات الكبيرة: الصفحات التي أُرسلت صورها فقط. null = كل صفحات الملف مرئية للنموذج. */
+  figPages?: (Set<number> | null)[];
   allowFigures: boolean;
   allowTables: boolean;
 }
@@ -42,7 +44,9 @@ function normFigure(f: any, ctx: NormCtx) {
   const fileIndex = Number.isInteger(f.file_index) ? f.file_index : 0;
   const page = Number.isInteger(f.page) ? f.page : 0;
   if (fileIndex < 0 || fileIndex >= ctx.nFiles || !ctx.figurable[fileIndex]) return null;
-  if (page < 1 || page > 3000) return null;
+  if (page < 1 || page > 5000) return null;
+  const allowed = ctx.figPages?.[fileIndex];
+  if (allowed && !allowed.has(page)) return null; // لم يرَ النموذج هذه الصفحة؛ الإحداثيات تخمين
   const b = Array.isArray(f.box_2d) ? f.box_2d.map(Number) : [];
   if (b.length !== 4 || b.some((n: number) => !Number.isFinite(n))) return null;
   const [y0, x0, y1, x1] = b.map((n: number) => Math.max(0, Math.min(1000, Math.round(n))));

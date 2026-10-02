@@ -125,7 +125,7 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
             <div className="font-medium">أشكال وصور من الملف الأصلي</div>
             <p className="text-xs text-muted-foreground">
               لا يرسم الذكاء الاصطناعي الصور (فهو لا يضمن دقتها العلمية). بدلاً من ذلك يحدد الشكل المناسب في ملفك فيُقصّ منه كما هو بدقة عالية.
-              {!canFigures && " غير متاح: الملف نصي/Word أو كبير؛ ارفع PDF أصغر من 10MB أو صورة."}
+              {!canFigures && " غير متاح: الملفات المرفوعة نصية (Word/TXT)؛ احفظ ملفك PDF لتفعيلها."}
               {canFigures && !unitsHaveFigures && " (لم يُرصد في الوحدات المختارة أشكال واضحة)"}
             </p>
           </div>

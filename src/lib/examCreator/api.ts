@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AnalyzeResponse, ExamQuestion, GenerateResponse, GeneratedExam, OnlineSettings, QType, UnitInfo } from "./types";
-import type { PreparedFile } from "./fileUtils";
+import type { FilePayload, PreparedFile } from "./fileUtils";
 
 // الجداول الجديدة غير موجودة في types.ts المولَّد؛ نستعمل عميلاً غير مُنمَّط لها.
 const db = supabase as any;
@@ -23,7 +23,7 @@ export const analyzeUnits = (files: PreparedFile[]) =>
   callFn<AnalyzeResponse>("analyze-file-units", { files: files.map((f) => f.payload) });
 
 export interface GenerateParams {
-  files: PreparedFile[];
+  payloads: FilePayload[];
   units: UnitInfo[];
   counts: Record<QType, number>;
   difficulty: string;
@@ -37,7 +37,7 @@ export interface GenerateParams {
 
 export const generateExam = (p: GenerateParams) =>
   callFn<GenerateResponse>("generate-exam-from-file", {
-    files: p.files.map((f) => f.payload),
+    files: p.payloads,
     units: p.units.map(({ title, summary, fileIndex, pageStart, pageEnd }) => ({ title, summary, fileIndex, pageStart, pageEnd })),
     counts: p.counts,
     difficulty: p.difficulty,

@@ -31,7 +31,7 @@ export default function StepUpload({ files, busy, stage, onAdd, onRemove, onAnal
         <UploadCloud className="mx-auto mb-3 h-12 w-12 text-primary/70" />
         <p className="text-lg font-semibold">ارفع كتابك أو ملزمتك هنا</p>
         <p className="mt-1 text-sm text-muted-foreground">اسحب الملف أو اضغط للاختيار — PDF · Word · نص · صورة (حتى {MAX_FILES} ملفات)</p>
-        <p className="mt-1 text-xs text-muted-foreground">يُفضَّل PDF أصغر من 10 ميجابايت لاستخراج الأشكال والجداول بدقة</p>
+        <p className="mt-1 text-xs text-muted-foreground">الملفات الكبيرة جداً مقبولة (حتى 400MB)؛ تُقرأ محلياً في متصفحك</p>
         <input ref={ref} type="file" multiple hidden accept={ACCEPT}
           onChange={(e) => { if (e.target.files) onAdd(Array.from(e.target.files)); e.target.value = ""; }} />
       </div>

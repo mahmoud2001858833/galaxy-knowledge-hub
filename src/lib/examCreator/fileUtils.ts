@@ -1,16 +1,32 @@
-import type { FigureRef } from "./types";
+import type { FigureRef, UnitInfo } from "./types";
 
 export const MAX_FILES = 5;
 export const MAX_INLINE_BYTES_PER_FILE = 10 * 1024 * 1024;
 export const MAX_TOTAL_INLINE_BYTES = 14 * 1024 * 1024;
-export const MAX_FILE_BYTES = 40 * 1024 * 1024;
+export const MAX_FILE_BYTES = 400 * 1024 * 1024;
+const MAX_PDF_PAGES = 2500;
+const MAX_SEND_PAGES = 36;            // صور صفحات مفصّلة للتوليد
+const MAX_THUMB_PAGES = 120;          // مصغّرات للتحليل (الكتب الممسوحة ضوئياً)
+const MAX_PAGE_IMAGE_BYTES = 11 * 1024 * 1024;
+const MAX_GEN_TEXT_CHARS = 450_000;
+
+export interface PagePayload { page: number; mimeType: string; base64: string }
+export interface FilePayload { name: string; mimeType?: string; base64?: string; text?: string; pages?: PagePayload[] }
+
+/** بيانات الملف الكبير (PDF > 10MB): نقرؤه صفحةً صفحة محلياً ولا نرسله كاملاً. */
+export interface LargePdfInfo {
+  numPages: number;
+  pageTexts: string[]; // نص كل صفحة (فهرسها = رقم الصفحة - 1)
+  scanned: boolean;    // بلا طبقة نصية: يعتمد على صور الصفحات
+}
 
 export interface PreparedFile {
   name: string;
   size: number;
   kind: "pdf" | "image" | "docx" | "text";
-  /** ما يُرسل للخادم */
-  payload: { name: string; mimeType?: string; base64?: string; text?: string };
+  /** ما يُرسل للخادم (للتحليل). للتوليد يُعاد بناؤه حسب الوحدات المختارة. */
+  payload: FilePayload;
+  large?: LargePdfInfo;
   /** الملف الأصلي (لقص الأشكال منه) */
   source: File;
   /** هل يمكن قص الأشكال منه (PDF/صورة أُرسلت كما هي) */
@@ -49,6 +65,11 @@ async function loadPdf(file: File) {
   if (!p) {
     p = (async () => {
       const pdfjs = await getPdfjs();
+      if (file.size > 40 * 1024 * 1024) {
+        // ملف ضخم: نقرأ منه بالنطاقات عبر blob URL بدل نسخه كاملاً إلى ذاكرة JS
+        const url = URL.createObjectURL(file);
+        return pdfjs.getDocument({ url, useSystemFonts: true, isEvalSupported: false, rangeChunkSize: 1 << 20 }).promise;
+      }
       const data = new Uint8Array(await file.arrayBuffer());
       return pdfjs.getDocument({ data, useSystemFonts: true, isEvalSupported: false }).promise;
     })();
@@ -57,21 +78,80 @@ async function loadPdf(file: File) {
   return p;
 }
 
-/** استخراج نص PDF مع علامات الصفحات (للملفات الكبيرة فقط). لا يستبدل المحتوى بأي منهج مدمج. */
-async function extractPdfText(file: File): Promise<string> {
+async function renderPageCanvas(file: File, pageNum: number, targetWidth: number): Promise<HTMLCanvasElement> {
   const pdf = await loadPdf(file);
-  let out = "";
-  const max = Math.min(pdf.numPages, 200);
-  for (let i = 1; i <= max; i++) {
-    const page = await pdf.getPage(i);
-    const tc = await page.getTextContent();
-    const t = tc.items.map((it: any) => it.str || "").join(" ").replace(/\s+/g, " ").trim();
-    if (t) out += `[صفحة ${i}]\n${t}\n\n`;
-  }
-  return out;
+  const page = await pdf.getPage(pageNum);
+  const base = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: Math.min(3, targetWidth / base.width) });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.floor(viewport.width);
+  canvas.height = Math.floor(viewport.height);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+  page.cleanup();
+  return canvas;
 }
 
-export async function prepareFile(file: File): Promise<PreparedFile> {
+async function pageJpeg(file: File, pageNum: number, width: number, quality: number): Promise<PagePayload> {
+  const c = await renderPageCanvas(file, pageNum, width);
+  const base64 = c.toDataURL("image/jpeg", quality).split(",")[1] ?? "";
+  c.width = c.height = 0; // حرّر الذاكرة
+  return { page: pageNum, mimeType: "image/jpeg", base64 };
+}
+
+const b64Bytes = (b64: string) => Math.floor(b64.length * 0.75);
+export const payloadBytes = (p: FilePayload) =>
+  (p.base64 ? b64Bytes(p.base64) : 0) + (p.pages ?? []).reduce((s, x) => s + b64Bytes(x.base64), 0);
+
+type Progress = (msg: string) => void;
+
+/** قراءة PDF كبير: نص كل صفحة محلياً + حمولة تحليل خفيفة (مقتطفات، أو مصغّرات إن كان ممسوحاً). */
+async function prepareLargePdf(file: File, onProgress?: Progress): Promise<PreparedFile> {
+  const pdf = await loadPdf(file);
+  const numPages: number = pdf.numPages;
+  if (numPages > MAX_PDF_PAGES) throw new Error(`"${file.name}" يحتوي ${numPages} صفحة (الحد ${MAX_PDF_PAGES}). قسّمه إلى جزأين.`);
+
+  const pageTexts: string[] = [];
+  for (let i = 1; i <= numPages; i++) {
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    pageTexts.push(tc.items.map((it: any) => it.str || "").join(" ").replace(/\s+/g, " ").trim());
+    page.cleanup();
+    if (i % 10 === 0 || i === numPages) onProgress?.(`قراءة الصفحة ${i} من ${numPages} في «${file.name}»...`);
+  }
+
+  const totalChars = pageTexts.reduce((s, t) => s + t.length, 0);
+  const scanned = totalChars / numPages < 40;
+  const payload: FilePayload = { name: file.name };
+
+  if (!scanned) {
+    // مقتطف من أول كل صفحة (العناوين غالباً في الأعلى) ضمن ميزانية ثابتة
+    const per = Math.max(150, Math.min(1500, Math.floor(450_000 / numPages)));
+    payload.text = pageTexts.map((t, i) => (t ? `[صفحة ${i + 1}]\n${t.slice(0, per)}` : "")).filter(Boolean).join("\n\n");
+  } else {
+    // كتاب ممسوح: مصغّرات صفحات موزّعة بالتساوي
+    const step = Math.max(1, Math.ceil(numPages / MAX_THUMB_PAGES));
+    const pages: PagePayload[] = [];
+    for (let p = 1; p <= numPages; p += step) {
+      pages.push(await pageJpeg(file, p, 520, 0.55));
+      if (pages.length % 5 === 0) onProgress?.(`تجهيز مصغّرات الصفحات (${pages.length}/${Math.ceil(numPages / step)})...`);
+    }
+    payload.pages = pages;
+    payload.text = `هذا كتاب ممسوح ضوئياً من ${numPages} صفحة؛ تصلك مصغّرات لبعض صفحاته فقط (كل ${step} صفحة).`;
+  }
+
+  return {
+    name: file.name, size: file.size, kind: "pdf", source: file, figurable: true, payload,
+    large: { numPages, pageTexts, scanned },
+    note: scanned
+      ? `ملف كبير ممسوح ضوئياً (${numPages} صفحة): يُقسَّم من مصغّرات صفحاته، وتُرسل صور الصفحات المختارة عند إنشاء الامتحان.`
+      : `ملف كبير (${numPages} صفحة): يُقرأ هنا محلياً، ويُرسل للذكاء الاصطناعي نصُّ وحداتك المختارة مع صور الصفحات التي فيها أشكال.`,
+  };
+}
+
+export async function prepareFile(file: File, onProgress?: Progress): Promise<PreparedFile> {
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (file.size > MAX_FILE_BYTES) throw new Error(`الملف "${file.name}" أكبر من ${MAX_FILE_BYTES / 1024 / 1024} ميجابايت`);
   const inlineOk = file.size <= MAX_INLINE_BYTES_PER_FILE;
@@ -91,15 +171,7 @@ export async function prepareFile(file: File): Promise<PreparedFile> {
         payload: { name: file.name, mimeType: "application/pdf", base64: await readBase64(file) },
       };
     }
-    const text = await extractPdfText(file);
-    if (text.replace(/\[صفحة \d+\]/g, "").trim().length < 200) {
-      throw new Error(`"${file.name}" كبير وممسوح ضوئياً (بلا نص). قسّمه إلى ملفات أصغر من 10 ميجابايت.`);
-    }
-    return {
-      name: file.name, size: file.size, kind: "pdf", source: file, figurable: false,
-      payload: { name: file.name, text },
-      note: "ملف كبير: يُقرأ كنص، فلن تُستخرج منه الأشكال. اقسمه لملفات أصغر من 10 ميجابايت للحصول على الأشكال.",
-    };
+    return prepareLargePdf(file, onProgress);
   }
 
   if (ext === "docx") {
@@ -212,4 +284,100 @@ export async function cropAllFigures<T extends { id: number; figure?: FigureRef 
     else removed++;
   }
   return { questions: out, removed };
+}
+
+// ───────── حمولة التوليد للملفات الكبيرة ─────────
+/** درجة "بصرية" للصفحة: صور نقطية ورسوم متجهة (مخططات) تعني احتمال وجود شكل. */
+async function pageVisualScore(file: File, pageNum: number): Promise<number> {
+  const pdfjs = await getPdfjs();
+  const pdf = await loadPdf(file);
+  const page = await pdf.getPage(pageNum);
+  try {
+    const list = await page.getOperatorList();
+    const O = pdfjs.OPS;
+    const imageOps = new Set([O.paintImageXObject, O.paintInlineImageXObject, O.paintImageMaskXObject, O.paintJpegXObject].filter((x) => x !== undefined));
+    let img = 0, paths = 0;
+    for (const fn of list.fnArray) {
+      if (imageOps.has(fn)) img++;
+      else if (fn === O.constructPath) paths++;
+    }
+    return img * 10 + Math.min(paths, 600) / 30;
+  } finally {
+    page.cleanup();
+  }
+}
+
+export interface GenerationFiles { payloads: FilePayload[]; notes: string[] }
+
+/**
+ * يبني ما يُرسل لتوليد الامتحان: الملفات الصغيرة كما هي، والملفات الكبيرة = نص الوحدات المختارة كاملاً
+ * + صور الصفحات المهمة (الممسوحة أولاً ثم الأكثر أشكالاً) ضمن ميزانية حجم ثابتة.
+ */
+export async function buildGenerationFiles(
+  files: PreparedFile[], units: UnitInfo[], onProgress?: Progress,
+): Promise<GenerationFiles> {
+  const payloads: FilePayload[] = [];
+  const notes: string[] = [];
+
+  for (let fi = 0; fi < files.length; fi++) {
+    const f = files[fi];
+    if (!f.large) { payloads.push(f.payload); continue; }
+
+    const { numPages, pageTexts, scanned } = f.large;
+    const mine = units.filter((u) => u.fileIndex === fi);
+    const selected = new Set<number>();
+    if (mine.length === 0 || mine.some((u) => !u.pageStart)) {
+      for (let p = 1; p <= numPages; p++) selected.add(p);
+    } else {
+      for (const u of mine) {
+        for (let p = Math.max(1, u.pageStart!); p <= Math.min(numPages, u.pageEnd ?? u.pageStart!); p++) selected.add(p);
+      }
+    }
+    const pages = [...selected].sort((a, b) => a - b);
+
+    // نص الصفحات المختارة كاملاً (بميزانية: نقصّ المقتطف المتساوي إن زاد)
+    const perPage = Math.max(300, Math.floor(MAX_GEN_TEXT_CHARS / Math.max(1, pages.length)));
+    const text = pages.map((p) => (pageTexts[p - 1] ? `[صفحة ${p}]\n${pageTexts[p - 1].slice(0, perPage)}` : "")).filter(Boolean).join("\n\n");
+
+    // اختيار صفحات الصور
+    let imagePages: number[];
+    let sampled = false;
+    if (pages.length <= MAX_SEND_PAGES) {
+      imagePages = pages;
+    } else {
+      const scored: { p: number; score: number }[] = [];
+      let i = 0;
+      for (const p of pages) {
+        const noText = (pageTexts[p - 1] ?? "").length < 40;
+        scored.push({ p, score: noText || scanned ? 1000 : await pageVisualScore(f.source, p) });
+        if (++i % 15 === 0) onProgress?.(`فحص الصفحات بحثاً عن الأشكال (${i}/${pages.length})...`);
+      }
+      const cands = scored.filter((x) => x.score >= 1);
+      if (cands.length > MAX_SEND_PAGES && cands.every((x) => x.score >= 1000)) {
+        // كل الصفحات صور بلا نص: نوزّع العيّنة بالتساوي على كامل المحدّد بدل أخذ أوله فقط
+        const step = cands.length / MAX_SEND_PAGES;
+        imagePages = Array.from({ length: MAX_SEND_PAGES }, (_, i) => cands[Math.floor(i * step)].p);
+        sampled = true;
+      } else {
+        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p).sort((a, b) => a - b);
+      }
+    }
+
+    const out: PagePayload[] = [];
+    let bytes = 0;
+    for (const p of imagePages) {
+      const img = await pageJpeg(f.source, p, 1000, 0.78);
+      bytes += b64Bytes(img.base64);
+      if (bytes > MAX_PAGE_IMAGE_BYTES) break;
+      out.push(img);
+      onProgress?.(`تجهيز صور الصفحات (${out.length}/${imagePages.length}) من «${f.name}»...`);
+    }
+
+    payloads.push({ name: f.name, text: text || `ملف ممسوح ضوئياً من ${numPages} صفحة.`, pages: out });
+    notes.push(
+      `«${f.name}»: اعتُمدت ${pages.length} صفحة من ${numPages}` +
+      (out.length ? `، وأُرسلت صور ${out.length} صفحة منها (${sampled ? "عيّنة موزعة بالتساوي لأن الكتاب ممسوح ضوئياً؛ اختر وحدات أقل لتغطية أدق" : "الأكثر احتمالاً لاحتواء أشكال"})` : "") + ".",
+    );
+  }
+  return { payloads, notes };
 }

@@ -23,11 +23,14 @@ export async function requireUser(req: Request): Promise<string | null> {
   }
 }
 
-export interface InFile { name: string; mimeType?: string; base64?: string; text?: string }
+export interface InPage { page: number; mimeType: string; base64: string }
+/** ملف: إمّا مضمّن كاملاً (base64) أو نص، أو نص + صور صفحات محددة (للملفات الكبيرة جداً). */
+export interface InFile { name: string; mimeType?: string; base64?: string; text?: string; pages?: InPage[] }
 
 export const MAX_INLINE_BYTES = 14 * 1024 * 1024;
 export const MAX_TEXT_CHARS = 600_000;
 export const INLINE_MIME = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+export const MAX_PAGE_IMAGES = 160; // للتحليل (مصغّرات) أو للتوليد (صفحات مختارة)
 
 /** يعيد رسالة خطأ بالعربية أو null إذا كانت الملفات سليمة. */
 export function validateFiles(files: unknown): string | null {
@@ -38,11 +41,19 @@ export function validateFiles(files: unknown): string | null {
     if (f.base64) {
       if (!INLINE_MIME.includes(f.mimeType || "")) return `نوع الملف غير مدعوم: ${f.name}`;
       inline += Math.floor(f.base64.length * 0.75);
+    } else if (Array.isArray(f.pages) && f.pages.length > 0) {
+      if (f.pages.length > MAX_PAGE_IMAGES) return `عدد صفحات الصور كبير جداً في الملف: ${f.name}`;
+      for (const pg of f.pages) {
+        if (!pg || !Number.isInteger(pg.page) || pg.page < 1 || pg.mimeType !== "image/jpeg" || typeof pg.base64 !== "string") {
+          return `صورة صفحة غير صالحة في الملف: ${f.name}`;
+        }
+        inline += Math.floor(pg.base64.length * 0.75);
+      }
     } else if (!f.text || f.text.trim().length < 80) {
       return `لم يُستخرج نص كافٍ من الملف: ${f.name}`;
     }
   }
-  if (inline > MAX_INLINE_BYTES) return "حجم الملفات كبير جداً (الحد 14 ميجابايت)";
+  if (inline > MAX_INLINE_BYTES) return "حجم الملفات كبير جداً (الحد 14 ميجابايت). اختر وحدات أقل.";
   return null;
 }
 
@@ -52,8 +63,22 @@ export function buildFileParts(files: InFile[]): any[] {
     if (f.base64) {
       parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` });
       parts.push({ inlineData: { mimeType: f.mimeType!, data: f.base64.replace(/^data:[^;]+;base64,/, "") } });
-    } else if (f.text) {
-      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===\n${f.text.slice(0, MAX_TEXT_CHARS)}\n=== نهاية الملف رقم ${i} ===` });
+      return;
+    }
+    const hasPages = Array.isArray(f.pages) && f.pages.length > 0;
+    if (f.text) {
+      parts.push({
+        text: `=== الملف رقم ${i}: ${f.name} ===\n${f.text.slice(0, MAX_TEXT_CHARS)}\n=== نهاية نص الملف رقم ${i} ===` +
+          (hasPages ? "\nالصور التالية هي صور لصفحات محددة من هذا الملف نفسه، وكل صورة معنونة برقم صفحتها الفعلي." : ""),
+      });
+    } else if (hasPages) {
+      parts.push({ text: `=== الملف رقم ${i}: ${f.name} (صور صفحات) ===` });
+    }
+    if (hasPages) {
+      for (const pg of f.pages!) {
+        parts.push({ text: `[صورة الصفحة ${pg.page} من الملف رقم ${i}]` });
+        parts.push({ inlineData: { mimeType: pg.mimeType, data: pg.base64.replace(/^data:[^;]+;base64,/, "") } });
+      }
     }
   });
   return parts;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeUnits, generateExam } from "@/lib/examCreator/api";
-import { cropAllFigures, MAX_FILES, MAX_TOTAL_INLINE_BYTES, prepareFile, type PreparedFile } from "@/lib/examCreator/fileUtils";
+import { buildGenerationFiles, cropAllFigures, MAX_FILES, MAX_TOTAL_INLINE_BYTES, payloadBytes, prepareFile, type PreparedFile } from "@/lib/examCreator/fileUtils";
 import type { AnalyzeResponse, GeneratedExam } from "@/lib/examCreator/types";
 import StepUpload from "./StepUpload";
 import StepUnits from "./StepUnits";
@@ -46,8 +46,8 @@ export default function ExamCreatorWizard() {
     try {
       setStage("جارٍ قراءة الملفات...");
       const prep: PreparedFile[] = [];
-      for (const f of files) prep.push(await prepareFile(f));
-      if (prep.reduce((s, p) => s + (p.payload.base64 ? Math.floor(p.payload.base64.length * 0.75) : 0), 0) > MAX_TOTAL_INLINE_BYTES) {
+      for (const f of files) prep.push(await prepareFile(f, setStage));
+      if (prep.reduce((s, p) => s + payloadBytes(p.payload), 0) > MAX_TOTAL_INLINE_BYTES) {
         throw new Error("مجموع حجم الملفات كبير (الحد 14 ميجابايت). قلّل عدد الملفات أو حجمها.");
       }
       prep.filter((p) => p.note).forEach((p) => toast({ title: `ℹ️ ${p.name}`, description: p.note }));
@@ -72,8 +72,11 @@ export default function ExamCreatorWizard() {
       setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
       const units = analysis.units.filter((u) => selected.has(u.id));
       const canFigures = prepared.some((p) => p.figurable);
+      const gf = await buildGenerationFiles(prepared, units, setStage);
+      gf.notes.forEach((n) => toast({ title: "ℹ️ ملف كبير", description: n }));
+      setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
       const res = await generateExam({
-        files: prepared, units, counts: settings.counts, difficulty: settings.difficulty, language: settings.language,
+        payloads: gf.payloads, units, counts: settings.counts, difficulty: settings.difficulty, language: settings.language,
         grade: settings.grade, subject: settings.subject, request: settings.request,
         includeFigures: settings.includeFigures && canFigures, includeTables: settings.includeTables,
       });
