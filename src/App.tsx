@@ -211,6 +211,7 @@ const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
 const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
 const ExamGeneratorStudio = wrap(lazy(() => import("./pages/ExamGeneratorStudio")));
+const AIConceptMindmapStudioPage = wrap(lazy(() => import("./pages/AIConceptMindmapStudioPage")));
 const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
 const ExamCreator = wrap(lazy(() => import("./pages/ExamCreator")));
 const OnlineExam = wrap(lazy(() => import("./pages/OnlineExam")));
@@ -643,6 +644,14 @@ const router = createBrowserRouter([
       {
         path: 'ai-image-generator',
         element: <PublicRoute><AIImageGenerator /></PublicRoute>,
+      },
+      {
+        path: 'lesson-mindmap-studio',
+        element: <PublicRoute><AIConceptMindmapStudioPage /></PublicRoute>,
+      },
+      {
+        path: 'interactive-lesson-deck',
+        element: <PublicRoute><AIConceptMindmapStudioPage /></PublicRoute>,
       },
       {
         path: 'chat-rooms',
