@@ -16,7 +16,7 @@ export interface DetailedExperimentSpec {
   route: string;
   summary: string;
   scientificFoundation: string;
-  governingEquations: Array<{
+  governingEquations?: Array<{
     name: string;
     formula: string;
     description: string;
@@ -28,7 +28,7 @@ export interface DetailedExperimentSpec {
     description?: string;
     constants?: string;
   }>;
-  detailedControls: Array<{
+  detailedControls?: Array<{
     controlName: string;
     type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';
     rangeOrOptions: string;
@@ -42,7 +42,7 @@ export interface DetailedExperimentSpec {
     physicalEffect: string;
     pedagogicalGuidance?: string;
   }>;
-  telemetryMetrics: Array<{
+  telemetryMetrics?: Array<{
     metricName: string;
     symbol: string;
     unit: string;
@@ -54,20 +54,20 @@ export interface DetailedExperimentSpec {
     unit: string;
     scientificMeaning: string;
   }>;
-  labProcedureSteps: string[];
-  labMissions: Array<{
+  labProcedureSteps?: string[];
+  labMissions?: Array<{
     title: string;
     objective: string;
     successCondition: string;
     solutionHint: string;
   }>;
-  comprehensionQuiz: Array<{
+  comprehensionQuiz?: Array<{
     question: string;
     options: string[];
     correctIndex: number;
     explanation: string;
   }>;
-  industrialApplications: string[];
+  industrialApplications?: string[];
 }
 
 export interface DetailedRoboticsModule {
