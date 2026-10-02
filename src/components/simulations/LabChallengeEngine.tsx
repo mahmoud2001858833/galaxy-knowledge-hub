@@ -25,6 +25,7 @@ interface LabChallengeEngineProps {
   challenges: ChallengeDef[];
   onCompleteChallenge?: (challengeId: string, score: number) => void;
   onChallengeComplete?: (challenge: ChallengeDef) => void;
+  currentParams?: Record<string, unknown>;
   currentMetrics?: Record<string, string | number | boolean>;
   className?: string;
 }

@@ -34,6 +34,7 @@ export interface CommunityChannel {
   id: CommunityMessage['channelId'];
   name: string;
   iconName: string;
+  icon?: string;
   color: string;
   description: string;
   badge: string;
@@ -233,6 +234,7 @@ export interface ModerationAuditResult {
   score: number;
   severity: 'none' | 'low' | 'medium' | 'high';
   reason: string;
+  flagReason?: string;
 }
 
 export function auditMessageSafety(content: string, hasImage?: boolean): ModerationAuditResult {

@@ -5,6 +5,7 @@ export interface PlatformResourceMention {
   categoryKey: 'simulations' | 'robotics' | 'curriculum' | 'ai' | 'journal' | 'damij';
   route: string;
   iconName: string;
+  icon?: string;
   badge: string;
   summary: string;
 }
