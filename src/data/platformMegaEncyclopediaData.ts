@@ -75,7 +75,7 @@ export interface DetailedRoboticsModule {
   title: string;
   trackNumber: number;
   durationHours: number;
-  level: 'مبتدئ' | 'متوسط' | 'متقدم' | 'احترافي صناعي';
+  level: 'مبتدئ' | 'متوسط' | 'متقدم' | 'احترافي صناعي' | 'متوسط إلى متقدم';
   targetAudience: string;
   pedagogicalObjectives: string[];
   theoreticalFoundations: string;
@@ -114,7 +114,7 @@ export interface DetailedDamejSpec {
 
 export interface DetailedAdminLMSSpec {
   id: string;
-  systemName: string;
+  systemName?: string;
   title?: string;
   operationalRole: string;
   mathematicalOptimizationEngine: string;

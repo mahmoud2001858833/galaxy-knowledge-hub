@@ -30,7 +30,7 @@ export interface SpacedStats {
   user_id: string;
   date: string;
   completed_reviews: number;
-  total_study_minutes: number;
+  total_study_minutes?: number;
   streak_days: number;
   created_at: string;
 }

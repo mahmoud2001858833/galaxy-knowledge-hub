@@ -11,9 +11,9 @@ export interface ChallengeDef {
   id: string;
   title: string;
   description: string;
-  targetDescription: string;
-  durationSeconds: number;
-  checkSuccess: () => boolean; // return true if currently meeting criteria
+  targetDescription?: string;
+  durationSeconds?: number;
+  checkSuccess?: () => boolean; // return true if currently meeting criteria
   requiredHoldSeconds?: number; // how many consecutive seconds criteria must be met
   points?: number;
   targetMetric?: string;
