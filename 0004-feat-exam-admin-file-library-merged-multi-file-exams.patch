@@ -1,0 +1,1892 @@
+From e34728faacd3c7bd4ab487758e1c61ec675bace6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 2 Oct 2026 02:57:14 +0000
+Subject: [PATCH 4/4] feat(exam): admin file library, merged multi-file exams,
+ admin view of all exams
+
+- exam_library_files + private storage bucket; RLS by has_role(admin); units analysed once at upload and cached
+- Admin hub tab: upload with progress, auto-split into units, publish/draft, edit, re-split, delete
+- Exam creator: choose library files (no upload) and/or own uploads, merge up to 8 files; per-file unit groups; distribution by unit/file
+- exam_history: every created exam is recorded; admin RPC lists all exams with owner name/email, sources, online link, submissions; admin can view/close/delete and read results
+- fix: Tabs were invisible on light backgrounds
+---
+ src/components/ExamGenerationTab.tsx          |   2 +-
+ src/components/admin/ExamLibraryAdmin.tsx     |  50 +++++
+ .../admin/exam-library/AllExamsPanel.tsx      | 144 ++++++++++++
+ .../admin/exam-library/ExamDetailDialog.tsx   |  61 +++++
+ .../admin/exam-library/LibraryManager.tsx     | 210 ++++++++++++++++++
+ .../exam-creator/ExamCreatorWizard.tsx        | 139 +++++++++---
+ src/components/exam-creator/LibraryPicker.tsx |  95 ++++++++
+ src/components/exam-creator/StepPublish.tsx   |   9 +-
+ src/components/exam-creator/StepSettings.tsx  |  23 +-
+ src/components/exam-creator/StepUnits.tsx     |  55 +++--
+ src/components/exam-creator/StepUpload.tsx    |  99 ++++++---
+ src/components/home/ExamCreatorShowcase.tsx   |   5 +-
+ src/lib/examCreator/api.ts                    |   2 +
+ src/lib/examCreator/fileUtils.ts              |  33 ++-
+ src/lib/examCreator/history.ts                |  92 ++++++++
+ src/lib/examCreator/library.ts                | 149 +++++++++++++
+ src/lib/examCreator/mergeUnits.ts             |  28 +++
+ src/pages/admin/SuperAdminControlHub.tsx      |  10 +
+ supabase/functions/_shared/exam-common.ts     |   2 +-
+ .../generate-exam-from-file/index.ts          |  11 +-
+ .../20261002120000_exam_library.sql           |  80 +++++++
+ .../20261002130000_exam_history_admin.sql     |  91 ++++++++
+ 22 files changed, 1290 insertions(+), 100 deletions(-)
+ create mode 100644 src/components/admin/ExamLibraryAdmin.tsx
+ create mode 100644 src/components/admin/exam-library/AllExamsPanel.tsx
+ create mode 100644 src/components/admin/exam-library/ExamDetailDialog.tsx
+ create mode 100644 src/components/admin/exam-library/LibraryManager.tsx
+ create mode 100644 src/components/exam-creator/LibraryPicker.tsx
+ create mode 100644 src/lib/examCreator/history.ts
+ create mode 100644 src/lib/examCreator/library.ts
+ create mode 100644 src/lib/examCreator/mergeUnits.ts
+ create mode 100644 supabase/migrations/20261002120000_exam_library.sql
+ create mode 100644 supabase/migrations/20261002130000_exam_history_admin.sql
+
+diff --git a/src/components/ExamGenerationTab.tsx b/src/components/ExamGenerationTab.tsx
+index bd7cdc6b..f2b24395 100644
+--- a/src/components/ExamGenerationTab.tsx
++++ b/src/components/ExamGenerationTab.tsx
+@@ -444,7 +444,7 @@ function BookExamPanel({ grade: defaultGrade }: ExamGenerationTabProps) {
+ export default function ExamGenerationTab({ grade }: ExamGenerationTabProps) {
+   return (
+     <Tabs defaultValue="file" dir="rtl" className="w-full">
+-      <TabsList className="grid w-full grid-cols-2">
++      <TabsList className="grid h-auto w-full grid-cols-2 bg-muted text-muted-foreground">
+         <TabsTrigger value="file">من ملف مرفوع</TabsTrigger>
+         <TabsTrigger value="book">من الكتاب المدرسي</TabsTrigger>
+       </TabsList>
+diff --git a/src/components/admin/ExamLibraryAdmin.tsx b/src/components/admin/ExamLibraryAdmin.tsx
+new file mode 100644
+index 00000000..f58da164
+--- /dev/null
++++ b/src/components/admin/ExamLibraryAdmin.tsx
+@@ -0,0 +1,50 @@
++import { useEffect, useState } from "react";
++import { Alert, AlertDescription } from "@/components/ui/alert";
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { Loader2, ShieldAlert } from "lucide-react";
++import { fetchIsAdmin } from "@/lib/examCreator/library";
++import LibraryManager from "./exam-library/LibraryManager";
++import AllExamsPanel from "./exam-library/AllExamsPanel";
++
++/**
++ * بوابة لوحة الأدمن في الواجهة ضعيفة (كلمة مرور في المتصفح)، فلا نعتمد عليها هنا:
++ * كل عمليات هذه الصفحة محمية في قاعدة البيانات بدور admin الحقيقي (user_roles + RLS).
++ */
++export default function ExamLibraryAdmin() {
++  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
++  useEffect(() => { fetchIsAdmin().then(setIsAdmin).catch(() => setIsAdmin(false)); }, []);
++
++  if (isAdmin === null) return <Loader2 className="mx-auto mt-10 h-6 w-6 animate-spin" />;
++
++  if (!isAdmin) {
++    return (
++      <Alert variant="destructive" className="text-right" dir="rtl">
++        <ShieldAlert className="h-4 w-4" />
++        <AlertDescription className="space-y-2 text-sm leading-relaxed">
++          <p><b>حسابك الحالي ليس أدمن على قاعدة البيانات.</b> لرفع ملفات المكتبة ورؤية كل الامتحانات سجّل الدخول بحساب يملك دور admin.</p>
++          <p>لمنح الدور لحساب (من SQL Editor في Supabase):</p>
++          <pre dir="ltr" className="overflow-x-auto rounded bg-muted p-2 text-left text-xs">{`insert into public.user_roles (user_id, role)
++select id, 'admin' from auth.users where email = 'YOUR_EMAIL'
++on conflict (user_id, role) do nothing;`}</pre>
++        </AlertDescription>
++      </Alert>
++    );
++  }
++
++  return (
++    <div dir="rtl" className="space-y-4 text-right">
++      <div>
++        <h2 className="text-2xl font-black">مكتبة ملفات الامتحانات</h2>
++        <p className="text-sm text-muted-foreground">ما ترفعه هنا ويُنشر يظهر لكل المستخدمين في «إنشاء الامتحانات» ليختاروه بلا رفع، ويمكنهم دمجه مع ملفاتهم.</p>
++      </div>
++      <Tabs defaultValue="library">
++        <TabsList className="grid h-auto w-full max-w-md grid-cols-2 bg-muted text-muted-foreground">
++          <TabsTrigger value="library">ملفات المكتبة</TabsTrigger>
++          <TabsTrigger value="exams">كل الامتحانات المُنشأة</TabsTrigger>
++        </TabsList>
++        <TabsContent value="library" className="mt-4"><LibraryManager /></TabsContent>
++        <TabsContent value="exams" className="mt-4"><AllExamsPanel /></TabsContent>
++      </Tabs>
++    </div>
++  );
++}
+diff --git a/src/components/admin/exam-library/AllExamsPanel.tsx b/src/components/admin/exam-library/AllExamsPanel.tsx
+new file mode 100644
+index 00000000..d9f2112c
+--- /dev/null
++++ b/src/components/admin/exam-library/AllExamsPanel.tsx
+@@ -0,0 +1,144 @@
++import { useCallback, useEffect, useMemo, useState } from "react";
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { Card } from "@/components/ui/card";
++import { Input } from "@/components/ui/input";
++import { Switch } from "@/components/ui/switch";
++import { BarChart3, ChevronLeft, ChevronRight, Copy, Eye, Loader2, RefreshCw, Search, Trash2 } from "lucide-react";
++import { useToast } from "@/hooks/use-toast";
++import ExamResultsDialog from "@/components/exam-creator/ExamResultsDialog";
++import {
++  adminDeleteExam, adminGetQuestions, adminListHistory, adminSetOnlineActive, type AdminHistoryRow,
++} from "@/lib/examCreator/history";
++import type { ExamQuestion } from "@/lib/examCreator/types";
++import ExamDetailDialog from "./ExamDetailDialog";
++
++const PAGE = 25;
++
++export default function AllExamsPanel() {
++  const { toast } = useToast();
++  const [rows, setRows] = useState<AdminHistoryRow[] | null>(null);
++  const [total, setTotal] = useState(0);
++  const [page, setPage] = useState(0);
++  const [err, setErr] = useState("");
++  const [q, setQ] = useState("");
++  const [detail, setDetail] = useState<AdminHistoryRow | null>(null);
++  const [results, setResults] = useState<{ row: AdminHistoryRow; questions: ExamQuestion[] } | null>(null);
++  const [busy, setBusy] = useState<string | null>(null);
++
++  const load = useCallback(async (p: number) => {
++    setRows(null); setErr("");
++    try {
++      const r = await adminListHistory(PAGE, p * PAGE);
++      setRows(r.rows); setTotal(r.total);
++    } catch (e: any) { setErr(e.message); setRows([]); }
++  }, []);
++  useEffect(() => { load(page); }, [page, load]);
++
++  const shown = useMemo(() => {
++    const s = q.trim().toLowerCase();
++    if (!s) return rows ?? [];
++    return (rows ?? []).filter((r) => [r.title, r.owner_name, r.owner_email, r.subject, r.grade].some((x) => (x ?? "").toLowerCase().includes(s)));
++  }, [rows, q]);
++
++  const online = (rows ?? []).filter((r) => r.online_exam_id).length;
++  const subs = (rows ?? []).reduce((s, r) => s + r.submissions, 0);
++
++  const toggle = async (r: AdminHistoryRow, v: boolean) => {
++    if (!r.online_exam_id) return;
++    try { await adminSetOnlineActive(r.online_exam_id, v); setRows((x) => x!.map((y) => (y.id === r.id ? { ...y, online_active: v } : y))); }
++    catch (e: any) { toast({ title: "⚠️ تعذّر التحديث", description: e.message, variant: "destructive" }); }
++  };
++
++  const openResults = async (r: AdminHistoryRow) => {
++    setBusy(r.id);
++    try { const { questions } = await adminGetQuestions(r); setResults({ row: r, questions }); }
++    catch (e: any) { toast({ title: "⚠️ تعذّر فتح النتائج", description: e.message, variant: "destructive" }); }
++    finally { setBusy(null); }
++  };
++
++  const remove = async (r: AdminHistoryRow) => {
++    if (!window.confirm(`حذف امتحان «${r.title}»${r.online_exam_id ? " ورابطه ونتائج طلابه" : ""} نهائياً؟`)) return;
++    setBusy(r.id);
++    try { await adminDeleteExam(r); toast({ title: "✅ تم الحذف" }); load(page); }
++    catch (e: any) { toast({ title: "⚠️ تعذّر الحذف", description: e.message, variant: "destructive" }); }
++    finally { setBusy(null); }
++  };
++
++  const srcText = (r: AdminHistoryRow) =>
++    (r.sources ?? []).map((s) => (s.kind === "library" ? `📚 ${s.title}` : `📎 ${s.name}`)).join("، ") || "—";
++
++  const pages = Math.max(1, Math.ceil(total / PAGE));
++
++  return (
++    <div className="space-y-4">
++      <div className="grid grid-cols-3 gap-3">
++        <Card className="p-3 text-center"><div className="text-2xl font-black">{total}</div><div className="text-xs text-muted-foreground">امتحان مُنشأ</div></Card>
++        <Card className="p-3 text-center"><div className="text-2xl font-black">{online}</div><div className="text-xs text-muted-foreground">برابط إلكتروني (في هذه الصفحة)</div></Card>
++        <Card className="p-3 text-center"><div className="text-2xl font-black">{subs}</div><div className="text-xs text-muted-foreground">تسليم طالب (في هذه الصفحة)</div></Card>
++      </div>
++
++      <div className="flex flex-wrap items-center gap-2">
++        <div className="relative max-w-sm flex-1">
++          <Search className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
++          <Input className="pr-9" placeholder="بحث باسم المعلم أو بريده أو عنوان الامتحان..." value={q} onChange={(e) => setQ(e.target.value)} />
++        </div>
++        <Button variant="outline" size="icon" onClick={() => load(page)} aria-label="تحديث"><RefreshCw className="h-4 w-4" /></Button>
++      </div>
++
++      {rows === null && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
++      {err && <p className="text-sm text-destructive">{/function|does not exist|schema cache/i.test(err) ? "طبّق migration السجل أولاً (20261002130000_exam_history_admin.sql)." : err}</p>}
++      {rows && shown.length === 0 && !err && <p className="py-8 text-center text-muted-foreground">لا توجد امتحانات{q ? " مطابقة" : " بعد"}.</p>}
++
++      <div className="space-y-3">
++        {shown.map((r) => (
++          <Card key={r.id} className="space-y-3 p-4">
++            <div className="flex flex-wrap items-start justify-between gap-3">
++              <div className="min-w-0 space-y-1">
++                <div className="font-semibold">{r.title}</div>
++                <div className="text-xs text-muted-foreground">
++                  {r.owner_name || "مستخدم"} {r.owner_email && <span dir="ltr">· {r.owner_email}</span>} · {new Date(r.created_at).toLocaleString("ar")}
++                </div>
++                <div className="flex flex-wrap gap-1.5 text-xs">
++                  <Badge variant="outline">{r.question_count} سؤال</Badge>
++                  {r.grade && <Badge variant="secondary">{r.grade}</Badge>}
++                  {r.subject && <Badge variant="secondary">{r.subject}</Badge>}
++                  {(r.sources?.length ?? 0) > 1 && <Badge>ملفات مدمجة ({r.sources.length})</Badge>}
++                </div>
++                <div className="truncate text-xs text-muted-foreground">المصادر: {srcText(r)}</div>
++              </div>
++              <div className="flex flex-wrap items-center gap-2">
++                {r.online_exam_id ? (
++                  <>
++                    <label className="flex items-center gap-1 text-xs">
++                      <Switch checked={!!r.online_active} onCheckedChange={(v) => toggle(r, v)} />{r.online_active ? "مفتوح" : "مغلق"}
++                    </label>
++                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/exam/${r.online_token}`); toast({ title: "✅ تم نسخ الرابط" }); }}>
++                      <Copy className="ml-1 h-4 w-4" />الرابط
++                    </Button>
++                    <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => openResults(r)}><BarChart3 className="ml-1 h-4 w-4" />النتائج ({r.submissions})</Button>
++                  </>
++                ) : <Badge variant="secondary">بلا رابط إلكتروني</Badge>}
++                <Button size="sm" variant="outline" onClick={() => setDetail(r)}><Eye className="ml-1 h-4 w-4" />عرض</Button>
++                <Button size="sm" variant="ghost" className="text-destructive" disabled={busy === r.id} onClick={() => remove(r)}><Trash2 className="ml-1 h-4 w-4" />حذف</Button>
++              </div>
++            </div>
++          </Card>
++        ))}
++      </div>
++
++      {total > PAGE && (
++        <div className="flex items-center justify-center gap-3">
++          <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronRight className="h-4 w-4" />السابق</Button>
++          <span className="text-sm">صفحة {page + 1} من {pages}</span>
++          <Button size="sm" variant="outline" disabled={page + 1 >= pages} onClick={() => setPage(page + 1)}>التالي<ChevronLeft className="h-4 w-4" /></Button>
++        </div>
++      )}
++
++      <ExamDetailDialog row={detail} onClose={() => setDetail(null)} />
++      {results && results.row.online_exam_id && (
++        <ExamResultsDialog open onClose={() => setResults(null)} examId={results.row.online_exam_id} title={results.row.title} questions={results.questions} />
++      )}
++    </div>
++  );
++}
+diff --git a/src/components/admin/exam-library/ExamDetailDialog.tsx b/src/components/admin/exam-library/ExamDetailDialog.tsx
+new file mode 100644
+index 00000000..3260561f
+--- /dev/null
++++ b/src/components/admin/exam-library/ExamDetailDialog.tsx
+@@ -0,0 +1,61 @@
++import { useEffect, useState } from "react";
++import { Badge } from "@/components/ui/badge";
++import { Card } from "@/components/ui/card";
++import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++import { Loader2 } from "lucide-react";
++import { TableView } from "@/components/exam-creator/QuestionPreview";
++import { adminGetQuestions, type AdminHistoryRow } from "@/lib/examCreator/history";
++import { DIFFICULTY_AR, LETTERS, QTYPE_LABEL, type ExamQuestion } from "@/lib/examCreator/types";
++
++export default function ExamDetailDialog({ row, onClose }: { row: AdminHistoryRow | null; onClose: () => void }) {
++  const [qs, setQs] = useState<ExamQuestion[] | null>(null);
++  const [err, setErr] = useState("");
++
++  useEffect(() => {
++    if (!row) return;
++    setQs(null); setErr("");
++    adminGetQuestions(row).then((r) => setQs(r.questions)).catch((e) => setErr(e.message));
++  }, [row]);
++
++  return (
++    <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
++      <DialogContent dir="rtl" className="max-h-[88vh] max-w-3xl overflow-y-auto text-right">
++        <DialogHeader><DialogTitle>{row?.title}</DialogTitle></DialogHeader>
++        {row && (
++          <div className="space-y-1 text-sm text-muted-foreground">
++            <p>أنشأه: <b className="text-foreground">{row.owner_name || "—"}</b> {row.owner_email && <span dir="ltr">({row.owner_email})</span>}</p>
++            <p>{new Date(row.created_at).toLocaleString("ar")} · {row.question_count} سؤال</p>
++            {row.request && <p>طلب المعلم الخاص: «{row.request}»</p>}
++          </div>
++        )}
++        {!qs && !err && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
++        {err && <p className="text-sm text-destructive">{err}</p>}
++        <div className="space-y-3">
++          {qs?.map((q, i) => (
++            <Card key={q.id ?? i} className="space-y-2 p-4">
++              <div className="flex flex-wrap items-center gap-2">
++                <Badge>{i + 1}</Badge>
++                <Badge variant="secondary">{QTYPE_LABEL[q.type]}</Badge>
++                <Badge variant="outline">{DIFFICULTY_AR[q.difficulty]}</Badge>
++                {q.unit && <Badge variant="outline" className="max-w-[14rem] truncate">{q.unit}</Badge>}
++              </div>
++              <p className="leading-loose">{q.question}</p>
++              {q.table && <TableView table={q.table} />}
++              {q.figure?.url && <img src={q.figure.url} alt={q.figure.caption} className="max-h-60 max-w-full rounded border bg-white object-contain p-1" />}
++              {q.figure && !q.figure.url && <p className="text-xs text-muted-foreground">شكل من الصفحة {q.figure.page} {q.figure.caption ? `— ${q.figure.caption}` : ""} (لم تُحفظ صورته لأن الامتحان لم يُنشر إلكترونياً)</p>}
++              {q.options && (
++                <ul className="space-y-1">
++                  {q.options.map((o, oi) => (
++                    <li key={oi} className={`rounded px-2 py-0.5 text-sm ${o === q.answer ? "bg-green-100 font-semibold text-green-900 dark:bg-green-900/30 dark:text-green-200" : ""}`}>{LETTERS[oi]}. {o}</li>
++                  ))}
++                </ul>
++              )}
++              {!q.options && <p className="rounded bg-green-100 px-2 py-1 text-sm text-green-900 dark:bg-green-900/30 dark:text-green-200"><b>الإجابة:</b> {q.answer}</p>}
++              <p className="text-xs text-muted-foreground"><b>الدليل:</b> «{q.evidence}»{q.location ? ` — ${q.location}` : ""}</p>
++            </Card>
++          ))}
++        </div>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/src/components/admin/exam-library/LibraryManager.tsx b/src/components/admin/exam-library/LibraryManager.tsx
+new file mode 100644
+index 00000000..c68b83df
+--- /dev/null
++++ b/src/components/admin/exam-library/LibraryManager.tsx
+@@ -0,0 +1,210 @@
++import { useEffect, useRef, useState } from "react";
++import { Badge } from "@/components/ui/badge";
++import { Button } from "@/components/ui/button";
++import { Card } from "@/components/ui/card";
++import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
++import { Input } from "@/components/ui/input";
++import { Label } from "@/components/ui/label";
++import { Progress } from "@/components/ui/progress";
++import { Switch } from "@/components/ui/switch";
++import { Textarea } from "@/components/ui/textarea";
++import { FileText, Loader2, Pencil, RefreshCw, Trash2, UploadCloud } from "lucide-react";
++import { useToast } from "@/hooks/use-toast";
++import { analyzeUnits } from "@/lib/examCreator/api";
++import { prepareFile } from "@/lib/examCreator/fileUtils";
++import {
++  deleteLibraryRow, downloadLibraryFile, insertLibraryRow, LIBRARY_ACCEPT, listLibrary, updateLibraryRow, uploadToLibrary, type LibraryRow,
++} from "@/lib/examCreator/library";
++import { sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
++import type { UnitInfo } from "@/lib/examCreator/types";
++
++type Phase = "idle" | "upload" | "analyze" | "save";
++const fmtSize = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
++
++/** تقسيم الملف إلى وحدات مرة واحدة (يُخزَّن ويُعاد استعماله لكل المستخدمين بلا تكلفة ذكاء اصطناعي). */
++async function analyzeFile(file: File, onMsg: (m: string) => void) {
++  const prep = await prepareFile(file, onMsg);
++  onMsg("الذكاء الاصطناعي يقسّم الملف إلى وحدات...");
++  const res = await analyzeUnits([prep]);
++  const units: UnitInfo[] = res.units.map((u) => ({ ...u, fileIndex: 0 }));
++  const maxPage = units.reduce((m, u) => Math.max(m, u.pageEnd ?? 0), 0);
++  return { units, pages: prep.large?.numPages ?? (maxPage || null), subject: res.subjectGuess, grade: res.gradeGuess };
++}
++
++export default function LibraryManager() {
++  const { toast } = useToast();
++  const fileRef = useRef<HTMLInputElement>(null);
++  const [rows, setRows] = useState<LibraryRow[] | null>(null);
++  const [err, setErr] = useState("");
++
++  const [file, setFile] = useState<File | null>(null);
++  const [title, setTitle] = useState("");
++  const [subject, setSubject] = useState("");
++  const [grade, setGrade] = useState("");
++  const [desc, setDesc] = useState("");
++  const [publish, setPublish] = useState(true);
++  const [phase, setPhase] = useState<Phase>("idle");
++  const [pct, setPct] = useState(0);
++  const [msg, setMsg] = useState("");
++  const [busyRow, setBusyRow] = useState<string | null>(null);
++  const [edit, setEdit] = useState<LibraryRow | null>(null);
++
++  const load = () => listLibrary().then(setRows).catch((e) => { setErr(e.message); setRows([]); });
++  useEffect(() => { load(); }, []);
++
++  const pick = (f: File | undefined) => {
++    if (!f) return;
++    setFile(f);
++    if (!title) setTitle(f.name.replace(/\.[^.]+$/, ""));
++  };
++
++  const upload = async () => {
++    if (!file || !title.trim()) return;
++    try {
++      setPhase("upload"); setPct(0);
++      const path = await uploadToLibrary(file, setPct);
++
++      setPhase("analyze"); setMsg("جارٍ قراءة الملف...");
++      let units: UnitInfo[] | null = null, pages: number | null = null, sg = "", gg = "";
++      try {
++        const a = await analyzeFile(file, setMsg);
++        units = a.units; pages = a.pages; sg = a.subject; gg = a.grade;
++      } catch (e: any) {
++        toast({ title: "ℹ️ تعذّر التقسيم التلقائي", description: `سيُحفظ الملف، وسيُقسَّم عند أول استخدام. (${e.message})` });
++      }
++
++      setPhase("save");
++      const row = await insertLibraryRow({
++        title, description: desc, subject: subject || sg, grade: grade || gg, file, storage_path: path,
++        page_count: pages, units, is_published: publish,
++      });
++      setRows((r) => [row, ...(r ?? [])]);
++      toast({ title: "✅ تم رفع الملف", description: publish ? "صار متاحاً لكل المستخدمين." : "محفوظ كمسودة؛ انشره عندما تريد." });
++      setFile(null); setTitle(""); setSubject(""); setGrade(""); setDesc("");
++      if (fileRef.current) fileRef.current.value = "";
++    } catch (e: any) {
++      toast({ title: "⚠️ تعذّر رفع الملف", description: e.message, variant: "destructive" });
++    } finally { setPhase("idle"); setMsg(""); }
++  };
++
++  const togglePublish = async (r: LibraryRow, v: boolean) => {
++    try { await updateLibraryRow(r.id, { is_published: v }); setRows((x) => x!.map((y) => (y.id === r.id ? { ...y, is_published: v } : y))); }
++    catch (e: any) { toast({ title: "⚠️ تعذّر التحديث", description: e.message, variant: "destructive" }); }
++  };
++
++  const reanalyze = async (r: LibraryRow) => {
++    setBusyRow(r.id);
++    try {
++      const f = await downloadLibraryFile(r, (p) => setMsg(`تنزيل ${p}%`));
++      const a = await analyzeFile(f, setMsg);
++      await updateLibraryRow(r.id, { units: a.units, page_count: a.pages });
++      setRows((x) => x!.map((y) => (y.id === r.id ? { ...y, units: a.units, page_count: a.pages } : y)));
++      toast({ title: "✅ أُعيد تقسيم الملف", description: `${a.units.length} وحدة` });
++    } catch (e: any) { toast({ title: "⚠️ تعذّر التحليل", description: e.message, variant: "destructive" }); }
++    finally { setBusyRow(null); setMsg(""); }
++  };
++
++  const remove = async (r: LibraryRow) => {
++    if (!window.confirm(`حذف «${r.title}» نهائياً؟ لن يظهر للمستخدمين بعد الآن (الامتحانات التي أُنشئت منه تبقى).`)) return;
++    setBusyRow(r.id);
++    try { await deleteLibraryRow(r); setRows((x) => x!.filter((y) => y.id !== r.id)); toast({ title: "✅ تم الحذف" }); }
++    catch (e: any) { toast({ title: "⚠️ تعذّر الحذف", description: e.message, variant: "destructive" }); }
++    finally { setBusyRow(null); }
++  };
++
++  const saveEdit = async () => {
++    if (!edit) return;
++    try {
++      await updateLibraryRow(edit.id, { title: edit.title.trim(), subject: edit.subject?.trim() || null, grade: edit.grade?.trim() || null, description: edit.description?.trim() || null });
++      setRows((x) => x!.map((y) => (y.id === edit.id ? edit : y)));
++      setEdit(null);
++    } catch (e: any) { toast({ title: "⚠️ تعذّر الحفظ", description: e.message, variant: "destructive" }); }
++  };
++
++  const busy = phase !== "idle";
++
++  return (
++    <div className="space-y-6">
++      <Card className="space-y-4 p-5">
++        <div className="flex items-center gap-2 text-lg font-bold"><UploadCloud className="h-5 w-5 text-primary" />رفع ملف جديد للمكتبة</div>
++        <div className="grid gap-3 sm:grid-cols-2">
++          <div className="space-y-1 sm:col-span-2">
++            <Label>الملف (PDF / Word / نص / صورة)</Label>
++            <Input ref={fileRef} type="file" accept={LIBRARY_ACCEPT} disabled={busy} onChange={(e) => pick(e.target.files?.[0])} />
++            {file && <p className="text-xs text-muted-foreground">{file.name} — {fmtSize(file.size)}</p>}
++          </div>
++          <Input placeholder="عنوان الملف في المكتبة *" value={title} maxLength={200} disabled={busy} onChange={(e) => setTitle(e.target.value)} />
++          <Input placeholder="المادة (اختياري، يُخمَّن تلقائياً)" value={subject} disabled={busy} onChange={(e) => setSubject(e.target.value)} />
++          <Input placeholder="الصف (اختياري، يُخمَّن تلقائياً)" value={grade} disabled={busy} onChange={(e) => setGrade(e.target.value)} />
++          <label className="flex items-center justify-between rounded-lg border px-3 text-sm">
++            نشر للمستخدمين فور الرفع <Switch checked={publish} disabled={busy} onCheckedChange={setPublish} />
++          </label>
++          <Textarea className="sm:col-span-2" placeholder="وصف مختصر (اختياري)" value={desc} maxLength={1000} disabled={busy} onChange={(e) => setDesc(e.target.value)} />
++        </div>
++
++        {phase === "upload" && (<div className="space-y-1"><Progress value={pct} /><p className="text-xs text-muted-foreground">جارٍ الرفع... {pct}%</p></div>)}
++        {phase === "analyze" && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{msg || "جارٍ التحليل..."}</p>}
++        {phase === "save" && <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />جارٍ الحفظ...</p>}
++
++        <Button disabled={busy || !file || !title.trim()} onClick={upload}>
++          {busy ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <UploadCloud className="ml-2 h-4 w-4" />}ارفع وقسّم الملف إلى وحدات
++        </Button>
++        <p className="text-xs text-muted-foreground">يُقسَّم الملف إلى وحدات مرة واحدة هنا، فيبدأ المستخدمون باختيار الوحدات مباشرة بلا انتظار.</p>
++      </Card>
++
++      <div className="space-y-3">
++        <h3 className="text-lg font-bold">ملفات المكتبة {rows ? `(${rows.length})` : ""}</h3>
++        {rows === null && <Loader2 className="mx-auto h-5 w-5 animate-spin" />}
++        {err && <p className="text-sm text-destructive">{/relation|does not exist|schema cache/i.test(err) ? "طبّق migration المكتبة أولاً (20261002120000_exam_library.sql)." : err}</p>}
++        {rows?.length === 0 && !err && <p className="py-6 text-center text-muted-foreground">لا توجد ملفات بعد.</p>}
++        {rows?.map((r) => {
++          const units = sanitizeCachedUnits(r.units);
++          return (
++            <Card key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
++              <div className="flex min-w-0 flex-1 items-start gap-3">
++                <FileText className="mt-1 h-5 w-5 shrink-0 text-primary" />
++                <div className="min-w-0 space-y-1">
++                  <div className="truncate font-semibold">{r.title}</div>
++                  <div className="flex flex-wrap gap-1.5 text-xs">
++                    {r.grade && <Badge variant="secondary">{r.grade}</Badge>}
++                    {r.subject && <Badge variant="secondary">{r.subject}</Badge>}
++                    <Badge variant="outline">{fmtSize(r.size_bytes)}</Badge>
++                    {r.page_count ? <Badge variant="outline">{r.page_count} صفحة</Badge> : null}
++                    <Badge variant={units ? "outline" : "destructive"}>{units ? `${units.length} وحدة` : "بلا تقسيم"}</Badge>
++                  </div>
++                  {r.description && <p className="line-clamp-2 text-xs text-muted-foreground">{r.description}</p>}
++                </div>
++              </div>
++              <div className="flex flex-wrap items-center gap-2">
++                <label className="flex items-center gap-2 text-sm">
++                  <Switch checked={r.is_published} disabled={busyRow === r.id} onCheckedChange={(v) => togglePublish(r, v)} />
++                  {r.is_published ? "منشور" : "مسودة"}
++                </label>
++                <Button size="sm" variant="outline" disabled={busyRow === r.id} onClick={() => setEdit({ ...r })}><Pencil className="ml-1 h-4 w-4" />تعديل</Button>
++                <Button size="sm" variant="outline" disabled={busyRow === r.id} onClick={() => reanalyze(r)}>
++                  {busyRow === r.id ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <RefreshCw className="ml-1 h-4 w-4" />}{busyRow === r.id && msg ? msg : "إعادة التقسيم"}
++                </Button>
++                <Button size="sm" variant="ghost" className="text-destructive" disabled={busyRow === r.id} onClick={() => remove(r)}><Trash2 className="ml-1 h-4 w-4" />حذف</Button>
++              </div>
++            </Card>
++          );
++        })}
++      </div>
++
++      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
++        <DialogContent dir="rtl" className="max-w-lg">
++          <DialogHeader><DialogTitle>تعديل بيانات الملف</DialogTitle></DialogHeader>
++          {edit && (
++            <div className="space-y-3">
++              <Input value={edit.title} maxLength={200} onChange={(e) => setEdit({ ...edit, title: e.target.value })} placeholder="العنوان" />
++              <Input value={edit.subject ?? ""} onChange={(e) => setEdit({ ...edit, subject: e.target.value })} placeholder="المادة" />
++              <Input value={edit.grade ?? ""} onChange={(e) => setEdit({ ...edit, grade: e.target.value })} placeholder="الصف" />
++              <Textarea value={edit.description ?? ""} maxLength={1000} onChange={(e) => setEdit({ ...edit, description: e.target.value })} placeholder="الوصف" />
++            </div>
++          )}
++          <DialogFooter><Button disabled={!edit?.title.trim()} onClick={saveEdit}>حفظ</Button></DialogFooter>
++        </DialogContent>
++      </Dialog>
++    </div>
++  );
++}
+diff --git a/src/components/exam-creator/ExamCreatorWizard.tsx b/src/components/exam-creator/ExamCreatorWizard.tsx
+index e91cd0ff..93063437 100644
+--- a/src/components/exam-creator/ExamCreatorWizard.tsx
++++ b/src/components/exam-creator/ExamCreatorWizard.tsx
+@@ -1,67 +1,113 @@
+-import { useState } from "react";
++import { useEffect, useMemo, useState } from "react";
+ import { Check } from "lucide-react";
+ import { useToast } from "@/hooks/use-toast";
+ import { analyzeUnits, generateExam } from "@/lib/examCreator/api";
+-import { buildGenerationFiles, cropAllFigures, MAX_FILES, MAX_TOTAL_INLINE_BYTES, payloadBytes, prepareFile, type PreparedFile } from "@/lib/examCreator/fileUtils";
+-import type { AnalyzeResponse, GeneratedExam } from "@/lib/examCreator/types";
+-import StepUpload from "./StepUpload";
++import {
++  buildGenerationFiles, cropAllFigures, MAX_FILES, prepareFile, shrinkToBudget, type PreparedFile,
++} from "@/lib/examCreator/fileUtils";
++import { saveHistory, updateHistory, type HistorySource } from "@/lib/examCreator/history";
++import { downloadLibraryFile, listLibrary, type LibraryRow } from "@/lib/examCreator/library";
++import { mergeUnitLists, sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
++import type { AnalyzeResponse, GeneratedExam, UnitInfo } from "@/lib/examCreator/types";
++import StepUpload, { type Source } from "./StepUpload";
+ import StepUnits from "./StepUnits";
+ import StepSettings, { DEFAULT_SETTINGS, type SettingsState } from "./StepSettings";
+ import StepReview from "./StepReview";
+ import StepPublish from "./StepPublish";
+ import MyExamsPanel from "./MyExamsPanel";
+ 
+-const STEPS = ["رفع الملف", "اختيار الوحدات", "الأسئلة والطلب", "المراجعة", "PDF والرابط"];
++const STEPS = ["اختيار الملفات", "اختيار الوحدات", "الأسئلة والطلب", "المراجعة", "PDF والرابط"];
++const srcName = (s: Source) => (s.kind === "library" ? s.row.title : s.file.name);
+ 
+ export default function ExamCreatorWizard() {
+   const { toast } = useToast();
+   const [step, setStep] = useState(0);
+-  const [files, setFiles] = useState<File[]>([]);
++  const [sources, setSources] = useState<Source[]>([]);
++  const [library, setLibrary] = useState<LibraryRow[] | null>(null);
++  const [libraryError, setLibraryError] = useState("");
+   const [prepared, setPrepared] = useState<PreparedFile[]>([]);
+   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null);
+   const [selected, setSelected] = useState<Set<string>>(new Set());
+   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
+   const [exam, setExam] = useState<GeneratedExam | null>(null);
++  const [historyId, setHistoryId] = useState<string | null>(null);
+   const [gen, setGen] = useState<{ requested: number; dropped: number; warnings: string[] } | null>(null);
+   const [showAnswers, setShowAnswers] = useState(true);
+   const [busy, setBusy] = useState(false);
+   const [stage, setStage] = useState("");
+ 
++  // مكتبة المنصة: المنشور فقط (RLS يُظهر المسودات للأدمن، فنُرشّح هنا ليرى الأدمن ما يراه المستخدمون)
++  useEffect(() => {
++    listLibrary().then((r) => setLibrary(r.filter((x) => x.is_published))).catch((e) => { setLibraryError(e.message); setLibrary([]); });
++  }, []);
++
+   const fail = (title: string, e: any) => toast({ title, description: e?.message || "حدث خطأ غير متوقع", variant: "destructive" });
++  const resetDerived = () => { setPrepared([]); setAnalysis(null); setSelected(new Set()); setExam(null); setGen(null); setHistoryId(null); };
+ 
+-  const resetDerived = () => { setPrepared([]); setAnalysis(null); setSelected(new Set()); setExam(null); setGen(null); };
++  const room = () => {
++    if (sources.length >= MAX_FILES) { toast({ title: "⚠️ الحد الأقصى", description: `${MAX_FILES} ملفات كحد أقصى في الامتحان الواحد`, variant: "destructive" }); return false; }
++    return true;
++  };
+ 
+   const addFiles = (list: File[]) => {
+-    const merged = [...files];
++    const next = [...sources];
+     for (const f of list) {
+-      if (merged.length >= MAX_FILES) { toast({ title: "⚠️ الحد الأقصى", description: `${MAX_FILES} ملفات كحد أقصى`, variant: "destructive" }); break; }
+-      if (!merged.some((m) => m.name === f.name && m.size === f.size)) merged.push(f);
++      if (next.length >= MAX_FILES) { room(); break; }
++      if (!next.some((s) => s.kind === "upload" && s.file.name === f.name && s.file.size === f.size)) next.push({ key: `u:${f.name}:${f.size}`, kind: "upload", file: f });
+     }
+-    setFiles(merged);
++    setSources(next);
++    resetDerived();
++  };
++
++  const toggleLibrary = (row: LibraryRow) => {
++    if (sources.some((s) => s.kind === "library" && s.row.id === row.id)) setSources(sources.filter((s) => !(s.kind === "library" && s.row.id === row.id)));
++    else if (room()) setSources([...sources, { key: `l:${row.id}`, kind: "library", row }]);
+     resetDerived();
+   };
+ 
+   const analyze = async () => {
+     setBusy(true);
+     try {
+-      setStage("جارٍ قراءة الملفات...");
+       const prep: PreparedFile[] = [];
+-      for (const f of files) prep.push(await prepareFile(f, setStage));
+-      if (prep.reduce((s, p) => s + payloadBytes(p.payload), 0) > MAX_TOTAL_INLINE_BYTES) {
+-        throw new Error("مجموع حجم الملفات كبير (الحد 14 ميجابايت). قلّل عدد الملفات أو حجمها.");
++      const cached = new Map<number, UnitInfo[]>();
++      for (let i = 0; i < sources.length; i++) {
++        const s = sources[i];
++        if (s.kind === "library") {
++          setStage(`تنزيل «${s.row.title}»...`);
++          const f = await downloadLibraryFile(s.row, (p) => setStage(`تنزيل «${s.row.title}» ${p}%`));
++          prep.push(await prepareFile(f, setStage));
++          const cu = sanitizeCachedUnits(s.row.units);
++          if (cu) cached.set(i, cu);
++        } else {
++          setStage(`قراءة «${s.file.name}»...`);
++          prep.push(await prepareFile(s.file, setStage));
++        }
+       }
+-      prep.filter((p) => p.note).forEach((p) => toast({ title: `ℹ️ ${p.name}`, description: p.note }));
+-
+-      setStage("الذكاء الاصطناعي يقرأ الملف ويقسّمه إلى وحدات...");
+-      const res = await analyzeUnits(prep);
+-      setPrepared(prep);
+-      setAnalysis(res);
+-      setSelected(new Set(res.units.length === 1 ? [res.units[0].id] : []));
+-      setSettings((s) => ({ ...s, subject: s.subject || res.subjectGuess, grade: s.grade || res.gradeGuess }));
+-      setExam(null); setGen(null);
++      const fitted = await shrinkToBudget(prep, setStage);
++      fitted.filter((p) => p.note).forEach((p) => toast({ title: `ℹ️ ${p.name}`, description: p.note }));
++
++      // الملفات غير المقسَّمة مسبقاً فقط تذهب للذكاء الاصطناعي
++      const need = fitted.map((_, i) => i).filter((i) => !cached.has(i));
++      const lists: { fileIndex: number; units: UnitInfo[] }[] = [...cached].map(([fileIndex, units]) => ({ fileIndex, units }));
++      let language = "", subjectGuess = "", gradeGuess = "";
++      if (need.length) {
++        setStage("الذكاء الاصطناعي يقرأ الملفات ويقسّمها إلى وحدات...");
++        const res = await analyzeUnits(need.map((i) => fitted[i]));
++        need.forEach((gi, local) => lists.push({ fileIndex: gi, units: res.units.filter((u) => u.fileIndex === local) }));
++        language = res.language; subjectGuess = res.subjectGuess; gradeGuess = res.gradeGuess;
++      }
++      const units = mergeUnitLists(lists);
++      if (units.length === 0) throw new Error("لم أستطع استخراج وحدات من الملفات المختارة.");
++
++      const firstLib = sources.find((s): s is Extract<Source, { kind: "library" }> => s.kind === "library");
++      setPrepared(fitted);
++      setAnalysis({ units, language, subjectGuess, gradeGuess });
++      setSelected(new Set(units.length === 1 ? [units[0].id] : []));
++      setSettings((s) => ({ ...s, subject: s.subject || firstLib?.row.subject || subjectGuess, grade: s.grade || firstLib?.row.grade || gradeGuess }));
++      setExam(null); setGen(null); setHistoryId(null);
+       setStep(1);
+     } catch (e) {
+-      fail("⚠️ تعذّر تحليل الملف", e);
++      fail("⚠️ تعذّر تحليل الملفات", e);
+     } finally { setBusy(false); setStage(""); }
+   };
+ 
+@@ -69,14 +115,16 @@ export default function ExamCreatorWizard() {
+     if (!analysis) return;
+     setBusy(true);
+     try {
+-      setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
+       const units = analysis.units.filter((u) => selected.has(u.id));
+       const canFigures = prepared.some((p) => p.figurable);
++      const filesUsed = new Set(units.map((u) => u.fileIndex)).size;
++
+       const gf = await buildGenerationFiles(prepared, units, setStage);
+       gf.notes.forEach((n) => toast({ title: "ℹ️ ملف كبير", description: n }));
+-      setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفك (قد يستغرق دقيقة)...");
++      setStage("الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفاتك (قد يستغرق دقيقة)...");
+       const res = await generateExam({
+         payloads: gf.payloads, units, counts: settings.counts, difficulty: settings.difficulty, language: settings.language,
++        distribution: filesUsed > 1 ? settings.distribution : "by_unit",
+         grade: settings.grade, subject: settings.subject, request: settings.request,
+         includeFigures: settings.includeFigures && canFigures, includeTables: settings.includeTables,
+       });
+@@ -84,18 +132,27 @@ export default function ExamCreatorWizard() {
+       let questions = res.exam.questions;
+       const warnings = [...res.warnings];
+       if (questions.some((q) => q.figure)) {
+-        setStage("جارٍ استخراج الأشكال من ملفك الأصلي...");
+-        const cropped = await cropAllFigures(prepared, questions, (d, t) => setStage(`جارٍ استخراج الأشكال من ملفك الأصلي (${d}/${t})...`));
++        setStage("جارٍ استخراج الأشكال من ملفاتك الأصلية...");
++        const cropped = await cropAllFigures(prepared, questions, (d, t) => setStage(`جارٍ استخراج الأشكال من ملفاتك الأصلية (${d}/${t})...`));
+         questions = cropped.questions;
+         if (cropped.removed) warnings.push(`حُذف ${cropped.removed} سؤال لأن شكله تعذّر استخراجه من الملف بدقة.`);
+       }
+       if (questions.length === 0) throw new Error("لم يبقَ أي سؤال صالح بعد استخراج الأشكال. جرّب بدون أشكال أو بوحدات أخرى.");
+ 
+-      setExam({
++      const built: GeneratedExam = {
+         title: res.exam.title, questions,
+         meta: { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes },
+-      });
++      };
++      setExam(built);
+       setGen({ requested: res.requested, dropped: res.dropped, warnings });
++
++      // سجل المنصة: يُحفظ كل امتحان يُنشأ ليراجعه الأدمن (الفشل لا يوقف العمل)
++      const hs: HistorySource[] = sources.map((s) => (s.kind === "library"
++        ? { kind: "library", id: s.row.id, title: s.row.title } : { kind: "upload", name: s.file.name, size: s.file.size }));
++      setHistoryId(await saveHistory(built, hs, settings.request, {
++        counts: settings.counts, difficulty: settings.difficulty, language: settings.language, distribution: settings.distribution,
++        units: units.map((u) => ({ title: u.title, file: srcName(sources[u.fileIndex]) })),
++      }));
+       setStep(3);
+     } catch (e) {
+       fail("⚠️ تعذّر إنشاء الامتحان", e);
+@@ -103,7 +160,9 @@ export default function ExamCreatorWizard() {
+   };
+ 
+   const selectedUnits = analysis?.units.filter((u) => selected.has(u.id)) ?? [];
++  const filesUsed = useMemo(() => new Set(selectedUnits.map((u) => u.fileIndex)).size, [selectedUnits]);
+   const canGo = (i: number) => !busy && (i === 0 || (i === 1 && !!analysis) || (i === 2 && !!analysis && selected.size > 0) || (i >= 3 && !!exam));
++  const fileNames = sources.map(srcName);
+ 
+   return (
+     <div className="space-y-8" dir="rtl">
+@@ -127,22 +186,28 @@ export default function ExamCreatorWizard() {
+ 
+       {step === 0 && (
+         <>
+-          <StepUpload files={files} busy={busy} stage={stage} onAdd={addFiles}
+-            onRemove={(i) => { setFiles(files.filter((_, j) => j !== i)); resetDerived(); }} onAnalyze={analyze} />
++          <StepUpload sources={sources} library={library} libraryError={libraryError} busy={busy} stage={stage}
++            onAddFiles={addFiles} onToggleLibrary={toggleLibrary}
++            onRemove={(key) => { setSources(sources.filter((s) => s.key !== key)); resetDerived(); }} onAnalyze={analyze} />
+           <MyExamsPanel />
+         </>
+       )}
+ 
+       {step === 1 && analysis && (
+-        <StepUnits units={analysis.units} fileNames={files.map((f) => f.name)} selected={selected}
++        <StepUnits units={analysis.units} fileNames={fileNames} selected={selected}
+           onToggle={(id) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+           onAll={(all) => setSelected(all ? new Set(analysis.units.map((u) => u.id)) : new Set())}
++          onToggleFile={(fi, on) => setSelected((s) => {
++            const n = new Set(s);
++            analysis.units.filter((u) => u.fileIndex === fi).forEach((u) => (on ? n.add(u.id) : n.delete(u.id)));
++            return n;
++          })}
+           onBack={() => setStep(0)} onNext={() => setStep(2)} />
+       )}
+ 
+       {step === 2 && analysis && (
+         <StepSettings s={settings} onChange={setSettings} busy={busy} stage={stage}
+-          canFigures={prepared.some((p) => p.figurable)}
++          canFigures={prepared.some((p) => p.figurable)} filesUsed={filesUsed}
+           unitsHaveFigures={selectedUnits.some((u) => u.hasFigures)} unitsHaveTables={selectedUnits.some((u) => u.hasTables)}
+           onBack={() => setStep(1)} onGenerate={generate} />
+       )}
+@@ -150,10 +215,10 @@ export default function ExamCreatorWizard() {
+       {step === 3 && exam && gen && (
+         <StepReview exam={exam} requested={gen.requested} dropped={gen.dropped} warnings={gen.warnings}
+           showAnswers={showAnswers} onShowAnswers={setShowAnswers} onChange={setExam}
+-          onBack={() => setStep(2)} onNext={() => setStep(4)} />
++          onBack={() => setStep(2)} onNext={() => { updateHistory(historyId, exam); setStep(4); }} />
+       )}
+ 
+-      {step === 4 && exam && <StepPublish exam={exam} onBack={() => setStep(3)} />}
++      {step === 4 && exam && <StepPublish exam={exam} historyId={historyId} onBack={() => setStep(3)} />}
+     </div>
+   );
+ }
+diff --git a/src/components/exam-creator/LibraryPicker.tsx b/src/components/exam-creator/LibraryPicker.tsx
+new file mode 100644
+index 00000000..c16fb5e6
+--- /dev/null
++++ b/src/components/exam-creator/LibraryPicker.tsx
+@@ -0,0 +1,95 @@
++import { useMemo, useState } from "react";
++import { Badge } from "@/components/ui/badge";
++import { Card } from "@/components/ui/card";
++import { Checkbox } from "@/components/ui/checkbox";
++import { Input } from "@/components/ui/input";
++import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
++import { BookMarked, Loader2, Search, Zap } from "lucide-react";
++import type { LibraryRow } from "@/lib/examCreator/library";
++import { sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
++
++interface Props {
++  rows: LibraryRow[] | null;
++  error: string;
++  selected: Set<string>;
++  disabled?: boolean;
++  onToggle: (row: LibraryRow) => void;
++}
++
++const fmtSize = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
++const ALL = "__all__";
++
++export default function LibraryPicker({ rows, error, selected, disabled, onToggle }: Props) {
++  const [q, setQ] = useState("");
++  const [grade, setGrade] = useState(ALL);
++  const [subject, setSubject] = useState(ALL);
++
++  const grades = useMemo(() => Array.from(new Set((rows ?? []).map((r) => r.grade).filter(Boolean))) as string[], [rows]);
++  const subjects = useMemo(() => Array.from(new Set((rows ?? []).map((r) => r.subject).filter(Boolean))) as string[], [rows]);
++
++  const shown = useMemo(() => {
++    const s = q.trim().toLowerCase();
++    return (rows ?? []).filter((r) =>
++      (grade === ALL || r.grade === grade) && (subject === ALL || r.subject === subject) &&
++      (!s || [r.title, r.description, r.subject, r.grade].some((x) => (x ?? "").toLowerCase().includes(s))));
++  }, [rows, q, grade, subject]);
++
++  if (rows === null) return <Loader2 className="mx-auto my-8 h-6 w-6 animate-spin" />;
++  if (error) return <p className="py-6 text-center text-sm text-muted-foreground">تعذّر تحميل مكتبة المنصة. يمكنك رفع ملفاتك بدلاً منها.</p>;
++  if (rows.length === 0) {
++    return (
++      <div className="py-8 text-center text-muted-foreground">
++        <BookMarked className="mx-auto mb-2 h-8 w-8 opacity-50" />
++        لا توجد ملفات في مكتبة المنصة بعد. ارفع ملفك من التبويب الآخر.
++      </div>
++    );
++  }
++
++  return (
++    <div className="space-y-3">
++      <div className="flex flex-wrap gap-2">
++        <div className="relative min-w-[12rem] flex-1">
++          <Search className="pointer-events-none absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
++          <Input className="pr-9" placeholder="ابحث في المكتبة..." value={q} onChange={(e) => setQ(e.target.value)} />
++        </div>
++        {grades.length > 0 && (
++          <Select value={grade} onValueChange={setGrade}>
++            <SelectTrigger className="w-40"><SelectValue placeholder="الصف" /></SelectTrigger>
++            <SelectContent><SelectItem value={ALL}>كل الصفوف</SelectItem>{grades.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
++          </Select>
++        )}
++        {subjects.length > 0 && (
++          <Select value={subject} onValueChange={setSubject}>
++            <SelectTrigger className="w-40"><SelectValue placeholder="المادة" /></SelectTrigger>
++            <SelectContent><SelectItem value={ALL}>كل المواد</SelectItem>{subjects.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
++          </Select>
++        )}
++      </div>
++
++      {shown.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا نتائج مطابقة.</p>}
++      <div className="grid gap-2 sm:grid-cols-2">
++        {shown.map((r) => {
++          const on = selected.has(r.id);
++          const units = sanitizeCachedUnits(r.units);
++          return (
++            <Card key={r.id} onClick={() => !disabled && onToggle(r)}
++              className={`flex cursor-pointer items-start gap-3 p-3 transition-colors ${on ? "border-primary bg-primary/5" : "hover:border-primary/50"} ${disabled ? "opacity-60" : ""}`}>
++              <Checkbox checked={on} disabled={disabled} className="mt-1" onCheckedChange={() => onToggle(r)} onClick={(e) => e.stopPropagation()} />
++              <div className="min-w-0 space-y-1">
++                <div className="font-semibold leading-snug">{r.title}</div>
++                {r.description && <p className="line-clamp-2 text-xs text-muted-foreground">{r.description}</p>}
++                <div className="flex flex-wrap gap-1.5 text-[11px]">
++                  {r.grade && <Badge variant="secondary">{r.grade}</Badge>}
++                  {r.subject && <Badge variant="secondary">{r.subject}</Badge>}
++                  {r.page_count ? <Badge variant="outline">{r.page_count} صفحة</Badge> : null}
++                  <Badge variant="outline">{fmtSize(r.size_bytes)}</Badge>
++                  {units && <Badge variant="outline" className="gap-1"><Zap className="h-3 w-3" />{units.length} وحدة جاهزة</Badge>}
++                </div>
++              </div>
++            </Card>
++          );
++        })}
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/exam-creator/StepPublish.tsx b/src/components/exam-creator/StepPublish.tsx
+index b8067944..058a58d8 100644
+--- a/src/components/exam-creator/StepPublish.tsx
++++ b/src/components/exam-creator/StepPublish.tsx
+@@ -11,12 +11,13 @@ import { ArrowRight, BarChart3, Copy, ExternalLink, FileDown, Globe, Loader2, Pr
+ import { useToast } from "@/hooks/use-toast";
+ import { downloadExamPdf, openPrintWindow, type PdfMode } from "@/lib/examCreator/pdfExport";
+ import { publishOnlineExam } from "@/lib/examCreator/api";
++import { updateHistory } from "@/lib/examCreator/history";
+ import type { GeneratedExam, OnlineSettings } from "@/lib/examCreator/types";
+ import ExamResultsDialog from "./ExamResultsDialog";
+ 
+-interface Props { exam: GeneratedExam; onBack: () => void }
++interface Props { exam: GeneratedExam; historyId: string | null; onBack: () => void }
+ 
+-export default function StepPublish({ exam, onBack }: Props) {
++export default function StepPublish({ exam, historyId, onBack }: Props) {
+   const { toast } = useToast();
+   const [pdfBusy, setPdfBusy] = useState<PdfMode | null>(null);
+   const [pdfProgress, setPdfProgress] = useState("");
+@@ -51,7 +52,9 @@ export default function StepPublish({ exam, onBack }: Props) {
+   const publish = async () => {
+     setPubBusy(true);
+     try {
+-      const r = await publishOnlineExam(finalExam(), os);
++      const fe = finalExam();
++      const r = await publishOnlineExam(fe, os);
++      await updateHistory(historyId, fe, r.id); // يربط سجل الامتحان برابطه ليراه الأدمن
+       setPublished(r);
+       toast({ title: "✅ تم إنشاء رابط الامتحان" });
+     } catch (e: any) {
+diff --git a/src/components/exam-creator/StepSettings.tsx b/src/components/exam-creator/StepSettings.tsx
+index c0f69ff2..8f2009fe 100644
+--- a/src/components/exam-creator/StepSettings.tsx
++++ b/src/components/exam-creator/StepSettings.tsx
+@@ -12,6 +12,7 @@ export interface SettingsState {
+   counts: Record<QType, number>;
+   difficulty: string;
+   language: string;
++  distribution: "by_unit" | "by_file";
+   grade: string;
+   subject: string;
+   request: string;
+@@ -24,7 +25,7 @@ export interface SettingsState {
+ 
+ export const DEFAULT_SETTINGS: SettingsState = {
+   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
+-  difficulty: "mixed", language: "auto", grade: "", subject: "", request: "",
++  difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
+   includeFigures: true, includeTables: true, schoolName: "", teacherName: "", durationMinutes: 45,
+ };
+ 
+@@ -48,13 +49,14 @@ interface Props {
+   canFigures: boolean;
+   unitsHaveFigures: boolean;
+   unitsHaveTables: boolean;
++  filesUsed: number;
+   busy: boolean;
+   stage: string;
+   onBack: () => void;
+   onGenerate: () => void;
+ }
+ 
+-export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, busy, stage, onBack, onGenerate }: Props) {
++export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, filesUsed, busy, stage, onBack, onGenerate }: Props) {
+   const total = Object.values(s.counts).reduce((a, b) => a + b, 0);
+   const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
+   const setCount = (k: QType, v: string) =>
+@@ -105,6 +107,23 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
+         </div>
+       </Card>
+ 
++      {filesUsed > 1 && (
++        <Card className="space-y-3 p-4">
++          <Label className="text-base">توزيع الأسئلة بين الملفات ({filesUsed} ملفات مدمجة)</Label>
++          <div className="grid gap-2 sm:grid-cols-2">
++            {([
++              ["by_unit", "حسب الوحدات المختارة", "كل وحدة تأخذ نصيباً متساوياً (الملف الذي فيه وحدات أكثر يظهر أكثر)."],
++              ["by_file", "بالتساوي بين الملفات", "كل ملف ينال نصيباً متقارباً مهما كان عدد وحداته المختارة."],
++            ] as const).map(([v, t, d]) => (
++              <button key={v} type="button" onClick={() => set("distribution", v)}
++                className={`rounded-lg border p-3 text-right transition-colors ${s.distribution === v ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
++                <div className="font-semibold">{t}</div><div className="text-xs text-muted-foreground">{d}</div>
++              </button>
++            ))}
++          </div>
++        </Card>
++      )}
++
+       <Card className="space-y-3 p-4">
+         <Label className="text-base">طلب خاص للذكاء الاصطناعي (اختياري)</Label>
+         <Textarea value={s.request} maxLength={1500} onChange={(e) => set("request", e.target.value)} className="min-h-[90px]"
+diff --git a/src/components/exam-creator/StepUnits.tsx b/src/components/exam-creator/StepUnits.tsx
+index e55550da..f82aafc4 100644
+--- a/src/components/exam-creator/StepUnits.tsx
++++ b/src/components/exam-creator/StepUnits.tsx
+@@ -11,12 +11,15 @@ interface Props {
+   selected: Set<string>;
+   onToggle: (id: string) => void;
+   onAll: (all: boolean) => void;
++  onToggleFile: (fileIndex: number, on: boolean) => void;
+   onBack: () => void;
+   onNext: () => void;
+ }
+ 
+-export default function StepUnits({ units, fileNames, selected, onToggle, onAll, onBack, onNext }: Props) {
++export default function StepUnits({ units, fileNames, selected, onToggle, onAll, onToggleFile, onBack, onNext }: Props) {
+   const multi = fileNames.length > 1;
++  const groups = fileNames.map((name, fi) => ({ fi, name, list: units.filter((u) => u.fileIndex === fi) })).filter((g) => g.list.length > 0);
++  const usedFiles = new Set(units.filter((u) => selected.has(u.id)).map((u) => u.fileIndex)).size;
+   return (
+     <div className="space-y-4">
+       <div className="flex flex-wrap items-center justify-between gap-2">
+@@ -29,24 +32,42 @@ export default function StepUnits({ units, fileNames, selected, onToggle, onAll,
+         </div>
+       </div>
+ 
+-      <div className="space-y-2">
+-        {units.map((u) => {
+-          const on = selected.has(u.id);
++      {multi && usedFiles > 1 && (
++        <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
++          سيُنشأ امتحان <b>مدمج</b> من {usedFiles} ملفات. يمكنك اختيار طريقة توزيع الأسئلة بينها في الخطوة التالية.
++        </div>
++      )}
++
++      <div className="space-y-5">
++        {groups.map((g) => {
++          const allOn = g.list.every((u) => selected.has(u.id));
+           return (
+-            <Card key={u.id} onClick={() => onToggle(u.id)}
+-              className={`flex cursor-pointer items-start gap-3 p-4 transition-colors ${on ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
+-              <Checkbox checked={on} onCheckedChange={() => onToggle(u.id)} className="mt-1" onClick={(e) => e.stopPropagation()} />
+-              <div className="min-w-0 flex-1 space-y-1">
+-                <div className="font-semibold">{u.title}</div>
+-                {u.summary && <p className="text-sm text-muted-foreground">{u.summary}</p>}
+-                <div className="flex flex-wrap gap-2 pt-1">
+-                  {u.pageStart && <Badge variant="outline">ص {u.pageStart}{u.pageEnd && u.pageEnd !== u.pageStart ? `–${u.pageEnd}` : ""}</Badge>}
+-                  {multi && <Badge variant="outline" className="max-w-[14rem] truncate">{fileNames[u.fileIndex] ?? ""}</Badge>}
+-                  {u.hasFigures && <Badge variant="secondary" className="gap-1"><ImageIcon className="h-3 w-3" />فيها أشكال</Badge>}
+-                  {u.hasTables && <Badge variant="secondary" className="gap-1"><Table2 className="h-3 w-3" />فيها جداول</Badge>}
++            <section key={g.fi} className="space-y-2">
++              {multi && (
++                <div className="flex items-center justify-between gap-2 border-b pb-1">
++                  <h3 className="truncate font-bold"><bdi>{g.name}</bdi></h3>
++                  <Button size="sm" variant="ghost" onClick={() => onToggleFile(g.fi, !allOn)}>{allOn ? "إلغاء تحديد الملف" : "تحديد كل وحدات الملف"}</Button>
+                 </div>
+-              </div>
+-            </Card>
++              )}
++              {g.list.map((u) => {
++                const on = selected.has(u.id);
++                return (
++                  <Card key={u.id} onClick={() => onToggle(u.id)}
++                    className={`flex cursor-pointer items-start gap-3 p-4 transition-colors ${on ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
++                    <Checkbox checked={on} onCheckedChange={() => onToggle(u.id)} className="mt-1" onClick={(e) => e.stopPropagation()} />
++                    <div className="min-w-0 flex-1 space-y-1">
++                      <div className="font-semibold">{u.title}</div>
++                      {u.summary && <p className="text-sm text-muted-foreground">{u.summary}</p>}
++                      <div className="flex flex-wrap gap-2 pt-1">
++                        {u.pageStart && <Badge variant="outline">ص {u.pageStart}{u.pageEnd && u.pageEnd !== u.pageStart ? `–${u.pageEnd}` : ""}</Badge>}
++                        {u.hasFigures && <Badge variant="secondary" className="gap-1"><ImageIcon className="h-3 w-3" />فيها أشكال</Badge>}
++                        {u.hasTables && <Badge variant="secondary" className="gap-1"><Table2 className="h-3 w-3" />فيها جداول</Badge>}
++                      </div>
++                    </div>
++                  </Card>
++                );
++              })}
++            </section>
+           );
+         })}
+       </div>
+diff --git a/src/components/exam-creator/StepUpload.tsx b/src/components/exam-creator/StepUpload.tsx
+index ea647a8a..84fe3cfe 100644
+--- a/src/components/exam-creator/StepUpload.tsx
++++ b/src/components/exam-creator/StepUpload.tsx
+@@ -1,59 +1,96 @@
+ import { useRef, useState } from "react";
++import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Card } from "@/components/ui/card";
+-import { Loader2, UploadCloud, FileText, X, Wand2 } from "lucide-react";
++import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { BookMarked, FileText, Layers, Loader2, UploadCloud, Wand2, X } from "lucide-react";
+ import { ACCEPT, MAX_FILES } from "@/lib/examCreator/fileUtils";
++import type { LibraryRow } from "@/lib/examCreator/library";
++import LibraryPicker from "./LibraryPicker";
++
++export type Source =
++  | { key: string; kind: "upload"; file: File }
++  | { key: string; kind: "library"; row: LibraryRow };
+ 
+ interface Props {
+-  files: File[];
++  sources: Source[];
++  library: LibraryRow[] | null;
++  libraryError: string;
+   busy: boolean;
+   stage: string;
+-  onAdd: (list: File[]) => void;
+-  onRemove: (i: number) => void;
++  onAddFiles: (list: File[]) => void;
++  onToggleLibrary: (row: LibraryRow) => void;
++  onRemove: (key: string) => void;
+   onAnalyze: () => void;
+ }
+ 
+-export default function StepUpload({ files, busy, stage, onAdd, onRemove, onAnalyze }: Props) {
++const mb = (b: number) => (b / 1024 / 1024).toFixed(2);
++
++export default function StepUpload({ sources, library, libraryError, busy, stage, onAddFiles, onToggleLibrary, onRemove, onAnalyze }: Props) {
+   const ref = useRef<HTMLInputElement>(null);
+   const [over, setOver] = useState(false);
++  const hasLibrary = (library?.length ?? 0) > 0;
++  const selectedLib = new Set(sources.filter((s): s is Extract<Source, { kind: "library" }> => s.kind === "library").map((s) => s.row.id));
++  const needsAI = sources.some((s) => s.kind === "upload" || !(s.kind === "library" && s.row.units));
+ 
+   return (
+     <div className="space-y-5">
+-      <div
+-        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+-        onDragLeave={() => setOver(false)}
+-        onDrop={(e) => { e.preventDefault(); setOver(false); onAdd(Array.from(e.dataTransfer.files)); }}
+-        onClick={() => !busy && ref.current?.click()}
+-        className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+-          over ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/60"
+-        }`}
+-      >
+-        <UploadCloud className="mx-auto mb-3 h-12 w-12 text-primary/70" />
+-        <p className="text-lg font-semibold">ارفع كتابك أو ملزمتك هنا</p>
+-        <p className="mt-1 text-sm text-muted-foreground">اسحب الملف أو اضغط للاختيار — PDF · Word · نص · صورة (حتى {MAX_FILES} ملفات)</p>
+-        <p className="mt-1 text-xs text-muted-foreground">الملفات الكبيرة جداً مقبولة (حتى 400MB)؛ تُقرأ محلياً في متصفحك</p>
+-        <input ref={ref} type="file" multiple hidden accept={ACCEPT}
+-          onChange={(e) => { if (e.target.files) onAdd(Array.from(e.target.files)); e.target.value = ""; }} />
+-      </div>
+-
+-      {files.length > 0 && (
++      <Tabs defaultValue={hasLibrary ? "library" : "upload"} key={hasLibrary ? "with-lib" : "no-lib"}>
++        <TabsList className="grid h-auto w-full grid-cols-2 bg-muted text-muted-foreground">
++          <TabsTrigger value="library" className="gap-2"><BookMarked className="h-4 w-4" />من مكتبة المنصة{hasLibrary ? ` (${library!.length})` : ""}</TabsTrigger>
++          <TabsTrigger value="upload" className="gap-2"><UploadCloud className="h-4 w-4" />رفع ملفاتي</TabsTrigger>
++        </TabsList>
++
++        <TabsContent value="library" className="mt-4">
++          <LibraryPicker rows={library} error={libraryError} selected={selectedLib} disabled={busy} onToggle={onToggleLibrary} />
++        </TabsContent>
++
++        <TabsContent value="upload" className="mt-4">
++          <div
++            onDragOver={(e) => { e.preventDefault(); setOver(true); }}
++            onDragLeave={() => setOver(false)}
++            onDrop={(e) => { e.preventDefault(); setOver(false); onAddFiles(Array.from(e.dataTransfer.files)); }}
++            onClick={() => !busy && ref.current?.click()}
++            className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
++              over ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/60"}`}
++          >
++            <UploadCloud className="mx-auto mb-3 h-12 w-12 text-primary/70" />
++            <p className="text-lg font-semibold">ارفع كتابك أو ملزمتك هنا</p>
++            <p className="mt-1 text-sm text-muted-foreground">اسحب الملف أو اضغط للاختيار — PDF · Word · نص · صورة</p>
++            <p className="mt-1 text-xs text-muted-foreground">الملفات الكبيرة جداً مقبولة (حتى 400MB)؛ تُقرأ محلياً في متصفحك</p>
++            <input ref={ref} type="file" multiple hidden accept={ACCEPT}
++              onChange={(e) => { if (e.target.files) onAddFiles(Array.from(e.target.files)); e.target.value = ""; }} />
++          </div>
++        </TabsContent>
++      </Tabs>
++
++      {sources.length > 0 && (
+         <div className="space-y-2">
+-          {files.map((f, i) => (
+-            <Card key={`${f.name}-${i}`} className="flex items-center justify-between p-3">
++          <div className="flex items-center justify-between text-sm">
++            <span className="font-semibold">الملفات المختارة ({sources.length} من {MAX_FILES})</span>
++            {sources.length > 1 && <Badge className="gap-1"><Layers className="h-3 w-3" />امتحان مدمج من {sources.length} ملفات</Badge>}
++          </div>
++          {sources.map((s) => (
++            <Card key={s.key} className="flex items-center justify-between p-3">
+               <div className="flex min-w-0 items-center gap-2">
+-                <FileText className="h-4 w-4 shrink-0 text-primary" />
+-                <span className="truncate text-sm">{f.name}</span>
+-                <span className="shrink-0 text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
++                {s.kind === "library" ? <BookMarked className="h-4 w-4 shrink-0 text-primary" /> : <FileText className="h-4 w-4 shrink-0 text-primary" />}
++                <span className="truncate text-sm"><bdi>{s.kind === "library" ? s.row.title : s.file.name}</bdi></span>
++                <Badge variant={s.kind === "library" ? "secondary" : "outline"} className="shrink-0 text-[10px]">{s.kind === "library" ? "من المكتبة" : "مرفوع"}</Badge>
++                <span dir="ltr" className="shrink-0 text-xs text-muted-foreground">{mb(s.kind === "library" ? s.row.size_bytes : s.file.size)} MB</span>
+               </div>
+-              <Button size="icon" variant="ghost" disabled={busy} onClick={() => onRemove(i)}><X className="h-4 w-4" /></Button>
++              <Button size="icon" variant="ghost" disabled={busy} onClick={() => onRemove(s.key)}><X className="h-4 w-4" /></Button>
+             </Card>
+           ))}
++          <p className="text-xs text-muted-foreground">
++            يمكنك الجمع بين ملفات المكتبة وملفاتك: تُقسَّم كلها إلى وحدات تختار منها، ويخرج امتحان واحد من الملفات المختارة.
++            {!needsAI && " ملفات المكتبة مقسَّمة مسبقاً، فتنتقل مباشرة إلى اختيار الوحدات."}
++          </p>
+         </div>
+       )}
+ 
+-      <Button className="w-full" size="lg" disabled={busy || files.length === 0} onClick={onAnalyze}>
++      <Button className="w-full" size="lg" disabled={busy || sources.length === 0} onClick={onAnalyze}>
+         {busy ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />{stage || "جارٍ المعالجة..."}</>)
+-          : (<><Wand2 className="ml-2 h-5 w-5" />حلّل الملف وقسّمه إلى وحدات</>)}
++          : (<><Wand2 className="ml-2 h-5 w-5" />{needsAI ? "حلّل الملفات وقسّمها إلى وحدات" : "اعرض وحدات الملفات"}</>)}
+       </Button>
+     </div>
+   );
+diff --git a/src/components/home/ExamCreatorShowcase.tsx b/src/components/home/ExamCreatorShowcase.tsx
+index 6f71a926..609dcfe4 100644
+--- a/src/components/home/ExamCreatorShowcase.tsx
++++ b/src/components/home/ExamCreatorShowcase.tsx
+@@ -1,8 +1,8 @@
+ import { Link } from "react-router-dom";
+-import { FileUp, ListChecks, SlidersHorizontal, FileDown, Globe, ArrowLeft, ShieldCheck, Table2, Image as ImageIcon } from "lucide-react";
++import { FileUp, ListChecks, SlidersHorizontal, FileDown, Globe, ArrowLeft, ShieldCheck, Table2, Image as ImageIcon, BookMarked } from "lucide-react";
+ 
+ const STEPS = [
+-  { icon: FileUp, label: "ارفع ملفك" },
++  { icon: FileUp, label: "اختر من المكتبة أو ارفع ملفك" },
+   { icon: ListChecks, label: "اختر الوحدات" },
+   { icon: SlidersHorizontal, label: "حدّد الأسئلة وطلبك" },
+   { icon: FileDown, label: "نزّل PDF" },
+@@ -10,6 +10,7 @@ const STEPS = [
+ ];
+ 
+ const FEATURES = [
++  { icon: BookMarked, text: "اختر من مكتبة ملفات المنصة بلا رفع، أو ادمج عدة ملفات في امتحان واحد" },
+   { icon: ShieldCheck, text: "أسئلة من ملفك فقط، وكل سؤال مرفق باقتباس يثبت إجابته ويُدقَّق آلياً" },
+   { icon: Table2, text: "جداول تُنقل من ملفك خلية بخلية وتُدقَّق مقابله" },
+   { icon: ImageIcon, text: "أشكال علمية تُقصّ من ملفك الأصلي بدقة، بلا رسوم مولَّدة قد تخطئ" },
+diff --git a/src/lib/examCreator/api.ts b/src/lib/examCreator/api.ts
+index c95d5d4b..5d6ae457 100644
+--- a/src/lib/examCreator/api.ts
++++ b/src/lib/examCreator/api.ts
+@@ -28,6 +28,7 @@ export interface GenerateParams {
+   counts: Record<QType, number>;
+   difficulty: string;
+   language: string;
++  distribution: string;
+   grade: string;
+   subject: string;
+   request: string;
+@@ -42,6 +43,7 @@ export const generateExam = (p: GenerateParams) =>
+     counts: p.counts,
+     difficulty: p.difficulty,
+     language: p.language,
++    distribution: p.distribution,
+     grade: p.grade || undefined,
+     subject: p.subject || undefined,
+     request: p.request.trim() || undefined,
+diff --git a/src/lib/examCreator/fileUtils.ts b/src/lib/examCreator/fileUtils.ts
+index 6e056162..e92d21d5 100644
+--- a/src/lib/examCreator/fileUtils.ts
++++ b/src/lib/examCreator/fileUtils.ts
+@@ -1,6 +1,6 @@
+ import type { FigureRef, UnitInfo } from "./types";
+ 
+-export const MAX_FILES = 5;
++export const MAX_FILES = 8;
+ export const MAX_INLINE_BYTES_PER_FILE = 10 * 1024 * 1024;
+ export const MAX_TOTAL_INLINE_BYTES = 14 * 1024 * 1024;
+ export const MAX_FILE_BYTES = 400 * 1024 * 1024;
+@@ -151,6 +151,27 @@ async function prepareLargePdf(file: File, onProgress?: Progress): Promise<Prepa
+   };
+ }
+ 
++/**
++ * عند دمج عدة ملفات قد يتجاوز مجموع الـ PDF المضمَّنة حدّ الطلب. نحوّل الأكبر فالأكبر إلى القراءة المحلية
++ * (نص + صور صفحات مختارة) حتى يدخل المجموع في الحد.
++ */
++export async function shrinkToBudget(prep: PreparedFile[], onProgress?: Progress): Promise<PreparedFile[]> {
++  const out = [...prep];
++  for (;;) {
++    const total = out.reduce((s, p) => s + payloadBytes(p.payload), 0);
++    if (total <= MAX_TOTAL_INLINE_BYTES) return out;
++    let idx = -1, size = 0;
++    out.forEach((p, i) => {
++      if (p.kind === "pdf" && !p.large && p.payload.base64) {
++        const b = payloadBytes(p.payload);
++        if (b > size) { size = b; idx = i; }
++      }
++    });
++    if (idx < 0) throw new Error("مجموع حجم الملفات كبير (الحد 14 ميجابايت للملفات المضمَّنة). قلّل عدد الصور أو حجمها.");
++    out[idx] = await prepareLargePdf(out[idx].source, onProgress);
++  }
++}
++
+ export async function prepareFile(file: File, onProgress?: Progress): Promise<PreparedFile> {
+   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+   if (file.size > MAX_FILE_BYTES) throw new Error(`الملف "${file.name}" أكبر من ${MAX_FILE_BYTES / 1024 / 1024} ميجابايت`);
+@@ -319,6 +340,11 @@ export async function buildGenerationFiles(
+   const payloads: FilePayload[] = [];
+   const notes: string[] = [];
+ 
++  // ميزانية صور الصفحات مشتركة بين الملفات الكبيرة (حدّ الطلب 14MB، ويُخصم منه ما أُرسل مضمَّناً)
++  const smallBytes = files.filter((f) => !f.large).reduce((s, f) => s + payloadBytes(f.payload), 0);
++  const largeCount = Math.max(1, files.filter((f) => f.large).length);
++  const budgetPerFile = Math.min(MAX_PAGE_IMAGE_BYTES, Math.max(1.5 * 1024 * 1024, Math.floor((13 * 1024 * 1024 - smallBytes) / largeCount)));
++
+   for (let fi = 0; fi < files.length; fi++) {
+     const f = files[fi];
+     if (!f.large) { payloads.push(f.payload); continue; }
+@@ -359,7 +385,7 @@ export async function buildGenerationFiles(
+         imagePages = Array.from({ length: MAX_SEND_PAGES }, (_, i) => cands[Math.floor(i * step)].p);
+         sampled = true;
+       } else {
+-        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p).sort((a, b) => a - b);
++        imagePages = cands.sort((a, b) => b.score - a.score).slice(0, MAX_SEND_PAGES).map((x) => x.p); // بترتيب الأولوية
+       }
+     }
+ 
+@@ -368,11 +394,12 @@ export async function buildGenerationFiles(
+     for (const p of imagePages) {
+       const img = await pageJpeg(f.source, p, 1000, 0.78);
+       bytes += b64Bytes(img.base64);
+-      if (bytes > MAX_PAGE_IMAGE_BYTES) break;
++      if (bytes > budgetPerFile) break;
+       out.push(img);
+       onProgress?.(`تجهيز صور الصفحات (${out.length}/${imagePages.length}) من «${f.name}»...`);
+     }
+ 
++    out.sort((a, b) => a.page - b.page);
+     payloads.push({ name: f.name, text: text || `ملف ممسوح ضوئياً من ${numPages} صفحة.`, pages: out });
+     notes.push(
+       `«${f.name}»: اعتُمدت ${pages.length} صفحة من ${numPages}` +
+diff --git a/src/lib/examCreator/history.ts b/src/lib/examCreator/history.ts
+new file mode 100644
+index 00000000..a06cfa6a
+--- /dev/null
++++ b/src/lib/examCreator/history.ts
+@@ -0,0 +1,92 @@
++import { supabase } from "@/integrations/supabase/client";
++import type { ExamQuestion, GeneratedExam } from "./types";
++
++const db = supabase as any;
++
++export type HistorySource =
++  | { kind: "library"; id: string; title: string }
++  | { kind: "upload"; name: string; size: number };
++
++/** نسخة خفيفة للحفظ: بلا صور مضمّنة (قد تبلغ ميجابايتات)، مع بقاء مواضع الأشكال. */
++export function stripForHistory(exam: GeneratedExam) {
++  return {
++    title: exam.title,
++    meta: exam.meta,
++    questions: exam.questions.map((q) => ({
++      ...q,
++      figure: q.figure ? { fileIndex: q.figure.fileIndex, page: q.figure.page, box: q.figure.box, caption: q.figure.caption, revealsAnswer: q.figure.revealsAnswer } : undefined,
++    })),
++  };
++}
++
++/** يحفظ الامتحان المُنشأ في سجل المنصة. الفشل لا يمنع المستخدم من متابعة عمله. */
++export async function saveHistory(exam: GeneratedExam, sources: HistorySource[], request: string, options: Record<string, unknown>): Promise<string | null> {
++  try {
++    const { data: { user } } = await supabase.auth.getUser();
++    if (!user) return null;
++    const { data, error } = await db.from("exam_history").insert({
++      owner_id: user.id, title: exam.title.slice(0, 300), subject: exam.meta.subject || null, grade: exam.meta.grade || null,
++      question_count: exam.questions.length, sources, request: request.trim() || null, options, exam: stripForHistory(exam),
++    }).select("id").single();
++    if (error) throw error;
++    return data.id as string;
++  } catch (e) {
++    console.warn("saveHistory failed:", e);
++    return null;
++  }
++}
++
++export async function updateHistory(id: string | null, exam: GeneratedExam, onlineExamId?: string) {
++  if (!id) return;
++  try {
++    const patch: Record<string, unknown> = {
++      title: exam.title.slice(0, 300), question_count: exam.questions.length, exam: stripForHistory(exam), updated_at: new Date().toISOString(),
++    };
++    if (onlineExamId) patch.online_exam_id = onlineExamId;
++    const { error } = await db.from("exam_history").update(patch).eq("id", id);
++    if (error) throw error;
++  } catch (e) {
++    console.warn("updateHistory failed:", e);
++  }
++}
++
++// ───────── للأدمن ─────────
++export interface AdminHistoryRow {
++  id: string; owner_id: string; owner_name: string | null; owner_email: string | null;
++  title: string; subject: string | null; grade: string | null; question_count: number;
++  sources: HistorySource[]; request: string | null;
++  online_exam_id: string | null; online_token: string | null; online_active: boolean | null;
++  submissions: number; created_at: string; total_count: number;
++}
++
++export async function adminListHistory(limit: number, offset: number): Promise<{ rows: AdminHistoryRow[]; total: number }> {
++  const { data, error } = await db.rpc("admin_exam_history", { _limit: limit, _offset: offset });
++  if (error) throw new Error(error.message);
++  const rows = (data ?? []) as AdminHistoryRow[];
++  return { rows: rows.map((r) => ({ ...r, submissions: Number(r.submissions) || 0, total_count: Number(r.total_count) || 0 })), total: Number(rows[0]?.total_count) || 0 };
++}
++
++/** أسئلة الامتحان: نسخة الرابط الإلكتروني إن وُجدت (فيها روابط الأشكال)، وإلا نسخة السجل. */
++export async function adminGetQuestions(row: AdminHistoryRow): Promise<{ title: string; questions: ExamQuestion[] }> {
++  if (row.online_exam_id) {
++    const { data } = await db.from("online_exams").select("exam").eq("id", row.online_exam_id).maybeSingle();
++    if (data?.exam?.questions) return { title: data.exam.title ?? row.title, questions: data.exam.questions };
++  }
++  const { data, error } = await db.from("exam_history").select("exam").eq("id", row.id).maybeSingle();
++  if (error || !data) throw new Error(error?.message ?? "تعذّر تحميل الامتحان");
++  return { title: data.exam.title ?? row.title, questions: data.exam.questions ?? [] };
++}
++
++export async function adminSetOnlineActive(onlineId: string, active: boolean) {
++  const { error } = await db.from("online_exams").update({ is_active: active }).eq("id", onlineId);
++  if (error) throw new Error(error.message);
++}
++
++export async function adminDeleteExam(row: AdminHistoryRow) {
++  if (row.online_exam_id) {
++    const { error } = await db.from("online_exams").delete().eq("id", row.online_exam_id);
++    if (error) throw new Error(error.message);
++  }
++  const { error } = await db.from("exam_history").delete().eq("id", row.id);
++  if (error) throw new Error(error.message);
++}
+diff --git a/src/lib/examCreator/library.ts b/src/lib/examCreator/library.ts
+new file mode 100644
+index 00000000..75905815
+--- /dev/null
++++ b/src/lib/examCreator/library.ts
+@@ -0,0 +1,149 @@
++import { supabase } from "@/integrations/supabase/client";
++import type { UnitInfo } from "./types";
++
++// الجداول الجديدة غير موجودة في types.ts المولَّد
++const db = supabase as any;
++
++export interface LibraryRow {
++  id: string;
++  title: string;
++  description: string | null;
++  subject: string | null;
++  grade: string | null;
++  file_name: string;
++  storage_path: string;
++  mime_type: string;
++  size_bytes: number;
++  page_count: number | null;
++  units: UnitInfo[] | null;
++  is_published: boolean;
++  created_at: string;
++  updated_at: string;
++}
++
++const BUCKET = "exam-library";
++export const LIBRARY_ACCEPT = ".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp";
++
++/** هل المستخدم الحالي أدمن فعلياً (دور admin في user_roles)؟ الأمان الحقيقي في RLS؛ هذا للواجهة فقط. */
++export async function fetchIsAdmin(): Promise<boolean> {
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return false;
++  const { data } = await db.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
++  return !!data;
++}
++
++/** للمستخدم العادي: المنشور فقط (RLS)؛ للأدمن: الكل. */
++export async function listLibrary(): Promise<LibraryRow[]> {
++  const { data, error } = await db.from("exam_library_files").select("*").order("created_at", { ascending: false }).limit(500);
++  if (error) throw new Error(error.message);
++  return data ?? [];
++}
++
++export function extOf(name: string) {
++  return (name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8) || "bin";
++}
++
++const MIME: Record<string, string> = {
++  pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
++  txt: "text/plain", md: "text/markdown", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp",
++};
++export const mimeFor = (file: File) => file.type || MIME[extOf(file.name)] || "application/octet-stream";
++
++/** رفع ملف كبير مع نسبة التقدم (XHR). مسار التخزين ASCII فقط لأن مفاتيح التخزين لا تقبل العربية دائماً. */
++export async function uploadToLibrary(file: File, onProgress: (pct: number) => void): Promise<string> {
++  const { data: sess } = await supabase.auth.getSession();
++  const token = sess.session?.access_token;
++  if (!token) throw new Error("سجّل الدخول أولاً");
++  const path = `${crypto.randomUUID()}.${extOf(file.name)}`;
++  const base = (supabase as any).supabaseUrl as string;
++  const anon = (supabase as any).supabaseKey as string;
++
++  await new Promise<void>((resolve, reject) => {
++    const xhr = new XMLHttpRequest();
++    xhr.open("POST", `${base}/storage/v1/object/${BUCKET}/${path}`);
++    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
++    xhr.setRequestHeader("apikey", anon);
++    xhr.setRequestHeader("Content-Type", mimeFor(file));
++    xhr.setRequestHeader("x-upsert", "false");
++    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
++    xhr.onload = () => {
++      if (xhr.status >= 200 && xhr.status < 300) return resolve();
++      let msg = `فشل الرفع (${xhr.status})`;
++      try { const j = JSON.parse(xhr.responseText); msg = j.message || j.error || msg; } catch { /* ignore */ }
++      if (xhr.status === 413 || /exceed|too large|maximum/i.test(msg)) {
++        msg += " — ارفع حد حجم الملف من Supabase: Storage ← Settings ← Global file size limit.";
++      } else if (xhr.status === 400 || xhr.status === 403 || /row-level security|unauthorized/i.test(msg)) {
++        msg += " — تأكد أن حسابك يملك دور admin في جدول user_roles.";
++      }
++      reject(new Error(msg));
++    };
++    xhr.onerror = () => reject(new Error("انقطع الاتصال أثناء الرفع"));
++    xhr.send(file);
++  });
++  return path;
++}
++
++export interface NewLibraryRow {
++  title: string; description: string; subject: string; grade: string;
++  file: File; storage_path: string; page_count: number | null; units: UnitInfo[] | null; is_published: boolean;
++}
++
++export async function insertLibraryRow(r: NewLibraryRow): Promise<LibraryRow> {
++  const { data: { user } } = await supabase.auth.getUser();
++  const { data, error } = await db.from("exam_library_files").insert({
++    title: r.title.trim(), description: r.description.trim() || null, subject: r.subject.trim() || null, grade: r.grade.trim() || null,
++    file_name: r.file.name, storage_path: r.storage_path, mime_type: mimeFor(r.file), size_bytes: r.file.size,
++    page_count: r.page_count, units: r.units, is_published: r.is_published, created_by: user?.id ?? null,
++  }).select("*").single();
++  if (error) {
++    await supabase.storage.from(BUCKET).remove([r.storage_path]).catch(() => {}); // لا نترك ملفاً يتيماً
++    throw new Error(error.message);
++  }
++  return data;
++}
++
++export async function updateLibraryRow(id: string, patch: Partial<Pick<LibraryRow, "title" | "description" | "subject" | "grade" | "is_published" | "units" | "page_count">>) {
++  const { error } = await db.from("exam_library_files").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
++  if (error) throw new Error(error.message);
++}
++
++export async function deleteLibraryRow(row: LibraryRow) {
++  const { error } = await db.from("exam_library_files").delete().eq("id", row.id);
++  if (error) throw new Error(error.message);
++  await supabase.storage.from(BUCKET).remove([row.storage_path]).catch(() => {});
++  try { await (await caches.open("exam-library-v1")).delete(cacheKey(row)); } catch { /* ignore */ }
++}
++
++const cacheKey = (r: LibraryRow) => `https://exam-library.local/${r.id}/${r.updated_at}/${r.size_bytes}`;
++
++/** تنزيل ملف المكتبة (رابط موقّع قصير العمر) مع نسبة التقدم، ويُخزَّن في ذاكرة المتصفح فلا يُنزَّل ثانيةً. */
++export async function downloadLibraryFile(row: LibraryRow, onProgress?: (pct: number) => void): Promise<File> {
++  const mk = (blob: Blob) => new File([blob], row.file_name, { type: row.mime_type });
++  try {
++    const hit = await (await caches.open("exam-library-v1")).match(cacheKey(row));
++    if (hit) return mk(await hit.blob());
++  } catch { /* لا يوجد Cache API */ }
++
++  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(row.storage_path, 600);
++  if (error || !data?.signedUrl) throw new Error(`تعذّر الوصول لملف «${row.title}»: ${error?.message ?? "غير متاح"}`);
++  const res = await fetch(data.signedUrl);
++  if (!res.ok || !res.body) throw new Error(`تعذّر تنزيل «${row.title}» (${res.status})`);
++
++  const total = Number(res.headers.get("Content-Length")) || row.size_bytes;
++  const reader = res.body.getReader();
++  const chunks: Uint8Array[] = [];
++  let got = 0;
++  for (;;) {
++    const { done, value } = await reader.read();
++    if (done) break;
++    chunks.push(value);
++    got += value.length;
++    onProgress?.(Math.min(100, Math.round((got / total) * 100)));
++  }
++  const blob = new Blob(chunks as BlobPart[], { type: row.mime_type });
++  try {
++    const cache = await caches.open("exam-library-v1");
++    await cache.put(cacheKey(row), new Response(blob, { headers: { "Content-Type": row.mime_type } }));
++  } catch { /* الحصة ممتلئة: لا بأس */ }
++  return mk(blob);
++}
+diff --git a/src/lib/examCreator/mergeUnits.ts b/src/lib/examCreator/mergeUnits.ts
+new file mode 100644
+index 00000000..35634291
+--- /dev/null
++++ b/src/lib/examCreator/mergeUnits.ts
+@@ -0,0 +1,28 @@
++import type { UnitInfo } from "./types";
++
++/** يعيد ترقيم وحدات ملف إلى فهرسه العام ضمن الامتحان المدمج، ويجعل المعرّفات فريدة. */
++export function remapUnits(units: UnitInfo[], globalFileIndex: number): UnitInfo[] {
++  return units.map((u, i) => ({ ...u, id: `f${globalFileIndex}-${u.id || `u${i + 1}`}`, fileIndex: globalFileIndex }));
++}
++
++/** وحدات الملفات كلها بترتيب الملفات ثم ترتيب الوحدات داخل الملف. */
++export function mergeUnitLists(lists: { fileIndex: number; units: UnitInfo[] }[]): UnitInfo[] {
++  return [...lists].sort((a, b) => a.fileIndex - b.fileIndex).flatMap((l) => remapUnits(l.units, l.fileIndex));
++}
++
++/** يتحقق أن وحدات مخزّنة (jsonb) سليمة الشكل قبل الوثوق بها. */
++export function sanitizeCachedUnits(raw: unknown): UnitInfo[] | null {
++  if (!Array.isArray(raw) || raw.length === 0) return null;
++  const out: UnitInfo[] = [];
++  for (const u of raw as any[]) {
++    if (!u || typeof u.title !== "string" || !u.title.trim()) return null;
++    out.push({
++      id: String(u.id ?? ""), title: u.title.slice(0, 200), summary: String(u.summary ?? "").slice(0, 500),
++      fileIndex: 0,
++      pageStart: Number.isInteger(u.pageStart) && u.pageStart > 0 ? u.pageStart : null,
++      pageEnd: Number.isInteger(u.pageEnd) && u.pageEnd > 0 ? u.pageEnd : null,
++      hasFigures: !!u.hasFigures, hasTables: !!u.hasTables,
++    });
++  }
++  return out;
++}
+diff --git a/src/pages/admin/SuperAdminControlHub.tsx b/src/pages/admin/SuperAdminControlHub.tsx
+index 6b42794c..4948d9f1 100644
+--- a/src/pages/admin/SuperAdminControlHub.tsx
++++ b/src/pages/admin/SuperAdminControlHub.tsx
+@@ -68,6 +68,7 @@ import { platformSettings, type PlatformSettings, type FooterLink } from '@/serv
+ import { liveSupportService, type SupportSession } from '@/services/liveSupportService';
+ import { QuantumQuestionGenerator } from '@/components/admin/QuantumQuestionGenerator';
+ import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow';
++import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
+ import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
+ import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
+ import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
+@@ -94,6 +95,7 @@ export type AdminTab =
+   | 'support'
+   | 'footer'
+   | 'questions'
++  | 'exam-library'
+   | 'copilot';
+ 
+ // Navigation Categories for high-level structure
+@@ -629,6 +631,7 @@ export const SuperAdminControlHub: React.FC = () => {
+         { id: 'faculty', label: 'الكوادر والصلاحيات الأكاديمية', icon: GraduationCap, badge: `${realFacultyCount}`, description: 'إدارة المعلمين، المشرفين، ورتب التدريس' },
+         { id: 'simulations', label: 'إدارة المحاكيات العلمية 3D', icon: Atom, badge: '49 تجربة', description: 'الفهرس المتكامل لكافة المختبرات ثلاثية الأبعاد' },
+         { id: 'puzzles', label: 'إدارة الألغاز والذكاء الاصطناعي', icon: HelpCircle, badge: `${realPuzzlesCount} لغز`, description: 'بنك الألغاز التفاعلية ومسائل التفكير الناقد' },
++        { id: 'exam-library', label: 'مكتبة ملفات الامتحانات وكل الامتحانات', icon: BookOpen, badge: 'جديد', description: 'ارفع ملفات يختارها كل المستخدمين، وراجع كل امتحان أُنشئ ونتائجه' },
+         { id: 'questions', label: 'مولد الأسئلة الذكي 2.0', icon: BrainCircuit, badge: 'بلوم', description: 'توليد امتحانات وبنوك أسئلة بمستويات بلوم المعرفية' },
+       ]
+     },
+@@ -1728,6 +1731,13 @@ export const SuperAdminControlHub: React.FC = () => {
+               </SafeBoundary>
+             )}
+ 
++            {/* مكتبة ملفات الامتحانات + كل الامتحانات المُنشأة */}
++            {currentTab === 'exam-library' && (
++              <SafeBoundary name="ExamLibraryAdmin">
++                <ExamLibraryAdmin />
++              </SafeBoundary>
++            )}
++
+             {/* 9. AI Platform Copilot Tab */}
+             {currentTab === 'copilot' && (
+               <SafeBoundary name="PlatformCopilotWindow">
+diff --git a/supabase/functions/_shared/exam-common.ts b/supabase/functions/_shared/exam-common.ts
+index fc561b05..f6e680dd 100644
+--- a/supabase/functions/_shared/exam-common.ts
++++ b/supabase/functions/_shared/exam-common.ts
+@@ -34,7 +34,7 @@ export const MAX_PAGE_IMAGES = 160; // للتحليل (مصغّرات) أو لل
+ 
+ /** يعيد رسالة خطأ بالعربية أو null إذا كانت الملفات سليمة. */
+ export function validateFiles(files: unknown): string | null {
+-  if (!Array.isArray(files) || files.length === 0 || files.length > 5) return "ارفع من 1 إلى 5 ملفات";
++  if (!Array.isArray(files) || files.length === 0 || files.length > 8) return "ارفع من 1 إلى 8 ملفات";
+   let inline = 0;
+   for (const f of files as InFile[]) {
+     if (!f || typeof f.name !== "string") return "بيانات الملف غير صالحة";
+diff --git a/supabase/functions/generate-exam-from-file/index.ts b/supabase/functions/generate-exam-from-file/index.ts
+index c5b1c16c..ee6ce9b6 100644
+--- a/supabase/functions/generate-exam-from-file/index.ts
++++ b/supabase/functions/generate-exam-from-file/index.ts
+@@ -105,7 +105,7 @@ function scopeText(units: UnitIn[]): string {
+ function generationSystem(p: {
+   counts: Partial<Record<QType, number>>; difficulty: string; language: string; units: UnitIn[];
+   grade?: string; subject?: string; request?: string; avoid: string[];
+-  allowFigures: boolean; allowTables: boolean;
++  allowFigures: boolean; allowTables: boolean; nFiles: number; distribution: string;
+ }): string {
+   const typesList = QTYPES.filter((t) => (p.counts[t] ?? 0) > 0)
+     .map((t) => `- ${p.counts[t]} سؤال من نوع: ${TYPE_LABEL[t]}`).join("\n");
+@@ -132,7 +132,11 @@ ${p.grade ? `- الصف: ${p.grade}\n` : ""}${p.subject ? `- المادة: ${p.s
+ 2. كل سؤال إجابته موجودة صراحة في الملف. لا تخمّن ولا تستنتج ما لا يدعمه النص.
+ 3. evidence: اقتباس حرفي قصير (حتى 25 كلمة) من الملف يدعم الإجابة. location: رقم الصفحة أو اسم القسم. unit: عنوان الوحدة التي أُخذ منها السؤال كما ورد في النطاق.
+ 4. لا تسأل عن بيانات شكلية: اسم الملف، الغلاف، الفهرس، اسم المؤلف أو الناشر، أرقام الصفحات، تاريخ الطباعة.
+-5. وزّع الأسئلة بالتساوي تقريباً على الوحدات المحددة وعلى كامل محتوى كل وحدة، ولا تكرر السؤال نفسه بصيغ مختلفة.
++5. ${p.distribution === "by_file" && p.nFiles > 1
++    ? "وزّع الأسئلة بالتساوي تقريباً بين الملفات أولاً (لكل ملف نصيب متقارب)، ثم على وحدات كل ملف وعلى كامل محتواها"
++    : "وزّع الأسئلة بالتساوي تقريباً على الوحدات المحددة وعلى كامل محتوى كل وحدة"}، ولا تكرر السؤال نفسه بصيغ مختلفة.${p.nFiles > 1
++    ? " هذا امتحان مدمج من عدة ملفات: ابدأ location دائماً باسم الملف ثم الصفحة أو القسم، ولا تبنِ إجابة سؤال من ملف على معلومة وردت في ملف آخر."
++    : ""}
+ 6. اختيار من متعدد: 4 خيارات بالضبط، خيار واحد صحيح، والمشتتات معقولة ومن نفس المجال، وanswer نص الخيار الصحيح مطابقاً حرفياً لأحد الخيارات. نوّع موضع الصحيح وتجنّب "كل ما سبق/لا شيء مما سبق".
+ 7. صح/خطأ: answer هي "صح" أو "خطأ" فقط (True/False إن كانت اللغة إنجليزية). عبارة واضحة غير ملتبسة.
+ 8. أكمل الفراغ: ضع ______ مكان مصطلح مهم، وanswer هو المصطلح المحذوف فقط.
+@@ -179,7 +183,7 @@ serve(async (req) => {
+     if (requested < 1) return jsonResponse({ error: "حدّد عدد الأسئلة لنوع واحد على الأقل" }, 400);
+     if (requested > MAX_TOTAL_QUESTIONS) return jsonResponse({ error: `الحد الأقصى ${MAX_TOTAL_QUESTIONS} سؤالاً في الامتحان الواحد` }, 400);
+ 
+-    const units: UnitIn[] = (Array.isArray(body.units) ? body.units : []).slice(0, 30).map((u: any) => ({
++    const units: UnitIn[] = (Array.isArray(body.units) ? body.units : []).slice(0, 80).map((u: any) => ({
+       title: String(u?.title ?? "").slice(0, 200),
+       summary: String(u?.summary ?? "").slice(0, 300),
+       fileIndex: Number.isInteger(u?.fileIndex) ? u.fileIndex : 0,
+@@ -232,6 +236,7 @@ serve(async (req) => {
+         system: generationSystem({
+           counts: need, difficulty, language, units, ...meta,
+           allowFigures: ctx.allowFigures, allowTables: ctx.allowTables,
++          nFiles: files.length, distribution: String(body.distribution || "by_unit"),
+           avoid: accepted.map((q) => q.question),
+         }),
+         parts: [...fileParts, { text: "أنشئ الامتحان الآن من الملف المرفق فقط." }],
+diff --git a/supabase/migrations/20261002120000_exam_library.sql b/supabase/migrations/20261002120000_exam_library.sql
+new file mode 100644
+index 00000000..c6380c7d
+--- /dev/null
++++ b/supabase/migrations/20261002120000_exam_library.sql
+@@ -0,0 +1,80 @@
++-- مكتبة ملفات الامتحانات: يرفعها الأدمن ويختارها كل المستخدمين المسجلين بلا رفع.
++-- الصلاحية الحقيقية = دور admin في user_roles (has_role). بوابة لوحة الأدمن في الواجهة لا تُعتمد للأمان.
++
++create table if not exists public.exam_library_files (
++  id            uuid primary key default gen_random_uuid(),
++  title         text not null check (char_length(title) between 1 and 200),
++  description   text check (description is null or char_length(description) <= 1000),
++  subject       text,
++  grade         text,
++  file_name     text not null,
++  storage_path  text not null unique,
++  mime_type     text not null,
++  size_bytes    bigint not null check (size_bytes > 0),
++  page_count    integer,
++  units         jsonb,        -- نتيجة تقسيم الملف إلى وحدات (تُحسب مرة عند الرفع)
++  is_published  boolean not null default false,
++  created_by    uuid references auth.users(id) on delete set null,
++  created_at    timestamptz not null default now(),
++  updated_at    timestamptz not null default now()
++);
++
++create index if not exists exam_library_files_pub_idx on public.exam_library_files(is_published, created_at desc);
++
++alter table public.exam_library_files enable row level security;
++
++drop policy if exists "library read published or admin" on public.exam_library_files;
++create policy "library read published or admin" on public.exam_library_files
++  for select to authenticated
++  using (is_published or public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "library admin insert" on public.exam_library_files;
++create policy "library admin insert" on public.exam_library_files
++  for insert to authenticated
++  with check (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "library admin update" on public.exam_library_files;
++create policy "library admin update" on public.exam_library_files
++  for update to authenticated
++  using (public.has_role(auth.uid(), 'admin'))
++  with check (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "library admin delete" on public.exam_library_files;
++create policy "library admin delete" on public.exam_library_files
++  for delete to authenticated
++  using (public.has_role(auth.uid(), 'admin'));
++
++-- حاوية خاصة (ليست public): التنزيل بروابط موقّعة قصيرة العمر للمسجلين فقط
++insert into storage.buckets (id, name, public)
++values ('exam-library', 'exam-library', false)
++on conflict (id) do nothing;
++
++drop policy if exists "library files read" on storage.objects;
++create policy "library files read" on storage.objects
++  for select to authenticated
++  using (
++    bucket_id = 'exam-library'
++    and (
++      public.has_role(auth.uid(), 'admin')
++      or exists (
++        select 1 from public.exam_library_files f
++        where f.storage_path = objects.name and f.is_published
++      )
++    )
++  );
++
++drop policy if exists "library files admin insert" on storage.objects;
++create policy "library files admin insert" on storage.objects
++  for insert to authenticated
++  with check (bucket_id = 'exam-library' and public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "library files admin update" on storage.objects;
++create policy "library files admin update" on storage.objects
++  for update to authenticated
++  using (bucket_id = 'exam-library' and public.has_role(auth.uid(), 'admin'))
++  with check (bucket_id = 'exam-library' and public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "library files admin delete" on storage.objects;
++create policy "library files admin delete" on storage.objects
++  for delete to authenticated
++  using (bucket_id = 'exam-library' and public.has_role(auth.uid(), 'admin'));
+diff --git a/supabase/migrations/20261002130000_exam_history_admin.sql b/supabase/migrations/20261002130000_exam_history_admin.sql
+new file mode 100644
+index 00000000..66c2a235
+--- /dev/null
++++ b/supabase/migrations/20261002130000_exam_history_admin.sql
+@@ -0,0 +1,91 @@
++-- سجل كل امتحان يُنشأ (حتى لو نُزّل PDF فقط) + رؤية الأدمن لكل الامتحانات والنتائج.
++
++create table if not exists public.exam_history (
++  id              uuid primary key default gen_random_uuid(),
++  owner_id        uuid not null references auth.users(id) on delete cascade,
++  title           text not null check (char_length(title) between 1 and 300),
++  subject         text,
++  grade           text,
++  question_count  integer not null default 0,
++  sources         jsonb not null default '[]'::jsonb,   -- [{kind:'library',id,title} | {kind:'upload',name,size}]
++  request         text,                                  -- الطلب الخاص للمعلم
++  options         jsonb not null default '{}'::jsonb,    -- الأعداد، الصعوبة، اللغة، التوزيع...
++  exam            jsonb not null,                        -- الأسئلة (بدون صور مضمّنة)
++  online_exam_id  uuid references public.online_exams(id) on delete set null,
++  created_at      timestamptz not null default now(),
++  updated_at      timestamptz not null default now()
++);
++
++create index if not exists exam_history_owner_idx on public.exam_history(owner_id, created_at desc);
++create index if not exists exam_history_created_idx on public.exam_history(created_at desc);
++
++alter table public.exam_history enable row level security;
++
++drop policy if exists "history owner all" on public.exam_history;
++create policy "history owner all" on public.exam_history
++  for all to authenticated
++  using (owner_id = auth.uid())
++  with check (owner_id = auth.uid());
++
++drop policy if exists "history admin read" on public.exam_history;
++create policy "history admin read" on public.exam_history
++  for select to authenticated
++  using (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "history admin delete" on public.exam_history;
++create policy "history admin delete" on public.exam_history
++  for delete to authenticated
++  using (public.has_role(auth.uid(), 'admin'));
++
++-- الأدمن يرى كل الامتحانات الإلكترونية ونتائجها، ويتحكم بفتحها/إغلاقها وحذفها
++drop policy if exists "online exams admin read" on public.online_exams;
++create policy "online exams admin read" on public.online_exams
++  for select to authenticated using (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "online exams admin update" on public.online_exams;
++create policy "online exams admin update" on public.online_exams
++  for update to authenticated
++  using (public.has_role(auth.uid(), 'admin')) with check (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "online exams admin delete" on public.online_exams;
++create policy "online exams admin delete" on public.online_exams
++  for delete to authenticated using (public.has_role(auth.uid(), 'admin'));
++
++drop policy if exists "submissions admin read" on public.online_exam_submissions;
++create policy "submissions admin read" on public.online_exam_submissions
++  for select to authenticated using (public.has_role(auth.uid(), 'admin'));
++
++-- قائمة الأدمن: اسم وبريد صاحب الامتحان + حالة الرابط وعدد التسليمات.
++-- SECURITY DEFINER لأن البريد في auth.users؛ وتعيد صفراً من الصفوف لغير الأدمن.
++create or replace function public.admin_exam_history(_limit integer default 100, _offset integer default 0)
++returns table (
++  id uuid, owner_id uuid, owner_name text, owner_email text,
++  title text, subject text, grade text, question_count integer,
++  sources jsonb, request text, online_exam_id uuid, online_token text,
++  online_active boolean, submissions bigint, created_at timestamptz, total_count bigint
++)
++language sql
++stable
++security definer
++set search_path = public
++as $$
++  select
++    h.id, h.owner_id,
++    coalesce(nullif(p.full_name, ''), p.username) as owner_name,
++    u.email::text as owner_email,
++    h.title, h.subject, h.grade, h.question_count, h.sources, h.request,
++    h.online_exam_id, oe.token as online_token, oe.is_active as online_active,
++    (select count(*) from public.online_exam_submissions s where s.exam_id = h.online_exam_id) as submissions,
++    h.created_at,
++    count(*) over () as total_count
++  from public.exam_history h
++  left join public.profiles p on p.id = h.owner_id
++  left join auth.users u on u.id = h.owner_id
++  left join public.online_exams oe on oe.id = h.online_exam_id
++  where public.has_role(auth.uid(), 'admin')
++  order by h.created_at desc
++  limit least(greatest(_limit, 1), 500) offset greatest(_offset, 0);
++$$;
++
++revoke all on function public.admin_exam_history(integer, integer) from public, anon;
++grant execute on function public.admin_exam_history(integer, integer) to authenticated;
+-- 
+2.43.0
+
