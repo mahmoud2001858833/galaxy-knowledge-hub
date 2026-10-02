@@ -14,6 +14,8 @@ export interface ChallengeDef {
   durationSeconds: number;
   checkSuccess: () => boolean; // return true if currently meeting criteria
   requiredHoldSeconds?: number; // how many consecutive seconds criteria must be met
+  points?: number;
+  targetMetric?: string;
 }
 
 export type Challenge = ChallengeDef;

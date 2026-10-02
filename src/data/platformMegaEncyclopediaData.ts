@@ -34,6 +34,13 @@ export interface DetailedExperimentSpec {
     physicalEffect: string;
     pedagogicalGuidance: string;
   }>;
+  controls?: Array<{
+    controlName: string;
+    type: 'slider' | 'select' | 'button' | 'toggle' | 'camera_preset' | 'input';
+    rangeOrOptions: string;
+    physicalEffect: string;
+    pedagogicalGuidance?: string;
+  }>;
   telemetryMetrics: Array<{
     metricName: string;
     symbol: string;
