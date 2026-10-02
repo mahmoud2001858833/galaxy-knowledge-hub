@@ -39,11 +39,11 @@ export const CinematicCameraController: React.FC<CinematicCameraControllerProps>
           الكاميرا:
         </span>
         {presets.map((p) => {
-          const isActive = currentPreset === p.id;
+          const isActive = resolvedPreset === p.id;
           return (
             <button
               key={p.id}
-              onClick={() => onSelectPreset(p.id)}
+              onClick={() => handleSelect(p.id)}
               title={p.desc}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                 isActive
