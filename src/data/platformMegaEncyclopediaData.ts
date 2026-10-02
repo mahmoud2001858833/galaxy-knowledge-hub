@@ -47,6 +47,12 @@ export interface DetailedExperimentSpec {
     unit: string;
     scientificMeaning: string;
   }>;
+  telemetry?: Array<{
+    metricName: string;
+    symbol: string;
+    unit: string;
+    scientificMeaning: string;
+  }>;
   labProcedureSteps: string[];
   labMissions: Array<{
     title: string;
