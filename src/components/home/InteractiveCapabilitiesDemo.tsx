@@ -50,7 +50,7 @@ export const InteractiveCapabilitiesDemo: React.FC = () => {
     spectralType = 'أشعة تحت حمراء (Infrared)';
   }
 
-  // Wave Animation Loop
+  // Wave Animation Loop (Optimized with IntersectionObserver to save GPU/CPU cycles)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -59,8 +59,22 @@ export const InteractiveCapabilitiesDemo: React.FC = () => {
 
     let animFrame: number;
     let time = 0;
+    let isVisible = true;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      const wasVisible = isVisible;
+      isVisible = entry.isIntersecting;
+      if (!wasVisible && isVisible) {
+        cancelAnimationFrame(animFrame);
+        animFrame = requestAnimationFrame(render);
+      }
+    }, { threshold: 0.05 });
+
+    observer.observe(canvas);
 
     const render = () => {
+      if (!isVisible) return;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const midY = canvas.height / 2;
@@ -117,11 +131,16 @@ export const InteractiveCapabilitiesDemo: React.FC = () => {
         time += frequency * 0.03;
       }
 
-      animFrame = requestAnimationFrame(render);
+      if (isVisible) {
+        animFrame = requestAnimationFrame(render);
+      }
     };
 
     render();
-    return () => cancelAnimationFrame(animFrame);
+    return () => {
+      cancelAnimationFrame(animFrame);
+      observer.disconnect();
+    };
   }, [frequency, amplitude, damping, isPaused]);
 
   const bloomQuestions = {
