@@ -24,9 +24,11 @@ export interface NormCtx {
   figPages?: (Set<number> | null)[];
   allowFigures: boolean;
   allowTables: boolean;
+  /** يُستدعى بسبب كل سؤال يُرفض (للتقرير الشفاف للمعلم) */
+  onDrop?: (reason: string) => void;
 }
 
-function normTable(t: any): { caption: string; headers: string[]; rows: string[][] } | null {
+export function normTable(t: any): { caption: string; headers: string[]; rows: string[][] } | null {
   if (!t || !Array.isArray(t.headers) || !Array.isArray(t.rows)) return null;
   const headers = t.headers.map((h: any) => String(h ?? "").trim().slice(0, 120));
   if (headers.length < 1 || headers.length > 12 || headers.every((h: string) => !h)) return null;
@@ -39,7 +41,7 @@ function normTable(t: any): { caption: string; headers: string[]; rows: string[]
   return { caption: String(t.caption ?? "").trim().slice(0, 200), headers, rows };
 }
 
-function normFigure(f: any, ctx: NormCtx) {
+export function normFigure(f: any, ctx: NormCtx) {
   if (!f) return null;
   const fileIndex = Number.isInteger(f.file_index) ? f.file_index : 0;
   const page = Number.isInteger(f.page) ? f.page : 0;
@@ -53,6 +55,7 @@ function normFigure(f: any, ctx: NormCtx) {
   if (y1 - y0 < 20 || x1 - x0 < 20) return null;
   if ((y1 - y0) * (x1 - x0) < 10_000) return null; // أقل من 1% من الصفحة: غالباً خطأ في الإحداثيات
   return {
+    id: f.id ? String(f.id).slice(0, 20) : undefined,
     fileIndex, page, box: [y0, x0, y1, x1] as [number, number, number, number],
     caption: String(f.caption ?? "").trim().slice(0, 300),
     revealsAnswer: !!f.reveals_answer,
@@ -61,10 +64,11 @@ function normFigure(f: any, ctx: NormCtx) {
 
 /** يعيد سؤالاً نظيفاً أو null إن كان غير صالح. */
 export function normalizeQuestion(q: any, ctx: NormCtx): any | null {
-  if (!q || !QTYPES.includes(q.type)) return null;
+  const drop = (r: string) => { ctx.onDrop?.(r); return null; };
+  if (!q || !QTYPES.includes(q.type)) return drop("bad_type");
   const question = String(q.question ?? "").trim();
   const answer = String(q.answer ?? "").trim();
-  if (question.length < 5 || !answer) return null;
+  if (question.length < 5 || !answer) return drop("empty_question_or_answer");
 
   const out: any = {
     type: q.type,
@@ -76,40 +80,40 @@ export function normalizeQuestion(q: any, ctx: NormCtx): any | null {
     unit: String(q.unit ?? "").trim().slice(0, 200),
     difficulty: ["easy", "medium", "hard"].includes(q.difficulty) ? q.difficulty : "medium",
   };
-  if (!out.evidence) return null; // بلا دليل من الملف = مرفوض
+  if (!out.evidence) return drop("no_evidence"); // بلا دليل من الملف = مرفوض
 
   const table = ctx.allowTables ? normTable(q.table) : null;
   if (table) out.table = table;
-  if (ctx.allowTables && q.table && !table) return null; // قصد النموذج جدولاً لكنه مشوّه: لا نُصلحه بالتخمين
-  if (!table && TBL_REF.test(question)) return null; // يشير لجدول غير موجود
+  if (ctx.allowTables && q.table && !table) return drop("invalid_table"); // قصد النموذج جدولاً لكنه مشوّه: لا نُصلحه بالتخمين
+  if (!table && TBL_REF.test(question)) return drop("mentions_missing_table"); // يشير لجدول غير موجود
 
   const figure = ctx.allowFigures ? normFigure(q.figure, ctx) : null;
   if (figure) out.figure = figure;
-  if (ctx.allowFigures && q.figure && !figure) return null; // إحداثيات/ملف غير صالح: السؤال يعتمد على شكل لا يمكن عرضه
-  if (!figure && FIG_REF.test(question)) return null; // يشير لشكل غير موجود
+  if (ctx.allowFigures && q.figure && !figure) return drop("invalid_figure"); // إحداثيات/ملف غير صالح: السؤال يعتمد على شكل لا يمكن عرضه
+  if (!figure && FIG_REF.test(question)) return drop("mentions_missing_figure"); // يشير لشكل غير موجود
 
   if (q.type === "multiple_choice") {
     const opts = Array.isArray(q.options)
       ? q.options.map((o: any) => String(o).replace(/^\s*([A-Dأ-د]|[١-٤1-4])\s*[\.\)\-:]\s*/, "").trim()).filter(Boolean)
       : [];
     const uniq = Array.from(new Map(opts.map((o: string) => [normText(o), o])).values()) as string[];
-    if (uniq.length !== 4) return null;
+    if (uniq.length !== 4) return drop("mcq_options_not_4");
     let idx = uniq.findIndex((o) => normText(o) === normText(answer));
     if (idx < 0) {
       const letters = ["ا", "ب", "ج", "د"], latin = ["a", "b", "c", "d"];
       const a = normText(answer).replace(/[\.\)\s]/g, "");
       idx = letters.indexOf(a) >= 0 ? letters.indexOf(a) : latin.indexOf(a);
     }
-    if (idx < 0) return null;
+    if (idx < 0) return drop("mcq_answer_not_in_options");
     out.options = uniq;
     out.answer = uniq[idx];
   } else if (q.type === "true_false") {
     const a = normText(answer);
     if (/^(صح|صحيح|true|t)$/.test(a)) out.answer = /[a-z]/.test(a) ? "True" : "صح";
     else if (/^(خطا|خاطئ|false|f)$/.test(a)) out.answer = /[a-z]/.test(a) ? "False" : "خطأ";
-    else return null;
+    else return drop("bad_true_false");
   } else if (q.type === "fill_blank") {
-    if (!/_{2,}|…{2,}|\.{4,}/.test(question)) return null;
+    if (!/_{2,}|…{2,}|\.{4,}/.test(question)) return drop("fill_blank_without_blank");
   }
   return out;
 }
@@ -134,4 +138,44 @@ export function gradeAnswer(q: { type: QType; answer: string }, student: unknown
   // fill_blank: يقبل بدائل مفصولة بـ / أو ؛ أو "أو"
   const variants = q.answer.split(/\s*(?:\/|؛|;|\bor\b|\sأو\s)\s*/i).map(normText).filter(Boolean);
   return variants.includes(normText(s)) ? "correct" : "wrong";
+}
+
+
+/** تقاطع/اتحاد صندوقين [ymin,xmin,ymax,xmax] */
+export function iou(a: number[], b: number[]): number {
+  const iy = Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0]));
+  const ix = Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+  const inter = iy * ix;
+  const uni = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter;
+  return uni > 0 ? inter / uni : 0;
+}
+
+/** يزيل الأشكال المكررة (نفس الصفحة وتداخل كبير) ويُبقي الأكبر. */
+export function dedupeFigures<T extends { fileIndex: number; page: number; box: number[] }>(figs: T[]): T[] {
+  const area = (f: T) => (f.box[2] - f.box[0]) * (f.box[3] - f.box[1]);
+  const sorted = [...figs].sort((x, y) => area(y) - area(x));
+  const kept: T[] = [];
+  for (const f of sorted) {
+    if (!kept.some((k) => k.fileIndex === f.fileIndex && k.page === f.page && iou(k.box, f.box) > 0.5)) kept.push(f);
+  }
+  return figs.filter((f) => kept.includes(f));
+}
+
+/** يخفي خلايا محددة [صف, عمود] بعلامة «؟» ويعيد القيم المخفية (للإجابة). لا يعدّل الجدول الأصلي. */
+export function maskTable(
+  t: { caption?: string; headers: string[]; rows: string[][] }, cells: unknown,
+): { table: { caption?: string; headers: string[]; rows: string[][] }; hidden: string[] } {
+  const rows = t.rows.map((r) => [...r]);
+  const hidden: string[] = [];
+  if (Array.isArray(cells)) {
+    for (const c of cells.slice(0, 6)) {
+      if (!Array.isArray(c) || c.length !== 2) continue;
+      const [r, k] = c.map(Number);
+      if (Number.isInteger(r) && Number.isInteger(k) && rows[r] && k >= 0 && k < rows[r].length && rows[r][k] !== "؟") {
+        hidden.push(rows[r][k]);
+        rows[r][k] = "؟";
+      }
+    }
+  }
+  return { table: { ...t, rows }, hidden };
 }

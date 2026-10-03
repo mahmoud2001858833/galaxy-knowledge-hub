@@ -5,11 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
-import { QTYPE_META, type QType } from "@/lib/examCreator/types";
+import { ArrowRight, Database, FileText, Loader2, Sparkles, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type QType } from "@/lib/examCreator/types";
 
 export interface SettingsState {
+  mode: CreatorMode;
   counts: Record<QType, number>;
+  figureQuestions: number;
+  tableQuestions: number;
   difficulty: string;
   language: string;
   distribution: "by_unit" | "by_file";
@@ -24,16 +28,27 @@ export interface SettingsState {
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
+  mode: "exam", figureQuestions: 2, tableQuestions: 2,
   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
   difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
   includeFigures: true, includeTables: true, schoolName: "", teacherName: "", durationMinutes: 45,
 };
 
-const PRESETS: { label: string; counts: Record<QType, number> }[] = [
-  { label: "سريع (10)", counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 } },
-  { label: "اختبار قصير (20)", counts: { multiple_choice: 10, true_false: 4, fill_blank: 4, short_answer: 2, essay: 0 } },
-  { label: "نهائي (30)", counts: { multiple_choice: 12, true_false: 6, fill_blank: 6, short_answer: 4, essay: 2 } },
-];
+const PRESETS: Record<CreatorMode, { label: string; counts: Record<QType, number> }[]> = {
+  exam: [
+    { label: "سريع (10)", counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 } },
+    { label: "اختبار قصير (20)", counts: { multiple_choice: 10, true_false: 4, fill_blank: 4, short_answer: 2, essay: 0 } },
+    { label: "نهائي (30)", counts: { multiple_choice: 12, true_false: 6, fill_blank: 6, short_answer: 4, essay: 2 } },
+    { label: "شامل (60)", counts: { multiple_choice: 30, true_false: 12, fill_blank: 10, short_answer: 6, essay: 2 } },
+    { label: "أقصى (100)", counts: { multiple_choice: 50, true_false: 20, fill_blank: 15, short_answer: 10, essay: 5 } },
+  ],
+  bank: [
+    { label: "200 سؤال", counts: { multiple_choice: 120, true_false: 40, fill_blank: 24, short_answer: 12, essay: 4 } },
+    { label: "500 سؤال", counts: { multiple_choice: 300, true_false: 100, fill_blank: 60, short_answer: 30, essay: 10 } },
+    { label: "600 سؤال", counts: { multiple_choice: 360, true_false: 120, fill_blank: 70, short_answer: 40, essay: 10 } },
+    { label: "1000 سؤال", counts: { multiple_choice: 600, true_false: 200, fill_blank: 120, short_answer: 60, essay: 20 } },
+  ],
+};
 
 const REQUEST_IDEAS = [
   "اجعل الأسئلة تطبيقية وتقيس الفهم لا الحفظ",
@@ -52,34 +67,65 @@ interface Props {
   filesUsed: number;
   busy: boolean;
   stage: string;
+  progress: { batchesDone: number; batches: number; questions: number; target: number } | null;
+  onCancel: () => void;
   onBack: () => void;
   onGenerate: () => void;
 }
 
-export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, filesUsed, busy, stage, onBack, onGenerate }: Props) {
+export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures, unitsHaveTables, filesUsed, busy, stage, progress, onCancel, onBack, onGenerate }: Props) {
+  const isBank = s.mode === "bank";
+  const maxTotal = isBank ? MAX_BANK_QUESTIONS : MAX_EXAM_QUESTIONS;
   const total = Object.values(s.counts).reduce((a, b) => a + b, 0);
+  const batchSize = isBank ? 30 : 25;
+  const batches = Math.ceil(total / batchSize);
+  const minutes = Math.max(1, Math.ceil((batches / (isBank ? 3 : 2)) * 1.2));
   const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
   const setCount = (k: QType, v: string) =>
-    set("counts", { ...s.counts, [k]: Math.max(0, Math.min(50, parseInt(v || "0", 10) || 0)) });
+    set("counts", { ...s.counts, [k]: Math.max(0, Math.min(maxTotal, parseInt(v || "0", 10) || 0)) });
+  const switchMode = (m: CreatorMode) => {
+    if (m === s.mode) return;
+    onChange({ ...s, mode: m, counts: PRESETS[m][m === "bank" ? 1 : 1].counts });
+  };
+  const clampVis = (v: string) => Math.max(0, Math.min(total, parseInt(v || "0", 10) || 0));
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {([
+          ["exam", "امتحان", `ورقة امتحان جاهزة حتى ${MAX_EXAM_QUESTIONS} سؤالاً، للطباعة أو برابط إلكتروني`, FileText],
+          ["bank", "بنك أسئلة", `مخزون كبير حتى ${MAX_BANK_QUESTIONS} سؤال تُسحب منه امتحانات عشوائية متعددة`, Database],
+        ] as const).map(([m, t, d, Icon]) => (
+          <button key={m} type="button" disabled={busy} onClick={() => switchMode(m)}
+            className={`flex items-start gap-3 rounded-xl border p-4 text-right transition-colors ${s.mode === m ? "border-primary bg-primary/5" : "hover:border-primary/50"}`}>
+            <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <span><span className="block font-bold">{t}</span><span className="text-xs text-muted-foreground">{d}</span></span>
+          </button>
+        ))}
+      </div>
+
       <Card className="space-y-4 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Label className="text-base">عدد الأسئلة ونوعها <span className="text-muted-foreground">(المجموع: {total} — الحد الأقصى 50)</span></Label>
+          <Label className="text-base">عدد الأسئلة ونوعها <span className={total > maxTotal ? "text-destructive" : "text-muted-foreground"}>(المجموع: {total} — الحد الأقصى {maxTotal})</span></Label>
           <div className="flex flex-wrap gap-2">
-            {PRESETS.map((p) => <Button key={p.label} size="sm" variant="outline" onClick={() => set("counts", p.counts)}>{p.label}</Button>)}
+            {PRESETS[s.mode].map((p) => <Button key={p.label} size="sm" variant="outline" onClick={() => set("counts", p.counts)}>{p.label}</Button>)}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {QTYPE_META.map(({ key, label, hint }) => (
             <div key={key} className="space-y-1">
               <span className="text-xs font-medium">{label}</span>
-              <Input type="number" min={0} max={50} value={s.counts[key]} onChange={(e) => setCount(key, e.target.value)} />
+              <Input type="number" min={0} max={maxTotal} value={s.counts[key]} onChange={(e) => setCount(key, e.target.value)} />
               {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
             </div>
           ))}
         </div>
+        {total > 25 && (
+          <p className="text-xs text-muted-foreground">
+            يُولَّد على {batches} دفعة {isBank ? "(3 بالتوازي)" : "(2 بالتوازي)"} بزمن تقريبي {minutes} دقيقة، وتُدقَّق كل دفعة مقابل ملفاتك وتُحذف الأسئلة المكررة.
+            {isBank && " يُحفظ البنك تدريجياً فلا يضيع ما أُنجز إن توقفت."}
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
             <Label>مستوى الصعوبة</Label>
@@ -150,6 +196,12 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
           </div>
           <Switch checked={s.includeFigures && canFigures} disabled={!canFigures} onCheckedChange={(v) => set("includeFigures", v)} />
         </div>
+        {s.includeFigures && canFigures && (
+          <label className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+            عدد الأسئلة التي يجب أن تحتوي شكلاً من الملف
+            <Input type="number" className="w-24" min={0} max={total} value={s.figureQuestions} onChange={(e) => set("figureQuestions", clampVis(e.target.value))} />
+          </label>
+        )}
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="font-medium">جداول بيانات من الملف</div>
@@ -160,6 +212,13 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
           </div>
           <Switch checked={s.includeTables} onCheckedChange={(v) => set("includeTables", v)} />
         </div>
+        {s.includeTables && (
+          <label className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+            عدد الأسئلة التي يجب أن تحتوي جدولاً من الملف
+            <Input type="number" className="w-24" min={0} max={total} value={s.tableQuestions} onChange={(e) => set("tableQuestions", clampVis(e.target.value))} />
+          </label>
+        )}
+        <p className="text-xs text-muted-foreground">يُرصد أولاً ما في وحداتك من أشكال وجداول فعلية، ثم تُكتب الأسئلة الملزمة عليها في جولة مخصصة. إن لم يوجد ما يكفي ستُخبرك المراجعة بالسبب بدقة.</p>
       </Card>
 
       <Card className="space-y-3 p-4">
@@ -177,11 +236,21 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
         </div>
       </Card>
 
+      {busy && progress && (
+        <Card className="space-y-2 p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span>الدفعة {Math.min(progress.batchesDone + 1, progress.batches)} من {progress.batches} — أُنجز <b>{progress.questions}</b> من {progress.target} سؤالاً</span>
+            <Button size="sm" variant="outline" onClick={onCancel}><X className="ml-1 h-4 w-4" />إيقاف وإبقاء ما أُنجز</Button>
+          </div>
+          <Progress value={Math.min(100, (progress.questions / Math.max(1, progress.target)) * 100)} />
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <Button variant="outline" disabled={busy} onClick={onBack}><ArrowRight className="ml-2 h-4 w-4" />رجوع</Button>
-        <Button size="lg" disabled={busy || total < 1} onClick={onGenerate}>
+        <Button size="lg" disabled={busy || total < 1 || total > maxTotal} onClick={onGenerate}>
           {busy ? (<><Loader2 className="ml-2 h-5 w-5 animate-spin" />{stage || "جارٍ الإنشاء..."}</>)
-            : (<><Sparkles className="ml-2 h-5 w-5" />أنشئ الامتحان ({total} سؤال)</>)}
+            : (<><Sparkles className="ml-2 h-5 w-5" />{isBank ? `أنشئ بنك الأسئلة (${total} سؤال)` : `أنشئ الامتحان (${total} سؤال)`}</>)}
         </Button>
       </div>
     </div>

@@ -14,7 +14,7 @@ export function stripForHistory(exam: GeneratedExam) {
     meta: exam.meta,
     questions: exam.questions.map((q) => ({
       ...q,
-      figure: q.figure ? { fileIndex: q.figure.fileIndex, page: q.figure.page, box: q.figure.box, caption: q.figure.caption, revealsAnswer: q.figure.revealsAnswer } : undefined,
+      figure: q.figure ? { id: q.figure.id, fileIndex: q.figure.fileIndex, page: q.figure.page, box: q.figure.box, caption: q.figure.caption, revealsAnswer: q.figure.revealsAnswer, url: q.figure.url, width: q.figure.width, height: q.figure.height } : undefined,
     })),
   };
 }
@@ -52,6 +52,7 @@ export async function updateHistory(id: string | null, exam: GeneratedExam, onli
 
 // ───────── للأدمن ─────────
 export interface AdminHistoryRow {
+  kind: string | null;
   id: string; owner_id: string; owner_name: string | null; owner_email: string | null;
   title: string; subject: string | null; grade: string | null; question_count: number;
   sources: HistorySource[]; request: string | null;
@@ -88,5 +89,31 @@ export async function adminDeleteExam(row: AdminHistoryRow) {
     if (error) throw new Error(error.message);
   }
   const { error } = await db.from("exam_history").delete().eq("id", row.id);
+  if (error) throw new Error(error.message);
+}
+
+
+// ───────── بنوك الأسئلة (تُحفظ في exam_history بـ options.kind = 'bank') ─────────
+export interface BankRow { id: string; title: string; question_count: number; created_at: string; updated_at: string }
+
+export async function listMyBanks(): Promise<BankRow[]> {
+  const { data, error } = await db.from("exam_history").select("id, title, question_count, created_at, updated_at")
+    .filter("options->>kind", "eq", "bank").order("updated_at", { ascending: false }).limit(50);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function loadBank(id: string): Promise<GeneratedExam> {
+  const { data, error } = await db.from("exam_history").select("exam, title").eq("id", id).maybeSingle();
+  if (error || !data) throw new Error(error?.message ?? "تعذّر فتح البنك");
+  const e = data.exam;
+  // الأشكال المحفوظة روابط تخزين: نعرضها كما لو كانت صورة مضمّنة
+  const questions: ExamQuestion[] = (e.questions ?? []).map((q: ExamQuestion) =>
+    q.figure?.url && !q.figure.dataUrl ? { ...q, figure: { ...q.figure, dataUrl: q.figure.url } } : q);
+  return { title: e.title ?? data.title, questions, meta: e.meta ?? { schoolName: "", teacherName: "", subject: "", grade: "", durationMinutes: 45 } };
+}
+
+export async function deleteBank(id: string) {
+  const { error } = await db.from("exam_history").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }

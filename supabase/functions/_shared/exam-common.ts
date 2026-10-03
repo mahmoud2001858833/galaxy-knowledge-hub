@@ -146,3 +146,25 @@ export async function callGeminiJson(opts: {
 }
 
 export { normText } from "./exam-normalize.ts";
+
+
+export interface UnitIn { id?: string; title: string; summary?: string; fileIndex?: number; pageStart?: number | null; pageEnd?: number | null }
+
+export function scopeText(units: UnitIn[]): string {
+  if (!units.length) return "الملف كاملاً.";
+  return "الوحدات التالية فقط من الملف (تجاهل بقية الملف تماماً ولا تسأل عن شيء خارجها):\n" +
+    units.map((u, i) => {
+      const pages = u.pageStart ? ` — الصفحات ${u.pageStart}${u.pageEnd && u.pageEnd !== u.pageStart ? `–${u.pageEnd}` : ""}` : "";
+      return `${i + 1}. «${u.title}» — الملف رقم ${u.fileIndex ?? 0}${pages}${u.summary ? ` — ${u.summary}` : ""}`;
+    }).join("\n");
+}
+
+export function sanitizeUnits(raw: unknown): UnitIn[] {
+  return (Array.isArray(raw) ? raw : []).slice(0, 80).map((u: any) => ({
+    title: String(u?.title ?? "").slice(0, 200),
+    summary: String(u?.summary ?? "").slice(0, 300),
+    fileIndex: Number.isInteger(u?.fileIndex) ? u.fileIndex : 0,
+    pageStart: Number.isInteger(u?.pageStart) ? u.pageStart : null,
+    pageEnd: Number.isInteger(u?.pageEnd) ? u.pageEnd : null,
+  })).filter((u) => u.title);
+}

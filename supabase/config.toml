@@ -276,5 +276,11 @@ verify_jwt = true
 [functions.analyze-file-units]
 verify_jwt = true
 
+[functions.discover-visuals]
+verify_jwt = true
+
+[functions.verify-crops]
+verify_jwt = true
+
 [functions.online-exam]
 verify_jwt = false

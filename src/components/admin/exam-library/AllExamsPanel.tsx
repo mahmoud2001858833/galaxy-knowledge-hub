@@ -103,6 +103,7 @@ export default function AllExamsPanel() {
                   <Badge variant="outline">{r.question_count} سؤال</Badge>
                   {r.grade && <Badge variant="secondary">{r.grade}</Badge>}
                   {r.subject && <Badge variant="secondary">{r.subject}</Badge>}
+                  {r.kind === "bank" && <Badge className="bg-purple-600">بنك أسئلة</Badge>}
                   {(r.sources?.length ?? 0) > 1 && <Badge>ملفات مدمجة ({r.sources.length})</Badge>}
                 </div>
                 <div className="truncate text-xs text-muted-foreground">المصادر: {srcText(r)}</div>

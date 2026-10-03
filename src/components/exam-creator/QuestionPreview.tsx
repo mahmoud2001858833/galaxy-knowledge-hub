@@ -79,9 +79,9 @@ export default function QuestionPreview({ q, index, showAnswer, onChange, onDele
 
       {q.figure && (
         <div className="space-y-1">
-          {q.figure.dataUrl ? (
+          {(q.figure.dataUrl || q.figure.url) ? (
             <div className="inline-block max-w-full rounded-lg border bg-white p-2">
-              <img src={q.figure.dataUrl} alt={q.figure.caption} className="max-h-72 max-w-full object-contain" />
+              <img src={q.figure.dataUrl || q.figure.url} alt={q.figure.caption} className="max-h-72 max-w-full object-contain" />
             </div>
           ) : (
             <div className="flex items-center gap-2 text-sm text-destructive"><ImageOff className="h-4 w-4" />تعذّر استخراج الشكل</div>

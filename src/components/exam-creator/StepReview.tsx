@@ -4,13 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, ArrowLeft, Eye, RotateCcw, ShieldCheck } from "lucide-react";
 import QuestionPreview from "./QuestionPreview";
-import type { GeneratedExam } from "@/lib/examCreator/types";
+import type { ExamDiagnostics, GeneratedExam } from "@/lib/examCreator/types";
+import DiagnosticsPanel from "./DiagnosticsPanel";
 
 interface Props {
   exam: GeneratedExam;
   requested: number;
   dropped: number;
   warnings: string[];
+  diagnostics: ExamDiagnostics | null;
+  backLabel: string;
   showAnswers: boolean;
   onShowAnswers: (v: boolean) => void;
   onChange: (e: GeneratedExam) => void;
@@ -18,7 +21,7 @@ interface Props {
   onNext: () => void;
 }
 
-export default function StepReview({ exam, requested, dropped, warnings, showAnswers, onShowAnswers, onChange, onBack, onNext }: Props) {
+export default function StepReview({ exam, requested, dropped, warnings, diagnostics, backLabel, showAnswers, onShowAnswers, onChange, onBack, onNext }: Props) {
   const figCount = exam.questions.filter((q) => q.figure?.dataUrl).length;
   const tblCount = exam.questions.filter((q) => q.table).length;
 
@@ -33,6 +36,8 @@ export default function StepReview({ exam, requested, dropped, warnings, showAns
           التدقيق الآلي لا يغني عن نظرة المعلم، خاصة في الجداول والأشكال والمسائل الحسابية.
         </AlertDescription>
       </Alert>
+
+      {diagnostics && <DiagnosticsPanel d={diagnostics} />}
 
       {warnings.map((w, i) => (
         <Alert key={i} variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{w}</AlertDescription></Alert>
@@ -58,7 +63,7 @@ export default function StepReview({ exam, requested, dropped, warnings, showAns
 
       <div className="flex items-center justify-between pt-2">
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onBack}><RotateCcw className="ml-2 h-4 w-4" />تعديل الإعدادات وإعادة التوليد</Button>
+          <Button variant="outline" onClick={onBack}><RotateCcw className="ml-2 h-4 w-4" />{backLabel}</Button>
         </div>
         <Button disabled={exam.questions.length === 0} onClick={onNext}>
           اعتماد والانتقال للتنزيل والنشر<ArrowLeft className="mr-2 h-4 w-4" />

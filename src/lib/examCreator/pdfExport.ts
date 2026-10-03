@@ -76,7 +76,7 @@ function answerArea(q: ExamQuestion): string {
   return "";
 }
 
-function questionBlock(q: ExamQuestion, no: number, figNo: number): Block {
+function questionBlock(q: ExamQuestion, no: number, figNo: number, bank = false): Block {
   return {
     html: `<div style="display:flex;gap:10px;align-items:flex-start">
       <div style="flex:none;width:30px;height:30px;border-radius:50%;background:${NAVY};color:#fff;display:flex;align-items:center;justify-content:center;line-height:1;font-weight:700;font-size:14px;margin-top:1px"><span style="${nudge(0.28)}">${no}</span></div>
@@ -84,9 +84,21 @@ function questionBlock(q: ExamQuestion, no: number, figNo: number): Block {
         <div style="font-size:15px;line-height:1.85;color:${INK};font-weight:600">${esc(q.question)}</div>
         ${tableHtml(q)}${figureHtml(q, figNo)}
         ${q.type === "multiple_choice" && q.options ? optionsHtml(q.options) : ""}
-        ${answerArea(q)}
+        ${bank ? bankAnswer(q) : answerArea(q)}
       </div></div>`,
   };
+}
+
+function bankAnswer(q: ExamQuestion): string {
+  let ans = q.answer;
+  if (q.type === "multiple_choice" && q.options) {
+    const i = q.options.indexOf(q.answer);
+    if (i >= 0) ans = `${LETTERS[i]}) ${q.answer}`;
+  }
+  return `<div style="margin-top:8px;padding:6px 10px;border-right:3px solid ${ACCENT};background:#f1f8fa;font-size:13px">
+    <b style="color:${ACCENT}">الإجابة:</b> ${esc(ans)}
+    ${q.explanation ? `<div style="color:${INK}">${esc(q.explanation)}</div>` : ""}
+    <div style="color:${MUTED};font-size:11px">${q.unit ? `${esc(q.unit)} · ` : ""}${q.location ? `${esc(q.location)} · ` : ""}«${esc(q.evidence)}»</div></div>`;
 }
 
 function sectionHeading(label: string, count: number, idx: number): Block {
@@ -99,7 +111,7 @@ function sectionHeading(label: string, count: number, idx: number): Block {
   };
 }
 
-function headerBlock(exam: GeneratedExam, mode: "student" | "key"): Block {
+function headerBlock(exam: GeneratedExam, mode: "student" | "key" | "bank"): Block {
   const m = exam.meta;
   const chips = [
     m.subject && `المادة: ${m.subject}`,
@@ -110,7 +122,7 @@ function headerBlock(exam: GeneratedExam, mode: "student" | "key"): Block {
   return {
     html: `<div style="text-align:center">
       ${m.schoolName ? `<div style="font-size:14px;color:${MUTED};font-weight:600;margin-bottom:4px">${esc(m.schoolName)}</div>` : ""}
-      <div style="font-size:26px;font-weight:900;color:${NAVY};line-height:1.5">${esc(exam.title)}${mode === "key" ? " — نموذج الإجابة" : ""}</div>
+      <div style="font-size:26px;font-weight:900;color:${NAVY};line-height:1.5">${esc(exam.title)}${mode === "key" ? " — نموذج الإجابة" : mode === "bank" ? " — بنك أسئلة" : ""}</div>
       <div style="height:3px;background:linear-gradient(90deg,transparent,${ACCENT},transparent);margin:8px 0 10px"></div>
       <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:8px">
         ${chips.map((c) => `<span style="display:inline-block;font-size:12.5px;line-height:1.6;padding:3px 14px 5px;border:1px solid ${LINE};border-radius:999px;color:${INK};background:#f6f9fc">${esc(c)}</span>`).join("")}
@@ -140,6 +152,16 @@ function studentBlocks(exam: GeneratedExam): Block[] {
       if (q.figure?.dataUrl) fig++;
       blocks.push(questionBlock(q, n, fig));
     });
+  });
+  return blocks;
+}
+
+function bankBlocks(exam: GeneratedExam): Block[] {
+  const blocks: Block[] = [headerBlock(exam, "bank")];
+  let n = 0, fig = 0;
+  groupByType(exam.questions).forEach(([type, qs], si) => {
+    blocks.push(sectionHeading(QTYPE_LABEL[type], qs.length, si));
+    qs.forEach((q) => { n++; if (q.figure?.dataUrl) fig++; blocks.push(questionBlock(q, n, fig, true)); });
   });
   return blocks;
 }
@@ -229,7 +251,7 @@ function buildPages(blocks: Block[], root: HTMLElement, pageTitle: string): HTML
   return pages.map((p) => p.page);
 }
 
-export type PdfMode = "student" | "key" | "both";
+export type PdfMode = "student" | "key" | "both" | "bank";
 
 export async function downloadExamPdf(
   exam: GeneratedExam,
@@ -254,8 +276,9 @@ export async function downloadExamPdf(
 
   try {
     const sets: { blocks: Block[]; title: string }[] = [];
-    if (mode !== "key") sets.push({ blocks: studentBlocks(exam), title: exam.title });
-    if (mode !== "student") sets.push({ blocks: keyBlocks(exam), title: `${exam.title} — نموذج الإجابة` });
+    if (mode === "bank") throw new Error("طباعة البنك تتم عبر نافذة الطباعة (openPrintWindow)");
+    if (mode === "student" || mode === "both") sets.push({ blocks: studentBlocks(exam), title: exam.title });
+    if (mode === "key" || mode === "both") sets.push({ blocks: keyBlocks(exam), title: `${exam.title} — نموذج الإجابة` });
 
     // لكل مجموعة ترقيم صفحات مستقل
     const pageEls: HTMLElement[] = [];
@@ -295,8 +318,9 @@ export function buildPrintHtml(exam: GeneratedExam, mode: PdfMode): string {
     const render = (blocks: Block[], pageBreakBefore: boolean) =>
       blocks.map((b, i) =>
         `<div class="blk${b.keepWithNext ? " keep" : ""}${pageBreakBefore && i === 0 ? " pb" : ""}">${b.html}</div>`).join("");
-    if (mode !== "key") parts.push(render(studentBlocks(exam), false));
-    if (mode !== "student") parts.push(render(keyBlocks(exam), mode === "both"));
+    if (mode === "bank") parts.push(render(bankBlocks(exam), false));
+    if (mode === "student" || mode === "both") parts.push(render(studentBlocks(exam), false));
+    if (mode === "key" || mode === "both") parts.push(render(keyBlocks(exam), mode === "both"));
     return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <title>${esc(exam.title)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

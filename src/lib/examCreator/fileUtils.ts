@@ -1,4 +1,5 @@
-import type { FigureRef, UnitInfo } from "./types";
+import type { UnitInfo } from "./types";
+import { applyTightBox, contentRect, expandRect, sensibleTightBox, type Rect } from "./trim";
 
 export const MAX_FILES = 8;
 export const MAX_INLINE_BYTES_PER_FILE = 10 * 1024 * 1024;
@@ -215,24 +216,7 @@ export async function prepareFile(file: File, onProgress?: Progress): Promise<Pr
   throw new Error(`صيغة "${file.name}" غير مدعومة. المسموح: PDF, DOCX, TXT, MD, PNG, JPG, WEBP`);
 }
 
-// ───────── قص الأشكال من الملف الأصلي ─────────
-async function renderPdfPage(file: File, pageNum: number): Promise<HTMLCanvasElement> {
-  const pdf = await loadPdf(file);
-  if (pageNum < 1 || pageNum > pdf.numPages) throw new Error(`الصفحة ${pageNum} غير موجودة (الملف ${pdf.numPages} صفحة)`);
-  const page = await pdf.getPage(pageNum);
-  const base = page.getViewport({ scale: 1 });
-  const scale = Math.min(3, Math.max(1.5, 2200 / base.width)); // دقة عالية للخطوط الرفيعة والتسميات
-  const viewport = page.getViewport({ scale });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.floor(viewport.width);
-  canvas.height = Math.floor(viewport.height);
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  await page.render({ canvas, canvasContext: ctx, viewport }).promise;
-  return canvas;
-}
-
+// ───────── قصّ الأشكال من الملف الأصلي (الجزء المهم فقط) ─────────
 async function loadImageCanvas(file: File): Promise<HTMLCanvasElement> {
   const url = URL.createObjectURL(file);
   try {
@@ -249,62 +233,141 @@ async function loadImageCanvas(file: File): Promise<HTMLCanvasElement> {
   }
 }
 
-/** يقص الشكل المحدد من الملف الأصلي ويعيد نسخة من FigureRef مع dataUrl (أو cropError). */
-export async function cropFigure(
-  files: PreparedFile[], fig: FigureRef, cache?: Map<string, HTMLCanvasElement>,
-): Promise<FigureRef> {
-  try {
-    const pf = files[fig.fileIndex];
-    if (!pf || !pf.figurable) throw new Error("الملف لا يدعم استخراج الأشكال");
-    const key = `${fig.fileIndex}:${pf.kind === "pdf" ? fig.page : 1}`;
-    let canvas = cache?.get(key);
-    if (!canvas) {
-      canvas = pf.kind === "pdf" ? await renderPdfPage(pf.source, fig.page) : await loadImageCanvas(pf.source);
-      cache?.set(key, canvas);
-    }
-    const [y0, x0, y1, x1] = fig.box;
-    const pad = 0.006; // هامش صغير جداً حتى لا تُقصّ التسميات ولا يدخل نص مجاور
-    const sx = Math.max(0, Math.floor((x0 / 1000 - pad) * canvas.width));
-    const sy = Math.max(0, Math.floor((y0 / 1000 - pad) * canvas.height));
-    const sw = Math.min(canvas.width - sx, Math.ceil(((x1 - x0) / 1000 + 2 * pad) * canvas.width));
-    const sh = Math.min(canvas.height - sy, Math.ceil(((y1 - y0) / 1000 + 2 * pad) * canvas.height));
-    if (sw < 40 || sh < 40) throw new Error("منطقة الشكل صغيرة جداً");
-    const out = document.createElement("canvas");
-    out.width = sw;
-    out.height = sh;
-    const octx = out.getContext("2d")!;
-    octx.fillStyle = "#fff";
-    octx.fillRect(0, 0, sw, sh);
-    octx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
-    return { ...fig, dataUrl: out.toDataURL("image/jpeg", 0.92), width: sw, height: sh, cropError: undefined };
-  } catch (e: any) {
-    return { ...fig, dataUrl: undefined, cropError: e?.message || "تعذّر قص الشكل" };
-  }
+async function renderPdfPage(file: File, pageNum: number): Promise<HTMLCanvasElement> {
+  const pdf = await loadPdf(file);
+  if (pageNum < 1 || pageNum > pdf.numPages) throw new Error(`الصفحة ${pageNum} غير موجودة (الملف ${pdf.numPages} صفحة)`);
+  return renderPageCanvas(file, pageNum, 2200); // دقة عالية للخطوط الرفيعة والتسميات
 }
 
-/** يقص كل أشكال الأسئلة (يعيد استخدام الصفحة المرسومة). الأسئلة التي يتعذّر قص شكلها تُحذف ويُعاد عددها. */
-export async function cropAllFigures<T extends { id: number; figure?: FigureRef }>(
-  files: PreparedFile[], questions: T[], onProgress?: (done: number, total: number) => void,
-): Promise<{ questions: T[]; removed: number }> {
+export interface CropJob { id: string; fileIndex: number; page: number; box: [number, number, number, number]; caption: string }
+export interface CropResult { id: string; dataUrl: string; width: number; height: number }
+export interface CropReject { id: string; reason: string }
+export interface CropVerdict { id: string; ok: boolean; complete: boolean; matches: boolean; tight: number[] | null; reason: string }
+export type VerifyFn = (items: { id: string; caption: string; base64: string }[]) => Promise<CropVerdict[]>;
+
+function cropToCanvas(src: HTMLCanvasElement, r: Rect): HTMLCanvasElement {
+  const out = document.createElement("canvas");
+  out.width = Math.max(1, Math.round(r.w));
+  out.height = Math.max(1, Math.round(r.h));
+  const ctx = out.getContext("2d")!;
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(src, r.x, r.y, r.w, r.h, 0, 0, out.width, out.height);
+  return out;
+}
+
+/** يقصّ الهوامش البيضاء حول المحتوى داخل المستطيل (فيبقى الشكل نفسه فقط). */
+function trimmed(src: HTMLCanvasElement, r: Rect): Rect {
+  const c = cropToCanvas(src, r);
+  const img = c.getContext("2d")!.getImageData(0, 0, c.width, c.height);
+  const cr = contentRect(img.data, c.width, c.height, 6);
+  c.width = c.height = 0;
+  if (!cr || cr.w < 40 || cr.h < 40) return r;
+  return { x: r.x + cr.x, y: r.y + cr.y, w: cr.w, h: cr.h };
+}
+
+function boxToRect(box: number[], cw: number, ch: number, pad = 0.004): Rect {
+  const [y0, x0, y1, x1] = box;
+  const x = Math.max(0, Math.floor((x0 / 1000 - pad) * cw)), y = Math.max(0, Math.floor((y0 / 1000 - pad) * ch));
+  return { x, y, w: Math.min(cw - x, Math.ceil(((x1 - x0) / 1000 + 2 * pad) * cw)), h: Math.min(ch - y, Math.ceil(((y1 - y0) / 1000 + 2 * pad) * ch)) };
+}
+
+const jpegB64 = (c: HTMLCanvasElement, maxW: number, q: number) => {
+  let src = c;
+  if (c.width > maxW) {
+    src = document.createElement("canvas");
+    src.width = maxW;
+    src.height = Math.round((c.height * maxW) / c.width);
+    src.getContext("2d")!.drawImage(c, 0, 0, src.width, src.height);
+  }
+  return src.toDataURL("image/jpeg", q).split(",")[1] ?? "";
+};
+
+/**
+ * قصّ دقيق لقائمة أشكال:
+ * 1) قصّ بالصندوق المرصود  2) قصّ الهوامش البيضاء تلقائياً  3) فحص بالذكاء الاصطناعي (كامل؟ يطابق الوصف؟ صندوق أضيق؟)
+ * 4) تطبيق الصندوق الأضيق  5) عند «مقطوع» يُوسَّع الصندوق ويُعاد الفحص مرة واحدة. ما لا يجتاز يُرفض مع السبب.
+ */
+export async function cropFiguresTight(
+  files: PreparedFile[], jobs: CropJob[], verify: VerifyFn | null, onProgress?: (msg: string) => void,
+): Promise<{ results: Map<string, CropResult>; rejected: CropReject[] }> {
   const cache = new Map<string, HTMLCanvasElement>();
-  const withFig = questions.filter((q) => q.figure);
-  const order = [...withFig].sort((a, b) => a.figure!.fileIndex - b.figure!.fileIndex || a.figure!.page - b.figure!.page);
-  const cropped = new Map<number, FigureRef>();
-  let done = 0;
-  for (const q of order) {
-    cropped.set(q.id, await cropFigure(files, q.figure!, cache));
-    onProgress?.(++done, order.length);
-    if (cache.size > 4) cache.delete(cache.keys().next().value as string); // نحدّ الذاكرة
+  const rejected: CropReject[] = [];
+  type St = { job: CropJob; page: HTMLCanvasElement; rect: Rect };
+  const states: St[] = [];
+
+  const sorted = [...jobs].sort((a, b) => a.fileIndex - b.fileIndex || a.page - b.page);
+  let n = 0;
+  for (const job of sorted) {
+    try {
+      const pf = files[job.fileIndex];
+      if (!pf || !pf.figurable) throw new Error("الملف لا يدعم استخراج الأشكال");
+      const key = `${job.fileIndex}:${pf.kind === "pdf" ? job.page : 1}`;
+      let page = cache.get(key);
+      if (!page) {
+        page = pf.kind === "pdf" ? await renderPdfPage(pf.source, job.page) : await loadImageCanvas(pf.source);
+        cache.set(key, page);
+        if (cache.size > 4) cache.delete(cache.keys().next().value as string);
+      }
+      const rect = trimmed(page, boxToRect(job.box, page.width, page.height));
+      if (rect.w < 40 || rect.h < 40) throw new Error("منطقة الشكل صغيرة جداً");
+      states.push({ job, page, rect });
+    } catch (e: any) {
+      rejected.push({ id: job.id, reason: e?.message || "تعذّر القص" });
+    }
+    onProgress?.(`قصّ الأشكال (${++n}/${sorted.length})...`);
   }
-  const out: T[] = [];
-  let removed = 0;
-  for (const q of questions) {
-    if (!q.figure) { out.push(q); continue; }
-    const f = cropped.get(q.id)!;
-    if (f.dataUrl) out.push({ ...q, figure: f });
-    else removed++;
+
+  const alive = new Map(states.map((s) => [s.job.id, s]));
+  const runVerify = async (list: St[]): Promise<Map<string, CropVerdict>> => {
+    const out = new Map<string, CropVerdict>();
+    if (!verify) return out;
+    for (let i = 0; i < list.length; i += 10) {
+      const chunk = list.slice(i, i + 10);
+      onProgress?.(`فحص جودة الأشكال بالذكاء الاصطناعي (${Math.min(i + 10, list.length)}/${list.length})...`);
+      const items = chunk.map((s) => {
+        const c = cropToCanvas(s.page, s.rect);
+        const b = jpegB64(c, 720, 0.72);
+        c.width = c.height = 0;
+        return { id: s.job.id, caption: s.job.caption, base64: b };
+      });
+      try { (await verify(items)).forEach((v) => out.set(v.id, v)); }
+      catch (e) { console.warn("verify-crops failed; keeping trimmed crops:", e); return new Map(); } // الفحص غير متاح: نبقي القص المضيَّق
+    }
+    return out;
+  };
+
+  const applyVerdicts = (list: St[], verdicts: Map<string, CropVerdict>, allowRetry: boolean): St[] => {
+    const retry: St[] = [];
+    for (const s of list) {
+      const v = verdicts.get(s.job.id);
+      if (!v) continue; // بلا فحص
+      if (v.ok || (v.complete && v.matches)) {
+        if (sensibleTightBox(v.tight)) s.rect = trimmed(s.page, applyTightBox(s.rect, v.tight)); // الجزء المهم فقط
+      } else if (!v.complete && allowRetry) {
+        s.rect = trimmed(s.page, expandRect(s.rect, 0.3, s.page.width, s.page.height));
+        retry.push(s);
+      } else {
+        alive.delete(s.job.id);
+        rejected.push({ id: s.job.id, reason: v.reason || (v.matches ? "الشكل غير كامل" : "لا يطابق الوصف") });
+      }
+    }
+    return retry;
+  };
+
+  if (verify && states.length) {
+    const first = await runVerify(states);
+    const retry = applyVerdicts(states, first, true);
+    if (retry.length) applyVerdicts(retry, await runVerify(retry), false);
   }
-  return { questions: out, removed };
+
+  const results = new Map<string, CropResult>();
+  for (const s of alive.values()) {
+    const c = cropToCanvas(s.page, s.rect);
+    results.set(s.job.id, { id: s.job.id, dataUrl: c.toDataURL("image/jpeg", 0.92), width: c.width, height: c.height });
+    c.width = c.height = 0;
+  }
+  return { results, rejected };
 }
 
 // ───────── حمولة التوليد للملفات الكبيرة ─────────

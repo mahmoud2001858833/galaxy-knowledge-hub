@@ -39,6 +39,8 @@ export interface TableData {
 }
 
 export interface FigureRef {
+  /** معرّف الشكل في فهرس الأشكال المرصودة */
+  id?: string;
   fileIndex: number;
   page: number;
   /** [ymin, xmin, ymax, xmax] بإحداثيات 0..1000 */
@@ -83,13 +85,37 @@ export interface GeneratedExam {
   meta: ExamMeta;
 }
 
+export interface CatalogFigure { id: string; fileIndex: number; page: number; box: [number, number, number, number]; caption: string; hasLabels: boolean; unit?: string }
+export interface CatalogTable { id: string; fileIndex: number; page: number; caption?: string; headers: string[]; rows: string[][]; unit?: string }
+export interface Catalog { figures: CatalogFigure[]; tables: CatalogTable[] }
+
+export interface BatchDiagnostics {
+  catalog: { figures: number; tables: number };
+  asked: { figures: number; tables: number };
+  delivered: { figures: number; tables: number };
+  dropped: Record<string, number>;
+}
+
+/** تقرير شفاف عن الأشكال والجداول والأسئلة المحذوفة، يُعرض للمعلم في المراجعة. */
+export interface ExamDiagnostics extends BatchDiagnostics {
+  discovered: { figures: number; tables: number; stats: Record<string, number> };
+  cropRejected: { id: string; reason: string }[];
+  batches: { total: number; failed: number };
+  duplicatesRemoved: number;
+}
+
 export interface GenerateResponse {
   exam: { title: string; questions: ExamQuestion[] };
   requested: number;
   delivered: number;
   dropped: number;
   warnings: string[];
+  diagnostics?: BatchDiagnostics;
 }
+
+export type CreatorMode = "exam" | "bank";
+export const MAX_EXAM_QUESTIONS = 100;
+export const MAX_BANK_QUESTIONS = 1000;
 
 export interface OnlineSettings {
   durationMinutes: number;
