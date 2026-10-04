@@ -103,12 +103,15 @@ export function buildFileParts(files: InFile[]): any[] {
   return parts;
 }
 
-function apiKeys(): string[] {
-  return [Deno.env.get("GEMINI_API_KEY")].filter(Boolean) as string[];
+function getApiKey(): { key: string; isOpenRouter: boolean } {
+  const or = Deno.env.get("OPENROUTER_API_KEY");
+  if (or) return { key: or, isOpenRouter: true };
+  const gemini = Deno.env.get("GEMINI_API_KEY");
+  if (gemini) return { key: gemini, isOpenRouter: false };
+  throw new GeminiError("auth", "لم يتم ضبط مفتاح OPENROUTER_API_KEY أو GEMINI_API_KEY في السيرفر");
 }
 
 export type GeminiErrCode = "rate_limited" | "timeout" | "auth" | "unavailable" | "invalid";
-/** خطأ مصنّف من Gemini: يُترجم إلى حالة HTTP مناسبة ليتصرف العميل بذكاء (انتظار/تقسيم/إيقاف). */
 export class GeminiError extends Error {
   constructor(public code: GeminiErrCode, message: string, public retryAfter?: number) { super(message); }
   get status() {
@@ -116,7 +119,6 @@ export class GeminiError extends Error {
   }
 }
 
-/** يقرأ مهلة الانتظار المقترحة من رد 429 (retryDelay: "23s") أو ترويسة Retry-After. */
 export function parseRetryDelay(body: string, header?: string | null): number | undefined {
   const m = body.match(/"retryDelay"\s*:\s*"([\d.]+)s"/);
   if (m) return Math.ceil(Number(m[1]));
@@ -124,17 +126,82 @@ export function parseRetryDelay(body: string, header?: string | null): number | 
   return Number.isFinite(h) && h > 0 ? Math.ceil(h) : undefined;
 }
 
-/**
- * استدعاء Gemini واحد محدود زمنياً: لكل طلب مهلة، وللمجموع موعد نهائي (deadlineAt) لا نتجاوزه
- * حتى لا يقتل Supabase الدالة (~150 ثانية) فيضيع الرد وتُخفى الأسباب.
- */
 export async function callGeminiJson(opts: {
   system: string; parts: any[]; schema: any; temperature: number; maxTokens?: number; thinking?: number;
   deadlineAt?: number; perRequestMs?: number;
 }): Promise<any> {
-  const keys = apiKeys();
-  if (keys.length === 0) throw new GeminiError("auth", "GEMINI_API_KEY غير مضبوط في أسرار الدالة");
+  const { key, isOpenRouter } = getApiKey();
   const deadline = opts.deadlineAt ?? Date.now() + 100_000;
+
+  if (isOpenRouter) {
+    const left = deadline - Date.now();
+    if (left < 4000) throw new GeminiError("timeout", "انتهت مهلة الطلب قبل إرساله");
+
+    const content: any[] = [];
+    for (const p of opts.parts) {
+      if (p.text) content.push({ type: "text", text: p.text });
+      if (p.inlineData) {
+        content.push({
+          type: "image_url",
+          image_url: { url: `data:${p.inlineData.mimeType};base64,${p.inlineData.data}` },
+        });
+      }
+    }
+
+    const messages = [
+      { role: "system", content: opts.system + "\n\nStrict requirement: Output valid raw JSON only matching the requested schema." },
+      { role: "user", content },
+    ];
+
+    const models = ["google/gemini-2.5-flash", "google/gemini-2.0-flash-001"];
+    let lastErr = "";
+
+    for (const model of models) {
+      try {
+        const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${key}`,
+            "HTTP-Referer": "https://galaxy-knowledge-hub.com",
+            "X-Title": "Galaxy Knowledge Hub",
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            temperature: opts.temperature,
+            max_tokens: opts.maxTokens ?? 16000,
+            response_format: { type: "json_object" },
+          }),
+          signal: AbortSignal.timeout(Math.min(left, opts.perRequestMs ?? 90_000)),
+        });
+
+        if (r.ok) {
+          const res = await r.json();
+          const txt = res.choices?.[0]?.message?.content ?? "";
+          try {
+            return JSON.parse(txt);
+          } catch {
+            const m = txt.match(/\{[\s\S]*\}/);
+            if (m) return JSON.parse(m[0]);
+            throw new Error("Invalid JSON returned");
+          }
+        }
+
+        const t = await r.text();
+        lastErr = `${model} ${r.status}: ${t.slice(0, 200)}`;
+        if (r.status === 429) throw new GeminiError("rate_limited", lastErr);
+        if (r.status === 401 || r.status === 402) throw new GeminiError("auth", "رصيد OpenRouter غير كافٍ أو المفتاح غير صالح");
+      } catch (e: any) {
+        if (e instanceof GeminiError) throw e;
+        lastErr = e?.message || "خطأ اتصال";
+      }
+    }
+    throw new GeminiError("unavailable", `فشل الاتصال بـ OpenRouter: ${lastErr}`);
+  }
+
+  // الاتصال المباشر البديل في حال عدم وجود مفتاح OpenRouter
+  const keys = [key];
   const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: opts.system }] },
@@ -144,57 +211,27 @@ export async function callGeminiJson(opts: {
       maxOutputTokens: opts.maxTokens ?? 16000,
       responseMimeType: "application/json",
       responseSchema: opts.schema,
-      thinkingConfig: { thinkingBudget: opts.thinking ?? 512 },
     },
   });
-  let lastErr = "", lastCode: GeminiErrCode = "unavailable", retryAfter: number | undefined;
-  let tries5xx = 0;
+  let lastErr = "";
   for (const model of models) {
-    for (const key of keys) {
-      for (;;) {
-        const left = deadline - Date.now();
-        if (left < 4000) throw new GeminiError("timeout", lastErr || "انتهت مهلة الذكاء الاصطناعي", retryAfter);
-        let r: Response;
-        try {
-          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body,
-            signal: AbortSignal.timeout(Math.min(left, opts.perRequestMs ?? 90_000)),
-          });
-        } catch (e: any) {
-          lastCode = "timeout"; lastErr = `${model}: ${e?.name === "TimeoutError" || e?.name === "AbortError" ? "تأخر الرد" : e?.message}`;
-          break; // نجرّب المفتاح/النموذج التالي إن بقي وقت
-        }
-        if (r.ok) {
-          const j = await r.json();
-          const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
-          try { return JSON.parse(txt); } catch {
-            const m = txt.match(/\{[\s\S]*\}/);
-            if (m) { try { return JSON.parse(m[0]); } catch { /* fallthrough */ } }
-            lastCode = "invalid"; lastErr = `${model}: رد غير صالح (قد يكون قُطع لطوله)`;
-            break;
-          }
-        }
-        const t = await r.text();
-        lastErr = `${model} ${r.status}: ${t.slice(0, 200)}`;
-        if (r.status === 429) {
-          lastCode = "rate_limited";
-          const ra = parseRetryDelay(t, r.headers.get("retry-after"));
-          retryAfter = Math.min(ra ?? 20, retryAfter ?? 999);
-          break; // مفتاح/نموذج آخر قد يكون له حصة
-        }
-        if (r.status === 401 || r.status === 403 || r.status === 400) {
-          lastCode = r.status === 400 ? "invalid" : "auth";
-          break;
-        }
-        lastCode = "unavailable";
-        if (r.status >= 500 && tries5xx++ < 1) { await new Promise((res) => setTimeout(res, 1500)); continue; }
-        break;
+    for (const k of keys) {
+      const left = deadline - Date.now();
+      if (left < 4000) throw new GeminiError("timeout", "انتهت المهلة");
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body,
+        signal: AbortSignal.timeout(Math.min(left, opts.perRequestMs ?? 90_000)),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
+        return JSON.parse(txt);
       }
+      lastErr = await r.text();
     }
   }
-  throw new GeminiError(lastCode, `فشل الاتصال بالذكاء الاصطناعي: ${lastErr}`, retryAfter);
+  throw new GeminiError("unavailable", lastErr);
 }
-
 export { normText } from "./exam-normalize.ts";
 
 
