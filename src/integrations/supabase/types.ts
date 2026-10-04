@@ -3135,6 +3135,116 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_history: {
+        Row: {
+          created_at: string
+          exam: Json
+          grade: string | null
+          id: string
+          online_exam_id: string | null
+          options: Json
+          owner_id: string
+          question_count: number
+          request: string | null
+          sources: Json
+          subject: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam: Json
+          grade?: string | null
+          id?: string
+          online_exam_id?: string | null
+          options?: Json
+          owner_id: string
+          question_count?: number
+          request?: string | null
+          sources?: Json
+          subject?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam?: Json
+          grade?: string | null
+          id?: string
+          online_exam_id?: string | null
+          options?: Json
+          owner_id?: string
+          question_count?: number
+          request?: string | null
+          sources?: Json
+          subject?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_history_online_exam_id_fkey"
+            columns: ["online_exam_id"]
+            isOneToOne: false
+            referencedRelation: "online_exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_library_files: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_name: string
+          grade: string | null
+          id: string
+          is_published: boolean
+          mime_type: string
+          page_count: number | null
+          size_bytes: number
+          storage_path: string
+          subject: string | null
+          title: string
+          units: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_name: string
+          grade?: string | null
+          id?: string
+          is_published?: boolean
+          mime_type: string
+          page_count?: number | null
+          size_bytes: number
+          storage_path: string
+          subject?: string | null
+          title: string
+          units?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_name?: string
+          grade?: string | null
+          id?: string
+          is_published?: boolean
+          mime_type?: string
+          page_count?: number | null
+          size_bytes?: number
+          storage_path?: string
+          subject?: string | null
+          title?: string
+          units?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       generated_codes: {
         Row: {
           code: string
@@ -5299,6 +5409,28 @@ export type Database = {
       adjust_user_score: {
         Args: { points_adjustment: number; user_id: string }
         Returns: undefined
+      }
+      admin_exam_history: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: {
+          created_at: string
+          grade: string
+          id: string
+          kind: string
+          online_active: boolean
+          online_exam_id: string
+          online_token: string
+          owner_email: string
+          owner_id: string
+          owner_name: string
+          question_count: number
+          request: string
+          sources: Json
+          subject: string
+          submissions: number
+          title: string
+          total_count: number
+        }[]
       }
       calculate_user_level: { Args: { usage_minutes: number }; Returns: number }
       get_admin_teacher_access_level: {
