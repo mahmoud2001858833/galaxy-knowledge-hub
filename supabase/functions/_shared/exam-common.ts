@@ -104,11 +104,7 @@ export function buildFileParts(files: InFile[]): any[] {
 }
 
 function apiKeys(): string[] {
-  return [
-    Deno.env.get("GEMINI_API_KEY"),
-    Deno.env.get("GEMINI_API_KEY_NEW"),
-    Deno.env.get("GOOGLE_AI_API_KEY"),
-  ].filter(Boolean) as string[];
+  return [Deno.env.get("GEMINI_API_KEY")].filter(Boolean) as string[];
 }
 
 export type GeminiErrCode = "rate_limited" | "timeout" | "auth" | "unavailable" | "invalid";
