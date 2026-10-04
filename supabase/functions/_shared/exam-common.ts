@@ -25,7 +25,11 @@ export async function requireUser(req: Request): Promise<string | null> {
 
 export interface InPage { page: number; mimeType: string; base64: string }
 /** ملف: إمّا مضمّن كاملاً (base64) أو نص، أو نص + صور صفحات محددة (للملفات الكبيرة جداً). */
-export interface InFile { name: string; mimeType?: string; base64?: string; text?: string; pages?: InPage[] }
+export interface InFile {
+  name: string; mimeType?: string; base64?: string; text?: string; pages?: InPage[];
+  /** للملف المقصوص: pageMap[k-1] = رقم الصفحة الأصلية للصفحة k في الملف المرفق */
+  pageMap?: number[];
+}
 
 export const MAX_INLINE_BYTES = 14 * 1024 * 1024;
 export const MAX_TEXT_CHARS = 600_000;
@@ -38,6 +42,7 @@ export function validateFiles(files: unknown): string | null {
   let inline = 0;
   for (const f of files as InFile[]) {
     if (!f || typeof f.name !== "string") return "بيانات الملف غير صالحة";
+    if (f.pageMap !== undefined && (!Array.isArray(f.pageMap) || f.pageMap.length > 400 || f.pageMap.some((n) => !Number.isInteger(n) || n < 1))) return "خريطة الصفحات غير صالحة";
     if (f.base64) {
       if (!INLINE_MIME.includes(f.mimeType || "")) return `نوع الملف غير مدعوم: ${f.name}`;
       inline += Math.floor(f.base64.length * 0.75);
@@ -57,11 +62,25 @@ export function validateFiles(files: unknown): string | null {
   return null;
 }
 
+/** يصف للنموذج مقابلة صفحات الملف المقصوص بصفحات الأصل (بنطاقات متتالية مضغوطة). */
+export function pageMapNote(map?: number[]): string {
+  if (!Array.isArray(map) || !map.length) return "";
+  const runs: string[] = [];
+  let k = 0;
+  while (k < map.length) {
+    let e = k;
+    while (e + 1 < map.length && map[e + 1] === map[e] + 1) e++;
+    runs.push(e === k ? `${k + 1}→${map[k]}` : `${k + 1}–${e + 1}→${map[k]}–${map[e]}`);
+    k = e + 1;
+  }
+  return `\n(هذا الملف مقتطع من الأصل. مقابلة أرقام الصفحات: ${runs.join("، ")} — استعمل رقم الصفحة الأصلي دائماً في location وفي أي إشارة لصفحة)`;
+}
+
 export function buildFileParts(files: InFile[]): any[] {
   const parts: any[] = [];
   files.forEach((f, i) => {
     if (f.base64) {
-      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` });
+      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` + pageMapNote(f.pageMap) });
       parts.push({ inlineData: { mimeType: f.mimeType!, data: f.base64.replace(/^data:[^;]+;base64,/, "") } });
       return;
     }
@@ -92,57 +111,92 @@ function apiKeys(): string[] {
   ].filter(Boolean) as string[];
 }
 
+export type GeminiErrCode = "rate_limited" | "timeout" | "auth" | "unavailable" | "invalid";
+/** خطأ مصنّف من Gemini: يُترجم إلى حالة HTTP مناسبة ليتصرف العميل بذكاء (انتظار/تقسيم/إيقاف). */
+export class GeminiError extends Error {
+  constructor(public code: GeminiErrCode, message: string, public retryAfter?: number) { super(message); }
+  get status() {
+    return { rate_limited: 429, timeout: 504, auth: 502, unavailable: 502, invalid: 502 }[this.code];
+  }
+}
+
+/** يقرأ مهلة الانتظار المقترحة من رد 429 (retryDelay: "23s") أو ترويسة Retry-After. */
+export function parseRetryDelay(body: string, header?: string | null): number | undefined {
+  const m = body.match(/"retryDelay"\s*:\s*"([\d.]+)s"/);
+  if (m) return Math.ceil(Number(m[1]));
+  const h = Number(header);
+  return Number.isFinite(h) && h > 0 ? Math.ceil(h) : undefined;
+}
+
+/**
+ * استدعاء Gemini واحد محدود زمنياً: لكل طلب مهلة، وللمجموع موعد نهائي (deadlineAt) لا نتجاوزه
+ * حتى لا يقتل Supabase الدالة (~150 ثانية) فيضيع الرد وتُخفى الأسباب.
+ */
 export async function callGeminiJson(opts: {
   system: string; parts: any[]; schema: any; temperature: number; maxTokens?: number; thinking?: number;
+  deadlineAt?: number; perRequestMs?: number;
 }): Promise<any> {
   const keys = apiKeys();
-  if (keys.length === 0) throw new Error("GEMINI_API_KEY غير مضبوط في أسرار الدالة");
+  if (keys.length === 0) throw new GeminiError("auth", "GEMINI_API_KEY غير مضبوط في أسرار الدالة");
+  const deadline = opts.deadlineAt ?? Date.now() + 100_000;
   const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
-  let lastErr = "";
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: opts.system }] },
+    contents: [{ role: "user", parts: opts.parts }],
+    generationConfig: {
+      temperature: opts.temperature,
+      maxOutputTokens: opts.maxTokens ?? 16000,
+      responseMimeType: "application/json",
+      responseSchema: opts.schema,
+      thinkingConfig: { thinkingBudget: opts.thinking ?? 512 },
+    },
+  });
+  let lastErr = "", lastCode: GeminiErrCode = "unavailable", retryAfter: number | undefined;
+  let tries5xx = 0;
   for (const model of models) {
     for (const key of keys) {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: opts.system }] },
-              contents: [{ role: "user", parts: opts.parts }],
-              generationConfig: {
-                temperature: opts.temperature,
-                maxOutputTokens: opts.maxTokens ?? 24000,
-                responseMimeType: "application/json",
-                responseSchema: opts.schema,
-                thinkingConfig: { thinkingBudget: opts.thinking ?? 1024 },
-              },
-            }),
-          },
-        );
+      for (;;) {
+        const left = deadline - Date.now();
+        if (left < 4000) throw new GeminiError("timeout", lastErr || "انتهت مهلة الذكاء الاصطناعي", retryAfter);
+        let r: Response;
+        try {
+          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body,
+            signal: AbortSignal.timeout(Math.min(left, opts.perRequestMs ?? 90_000)),
+          });
+        } catch (e: any) {
+          lastCode = "timeout"; lastErr = `${model}: ${e?.name === "TimeoutError" || e?.name === "AbortError" ? "تأخر الرد" : e?.message}`;
+          break; // نجرّب المفتاح/النموذج التالي إن بقي وقت
+        }
         if (r.ok) {
           const j = await r.json();
           const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
-          try {
-            return JSON.parse(txt);
-          } catch {
+          try { return JSON.parse(txt); } catch {
             const m = txt.match(/\{[\s\S]*\}/);
             if (m) { try { return JSON.parse(m[0]); } catch { /* fallthrough */ } }
-            lastErr = "رد غير صالح من النموذج";
-            continue;
+            lastCode = "invalid"; lastErr = `${model}: رد غير صالح (قد يكون قُطع لطوله)`;
+            break;
           }
         }
         const t = await r.text();
         lastErr = `${model} ${r.status}: ${t.slice(0, 200)}`;
-        if (r.status === 429 || r.status >= 500) {
-          await new Promise((res) => setTimeout(res, 1500 * (attempt + 1)));
-          continue;
+        if (r.status === 429) {
+          lastCode = "rate_limited";
+          const ra = parseRetryDelay(t, r.headers.get("retry-after"));
+          retryAfter = Math.min(ra ?? 20, retryAfter ?? 999);
+          break; // مفتاح/نموذج آخر قد يكون له حصة
         }
+        if (r.status === 401 || r.status === 403 || r.status === 400) {
+          lastCode = r.status === 400 ? "invalid" : "auth";
+          break;
+        }
+        lastCode = "unavailable";
+        if (r.status >= 500 && tries5xx++ < 1) { await new Promise((res) => setTimeout(res, 1500)); continue; }
         break;
       }
     }
   }
-  throw new Error(`فشل الاتصال بالذكاء الاصطناعي: ${lastErr}`);
+  throw new GeminiError(lastCode, `فشل الاتصال بالذكاء الاصطناعي: ${lastErr}`, retryAfter);
 }
 
 export { normText } from "./exam-normalize.ts";

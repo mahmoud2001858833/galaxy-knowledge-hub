@@ -2,7 +2,7 @@
 // الأشكال: مواضع (صفحة + صندوق) تُقصّ من الملف الأصلي في المتصفح. الجداول: تُنسخ خلية بخلية ثم تُدقَّق مقابل الملف.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
-  buildFileParts, callGeminiJson, corsHeaders, InFile, jsonResponse, requireUser, sanitizeUnits, scopeText, validateFiles,
+  buildFileParts, callGeminiJson, corsHeaders, GeminiError, InFile, jsonResponse, requireUser, sanitizeUnits, scopeText, validateFiles,
 } from "../_shared/exam-common.ts";
 import { dedupeFigures, normFigure, normTable } from "../_shared/exam-normalize.ts";
 
@@ -76,12 +76,15 @@ const VERIFY_SYSTEM = `أنت مدقق نقل جداول صارم. ستُعطى 
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const t0 = Date.now();
+  const mapPage = (fi: number, p: number) => { const m = files[fi]?.pageMap; return m && p >= 1 && p <= m.length ? m[p - 1] : p; };
+  let files: InFile[] = [];
   try {
     const userId = await requireUser(req);
     if (!userId) return jsonResponse({ error: "سجّل الدخول أولاً لاستخدام هذه الميزة" }, 401);
 
     const body = await req.json();
-    const files: InFile[] = Array.isArray(body.files) ? body.files : [];
+    files = Array.isArray(body.files) ? body.files : [];
     const bad = validateFiles(files);
     if (bad) return jsonResponse({ error: bad }, 400);
 
@@ -98,7 +101,7 @@ serve(async (req) => {
     const raw = await callGeminiJson({
       system: system(scopeText(units), wantFig, wantTbl),
       parts: [...fileParts, { text: "افهرس الأشكال والجداول الآن." }],
-      schema: SCHEMA, temperature: 0.1, maxTokens: 16000, thinking: 1024,
+      schema: SCHEMA, temperature: 0.1, maxTokens: 12000, thinking: 512, deadlineAt: t0 + 90_000,
     });
 
     // ───── الأشكال ─────
@@ -112,7 +115,7 @@ serve(async (req) => {
         // صندوق يغطي معظم الصفحة غالباً صفحة كاملة لا شكلاً؛ نرفضه (إلا صور الرفع المباشر فالصورة نفسها قد تكون الشكل)
         const isImageFile = (files[n.fileIndex]?.mimeType ?? "").startsWith("image/");
         if (!isImageFile && (n.box[2] - n.box[0]) * (n.box[3] - n.box[1]) > 600_000) { stats.tooLargeFigures = (stats.tooLargeFigures ?? 0) + 1; continue; }
-        figs.push({ ...n, unit: String(f.unit ?? "").slice(0, 200) });
+        figs.push({ ...n, page: mapPage(n.fileIndex, n.page), unit: String(f.unit ?? "").slice(0, 200) });
       }
       figs = dedupeFigures(figs).slice(0, MAX_FIGURES);
     }
@@ -125,7 +128,7 @@ serve(async (req) => {
         const n = normTable(t);
         const fi = Number.isInteger(t.file_index) ? t.file_index : -1;
         if (!n || fi < 0 || fi >= files.length) { stats.invalidTables++; continue; }
-        tbls.push({ ...n, fileIndex: fi, page: Number.isInteger(t.page) ? t.page : 0, unit: String(t.unit ?? "").slice(0, 200) });
+        tbls.push({ ...n, fileIndex: fi, page: Number.isInteger(t.page) ? mapPage(fi, t.page) : 0, unit: String(t.unit ?? "").slice(0, 200) });
       }
       tbls = tbls.slice(0, MAX_TABLES);
 
@@ -136,7 +139,7 @@ serve(async (req) => {
             `#${i} (الملف ${t.fileIndex} صفحة ${t.page})${t.caption ? ` — ${t.caption}` : ""}\n${t.headers.join(" | ")}\n${t.rows.map((r: string[]) => r.join(" | ")).join("\n")}`).join("\n\n");
           const v = await callGeminiJson({
             system: VERIFY_SYSTEM, parts: [...fileParts, { text: `الجداول المستخرجة:\n\n${listing}` }],
-            schema: VERIFY_SCHEMA, temperature: 0, maxTokens: 4000, thinking: 1024,
+            schema: VERIFY_SCHEMA, temperature: 0, maxTokens: 4000, thinking: 1024, deadlineAt: t0 + 130_000,
           });
           const ok = new Map<number, boolean>((v.results ?? []).map((r: any) => [Number(r.index), r.faithful !== false]));
           const before = tbls.length;
@@ -155,6 +158,7 @@ serve(async (req) => {
     });
   } catch (e: any) {
     console.error("discover-visuals error:", e);
-    return jsonResponse({ error: e?.message || "حدث خطأ أثناء رصد الأشكال والجداول" }, 500);
+    if (e instanceof GeminiError) return jsonResponse({ error: e.message, code: e.code, retryAfter: e.retryAfter }, e.status);
+    return jsonResponse({ error: e?.message || "حدث خطأ أثناء رصد الأشكال والجداول", code: "internal" }, 500);
   }
 });

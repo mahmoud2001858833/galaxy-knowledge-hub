@@ -6,18 +6,59 @@ import type { FilePayload, PreparedFile } from "./fileUtils";
 // الجداول الجديدة غير موجودة في types.ts المولَّد؛ نستعمل عميلاً غير مُنمَّط لها.
 const db = supabase as any;
 
-export async function callFn<T>(name: string, body: unknown): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body: body as any });
-  if (error) {
-    let msg = error.message;
-    try {
-      const j = await (error as any).context?.json?.();
-      if (j?.error) msg = j.error;
-    } catch { /* ignore */ }
-    throw new Error(msg);
+export type ApiErrorCode = "rate_limited" | "timeout" | "auth" | "unavailable" | "invalid" | "no_questions" | "bad_request" | "network" | "aborted" | "internal";
+
+/** خطأ مصنّف من الخادم: يتيح للمنسّق أن يقرر (انتظار، تقسيم، إعادة، إيقاف) بدل التخمين. */
+export class ApiError extends Error {
+  constructor(message: string, public code: ApiErrorCode, public status = 0, public retryAfter?: number, public diagnostics?: { dropped?: Record<string, number> }) {
+    super(message);
   }
-  if ((data as any)?.error) throw new Error((data as any).error);
-  return data as T;
+}
+
+const CLIENT_TIMEOUT_MS = 125_000;
+
+/** نستعمل fetch مباشرة (لا supabase.functions.invoke) لنحتفظ بالحالة والكود ومهلة الانتظار وتقرير الحذف. */
+export async function callFn<T>(name: string, body: unknown, opts: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<T> {
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  if (!token) throw new ApiError("انتهت الجلسة، سجّل الدخول من جديد", "auth", 401);
+  const url = `${(supabase as any).supabaseUrl}/functions/v1/${name}`;
+  const key = (supabase as any).supabaseKey as string;
+
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort("timeout"), opts.timeoutMs ?? CLIENT_TIMEOUT_MS);
+  const onAbort = () => ctl.abort("user");
+  opts.signal?.addEventListener("abort", onAbort);
+  try {
+    const r = await fetch(url, {
+      method: "POST", signal: ctl.signal,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: key },
+      body: JSON.stringify(body),
+    });
+    const text = await r.text();
+    let j: any = null;
+    try { j = JSON.parse(text); } catch { /* ليس JSON: غالباً رد البوابة عند قتل الدالة */ }
+    if (r.ok && j && !j.error) return j as T;
+    const retryAfter = Number(j?.retryAfter ?? r.headers.get("retry-after")) || undefined;
+    const msg = j?.error || (r.status === 504 || r.status === 546 || r.status === 502 ? "انتهت مهلة الخادم قبل اكتمال الدفعة" : `خطأ ${r.status}`);
+    let code: ApiErrorCode = j?.code;
+    if (!code) {
+      code = r.status === 429 ? "rate_limited" : r.status === 401 || r.status === 403 ? "auth"
+        : r.status === 400 ? "bad_request" : r.status === 422 ? "no_questions"
+        : r.status === 504 || r.status === 546 || r.status === 502 || r.status === 503 || r.status === 500 ? "timeout" : "internal";
+    }
+    // دالة قُتلت بلا رد JSON (WORKER_LIMIT/timeout) تُعامل كمهلة لتُقسَّم الدفعة
+    if (!j && r.status >= 500) code = "timeout";
+    throw new ApiError(msg, code, r.status, retryAfter, j?.diagnostics);
+  } catch (e: any) {
+    if (e instanceof ApiError) throw e;
+    if (opts.signal?.aborted) throw new ApiError("أُوقف الطلب", "aborted");
+    if (ctl.signal.aborted) throw new ApiError("تأخر الرد أكثر من اللازم", "timeout", 0);
+    throw new ApiError("تعذّر الاتصال بالخادم. تحقق من الإنترنت", "network", 0);
+  } finally {
+    clearTimeout(timer);
+    opts.signal?.removeEventListener("abort", onAbort);
+  }
 }
 
 export const analyzeUnits = (files: PreparedFile[]) =>
@@ -40,11 +81,13 @@ export interface GenerateParams {
   minTableQuestions?: number;
   avoid?: string[];
   focus?: string;
+  /** تدقيق كل سؤال مقابل الملف (افتراضي: نعم) */
+  verify?: boolean;
 }
 
 const unitPayload = (units: UnitInfo[]) => units.map(({ title, summary, fileIndex, pageStart, pageEnd }) => ({ title, summary, fileIndex, pageStart, pageEnd }));
 
-export const generateExam = (p: GenerateParams) =>
+export const generateExam = (p: GenerateParams, signal?: AbortSignal) =>
   callFn<GenerateResponse>("generate-exam-from-file", {
     files: p.payloads,
     units: unitPayload(p.units),
@@ -62,12 +105,13 @@ export const generateExam = (p: GenerateParams) =>
     minTableQuestions: p.minTableQuestions || undefined,
     avoid: p.avoid?.length ? p.avoid : undefined,
     focus: p.focus || undefined,
-  });
+    verify: p.verify === false ? false : undefined,
+  }, { signal });
 
 export interface DiscoverResponse { figures: Catalog["figures"]; tables: Catalog["tables"]; stats: Record<string, number> }
 
-export const discoverVisuals = (payloads: FilePayload[], units: UnitInfo[], includeFigures: boolean, includeTables: boolean) =>
-  callFn<DiscoverResponse>("discover-visuals", { files: payloads, units: unitPayload(units), includeFigures, includeTables });
+export const discoverVisuals = (payloads: FilePayload[], units: UnitInfo[], includeFigures: boolean, includeTables: boolean, signal?: AbortSignal) =>
+  callFn<DiscoverResponse>("discover-visuals", { files: payloads, units: unitPayload(units), includeFigures, includeTables }, { signal });
 
 export const verifyCropsApi = async (items: { id: string; caption: string; base64: string }[]): Promise<CropVerdict[]> =>
   (await callFn<{ results: CropVerdict[] }>("verify-crops", { items })).results;

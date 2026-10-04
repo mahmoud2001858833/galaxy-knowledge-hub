@@ -12,7 +12,7 @@ const MAX_PAGE_IMAGE_BYTES = 11 * 1024 * 1024;
 const MAX_GEN_TEXT_CHARS = 450_000;
 
 export interface PagePayload { page: number; mimeType: string; base64: string }
-export interface FilePayload { name: string; mimeType?: string; base64?: string; text?: string; pages?: PagePayload[] }
+export interface FilePayload { name: string; mimeType?: string; base64?: string; text?: string; pages?: PagePayload[]; /** ملف مقتطع: pageMap[k-1] = رقم الصفحة الأصلية */ pageMap?: number[] }
 
 /** بيانات الملف الكبير (PDF > 10MB): نقرؤه صفحةً صفحة محلياً ولا نرسله كاملاً. */
 export interface LargePdfInfo {

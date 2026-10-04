@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowRight, Database, FileText, Loader2, Sparkles, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import type { Progress as RunProgress } from "@/lib/examCreator/batchGenerate";
 import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type QType } from "@/lib/examCreator/types";
 
 export interface SettingsState {
@@ -22,6 +23,8 @@ export interface SettingsState {
   request: string;
   includeFigures: boolean;
   includeTables: boolean;
+  /** تدقيق كل سؤال مقابل الملف (أدق لكنه أبطأ) */
+  verify: boolean;
   schoolName: string;
   teacherName: string;
   durationMinutes: number;
@@ -31,7 +34,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   mode: "exam", figureQuestions: 2, tableQuestions: 2,
   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
   difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
-  includeFigures: true, includeTables: true, schoolName: "", teacherName: "", durationMinutes: 45,
+  includeFigures: true, includeTables: true, verify: true, schoolName: "", teacherName: "", durationMinutes: 45,
 };
 
 const PRESETS: Record<CreatorMode, { label: string; counts: Record<QType, number> }[]> = {
@@ -67,7 +70,7 @@ interface Props {
   filesUsed: number;
   busy: boolean;
   stage: string;
-  progress: { batchesDone: number; batches: number; questions: number; target: number } | null;
+  progress: RunProgress | null;
   onCancel: () => void;
   onBack: () => void;
   onGenerate: () => void;
@@ -77,9 +80,9 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
   const isBank = s.mode === "bank";
   const maxTotal = isBank ? MAX_BANK_QUESTIONS : MAX_EXAM_QUESTIONS;
   const total = Object.values(s.counts).reduce((a, b) => a + b, 0);
-  const batchSize = isBank ? 30 : 25;
-  const batches = Math.ceil(total / batchSize);
-  const minutes = Math.max(1, Math.ceil((batches / (isBank ? 3 : 2)) * 1.2));
+  const batches = Math.ceil(total / 12);
+  // ~40ث للطلب مع التدقيق (~25ث بدونه) ويعمل 2–4 طلبات معاً
+  const minutes = Math.max(1, Math.ceil((batches * (s.verify ? 40 : 25)) / (isBank ? 3 : 2.5) / 60));
   const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
   const setCount = (k: QType, v: string) =>
     set("counts", { ...s.counts, [k]: Math.max(0, Math.min(maxTotal, parseInt(v || "0", 10) || 0)) });
@@ -122,7 +125,7 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
         </div>
         {total > 25 && (
           <p className="text-xs text-muted-foreground">
-            يُولَّد على {batches} دفعة {isBank ? "(3 بالتوازي)" : "(2 بالتوازي)"} بزمن تقريبي {minutes} دقيقة، وتُدقَّق كل دفعة مقابل ملفاتك وتُحذف الأسئلة المكررة.
+            يُولَّد على نحو {batches} دفعة صغيرة (2–4 بالتوازي حسب ما تسمح به حصة الذكاء الاصطناعي) بزمن تقريبي {minutes} دقيقة{s.verify ? "، وتُدقَّق كل دفعة مقابل ملفاتك" : ""} وتُحذف الأسئلة المكررة.
             {isBank && " يُحفظ البنك تدريجياً فلا يضيع ما أُنجز إن توقفت."}
           </p>
         )}
@@ -221,6 +224,16 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
         <p className="text-xs text-muted-foreground">يُرصد أولاً ما في وحداتك من أشكال وجداول فعلية، ثم تُكتب الأسئلة الملزمة عليها في جولة مخصصة. إن لم يوجد ما يكفي ستُخبرك المراجعة بالسبب بدقة.</p>
       </Card>
 
+      <Card className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <div className="font-medium">تدقيق كل سؤال مقابل الملف</div>
+            <p className="text-xs text-muted-foreground">يحذف الأسئلة التي لا يدعمها الملف. إيقافه يسرّع الإنشاء بنحو الثلث، وتبقى الأسئلة مبنية على اقتباس من الملف لكن بلا فحص ثانٍ — مناسب لبنوك الأسئلة الكبيرة.</p>
+          </div>
+          <Switch checked={s.verify} onCheckedChange={(v) => set("verify", v)} />
+        </div>
+      </Card>
+
       <Card className="space-y-3 p-4">
         <Label className="text-base">بيانات رأس الامتحان (تظهر في PDF)</Label>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -238,11 +251,19 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
 
       {busy && progress && (
         <Card className="space-y-2 p-4">
-          <div className="flex items-center justify-between text-sm">
-            <span>الدفعة {Math.min(progress.batchesDone + 1, progress.batches)} من {progress.batches} — أُنجز <b>{progress.questions}</b> من {progress.target} سؤالاً</span>
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span>
+              أُنجز <b>{progress.questions}</b> من {progress.target} سؤالاً — الدفعات {progress.batchesDone}/{progress.batches}
+              {progress.etaSeconds ? ` — المتبقي نحو ${progress.etaSeconds >= 90 ? `${Math.ceil(progress.etaSeconds / 60)} دقيقة` : `${progress.etaSeconds} ثانية`}` : ""}
+            </span>
             <Button size="sm" variant="outline" onClick={onCancel}><X className="ml-1 h-4 w-4" />إيقاف وإبقاء ما أُنجز</Button>
           </div>
           <Progress value={Math.min(100, (progress.questions / Math.max(1, progress.target)) * 100)} />
+          {progress.waitSeconds > 0 && (
+            <p className="text-xs text-amber-600">⏳ الذكاء الاصطناعي يطلب التمهّل (حدّ المعدّل): استئناف خلال {progress.waitSeconds} ثانية. هذا طبيعي مع الحصة المجانية.</p>
+          )}
+          {progress.failed > 0 && <p className="text-xs text-muted-foreground">دفعات تعذّرت: {progress.failed} (يُعوَّض نقصها تلقائياً في نهاية العملية)</p>}
+          {progress.lastError && <p className="text-xs text-muted-foreground" dir="auto">آخر ملاحظة: {progress.lastError}</p>}
         </Card>
       )}
 

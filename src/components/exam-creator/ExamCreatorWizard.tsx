@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { analyzeUnits, discoverVisuals, uploadFigureImages, verifyCropsApi } from "@/lib/examCreator/api";
-import { runBatches } from "@/lib/examCreator/batchGenerate";
+import { analyzeUnits, uploadFigureImages, verifyCropsApi } from "@/lib/examCreator/api";
+import { runBatches, type Progress } from "@/lib/examCreator/batchGenerate";
+import { discoverChunked } from "@/lib/examCreator/discover";
+import { makePayloadFor } from "@/lib/examCreator/payloads";
 import { sumCounts } from "@/lib/examCreator/batchPlan";
 import {
   buildGenerationFiles, cropFiguresTight, MAX_FILES, prepareFile, shrinkToBudget, type CropReject, type CropResult, type PreparedFile,
@@ -20,7 +22,6 @@ import BankView from "./BankView";
 import MyExamsPanel from "./MyExamsPanel";
 
 const srcName = (s: Source) => (s.kind === "library" ? s.row.title : s.file.name);
-type Progress = { batchesDone: number; batches: number; questions: number; target: number };
 
 export default function ExamCreatorWizard() {
   const { toast } = useToast();
@@ -134,6 +135,8 @@ export default function ExamCreatorWizard() {
       const gf = await buildGenerationFiles(prepared, units, setStage);
       gf.notes.forEach((n) => toast({ title: "ℹ️ ملف كبير", description: n }));
 
+      const payloadFor = makePayloadFor(prepared, gf.payloads);
+
       // ───── 1) رصد الأشكال والجداول الفعلية في الوحدات، وقصّ الأشكال بدقة وفحصها ─────
       const wantFig = settings.includeFigures && canFigures && settings.figureQuestions > 0;
       const wantTbl = settings.includeTables && settings.tableQuestions > 0;
@@ -146,7 +149,12 @@ export default function ExamCreatorWizard() {
       if (wantFig || wantTbl) {
         setStage("الذكاء الاصطناعي يرصد الأشكال والجداول الموجودة في وحداتك...");
         try {
-          const d = await discoverVisuals(gf.payloads, units, wantFig, wantTbl);
+          const d = await discoverChunked({
+            units, wantFig, wantTbl,
+            needFig: Math.min(24, Math.max(6, Math.ceil(settings.figureQuestions / 2) + 3)),
+            needTbl: Math.min(16, Math.max(3, Math.ceil(settings.tableQuestions / 2) + 2)),
+            payloadFor, signal: ac.signal, onStage: setStage,
+          });
           discovered = { figures: d.figures.length, tables: d.tables.length, stats: d.stats };
           catalog.tables = d.tables;
           if (d.figures.length) {
@@ -162,7 +170,7 @@ export default function ExamCreatorWizard() {
 
       // ───── 2) توليد الأسئلة على دفعات ─────
       setStage(isBank ? "جارٍ بناء البنك على دفعات متوازية..." : total > 25 ? "جارٍ إنشاء الامتحان على دفعات..." : "الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفاتك (قد يستغرق دقيقة)...");
-      setProgress({ batchesDone: 0, batches: Math.ceil(total / (isBank ? 30 : 25)), questions: 0, target: total });
+      setProgress({ batchesDone: 0, batches: Math.ceil(total / 12), questions: 0, target: total, failed: 0, concurrency: 2, waitSeconds: 0 });
 
       const meta = { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes };
       const hs = historySources();
@@ -173,14 +181,14 @@ export default function ExamCreatorWizard() {
 
       const res = await runBatches({
         base: {
-          payloads: gf.payloads, difficulty: settings.difficulty, language: settings.language,
+          verify: settings.verify, difficulty: settings.difficulty, language: settings.language,
           distribution: filesUsed > 1 ? settings.distribution : "by_unit", grade: settings.grade, subject: settings.subject, request: settings.request,
           includeFigures: wantFig && catalog.figures.length > 0, includeTables: wantTbl && catalog.tables.length > 0,
         },
         units, counts: settings.counts, catalog,
         minFigureQuestions: wantFig ? Math.min(settings.figureQuestions, total) : 0,
         minTableQuestions: wantTbl ? Math.min(settings.tableQuestions, total) : 0,
-        figureImages, batchSize: isBank ? 30 : 25, concurrency: isBank ? 3 : 2, signal: ac.signal,
+        figureImages, payloadFor: (it) => payloadFor(it.windows), maxConcurrency: isBank ? 4 : 3, signal: ac.signal,
         onProgress: setProgress,
         onPartial: isBank ? (qs) => {
           if (qs.length - lastSaved < 40 && qs.length < total) return; // حفظ تدريجي كل ~40 سؤالاً
@@ -196,7 +204,8 @@ export default function ExamCreatorWizard() {
       });
       await chain;
 
-      if (res.questions.length === 0) throw new Error(ac.signal.aborted ? "أُوقف الإنشاء قبل ظهور أي سؤال." : "لم يُنشأ أي سؤال صالح. جرّب وحدات أخرى أو قلّل القيود.");
+      if (res.questions.length === 0) throw new Error(ac.signal.aborted ? "أُوقف الإنشاء قبل ظهور أي سؤال." : res.fatal || "لم يُنشأ أي سؤال صالح. جرّب وحدات أخرى أو قلّل القيود.");
+      if (res.fatal) warnings.push(`توقف الإنشاء مبكراً: ${res.fatal}`);
       if (res.cancelled) toast({ title: "⏹ أُوقف الإنشاء", description: `أُبقي ما أُنجز: ${res.questions.length} من ${total} سؤالاً.` });
 
       const built: GeneratedExam = { title: res.title || baseTitle, questions: res.questions, meta };
