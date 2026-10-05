@@ -156,6 +156,7 @@ export default function ExamCreatorWizard() {
             payloadFor, signal: ac.signal, onStage: setStage,
           });
           discovered = { figures: d.figures.length, tables: d.tables.length, stats: d.stats };
+          if (d.errors.length) warnings.push(`تعذّر رصد بعض مقاطع الكتاب: ${d.errors[0]}`);
           catalog.tables = d.tables;
           if (d.figures.length) {
             const jobs = d.figures.map((f) => ({ id: f.id, fileIndex: f.fileIndex, page: f.page, box: f.box, caption: f.caption }));

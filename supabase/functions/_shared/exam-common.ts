@@ -63,7 +63,7 @@ export function validateFiles(files: unknown): string | null {
 }
 
 /** يصف للنموذج مقابلة صفحات الملف المقصوص بصفحات الأصل (بنطاقات متتالية مضغوطة). */
-export function pageMapNote(map?: number[]): string {
+export function pageMapNote(map?: number[], mode: "original" | "attached" = "original"): string {
   if (!Array.isArray(map) || !map.length) return "";
   const runs: string[] = [];
   let k = 0;
@@ -73,14 +73,17 @@ export function pageMapNote(map?: number[]): string {
     runs.push(e === k ? `${k + 1}→${map[k]}` : `${k + 1}–${e + 1}→${map[k]}–${map[e]}`);
     k = e + 1;
   }
-  return `\n(هذا الملف مقتطع من الأصل. مقابلة أرقام الصفحات: ${runs.join("، ")} — استعمل رقم الصفحة الأصلي دائماً في location وفي أي إشارة لصفحة)`;
+  const tail = mode === "attached"
+    ? "في حقل page اكتب رقم الصفحة داخل هذا الملف المرفق (1 = أول صفحة مرفقة) كما تراها، ولا تكتب رقم الأصل؛ سأحوّله أنا"
+    : "استعمل رقم الصفحة الأصلي دائماً في location وفي أي إشارة لصفحة";
+  return `\n(هذا الملف مقتطع من الأصل. مقابلة أرقام الصفحات: ${runs.join("، ")} — ${tail})`;
 }
 
-export function buildFileParts(files: InFile[]): any[] {
+export function buildFileParts(files: InFile[], opts: { pageNumbers?: "original" | "attached" } = {}): any[] {
   const parts: any[] = [];
   files.forEach((f, i) => {
     if (f.base64) {
-      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` + pageMapNote(f.pageMap) });
+      parts.push({ text: `=== الملف رقم ${i}: ${f.name} ===` + pageMapNote(f.pageMap, opts.pageNumbers) });
       parts.push({ inlineData: { mimeType: f.mimeType!, data: f.base64.replace(/^data:[^;]+;base64,/, "") } });
       return;
     }

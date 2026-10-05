@@ -88,7 +88,8 @@ serve(async (req) => {
     const bad = validateFiles(files);
     if (bad) return jsonResponse({ error: bad }, 400);
 
-    const units = sanitizeUnits(body.units);
+    // الملف المقتطع صفحاته 1..k؛ نذكر الوحدات بعناوينها فقط حتى لا تتعارض أرقام الأصل مع أرقام المرفق
+    const units = sanitizeUnits(body.units).map((u) => (files[u.fileIndex ?? 0]?.pageMap ? { ...u, pageStart: null, pageEnd: null } : u));
     const figurable = files.map((f) => !!f.base64 || (Array.isArray(f.pages) && f.pages.length > 0));
     const figPages = files.map((f) => (Array.isArray(f.pages) && f.pages.length > 0 ? new Set(f.pages.map((p) => p.page)) : null));
     const wantFig = body.includeFigures !== false && figurable.some(Boolean);
@@ -96,7 +97,7 @@ serve(async (req) => {
     if (!wantFig && !wantTbl) return jsonResponse({ figures: [], tables: [], stats: {} });
 
     const ctx = { nFiles: files.length, figurable, figPages, allowFigures: true, allowTables: true };
-    const fileParts = buildFileParts(files);
+    const fileParts = buildFileParts(files, { pageNumbers: "attached" });
 
     const raw = await callGeminiJson({
       system: system(scopeText(units), wantFig, wantTbl),
