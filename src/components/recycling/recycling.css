@@ -1,0 +1,21 @@
+.recycling-theme {
+  --background: 174 14% 15%; --foreground: 0 0% 100%;
+  --card: 174 14% 19%; --card-foreground: 0 0% 100%;
+  --popover: 174 14% 19%; --popover-foreground: 0 0% 100%;
+  --primary: 162.16 71.61% 30.39%; --primary-foreground: 0 0% 100%;
+  --secondary: 174 14% 22%; --secondary-foreground: 0 0% 100%;
+  --muted: 174 14% 22%; --muted-foreground: 174 8% 72%;
+  --accent: 162 20% 25%; --accent-foreground: 0 0% 100%;
+  --border: 174 10% 31%; --input: 174 10% 31%; --ring: 162.16 71.61% 30.39%;
+  --destructive: 5 75% 65%; --destructive-foreground: 174 14% 15%;
+  color: hsl(var(--foreground)); background: hsl(var(--background));
+  font-family: 'Figtree', 'IBM Plex Sans Arabic', 'Cairo', sans-serif;
+  letter-spacing: 0;
+}
+.recycling-theme h1,.recycling-theme h2,.recycling-theme h3 { font-family: 'Outfit', 'IBM Plex Sans Arabic', 'Cairo', sans-serif; letter-spacing: 0; color: hsl(var(--foreground)); }
+.recycling-theme input,.recycling-theme textarea { color: hsl(var(--foreground)); background: hsl(var(--background)); }
+.recycling-theme [role=tab][data-state=active] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.recycling-theme [role=combobox] { color: hsl(var(--foreground)); }
+.recycling-theme .project-card:hover { border-color: hsl(var(--primary)); }
+.recycling-theme .impact-number { color: hsl(var(--foreground)); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .recycling-theme * { animation: none !important; transition: none !important; } }
