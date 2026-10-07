@@ -752,7 +752,7 @@ export const RoboticsSection: React.FC = () => {
   const handlePlayWaypoints = () => {
     if (waypoints.length === 0) return;
     setIsPlayingTrajectory(true);
-    (toast as any).info('▶️ جاري تشغيل التسلسل الحركي المسجل (Teach & Repeat)...');
+    toast({ title: '▶️ جاري تشغيل التسلسل الحركي المسجل (Teach & Repeat)...' });
 
     waypoints.forEach((wp, index) => {
       setTimeout(() => {
@@ -762,7 +762,7 @@ export const RoboticsSection: React.FC = () => {
         setGripper(wp.gripper);
         if (index === waypoints.length - 1) {
           setIsPlayingTrajectory(false);
-          (toast as any).success('🎉 اكتمل تنفيذ مسار الحركة بنجاح!');
+          toast({ title: '🎉 اكتمل تنفيذ مسار الحركة بنجاح!' });
         }
       }, index * 1200);
     });
