@@ -40,7 +40,7 @@ import {
   auditMessageSafety, 
   CommunityChannel 
 } from '@/types/communityChat';
-import { PlatformResourceMention, PLATFORM_MENTIONS_CATALOG } from '@/data/platformMentionsData';
+import { PlatformResourceMention, PLATFORM_MENTION_RESOURCES as PLATFORM_MENTIONS_CATALOG } from '@/data/platformMentionsData';
 import { PlatformMentionModal } from '@/components/community/PlatformMentionModal';
 import { CommunityMessageCard } from '@/components/community/CommunityMessageCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -188,7 +188,7 @@ export const StudentCommunityForum: React.FC = () => {
 
   const syncMessageToCloud = async (msg: CommunityMessage) => {
     try {
-      await supabase.from('community_forum_messages').upsert({
+      await (supabase.from('community_forum_messages') as any).upsert({
         id: msg.id,
         channel_id: msg.channelId,
         channel: msg.channelId,

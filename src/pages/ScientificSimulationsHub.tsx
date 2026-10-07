@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Mountain, X, Wind, Magnet, Scissors, Droplets } from 'lucide-react';
+import { ArrowLeft, Play, Info, Atom, Zap, Sparkles, Waves, Beaker, Activity, Box, Sun, Cpu, Target, Globe, Dna, TreeDeciduous, FlaskConical, Battery, Microscope, Heart, Rocket, Mountain, X, Wind, Magnet, Scissors, Droplets, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StarField from '@/components/StarField';
 import Navbar from '@/components/Navbar';

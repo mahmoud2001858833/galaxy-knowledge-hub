@@ -171,7 +171,7 @@ const ElectrostaticEngine3D: React.FC<{
           {/* Angle Indicator Tag */}
           <Html position={[0, -1.3, 0]} center distanceFactor={10}>
             <div className="bg-slate-900/90 text-amber-300 font-mono text-xs px-2 py-1 rounded border border-amber-500/50">
-              زاوية الانفراج θ = {((electroscopeAngle * 180) / Math.PI).toFixed(1)}°
+              زاوية الانفراج θ = {((Math.min(Math.PI / 3, (chargeStrength / 10) * (Math.PI / 4)) * 180) / Math.PI).toFixed(1)}°
             </div>
           </Html>
         </group>
@@ -230,7 +230,7 @@ const ElectrostaticEngine3D: React.FC<{
             <group ref={sparkRef}>
               {[-1.2, 1.2, 0].map((sx, idx) => (
                 <mesh key={`spark-${idx}`} position={[sx * 1.1, 1.3 + (idx - 1) * 0.4, 0]}>
-                  <cylinderGeometry args={[0.02, 0.02, 1.2, 8]} rotation={[0, 0, sx > 0 ? -0.6 : 0.6]} />
+                  <cylinderGeometry args={[0.02, 0.02, 1.2, 8]} />
                   <meshBasicMaterial color="#c084fc" />
                 </mesh>
               ))}

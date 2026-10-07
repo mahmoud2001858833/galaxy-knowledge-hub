@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -923,7 +923,7 @@ export default function PhotoelectricEffectSimulation() {
             <Card className="bg-slate-900/90 border-slate-800 p-6 shadow-xl space-y-4">
               <CardTitle className="text-base font-bold text-sky-300">الرسم البياني: أقصى طاقة حركية للإلكترونات مقابل تردد الضوء (K_max vs Frequency)</CardTitle>
               <p className="text-xs text-slate-400">
-                ميل هذا الخط المستقيم يمثل القيمة الدقيقة لثابت بلانك \(h = 4.136 \times 10^{-15} \text{ eV}\cdot\text{s}\)، وتقاطع الخط مع المحور الأفقي يمثل تردد العتبة \(f_0\).
+                ميل هذا الخط المستقيم يمثل القيمة الدقيقة لثابت بلانك \(h = 4.136 \times 10^{-15} eV·s\)، وتقاطع الخط مع المحور الأفقي يمثل تردد العتبة \(f_0\).
               </p>
               <div className="h-[320px]">
                 <ResponsiveContainer width="100%" height="100%">

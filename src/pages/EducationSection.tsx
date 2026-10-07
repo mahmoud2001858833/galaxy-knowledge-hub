@@ -25,6 +25,7 @@ import {
   Palette,
   Play
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { SEO } from '@/components/SEO';
@@ -35,7 +36,7 @@ import SafeBoundary from '@/components/common/SafeBoundary';
 interface EducationalPlatform {
   id: string;
   title: string;
-  category: 'stem' | 'btec' | 'tech' | 'skills' | 'support';
+  category: 'stem' | 'btec' | 'tech' | 'skills' | 'support' | 'academic';
   categoryLabel: string;
   badge: string;
   description: string;
