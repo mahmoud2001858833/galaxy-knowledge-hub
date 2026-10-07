@@ -3135,6 +3135,99 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_agent_pages: {
+        Row: {
+          agent_id: string
+          content: string
+          file_id: string
+          id: number
+          norm: string
+          page: number
+          tsv: unknown
+        }
+        Insert: {
+          agent_id: string
+          content: string
+          file_id: string
+          id?: never
+          norm: string
+          page: number
+          tsv?: unknown
+        }
+        Update: {
+          agent_id?: string
+          content?: string
+          file_id?: string
+          id?: never
+          norm?: string
+          page?: number
+          tsv?: unknown
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_agent_pages_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "exam_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_agent_pages_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "exam_library_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exam_agents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_ids: string[]
+          grade: string | null
+          id: string
+          instructions: string | null
+          is_active: boolean
+          name: string
+          subject: string | null
+          token: string
+          updated_at: string
+          welcome: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_ids?: string[]
+          grade?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          name: string
+          subject?: string | null
+          token: string
+          updated_at?: string
+          welcome?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_ids?: string[]
+          grade?: string | null
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          name?: string
+          subject?: string | null
+          token?: string
+          updated_at?: string
+          welcome?: string | null
+        }
+        Relationships: []
+      }
       exam_history: {
         Row: {
           created_at: string
@@ -5432,11 +5525,21 @@ export type Database = {
           total_count: number
         }[]
       }
+      agent_search_pages: {
+        Args: { p_agent: string; p_k?: number; p_query: string }
+        Returns: {
+          content: string
+          file_id: string
+          page: number
+          rank: number
+        }[]
+      }
       calculate_user_level: { Args: { usage_minutes: number }; Returns: number }
       get_admin_teacher_access_level: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
+      get_exam_agent: { Args: { p_token: string }; Returns: Json }
       get_public_adhd_diagnostic_report: {
         Args: { p_token: string }
         Returns: {
@@ -5474,6 +5577,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_agent_file: { Args: { p_path: string }; Returns: boolean }
+      is_agent_file_id: { Args: { p_id: string }; Returns: boolean }
       user_belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
