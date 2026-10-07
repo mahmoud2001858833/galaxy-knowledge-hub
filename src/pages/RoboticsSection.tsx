@@ -696,7 +696,7 @@ export const RoboticsSection: React.FC = () => {
   // Automated Pick & Place Trajectory Routine
   const handleRunPickAndPlaceSequence = () => {
     setIsPlayingTrajectory(true);
-    (toast as any).info('🚀 بدأت دورة الالتقاط والنقل الأوتوماتيكية...');
+    toast({ title: '🚀 بدأت دورة الالتقاط والنقل الأوتوماتيكية...' });
 
     // Step 1: Open gripper & approach workpiece
     setTheta1(60);
@@ -707,7 +707,7 @@ export const RoboticsSection: React.FC = () => {
     setTimeout(() => {
       // Step 2: Drop on cube and grab
       setGripper(20);
-      (toast as any).info('🧲 تم التقاط المكعب وتأمين المقبض.');
+      toast({ title: '🧲 تم التقاط المكعب وتأمين المقبض.' });
 
       setTimeout(() => {
         // Step 3: Lift up

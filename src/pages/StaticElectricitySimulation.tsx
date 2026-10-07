@@ -537,7 +537,7 @@ export const StaticElectricitySimulation: React.FC = () => {
                 activeMode === 'coulomb'
                   ? `حساب القوة المتبادلة F = ${forceNewtons.toFixed(3)} N عند المسافة ${distance} cm`
                   : activeMode === 'electroscope'
-                  ? `مراقبة زاوية الانفراج ${((electroscopeAngle * 180) / Math.PI).toFixed(1)}° للورقتين`
+                  ? `مراقبة زاوية الانفراج ${((Math.min(Math.PI / 3, (chargeStrength / 10) * (Math.PI / 4)) * 180) / Math.PI).toFixed(1)}° للورقتين`
                   : `توليد جهد القبة ${(chargeStrength * 45).toFixed(0)} kV وحدوث الانهيار العازل`,
               activeMetrics: {
                 mode: activeMode,
