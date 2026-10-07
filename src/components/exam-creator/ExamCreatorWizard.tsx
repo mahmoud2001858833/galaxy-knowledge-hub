@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeUnits, uploadFigureImages, verifyCropsApi } from "@/lib/examCreator/api";
 import { runBatches, type Progress } from "@/lib/examCreator/batchGenerate";
@@ -11,6 +12,8 @@ import {
 } from "@/lib/examCreator/fileUtils";
 import { loadBank, saveHistory, updateHistory, type HistorySource } from "@/lib/examCreator/history";
 import { downloadLibraryFile, listLibrary, type LibraryRow } from "@/lib/examCreator/library";
+import { loadProfile, saveProfile } from "@/lib/examCreator/teacherProfile";
+import { supabase } from "@/integrations/supabase/client";
 import { mergeUnitLists, sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
 import type { AnalyzeResponse, Catalog, ExamDiagnostics, GeneratedExam, UnitInfo } from "@/lib/examCreator/types";
 import StepUpload, { type Source } from "./StepUpload";
@@ -23,10 +26,13 @@ import MyExamsPanel from "./MyExamsPanel";
 
 const srcName = (s: Source) => (s.kind === "library" ? s.row.title : s.file.name);
 
-export default function ExamCreatorWizard() {
+/** وضع الوكيل المقفل: الملفات ملفات الوكيل فقط (لا رفع ولا مكتبة)، وقد يصل طلب جاهز من المحادثة. */
+export interface LockedSources { files: LibraryRow[]; subject?: string; grade?: string; request?: string; label?: string }
+
+export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }) {
   const { toast } = useToast();
   const [step, setStep] = useState(0);
-  const [sources, setSources] = useState<Source[]>([]);
+  const [sources, setSources] = useState<Source[]>(() => (locked ? locked.files.map((row) => ({ key: `l:${row.id}`, kind: "library" as const, row })) : []));
   const [library, setLibrary] = useState<LibraryRow[] | null>(null);
   const [libraryError, setLibraryError] = useState("");
   const [prepared, setPrepared] = useState<PreparedFile[]>([]);
@@ -47,9 +53,35 @@ export default function ExamCreatorWizard() {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    if (locked) { setLibrary([]); return; }
     listLibrary().then((r) => setLibrary(r.filter((x) => x.is_published))).catch((e) => { setLibraryError(e.message); setLibrary([]); });
   }, []);
 
+  const uidRef = useRef<string | null>(null);
+  // نملأ بيانات الترويسة من ملف المعلم المحفوظ (ولا نكتب فوق ما أدخله المستخدم)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      uidRef.current = data.session?.user.id ?? null;
+      const p = loadProfile(uidRef.current);
+      if (!p) return;
+      setSettings((s) => ({
+        ...s,
+        schoolName: s.schoolName || p.schoolName || "", teacherName: s.teacherName || p.teacherName || "",
+        subject: s.subject || p.subject || "", grade: s.grade || p.grade || "",
+        durationMinutes: p.durationMinutes || s.durationMinutes,
+        header: { ...s.header, ...(p.header ?? {}), examName: s.header.examName, examDate: s.header.examDate, totalMarks: s.header.totalMarks },
+      }));
+    }).catch(() => {});
+  }, []);
+  // وضع الوكيل: نبدأ تحليل ملفات الوكيل تلقائياً مرة واحدة، ونملأ المادة والصف وطلب المحادثة
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (!locked) return;
+    setSettings((s) => ({ ...s, subject: s.subject || locked.subject || "", grade: s.grade || locked.grade || "", request: locked.request ?? s.request }));
+  }, [locked?.request, locked?.subject, locked?.grade]);
+  useEffect(() => {
+    if (locked && !autoRan.current && sources.length) { autoRan.current = true; void analyze(); }
+  }, []);
   const fail = (title: string, e: any) => toast({ title, description: e?.message || "حدث خطأ غير متوقع", variant: "destructive" });
   const resetDerived = () => { setPrepared([]); setAnalysis(null); setSelected(new Set()); setExam(null); setBank(null); setGen(null); setDiag(null); setHistoryId(null); setView3("review"); };
 
@@ -122,7 +154,7 @@ export default function ExamCreatorWizard() {
 
   const generate = async () => {
     if (!analysis) return;
-    setBusy(true); setProgress(null);
+    setBusy(true); setProgress(null); setStage("جارٍ تجهيز الملفات...");
     const ac = new AbortController();
     abortRef.current = ac;
     try {
@@ -173,7 +205,8 @@ export default function ExamCreatorWizard() {
       setStage(isBank ? "جارٍ بناء البنك على دفعات متوازية..." : total > 25 ? "جارٍ إنشاء الامتحان على دفعات..." : "الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفاتك (قد يستغرق دقيقة)...");
       setProgress({ batchesDone: 0, batches: Math.ceil(total / 12), questions: 0, target: total, failed: 0, concurrency: 2, waitSeconds: 0 });
 
-      const meta = { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes };
+      const meta = { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes, header: settings.header };
+      saveProfile(uidRef.current, { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes, header: settings.header });
       const hs = historySources();
       const baseTitle = `${settings.subject || "بنك"} — بنك أسئلة`;
       let bankHist: string | null = null, lastSaved = 0, chain: Promise<void> = Promise.resolve();
@@ -289,7 +322,16 @@ export default function ExamCreatorWizard() {
         })}
       </ol>
 
-      {step === 0 && (
+      {step === 0 && locked && (
+        <div className="space-y-3 rounded-xl border p-6 text-center">
+          <div className="font-semibold">{locked.label ?? "ملفات الوكيل"}: {sources.map(srcName).join("، ")}</div>
+          <p className="text-sm text-muted-foreground">{busy ? (stage || "جارٍ تجهيز الملفات...") : "الامتحانات تُنشأ من ملفات هذا الوكيل فقط."}</p>
+          {!busy && <Button onClick={analyze}>{analysis ? "إعادة تقسيم الملفات إلى وحدات" : "قسّم الملفات إلى وحدات"}</Button>}
+          {busy && <Loader2 className="mx-auto h-6 w-6 animate-spin" />}
+        </div>
+      )}
+
+      {step === 0 && !locked && (
         <>
           <StepUpload sources={sources} library={library} libraryError={libraryError} busy={busy} stage={stage}
             onAddFiles={addFiles} onToggleLibrary={toggleLibrary}

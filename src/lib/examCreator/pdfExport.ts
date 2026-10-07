@@ -111,8 +111,48 @@ function sectionHeading(label: string, count: number, idx: number): Block {
   };
 }
 
+/** سطر «تسمية: قيمة» داخل جدول بيانات الترويسة (يُحذف إن كانت القيمة فارغة). */
+const kv = (k: string, v?: string | number) =>
+  v ? `<div style="display:flex;gap:6px;font-size:12.5px;line-height:1.7"><span style="color:${MUTED};white-space:nowrap">${esc(k)}:</span><b style="color:${INK};font-weight:700">${esc(String(v))}</b></div>` : "";
+
+/** ترويسة على نمط امتحانات وزارة التربية والتعليم الأردنية. نص فقط؛ الشعار اختياري ويرفعه المعلم نفسه. */
+export function jordanHeaderHtml(exam: GeneratedExam, mode: "student" | "key" | "bank"): string {
+  const m = exam.meta, h = m.header!;
+  const marks = h.totalMarks > 0 ? h.totalMarks : exam.questions.length;
+  const heading = `${exam.title}${mode === "key" ? " — نموذج الإجابة" : mode === "bank" ? " — بنك أسئلة" : ""}`;
+  const examLine = [h.examName, h.semester ? `الفصل الدراسي ${h.semester}` : "", h.academicYear ? `العام الدراسي ${h.academicYear}` : ""].filter(Boolean).join(" — ");
+  const gradeSection = [m.grade, h.section ? `الشعبة (${h.section})` : ""].filter(Boolean).join(" / ");
+  return `<div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+      <div style="flex:1.1;text-align:right;font-size:13px;line-height:1.75;font-weight:700;color:${NAVY}">
+        <div>المملكة الأردنية الهاشمية</div>
+        <div>وزارة التربية والتعليم</div>
+        ${h.directorate ? `<div>مديرية التربية والتعليم ${/^(ل|لل)/.test(h.directorate) ? "" : "ل"}${esc(h.directorate)}</div>` : ""}
+        ${m.schoolName ? `<div>${/مدرسة|ثانوية|أساسية/.test(m.schoolName) ? "" : "مدرسة "}${esc(m.schoolName)}</div>` : ""}
+      </div>
+      <div style="flex:0.8;display:flex;justify-content:center">
+        ${h.logoDataUrl ? `<img src="${h.logoDataUrl}" alt="" style="max-height:92px;max-width:130px;object-fit:contain"/>` : ""}
+      </div>
+      <div style="flex:1.1;display:flex;flex-direction:column;align-items:flex-start;padding-right:0">
+        ${kv("المادة", m.subject)}${kv("الصف", gradeSection)}${kv("الزمن", m.durationMinutes ? `${m.durationMinutes} دقيقة` : "")}${kv("التاريخ", h.examDate)}${kv("المعلم", m.teacherName)}
+      </div>
+    </div>
+    <div style="height:2px;background:${NAVY};margin:10px 0 8px"></div>
+    <div style="text-align:center">
+      ${examLine ? `<div style="font-size:13px;color:${MUTED};font-weight:600">${esc(examLine)}</div>` : ""}
+      <div style="font-size:23px;font-weight:900;color:${NAVY};line-height:1.55">${esc(heading)}</div>
+    </div>
+    ${mode === "student" ? `<div style="display:flex;gap:14px;margin-top:12px;font-size:13px;color:${INK}">
+      <div style="flex:3;border-bottom:1px solid ${INK};padding-bottom:3px;text-align:right">اسم الطالب:</div>
+      <div style="flex:1.3;border-bottom:1px solid ${INK};padding-bottom:3px;text-align:right">رقم الجلوس:</div>
+      <div style="flex:1.3;border:1.5px solid ${NAVY};border-radius:6px;padding:2px 8px 4px;line-height:1.6;text-align:center">العلامة: &nbsp;&nbsp;/ ${marks}</div></div>` : ""}
+    <div style="height:1px;background:${LINE};margin-top:10px"></div>
+  </div>`;
+}
+
 function headerBlock(exam: GeneratedExam, mode: "student" | "key" | "bank"): Block {
   const m = exam.meta;
+  if (m.header?.style === "jordan") return { html: jordanHeaderHtml(exam, mode) };
   const chips = [
     m.subject && `المادة: ${m.subject}`,
     m.grade && `الصف: ${m.grade}`,
@@ -121,6 +161,7 @@ function headerBlock(exam: GeneratedExam, mode: "student" | "key" | "bank"): Blo
   ].filter(Boolean) as string[];
   return {
     html: `<div style="text-align:center">
+      ${m.header?.logoDataUrl ? `<img src="${m.header.logoDataUrl}" alt="" style="max-height:80px;max-width:140px;object-fit:contain;margin-bottom:6px"/>` : ""}
       ${m.schoolName ? `<div style="font-size:14px;color:${MUTED};font-weight:600;margin-bottom:4px">${esc(m.schoolName)}</div>` : ""}
       <div style="font-size:26px;font-weight:900;color:${NAVY};line-height:1.5">${esc(exam.title)}${mode === "key" ? " — نموذج الإجابة" : mode === "bank" ? " — بنك أسئلة" : ""}</div>
       <div style="height:3px;background:linear-gradient(90deg,transparent,${ACCENT},transparent);margin:8px 0 10px"></div>

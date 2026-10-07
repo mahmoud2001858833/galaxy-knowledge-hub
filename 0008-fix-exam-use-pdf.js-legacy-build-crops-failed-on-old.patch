@@ -1,0 +1,44 @@
+From 736e041d500c58ba48c0b2d75307ecf5c5c692d3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 12:38:26 +0300
+Subject: [PATCH] fix(exam): use pdf.js legacy build (crops failed on older
+ browsers: getOrInsertComputed), immediate feedback on generate
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XdcTmJqnDrGDD4d7UkTCsq
+---
+ src/components/exam-creator/ExamCreatorWizard.tsx | 2 +-
+ src/lib/examCreator/fileUtils.ts                  | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/components/exam-creator/ExamCreatorWizard.tsx b/src/components/exam-creator/ExamCreatorWizard.tsx
+index 05010d77..341f3ab3 100644
+--- a/src/components/exam-creator/ExamCreatorWizard.tsx
++++ b/src/components/exam-creator/ExamCreatorWizard.tsx
+@@ -122,7 +122,7 @@ export default function ExamCreatorWizard() {
+ 
+   const generate = async () => {
+     if (!analysis) return;
+-    setBusy(true); setProgress(null);
++    setBusy(true); setProgress(null); setStage("جارٍ تجهيز الملفات...");
+     const ac = new AbortController();
+     abortRef.current = ac;
+     try {
+diff --git a/src/lib/examCreator/fileUtils.ts b/src/lib/examCreator/fileUtils.ts
+index 64bbf683..b7ed0fed 100644
+--- a/src/lib/examCreator/fileUtils.ts
++++ b/src/lib/examCreator/fileUtils.ts
+@@ -51,8 +51,8 @@ let pdfjsPromise: Promise<any> | null = null;
+ async function getPdfjs() {
+   if (!pdfjsPromise) {
+     pdfjsPromise = (async () => {
+-      const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
+-      const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
++      const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
++      const worker = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
+       pdfjs.GlobalWorkerOptions.workerSrc = worker;
+       return pdfjs;
+     })();
+-- 
+2.43.0
+

@@ -71,12 +71,32 @@ export interface ExamQuestion {
   figure?: FigureRef;
 }
 
+/** بيانات ترويسة الامتحان (على نمط امتحانات وزارة التربية والتعليم الأردنية) — تتغير لكل معلم. */
+export interface ExamHeader {
+  style: "jordan" | "simple";
+  /** مديرية التربية والتعليم (مثل: لواء المزار الشمالي) */
+  directorate: string;
+  /** الشعبة */
+  section: string;
+  semester: "" | "الأول" | "الثاني";
+  /** العام الدراسي مثل 2026/2027 */
+  academicYear: string;
+  /** اسم الامتحان مثل: الامتحان الشهري الأول */
+  examName: string;
+  examDate: string;
+  /** العلامة الكلية؛ 0 = عدد الأسئلة */
+  totalMarks: number;
+  /** شعار المدرسة يرفعه المعلم (اختياري، صورة صغيرة) */
+  logoDataUrl: string;
+}
+
 export interface ExamMeta {
   schoolName: string;
   teacherName: string;
   subject: string;
   grade: string;
   durationMinutes: number;
+  header?: ExamHeader;
 }
 
 export interface GeneratedExam {

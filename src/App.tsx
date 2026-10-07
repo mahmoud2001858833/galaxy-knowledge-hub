@@ -215,6 +215,7 @@ const AIConceptMindmapStudioPage = wrap(lazy(() => import("./pages/AIConceptMind
 const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
 const ExamCreator = wrap(lazy(() => import("./pages/ExamCreator")));
 const OnlineExam = wrap(lazy(() => import("./pages/OnlineExam")));
+const ExamAgent = wrap(lazy(() => import("./pages/ExamAgent")));
 const ApiKeysDeveloperPortal = wrap(lazy(() => import("./pages/ApiKeysDeveloperPortal")));
 const SmartCitySection = wrap(lazy(() => import("./pages/SmartCitySection")));
 const AIArchitecturalDesign = wrap(lazy(() => import("./pages/AIArchitecturalDesign")));
@@ -572,6 +573,10 @@ const router = createBrowserRouter([
       {
         path: 'exam-generator-legacy',
         element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+      },
+      {
+        path: 'agent/:token',
+        element: <AuthGuard><ExamAgent /></AuthGuard>,
       },
       {
         path: 'exam/:token',

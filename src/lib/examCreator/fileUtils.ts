@@ -48,11 +48,11 @@ const readBase64 = (file: File) =>
 
 // ───────── PDF.js (يُحمَّل عند الحاجة فقط) ─────────
 let pdfjsPromise: Promise<any> | null = null;
-async function getPdfjs() {
+export async function getPdfjs() {
   if (!pdfjsPromise) {
     pdfjsPromise = (async () => {
-      const pdfjs: any = await import("pdfjs-dist/build/pdf.mjs");
-      const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      const pdfjs: any = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const worker = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
       pdfjs.GlobalWorkerOptions.workerSrc = worker;
       return pdfjs;
     })();

@@ -284,3 +284,6 @@ verify_jwt = true
 
 [functions.online-exam]
 verify_jwt = false
+
+[functions.agent-chat]
+verify_jwt = true

@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowRight, Database, FileText, Loader2, Sparkles, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { Progress as RunProgress } from "@/lib/examCreator/batchGenerate";
-import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type QType } from "@/lib/examCreator/types";
+import { defaultHeader, shrinkLogo } from "@/lib/examCreator/teacherProfile";
+import { jordanHeaderHtml } from "@/lib/examCreator/pdfExport";
+import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type ExamHeader, type QType } from "@/lib/examCreator/types";
 
 export interface SettingsState {
   mode: CreatorMode;
@@ -28,13 +30,14 @@ export interface SettingsState {
   schoolName: string;
   teacherName: string;
   durationMinutes: number;
+  header: ExamHeader;
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
   mode: "exam", figureQuestions: 2, tableQuestions: 2,
   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
   difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
-  includeFigures: true, includeTables: true, verify: true, schoolName: "", teacherName: "", durationMinutes: 45,
+  includeFigures: true, includeTables: true, verify: true, schoolName: "", teacherName: "", durationMinutes: 45, header: defaultHeader(),
 };
 
 const PRESETS: Record<CreatorMode, { label: string; counts: Record<QType, number> }[]> = {
@@ -234,20 +237,7 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
         </div>
       </Card>
 
-      <Card className="space-y-3 p-4">
-        <Label className="text-base">بيانات رأس الامتحان (تظهر في PDF)</Label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Input placeholder="اسم المدرسة" value={s.schoolName} onChange={(e) => set("schoolName", e.target.value)} />
-          <Input placeholder="اسم المعلم" value={s.teacherName} onChange={(e) => set("teacherName", e.target.value)} />
-          <Input placeholder="المادة" value={s.subject} onChange={(e) => set("subject", e.target.value)} />
-          <Input placeholder="الصف" value={s.grade} onChange={(e) => set("grade", e.target.value)} />
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">زمن الامتحان بالدقائق</Label>
-            <Input type="number" min={0} max={600} value={s.durationMinutes}
-              onChange={(e) => set("durationMinutes", Math.max(0, Math.min(600, parseInt(e.target.value || "0", 10) || 0)))} />
-          </div>
-        </div>
-      </Card>
+      <HeaderCard s={s} onChange={onChange} total={total} />
 
       {busy && progress && (
         <Card className="space-y-2 p-4">
@@ -275,5 +265,81 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
         </Button>
       </div>
     </div>
+  );
+}
+
+function HeaderCard({ s, onChange, total }: { s: SettingsState; onChange: (s: SettingsState) => void; total: number }) {
+  const h = s.header;
+  const setH = <K extends keyof ExamHeader>(k: K, v: ExamHeader[K]) => onChange({ ...s, header: { ...h, [k]: v } });
+  const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
+  const html = jordanHeaderHtml({
+    title: "عنوان الامتحان", questions: Array.from({ length: total }, (_, i) => ({ id: i } as any)),
+    meta: { schoolName: s.schoolName, teacherName: s.teacherName, subject: s.subject, grade: s.grade, durationMinutes: s.durationMinutes, header: h },
+  }, "student");
+  return (
+    <Card className="space-y-4 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Label className="text-base">ترويسة الامتحان (تظهر في PDF)</Label>
+          <p className="text-xs text-muted-foreground">تُحفظ بياناتك على هذا الجهاز وتُملأ تلقائياً في امتحاناتك القادمة؛ غيّرها متى شئت لكل معلم أو مدرسة.</p>
+        </div>
+        <div className="flex shrink-0 gap-1 rounded-lg bg-muted p-1 text-xs">
+          {([["jordan", "نمط وزارة التربية الأردنية"], ["simple", "بسيطة"]] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setH("style", k)}
+              className={`rounded-md px-3 py-1.5 ${h.style === k ? "bg-background font-semibold shadow-sm" : "text-muted-foreground"}`}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {h.style === "jordan" && <Input placeholder="مديرية التربية والتعليم (مثل: لواء المزار الشمالي)" value={h.directorate} onChange={(e) => setH("directorate", e.target.value)} />}
+        <Input placeholder="اسم المدرسة" value={s.schoolName} onChange={(e) => set("schoolName", e.target.value)} />
+        <Input placeholder="اسم المعلم" value={s.teacherName} onChange={(e) => set("teacherName", e.target.value)} />
+        <Input placeholder="المادة" value={s.subject} onChange={(e) => set("subject", e.target.value)} />
+        <Input placeholder="الصف (مثل: العاشر)" value={s.grade} onChange={(e) => set("grade", e.target.value)} />
+        {h.style === "jordan" && (<>
+          <Input placeholder="الشعبة (مثل: أ)" value={h.section} onChange={(e) => setH("section", e.target.value)} />
+          <Input placeholder="اسم الامتحان (مثل: الامتحان الشهري الأول)" value={h.examName} onChange={(e) => setH("examName", e.target.value)} />
+          <Select value={h.semester || "none"} onValueChange={(v) => setH("semester", v === "none" ? "" : (v as ExamHeader["semester"]))}>
+            <SelectTrigger><SelectValue placeholder="الفصل الدراسي" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">بدون فصل</SelectItem>
+              <SelectItem value="الأول">الفصل الدراسي الأول</SelectItem>
+              <SelectItem value="الثاني">الفصل الدراسي الثاني</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input placeholder="العام الدراسي (2026/2027)" value={h.academicYear} onChange={(e) => setH("academicYear", e.target.value)} dir="ltr" className="text-right" />
+          <Input placeholder="تاريخ الامتحان (مثل: 2026/10/20)" value={h.examDate} onChange={(e) => setH("examDate", e.target.value)} />
+          <div className="space-y-1">
+            <Label className="text-xs">العلامة الكلية (اتركها 0 لتساوي عدد الأسئلة)</Label>
+            <Input type="number" min={0} max={1000} value={h.totalMarks} onChange={(e) => setH("totalMarks", Math.max(0, Math.min(1000, parseInt(e.target.value || "0", 10) || 0)))} />
+          </div>
+        </>)}
+        <div className="space-y-1">
+          <Label className="text-xs">زمن الامتحان بالدقائق</Label>
+          <Input type="number" min={0} max={600} value={s.durationMinutes}
+            onChange={(e) => set("durationMinutes", Math.max(0, Math.min(600, parseInt(e.target.value || "0", 10) || 0)))} />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label className="text-xs">الشعار الرسمي (ارفع صورة الشعار فيظهر في ترويسة الامتحان وفي PDF)</Label>
+          <div className="flex items-center gap-3">
+            <Input type="file" accept="image/*" className="max-w-xs text-xs"
+              onChange={async (e) => { const f = e.target.files?.[0]; if (f) { try { setH("logoDataUrl", await shrinkLogo(f)); } catch (err: any) { alert(err?.message ?? "تعذّر رفع الشعار"); } } }} />
+            {h.logoDataUrl && (<>
+              <img src={h.logoDataUrl} alt="الشعار" className="h-12 w-auto max-w-[96px] rounded border bg-white object-contain p-1" />
+              <Button type="button" size="sm" variant="outline" onClick={() => setH("logoDataUrl", "")}>إزالة</Button>
+            </>)}
+          </div>
+        </div>
+      </div>
+
+      {h.style === "jordan" && (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">معاينة الترويسة</Label>
+          <div className="overflow-hidden rounded-lg border bg-white p-3 text-slate-900" dir="rtl" style={{ fontFamily: "Cairo, Tahoma, sans-serif" }}
+            dangerouslySetInnerHTML={{ __html: html }} />
+        </div>
+      )}
+    </Card>
   );
 }

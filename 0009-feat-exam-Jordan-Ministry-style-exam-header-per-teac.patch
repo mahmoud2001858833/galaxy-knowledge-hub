@@ -1,0 +1,347 @@
+From bdcddf8acf7d5086dd1135df6dcf2ad6ddf6cb7c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 6 Oct 2026 13:15:42 +0300
+Subject: [PATCH] feat(exam): Jordan Ministry-style exam header, per-teacher
+ profile saved locally, live preview
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01XdcTmJqnDrGDD4d7UkTCsq
+---
+ .../exam-creator/ExamCreatorWizard.tsx        | 21 +++-
+ src/components/exam-creator/StepSettings.tsx  | 97 ++++++++++++++++---
+ src/lib/examCreator/pdfExport.ts              | 40 ++++++++
+ src/lib/examCreator/teacherProfile.ts         | 53 ++++++++++
+ src/lib/examCreator/types.ts                  | 20 ++++
+ 5 files changed, 214 insertions(+), 17 deletions(-)
+ create mode 100644 src/lib/examCreator/teacherProfile.ts
+
+diff --git a/src/components/exam-creator/ExamCreatorWizard.tsx b/src/components/exam-creator/ExamCreatorWizard.tsx
+index 341f3ab3..381fd8e1 100644
+--- a/src/components/exam-creator/ExamCreatorWizard.tsx
++++ b/src/components/exam-creator/ExamCreatorWizard.tsx
+@@ -11,6 +11,8 @@ import {
+ } from "@/lib/examCreator/fileUtils";
+ import { loadBank, saveHistory, updateHistory, type HistorySource } from "@/lib/examCreator/history";
+ import { downloadLibraryFile, listLibrary, type LibraryRow } from "@/lib/examCreator/library";
++import { loadProfile, saveProfile } from "@/lib/examCreator/teacherProfile";
++import { supabase } from "@/integrations/supabase/client";
+ import { mergeUnitLists, sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
+ import type { AnalyzeResponse, Catalog, ExamDiagnostics, GeneratedExam, UnitInfo } from "@/lib/examCreator/types";
+ import StepUpload, { type Source } from "./StepUpload";
+@@ -50,6 +52,22 @@ export default function ExamCreatorWizard() {
+     listLibrary().then((r) => setLibrary(r.filter((x) => x.is_published))).catch((e) => { setLibraryError(e.message); setLibrary([]); });
+   }, []);
+ 
++  const uidRef = useRef<string | null>(null);
++  // نملأ بيانات الترويسة من ملف المعلم المحفوظ (ولا نكتب فوق ما أدخله المستخدم)
++  useEffect(() => {
++    supabase.auth.getSession().then(({ data }) => {
++      uidRef.current = data.session?.user.id ?? null;
++      const p = loadProfile(uidRef.current);
++      if (!p) return;
++      setSettings((s) => ({
++        ...s,
++        schoolName: s.schoolName || p.schoolName || "", teacherName: s.teacherName || p.teacherName || "",
++        subject: s.subject || p.subject || "", grade: s.grade || p.grade || "",
++        durationMinutes: p.durationMinutes || s.durationMinutes,
++        header: { ...s.header, ...(p.header ?? {}), examName: s.header.examName, examDate: s.header.examDate, totalMarks: s.header.totalMarks },
++      }));
++    }).catch(() => {});
++  }, []);
+   const fail = (title: string, e: any) => toast({ title, description: e?.message || "حدث خطأ غير متوقع", variant: "destructive" });
+   const resetDerived = () => { setPrepared([]); setAnalysis(null); setSelected(new Set()); setExam(null); setBank(null); setGen(null); setDiag(null); setHistoryId(null); setView3("review"); };
+ 
+@@ -173,7 +191,8 @@ export default function ExamCreatorWizard() {
+       setStage(isBank ? "جارٍ بناء البنك على دفعات متوازية..." : total > 25 ? "جارٍ إنشاء الامتحان على دفعات..." : "الذكاء الاصطناعي يصيغ الأسئلة ثم يدقّقها مقابل ملفاتك (قد يستغرق دقيقة)...");
+       setProgress({ batchesDone: 0, batches: Math.ceil(total / 12), questions: 0, target: total, failed: 0, concurrency: 2, waitSeconds: 0 });
+ 
+-      const meta = { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes };
++      const meta = { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes, header: settings.header };
++      saveProfile(uidRef.current, { schoolName: settings.schoolName, teacherName: settings.teacherName, subject: settings.subject, grade: settings.grade, durationMinutes: settings.durationMinutes, header: settings.header });
+       const hs = historySources();
+       const baseTitle = `${settings.subject || "بنك"} — بنك أسئلة`;
+       let bankHist: string | null = null, lastSaved = 0, chain: Promise<void> = Promise.resolve();
+diff --git a/src/components/exam-creator/StepSettings.tsx b/src/components/exam-creator/StepSettings.tsx
+index 09abd9a0..8f5c81ee 100644
+--- a/src/components/exam-creator/StepSettings.tsx
++++ b/src/components/exam-creator/StepSettings.tsx
+@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
+ import { ArrowRight, Database, FileText, Loader2, Sparkles, X } from "lucide-react";
+ import { Progress } from "@/components/ui/progress";
+ import type { Progress as RunProgress } from "@/lib/examCreator/batchGenerate";
+-import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type QType } from "@/lib/examCreator/types";
++import { defaultHeader, shrinkLogo } from "@/lib/examCreator/teacherProfile";
++import { jordanHeaderHtml } from "@/lib/examCreator/pdfExport";
++import { MAX_BANK_QUESTIONS, MAX_EXAM_QUESTIONS, QTYPE_META, type CreatorMode, type ExamHeader, type QType } from "@/lib/examCreator/types";
+ 
+ export interface SettingsState {
+   mode: CreatorMode;
+@@ -28,13 +30,14 @@ export interface SettingsState {
+   schoolName: string;
+   teacherName: string;
+   durationMinutes: number;
++  header: ExamHeader;
+ }
+ 
+ export const DEFAULT_SETTINGS: SettingsState = {
+   mode: "exam", figureQuestions: 2, tableQuestions: 2,
+   counts: { multiple_choice: 6, true_false: 2, fill_blank: 2, short_answer: 0, essay: 0 },
+   difficulty: "mixed", language: "auto", distribution: "by_unit", grade: "", subject: "", request: "",
+-  includeFigures: true, includeTables: true, verify: true, schoolName: "", teacherName: "", durationMinutes: 45,
++  includeFigures: true, includeTables: true, verify: true, schoolName: "", teacherName: "", durationMinutes: 45, header: defaultHeader(),
+ };
+ 
+ const PRESETS: Record<CreatorMode, { label: string; counts: Record<QType, number> }[]> = {
+@@ -234,20 +237,7 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
+         </div>
+       </Card>
+ 
+-      <Card className="space-y-3 p-4">
+-        <Label className="text-base">بيانات رأس الامتحان (تظهر في PDF)</Label>
+-        <div className="grid gap-3 sm:grid-cols-2">
+-          <Input placeholder="اسم المدرسة" value={s.schoolName} onChange={(e) => set("schoolName", e.target.value)} />
+-          <Input placeholder="اسم المعلم" value={s.teacherName} onChange={(e) => set("teacherName", e.target.value)} />
+-          <Input placeholder="المادة" value={s.subject} onChange={(e) => set("subject", e.target.value)} />
+-          <Input placeholder="الصف" value={s.grade} onChange={(e) => set("grade", e.target.value)} />
+-          <div className="space-y-1 sm:col-span-2">
+-            <Label className="text-xs">زمن الامتحان بالدقائق</Label>
+-            <Input type="number" min={0} max={600} value={s.durationMinutes}
+-              onChange={(e) => set("durationMinutes", Math.max(0, Math.min(600, parseInt(e.target.value || "0", 10) || 0)))} />
+-          </div>
+-        </div>
+-      </Card>
++      <HeaderCard s={s} onChange={onChange} total={total} />
+ 
+       {busy && progress && (
+         <Card className="space-y-2 p-4">
+@@ -277,3 +267,78 @@ export default function StepSettings({ s, onChange, canFigures, unitsHaveFigures
+     </div>
+   );
+ }
++
++function HeaderCard({ s, onChange, total }: { s: SettingsState; onChange: (s: SettingsState) => void; total: number }) {
++  const h = s.header;
++  const setH = <K extends keyof ExamHeader>(k: K, v: ExamHeader[K]) => onChange({ ...s, header: { ...h, [k]: v } });
++  const set = <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => onChange({ ...s, [k]: v });
++  const html = jordanHeaderHtml({
++    title: "عنوان الامتحان", questions: Array.from({ length: total }, (_, i) => ({ id: i } as any)),
++    meta: { schoolName: s.schoolName, teacherName: s.teacherName, subject: s.subject, grade: s.grade, durationMinutes: s.durationMinutes, header: h },
++  }, "student");
++  return (
++    <Card className="space-y-4 p-4">
++      <div className="flex items-start justify-between gap-3">
++        <div>
++          <Label className="text-base">ترويسة الامتحان (تظهر في PDF)</Label>
++          <p className="text-xs text-muted-foreground">تُحفظ بياناتك على هذا الجهاز وتُملأ تلقائياً في امتحاناتك القادمة؛ غيّرها متى شئت لكل معلم أو مدرسة.</p>
++        </div>
++        <div className="flex shrink-0 gap-1 rounded-lg bg-muted p-1 text-xs">
++          {([["jordan", "نمط وزارة التربية الأردنية"], ["simple", "بسيطة"]] as const).map(([k, l]) => (
++            <button key={k} type="button" onClick={() => setH("style", k)}
++              className={`rounded-md px-3 py-1.5 ${h.style === k ? "bg-background font-semibold shadow-sm" : "text-muted-foreground"}`}>{l}</button>
++          ))}
++        </div>
++      </div>
++
++      <div className="grid gap-3 sm:grid-cols-2">
++        {h.style === "jordan" && <Input placeholder="مديرية التربية والتعليم (مثل: لواء المزار الشمالي)" value={h.directorate} onChange={(e) => setH("directorate", e.target.value)} />}
++        <Input placeholder="اسم المدرسة" value={s.schoolName} onChange={(e) => set("schoolName", e.target.value)} />
++        <Input placeholder="اسم المعلم" value={s.teacherName} onChange={(e) => set("teacherName", e.target.value)} />
++        <Input placeholder="المادة" value={s.subject} onChange={(e) => set("subject", e.target.value)} />
++        <Input placeholder="الصف (مثل: العاشر)" value={s.grade} onChange={(e) => set("grade", e.target.value)} />
++        {h.style === "jordan" && (<>
++          <Input placeholder="الشعبة (مثل: أ)" value={h.section} onChange={(e) => setH("section", e.target.value)} />
++          <Input placeholder="اسم الامتحان (مثل: الامتحان الشهري الأول)" value={h.examName} onChange={(e) => setH("examName", e.target.value)} />
++          <Select value={h.semester || "none"} onValueChange={(v) => setH("semester", v === "none" ? "" : (v as ExamHeader["semester"]))}>
++            <SelectTrigger><SelectValue placeholder="الفصل الدراسي" /></SelectTrigger>
++            <SelectContent>
++              <SelectItem value="none">بدون فصل</SelectItem>
++              <SelectItem value="الأول">الفصل الدراسي الأول</SelectItem>
++              <SelectItem value="الثاني">الفصل الدراسي الثاني</SelectItem>
++            </SelectContent>
++          </Select>
++          <Input placeholder="العام الدراسي (2026/2027)" value={h.academicYear} onChange={(e) => setH("academicYear", e.target.value)} dir="ltr" className="text-right" />
++          <Input placeholder="تاريخ الامتحان (مثل: 2026/10/20)" value={h.examDate} onChange={(e) => setH("examDate", e.target.value)} />
++          <div className="space-y-1">
++            <Label className="text-xs">العلامة الكلية (اتركها 0 لتساوي عدد الأسئلة)</Label>
++            <Input type="number" min={0} max={1000} value={h.totalMarks} onChange={(e) => setH("totalMarks", Math.max(0, Math.min(1000, parseInt(e.target.value || "0", 10) || 0)))} />
++          </div>
++        </>)}
++        <div className="space-y-1">
++          <Label className="text-xs">زمن الامتحان بالدقائق</Label>
++          <Input type="number" min={0} max={600} value={s.durationMinutes}
++            onChange={(e) => set("durationMinutes", Math.max(0, Math.min(600, parseInt(e.target.value || "0", 10) || 0)))} />
++        </div>
++        {h.style === "jordan" && (
++          <div className="space-y-1">
++            <Label className="text-xs">شعار مدرستك (اختياري — ترفعه أنت)</Label>
++            <div className="flex items-center gap-2">
++              <Input type="file" accept="image/*" className="text-xs"
++                onChange={async (e) => { const f = e.target.files?.[0]; if (f) { try { setH("logoDataUrl", await shrinkLogo(f)); } catch { /* تجاهل */ } } }} />
++              {h.logoDataUrl && <Button type="button" size="sm" variant="outline" onClick={() => setH("logoDataUrl", "")}>إزالة</Button>}
++            </div>
++          </div>
++        )}
++      </div>
++
++      {h.style === "jordan" && (
++        <div className="space-y-1">
++          <Label className="text-xs text-muted-foreground">معاينة الترويسة</Label>
++          <div className="overflow-hidden rounded-lg border bg-white p-3 text-slate-900" dir="rtl" style={{ fontFamily: "Cairo, Tahoma, sans-serif" }}
++            dangerouslySetInnerHTML={{ __html: html }} />
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/src/lib/examCreator/pdfExport.ts b/src/lib/examCreator/pdfExport.ts
+index 5bc927d7..845a551d 100644
+--- a/src/lib/examCreator/pdfExport.ts
++++ b/src/lib/examCreator/pdfExport.ts
+@@ -111,8 +111,48 @@ function sectionHeading(label: string, count: number, idx: number): Block {
+   };
+ }
+ 
++/** سطر «تسمية: قيمة» داخل جدول بيانات الترويسة (يُحذف إن كانت القيمة فارغة). */
++const kv = (k: string, v?: string | number) =>
++  v ? `<div style="display:flex;gap:6px;font-size:12.5px;line-height:1.7"><span style="color:${MUTED};white-space:nowrap">${esc(k)}:</span><b style="color:${INK};font-weight:700">${esc(String(v))}</b></div>` : "";
++
++/** ترويسة على نمط امتحانات وزارة التربية والتعليم الأردنية. نص فقط؛ الشعار اختياري ويرفعه المعلم نفسه. */
++export function jordanHeaderHtml(exam: GeneratedExam, mode: "student" | "key" | "bank"): string {
++  const m = exam.meta, h = m.header!;
++  const marks = h.totalMarks > 0 ? h.totalMarks : exam.questions.length;
++  const heading = `${exam.title}${mode === "key" ? " — نموذج الإجابة" : mode === "bank" ? " — بنك أسئلة" : ""}`;
++  const examLine = [h.examName, h.semester ? `الفصل الدراسي ${h.semester}` : "", h.academicYear ? `العام الدراسي ${h.academicYear}` : ""].filter(Boolean).join(" — ");
++  const gradeSection = [m.grade, h.section ? `الشعبة (${h.section})` : ""].filter(Boolean).join(" / ");
++  return `<div>
++    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
++      <div style="flex:1.1;text-align:right;font-size:13px;line-height:1.75;font-weight:700;color:${NAVY}">
++        <div>المملكة الأردنية الهاشمية</div>
++        <div>وزارة التربية والتعليم</div>
++        ${h.directorate ? `<div>مديرية التربية والتعليم ${/^(ل|لل)/.test(h.directorate) ? "" : "ل"}${esc(h.directorate)}</div>` : ""}
++        ${m.schoolName ? `<div>${/مدرسة|ثانوية|أساسية/.test(m.schoolName) ? "" : "مدرسة "}${esc(m.schoolName)}</div>` : ""}
++      </div>
++      <div style="flex:0.8;display:flex;justify-content:center">
++        ${h.logoDataUrl ? `<img src="${h.logoDataUrl}" alt="" style="max-height:78px;max-width:120px;object-fit:contain"/>` : ""}
++      </div>
++      <div style="flex:1.1;display:flex;flex-direction:column;align-items:flex-start;padding-right:0">
++        ${kv("المادة", m.subject)}${kv("الصف", gradeSection)}${kv("الزمن", m.durationMinutes ? `${m.durationMinutes} دقيقة` : "")}${kv("التاريخ", h.examDate)}${kv("المعلم", m.teacherName)}
++      </div>
++    </div>
++    <div style="height:2px;background:${NAVY};margin:10px 0 8px"></div>
++    <div style="text-align:center">
++      ${examLine ? `<div style="font-size:13px;color:${MUTED};font-weight:600">${esc(examLine)}</div>` : ""}
++      <div style="font-size:23px;font-weight:900;color:${NAVY};line-height:1.55">${esc(heading)}</div>
++    </div>
++    ${mode === "student" ? `<div style="display:flex;gap:14px;margin-top:12px;font-size:13px;color:${INK}">
++      <div style="flex:3;border-bottom:1px solid ${INK};padding-bottom:3px;text-align:right">اسم الطالب:</div>
++      <div style="flex:1.3;border-bottom:1px solid ${INK};padding-bottom:3px;text-align:right">رقم الجلوس:</div>
++      <div style="flex:1.3;border:1.5px solid ${NAVY};border-radius:6px;padding:2px 8px 4px;line-height:1.6;text-align:center">العلامة: &nbsp;&nbsp;/ ${marks}</div></div>` : ""}
++    <div style="height:1px;background:${LINE};margin-top:10px"></div>
++  </div>`;
++}
++
+ function headerBlock(exam: GeneratedExam, mode: "student" | "key" | "bank"): Block {
+   const m = exam.meta;
++  if (m.header?.style === "jordan") return { html: jordanHeaderHtml(exam, mode) };
+   const chips = [
+     m.subject && `المادة: ${m.subject}`,
+     m.grade && `الصف: ${m.grade}`,
+diff --git a/src/lib/examCreator/teacherProfile.ts b/src/lib/examCreator/teacherProfile.ts
+new file mode 100644
+index 00000000..1600b0e2
+--- /dev/null
++++ b/src/lib/examCreator/teacherProfile.ts
+@@ -0,0 +1,53 @@
++// ملف المعلم: يحفظ بيانات الترويسة محلياً لكل مستخدم لتُملأ تلقائياً في كل امتحان جديد.
++import type { ExamHeader } from "./types";
++
++export interface TeacherProfile {
++  schoolName: string; teacherName: string; subject: string; grade: string; durationMinutes: number;
++  header: ExamHeader;
++}
++
++/** العام الدراسي الأردني يبدأ في أيلول: من 9 فما فوق = y/y+1، وإلا (y-1)/y. */
++export function currentAcademicYear(d = new Date()): string {
++  const y = d.getFullYear();
++  return d.getMonth() + 1 >= 9 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
++}
++export function guessSemester(d = new Date()): "الأول" | "الثاني" {
++  const m = d.getMonth() + 1;
++  return m >= 9 || m === 1 ? "الأول" : "الثاني";
++}
++
++export const defaultHeader = (): ExamHeader => ({
++  style: "jordan", directorate: "", section: "", semester: guessSemester(), academicYear: currentAcademicYear(),
++  examName: "", examDate: "", totalMarks: 0, logoDataUrl: "",
++});
++
++const key = (uid?: string | null) => `exam-teacher-profile:${uid || "anon"}`;
++
++export function loadProfile(uid?: string | null): Partial<TeacherProfile> | null {
++  try {
++    const raw = localStorage.getItem(key(uid));
++    return raw ? (JSON.parse(raw) as Partial<TeacherProfile>) : null;
++  } catch { return null; }
++}
++
++/** نحفظ ما يخص المعلم (لا اسم الامتحان ولا التاريخ ولا العلامة فهي خاصة بكل امتحان). */
++export function saveProfile(uid: string | null | undefined, p: TeacherProfile) {
++  try {
++    const { examName: _n, examDate: _d, totalMarks: _t, ...keep } = p.header;
++    localStorage.setItem(key(uid), JSON.stringify({ ...p, header: keep }));
++  } catch { /* التخزين غير متاح: لا بأس */ }
++}
++
++/** يصغّر شعاراً مرفوعاً إلى ≤ 240px كـ PNG/JPEG لتخفيف الحجم. */
++export async function shrinkLogo(file: File): Promise<string> {
++  if (!file.type.startsWith("image/")) throw new Error("اختر ملف صورة للشعار");
++  const url = URL.createObjectURL(file);
++  try {
++    const img = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("تعذّرت قراءة الصورة")); i.src = url; });
++    const k = Math.min(1, 240 / Math.max(img.width, img.height));
++    const c = document.createElement("canvas");
++    c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
++    c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
++    return c.toDataURL(file.type === "image/jpeg" ? "image/jpeg" : "image/png", 0.9);
++  } finally { URL.revokeObjectURL(url); }
++}
+diff --git a/src/lib/examCreator/types.ts b/src/lib/examCreator/types.ts
+index 0d9d2b19..bd537dce 100644
+--- a/src/lib/examCreator/types.ts
++++ b/src/lib/examCreator/types.ts
+@@ -71,12 +71,32 @@ export interface ExamQuestion {
+   figure?: FigureRef;
+ }
+ 
++/** بيانات ترويسة الامتحان (على نمط امتحانات وزارة التربية والتعليم الأردنية) — تتغير لكل معلم. */
++export interface ExamHeader {
++  style: "jordan" | "simple";
++  /** مديرية التربية والتعليم (مثل: لواء المزار الشمالي) */
++  directorate: string;
++  /** الشعبة */
++  section: string;
++  semester: "" | "الأول" | "الثاني";
++  /** العام الدراسي مثل 2026/2027 */
++  academicYear: string;
++  /** اسم الامتحان مثل: الامتحان الشهري الأول */
++  examName: string;
++  examDate: string;
++  /** العلامة الكلية؛ 0 = عدد الأسئلة */
++  totalMarks: number;
++  /** شعار المدرسة يرفعه المعلم (اختياري، صورة صغيرة) */
++  logoDataUrl: string;
++}
++
+ export interface ExamMeta {
+   schoolName: string;
+   teacherName: string;
+   subject: string;
+   grade: string;
+   durationMinutes: number;
++  header?: ExamHeader;
+ }
+ 
+ export interface GeneratedExam {
+-- 
+2.43.0
+

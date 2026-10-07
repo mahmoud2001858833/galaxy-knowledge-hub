@@ -5,6 +5,7 @@ import { Loader2, ShieldAlert } from "lucide-react";
 import { fetchIsAdmin } from "@/lib/examCreator/library";
 import LibraryManager from "./exam-library/LibraryManager";
 import AllExamsPanel from "./exam-library/AllExamsPanel";
+import AgentsManager from "./exam-library/AgentsManager";
 
 /**
  * بوابة لوحة الأدمن في الواجهة ضعيفة (كلمة مرور في المتصفح)، فلا نعتمد عليها هنا:
@@ -38,11 +39,13 @@ on conflict (user_id, role) do nothing;`}</pre>
         <p className="text-sm text-muted-foreground">ما ترفعه هنا ويُنشر يظهر لكل المستخدمين في «إنشاء الامتحانات» ليختاروه بلا رفع، ويمكنهم دمجه مع ملفاتهم.</p>
       </div>
       <Tabs defaultValue="library">
-        <TabsList className="grid h-auto w-full max-w-md grid-cols-2 bg-muted text-muted-foreground">
+        <TabsList className="grid h-auto w-full max-w-xl grid-cols-3 bg-muted text-muted-foreground">
           <TabsTrigger value="library">ملفات المكتبة</TabsTrigger>
+          <TabsTrigger value="agents">الوكلاء المختصون</TabsTrigger>
           <TabsTrigger value="exams">كل الامتحانات المُنشأة</TabsTrigger>
         </TabsList>
         <TabsContent value="library" className="mt-4"><LibraryManager /></TabsContent>
+        <TabsContent value="agents" className="mt-4"><AgentsManager /></TabsContent>
         <TabsContent value="exams" className="mt-4"><AllExamsPanel /></TabsContent>
       </Tabs>
     </div>
