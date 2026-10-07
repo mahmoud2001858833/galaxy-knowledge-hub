@@ -211,7 +211,8 @@ class PlatformSecurityShieldService {
     }
 
     auditLogger.log({
-      action: 'SECURITY_ALERT',
+      user: { email: 'system', role: 'system' } as any,
+      action: 'SECURITY_ALERT' as any,
       module: 'SecurityShield',
       description: `[درع الأمان] تم التصدي لمحاولة: ${incident.type} من مصدر ${incident.source}`,
       severity: incident.severity === 'critical' || incident.severity === 'high' ? 'critical' : 'warning',

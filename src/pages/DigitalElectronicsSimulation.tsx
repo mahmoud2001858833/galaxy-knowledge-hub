@@ -72,7 +72,7 @@ const LogicCircuit3D: React.FC<{
           </mesh>
           {/* Pin 1 notch marker */}
           <mesh position={[-1.5, 0.5, 0]}>
-            <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} rotation={[0, 0, Math.PI / 2]} />
+            <cylinderGeometry args={[0.2, 0.2, 0.25, 16]} />
             <meshStandardMaterial color="#0f172a" />
           </mesh>
 

@@ -109,7 +109,7 @@ export const InstitutionalPartnerships: React.FC = () => {
       existing.unshift(newApplication);
       localStorage.setItem('galaxy_partnerships_requests', JSON.stringify(existing));
 
-      supabase.from('institutional_partnerships').insert({
+      (supabase.from('institutional_partnerships') as any).insert({
         id: newApplication.id,
         organization_name: newApplication.institutionName,
         organization_type: newApplication.institutionType,

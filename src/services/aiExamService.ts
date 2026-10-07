@@ -56,7 +56,7 @@ export interface FullExamStructure {
     sectionDescription: string;
     questions: GeneratedQuestion[];
   }[];
-  generatedAt: string;
+  generatedAt?: string;
   sourceDocumentName?: string;
 }
 
@@ -81,7 +81,7 @@ export interface StudentExamSubmission {
   id: string;
   examId: string;
   studentName: string;
-  classSection: string;
+  classSection?: string;
   studentClass?: string;
   section?: string;
   seatNumber?: string;

@@ -84,6 +84,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type AdminTab = 
   | 'overview'
+  | 'exam-library'
   | 'lcm'
   | 'faculty'
   | 'broadcasts'

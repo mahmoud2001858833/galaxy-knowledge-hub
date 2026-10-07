@@ -696,7 +696,7 @@ export const RoboticsSection: React.FC = () => {
   // Automated Pick & Place Trajectory Routine
   const handleRunPickAndPlaceSequence = () => {
     setIsPlayingTrajectory(true);
-    toast.info('🚀 بدأت دورة الالتقاط والنقل الأوتوماتيكية...');
+    toast({ title: '🚀 بدأت دورة الالتقاط والنقل الأوتوماتيكية...' });
 
     // Step 1: Open gripper & approach workpiece
     setTheta1(60);
@@ -707,7 +707,7 @@ export const RoboticsSection: React.FC = () => {
     setTimeout(() => {
       // Step 2: Drop on cube and grab
       setGripper(20);
-      toast.info('🧲 تم التقاط المكعب وتأمين المقبض.');
+      toast({ title: '🧲 تم التقاط المكعب وتأمين المقبض.' });
 
       setTimeout(() => {
         // Step 3: Lift up
@@ -752,7 +752,7 @@ export const RoboticsSection: React.FC = () => {
   const handlePlayWaypoints = () => {
     if (waypoints.length === 0) return;
     setIsPlayingTrajectory(true);
-    toast.info('▶️ جاري تشغيل التسلسل الحركي المسجل (Teach & Repeat)...');
+    toast({ title: '▶️ جاري تشغيل التسلسل الحركي المسجل (Teach & Repeat)...' });
 
     waypoints.forEach((wp, index) => {
       setTimeout(() => {
@@ -762,7 +762,7 @@ export const RoboticsSection: React.FC = () => {
         setGripper(wp.gripper);
         if (index === waypoints.length - 1) {
           setIsPlayingTrajectory(false);
-          toast.success('🎉 اكتمل تنفيذ مسار الحركة بنجاح!');
+          toast({ title: '🎉 اكتمل تنفيذ مسار الحركة بنجاح!' });
         }
       }, index * 1200);
     });
