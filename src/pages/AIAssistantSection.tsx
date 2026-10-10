@@ -35,6 +35,8 @@ import { SEO } from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { resilientStreamingService } from '@/services/resilientStreamingService';
+import { SIMULATION_REGISTRY } from '@/components/PlatformGuideAssistant';
 
 interface AIAssistantCard {
   id: string;
@@ -61,6 +63,8 @@ export const AIAssistantSection: React.FC = () => {
   const [aiAnswer, setAiAnswer] = useState<string | null>(null);
   const [answeredTopic, setAnsweredTopic] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [thoughtStep, setThoughtStep] = useState<string | null>(null);
+  const [matchedSimulation, setMatchedSimulation] = useState<any | null>(null);
 
   let dir = 'rtl';
   try {
@@ -221,41 +225,63 @@ export const AIAssistantSection: React.FC = () => {
     }
   ];
 
-  const handleAskQuestion = (question: string, answer: string) => {
+  const handleAskQuestion = (question: string, _fallbackAnswer?: string) => {
     setActiveQuery(question);
-    setIsTyping(true);
-    setAiAnswer(null);
-    setAnsweredTopic(question);
-
-    setTimeout(() => {
-      setIsTyping(false);
-      setAiAnswer(answer);
-    }, 450);
+    handleCustomQuery(question);
   };
 
-  const handleCustomQuery = () => {
-    if (!activeQuery.trim()) return;
-    setIsTyping(true);
-    setAiAnswer(null);
-    setAnsweredTopic(activeQuery);
+  const handleCustomQuery = async (overrideText?: string) => {
+    const textToAsk = (overrideText || activeQuery).trim();
+    if (!textToAsk) return;
 
-    const q = activeQuery.toLowerCase();
-    setTimeout(() => {
+    setActiveQuery(textToAsk);
+    setIsTyping(true);
+    setAiAnswer('');
+    setAnsweredTopic(textToAsk);
+    setThoughtStep('استيعاب السؤال وتحديد الإطار الأكاديمي والمنهجي...');
+
+    // Detect matched simulation from platform catalog
+    const lower = textToAsk.toLowerCase();
+    const foundSim = SIMULATION_REGISTRY.find(sim =>
+      sim.tags?.some(tag => lower.includes(tag.toLowerCase())) ||
+      lower.includes(sim.title.toLowerCase())
+    );
+    setMatchedSimulation(foundSim || null);
+
+    const systemInstruction = `أنت "المرشد الذكي الشامل" (Omniscient Academic Mentor) في منصة "ذروة العلم 2.0" بمدرسة عنبه الثانوية الشاملة للبنين (وزارة التربية والتعليم، الأردن).
+قواعد التفكير والإجابة الصارمة:
+1. التفكير العميق والتفصيل المخصص 100%: اقرأ سؤال المستخدم بعناية وأجب عنه بإجابة علمية حقيقية، راقية، وذكية مصممة خصيصاً لسؤاله. لا تستخدم قوالب مسبقة أو ردوداً سطحية عامة.
+2. التنسيق الأكاديمي المنهجي:
+   - ابدأ بفقرة تمهيدية راقية تحدد المفهوم وجوهره بدقة.
+   - إذا كان السؤال عن الفيزياء، الكيمياء، الرياضيات، أو الفلك: استخرج القوانين بالرموز الرياضية المنظمة، واشرح الخطوات بدقة مع مثال واقعي أو تطبيق عملي.
+   - إذا كان استفساراً برمجياً: اعرض الكود نظيفاً مع التعليقات وبيان التعقيد الزمني والمكاني.
+   - إذا كان سؤالاً نفسياً أو عن قلق الامتحانات: أجب بتعاطف علمي رصين مبني على العلاج المعرفي السلوكي (CBT) وخطوات عملية محددة.
+   - إذا كان سؤالاً طبياً أو إسعافياً: أجب بدقة بروتوكولات الإسعاف الأولي المعتمدة.
+3. اختتم بنصيحة ذكية موجهة وسؤال تحفيزي لطيف يفتح آفاق تفكير الطالب.
+اللغة: لغة عربية فصحى أنيقة، محكمة، وسلسة.`;
+
+    try {
+      setThoughtStep('تحليل المفاهيم واستحضار النماذج العلمية والتطبيقات...');
+
+      await resilientStreamingService.streamAI({
+        prompt: textToAsk,
+        systemInstruction,
+        onChunk: (_delta, fullText) => {
+          setThoughtStep(null);
+          setAiAnswer(fullText);
+        },
+        onComplete: (full) => {
+          setAiAnswer(full);
+          setThoughtStep(null);
+          setIsTyping(false);
+        }
+      });
+    } catch (err) {
+      console.error('Error generating AI answer:', err);
+      setThoughtStep(null);
       setIsTyping(false);
-      if (q.includes('قلق') || q.includes('خوف') || q.includes('توتر') || q.includes('نفسي') || q.includes('تعبان')) {
-        setAiAnswer(
-          `أهلاً بك يا صديقي 💙 أشعر بما تمر به، وأريدك أن تعلم أنك لست وحدك أبداً. «المرشد النفسي الذكي» مجهز خصيصاً لمساعدتك على تنظيم هذا القلق وتفريغ الضغوط عبر تمارين التنفس الصندوقي والتأريض المعرفي.\n\nأنصحك بالانتقال الآن إلى «مرشدك النفسي الذكي» لخوض الجلسة كاملة بمساحة آمنة ومحمية.`
-        );
-      } else if (q.includes('كود') || q.includes('برمج') || q.includes('python') || q.includes('خطأ')) {
-        setAiAnswer(
-          `سؤال تقني رائع! «مصحح الأكواد والبرمجة BTEC» جاهز لتحليل شيفرتك، اكتشاف الأخطاء اللوجستية وتصحيحها فورياً مع شرح تفصيلي. انقر على بطاقة مصحح الأكواد بالأسفل لتبدأ.`
-        );
-      } else {
-        setAiAnswer(
-          `شكراً لسؤالك الذكي: «${activeQuery}» 🌟\nمنظومتنا مزودة بنماذج متخصصة ومربوطة بأحدث المناهج العلمية والطبية والبرمجية. يمكنك توجيه هذا الاستفسار لأحد المساعدين الأذكياء المتخصصين بالأسفل للحصول على تجربة تفاعلية متعمقة.`
-        );
-      }
-    }, 550);
+      setAiAnswer('عذراً، حدث تعثر مؤقت أثناء استدعاء المحرك التوليدي. يرجى إعادة المحاولة.');
+    }
   };
 
   const speakText = (text: string) => {
@@ -441,6 +467,23 @@ export const AIAssistantSection: React.FC = () => {
             </Button>
           </div>
 
+          {/* Thinking / Reasoning Indicator */}
+          <AnimatePresence>
+            {isTyping && thoughtStep && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2.5 text-xs text-indigo-700 dark:text-indigo-300 font-medium"
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping shrink-0" />
+                <Brain className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span className="font-bold">مسار التفكير والاستنباط العلمي:</span>
+                <span className="animate-pulse">{thoughtStep}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* AI Answer Card */}
           <AnimatePresence>
             {aiAnswer && (
@@ -448,12 +491,17 @@ export const AIAssistantSection: React.FC = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-5 rounded-2xl bg-cyan-50/80 dark:bg-cyan-950/30 border border-cyan-300/80 dark:border-cyan-800/50 space-y-3"
+                className="p-5 sm:p-6 rounded-2xl bg-cyan-50/80 dark:bg-cyan-950/30 border border-cyan-300/80 dark:border-cyan-800/50 space-y-4 shadow-sm"
               >
                 <div className="flex items-center justify-between text-xs font-bold text-cyan-700 dark:text-cyan-300">
                   <span className="flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                    <span>إجابة المساعد الذكي:</span>
+                    <span>إجابة المرشد الذكي الشامل:</span>
+                    {answeredTopic && (
+                      <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400 mr-1.5 hidden sm:inline">
+                        (حول: {answeredTopic})
+                      </span>
+                    )}
                   </span>
                   
                   <button
@@ -465,9 +513,32 @@ export const AIAssistantSection: React.FC = () => {
                   </button>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line">
+                <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-medium">
                   {aiAnswer}
                 </p>
+
+                {matchedSimulation && (
+                  <div className="mt-4 pt-3 border-t border-cyan-200/60 dark:border-cyan-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 bg-white/80 dark:bg-slate-900/80 p-3.5 rounded-xl border border-cyan-200/50 dark:border-cyan-800/30">
+                    <div className="flex items-center gap-2.5">
+                      <Sparkles className="w-4 h-4 text-cyan-600 shrink-0" />
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                          🔬 مختبر ومحاكاة 3D مقترحة ذات صلة: {matchedSimulation.title}
+                        </span>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {matchedSimulation.description}
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      to={matchedSimulation.route}
+                      className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shrink-0 transition-all shadow-sm flex items-center gap-1"
+                    >
+                      <span>تشغيل المختبر</span>
+                      <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-0 rotate-180" />
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

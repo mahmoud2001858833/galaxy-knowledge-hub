@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
+import { resilientStreamingService } from '@/services/resilientStreamingService';
 
 export type MentorPersona = 'academic' | 'explorer' | 'quiz' | 'navigator';
 
@@ -977,7 +978,7 @@ export const PlatformGuideAssistant: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Send message handler with offline-first + edge function fallback
+  // Send message handler with true resilient streaming AI & smart reasoning
   const handleSendMessage = async (textOverride?: string) => {
     const textToSend = (textOverride || inputMessage).trim();
     if (!textToSend || isLoading) return;
@@ -994,72 +995,111 @@ export const PlatformGuideAssistant: React.FC = () => {
     setInputMessage('');
     setIsLoading(true);
 
+    // 1. Detect matching simulations or quick navigation path from platform catalog
+    const lower = textToSend.toLowerCase();
+    const isDirectNav = textToSend.includes('افتح') || textToSend.includes('انتقل') || textToSend.includes('اذهب');
+    
+    // Find matching simulations for rich cards
+    const matchedSims = SIMULATION_REGISTRY.filter(sim => 
+      sim.tags?.some(tag => lower.includes(tag.toLowerCase())) ||
+      lower.includes(sim.title.toLowerCase())
+    ).slice(0, 3);
+
+    // Initial placeholder bot message
+    const botMessageId = (Date.now() + 1).toString();
+    const initialBotMessage: Message = {
+      id: botMessageId,
+      text: '',
+      isUser: false,
+      timestamp: new Date(),
+      recommendations: matchedSims.length > 0 ? matchedSims : undefined,
+      suggestions: [],
+      persona: activePersona
+    };
+
+    setMessages(prev => [...prev, initialBotMessage]);
+
+    // Build rich, intelligent system prompt
+    const personaDescription = activePersona === 'academic' 
+      ? 'النمط الأكاديمي المنهجي والتوجيهي: الشرح المنهجي العلمي، المعادلات والقوانين المنظمة، وخطوات الحل النموذجية.' 
+      : activePersona === 'quiz' 
+      ? 'نمط التحدي والمنافسة العلمية: اختبار الفهم، التفكير النقدي، وطرح أسئلة ذكية ملهمة.' 
+      : activePersona === 'explorer' 
+      ? 'نمط الاستكشاف العلمي: ربط العلوم بالكون، الفضاء، التكنولوجيا الحديثة، والروبوتات.' 
+      : 'نمط الإرشاد والملاحة: التوجيه الذكي في المنصة وشرح الأدوات الأكاديمية.';
+
+    const systemInstruction = `أنت "المرشد الذكي الشامل" (Omniscient Educational Mentor) والمسؤول الأكاديمي لمنصة "ذروة العلم 2.0" بمدرسة عنبه الثانوية الشاملة للبنين، وزارة التربية والتعليم الأردنية.
+المتعلم: ${userName || 'المتعلم'}.
+النمط النشط: ${personaDescription}.
+
+المعايير الصارمة للإجابة والتفكير:
+1. التفكير العميق والإجابة المخصصة: حلل سؤال المستخدم بعناية فائقة وأجب بطريقة علمية وبيداغوجية حقيقية مفصلة ومصممة بدقة حسب السؤال المطروح. تجنب تماماً القوالب الجاهزة أو الردود النمطية المتكررة.
+2. الهيكل الأكاديمي الأنيق:
+   - ابدأ بتمهيد لطيف ومفهوم جوهري واضح.
+   - إذا كان السؤال عن الفيزياء أو الكيمياء أو الرياضيات أو الفلك: استخرج القوانين بالرموز الرياضية $E = mc^2$ واشرح مدلول كل رمز، مع إيراد خطوات حل نموذجية أو مثال واقعي.
+   - إذا كان السؤال عن برمجة أو تقنية BTEC: نسق الكود بوضوح واشرح منطق الخوارزمية.
+   - إذا كان استفساراً نفسياً أو عن إدارة الوقت وقلق الامتحانات: قدّم استراتيجيات عملية قائمة على علم النفس العصبي والعلاج المعرفي السلوكي (CBT).
+   - إذا كان السؤال عن أقسام ومختبرات المنصة: اشرح كيف يفيده القسم وأين يجده في المنصة.
+3. اختتم بنصيحة ذهبية وسؤال تفكيري تحفيزي يفتح مدارك الطالب.
+اللغة: لغة عربية فصحى راقية، واضحة، وخالية من الركاكة.`;
+
+    // Extract recent conversation history for deep context
+    const recentHistory = messages.slice(-6).map(m => ({
+      role: (m.isUser ? 'user' : 'model') as 'user' | 'model',
+      content: m.text
+    }));
+
     try {
-      // 1. Generate fast local response
-      const localResult = generateIntelligentResponse(textToSend, userName || 'صديقي', activePersona);
-
-      let finalAnswer = localResult.answer;
-      let finalRecs = localResult.recommendations;
-      let finalSuggestions = localResult.suggestions;
-      let finalNavPath = localResult.navigationPath;
-
-      // 2. Query Gemini via supabase function if online and query is open-ended
-      const isOpenEnded = textToSend.split(' ').length > 4 && !textToSend.includes('افتح') && !textToSend.includes('أين');
-      
-      if (isOpenEnded) {
-        try {
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
-          const aiPromise = supabase.functions.invoke('ai-assistant', {
-            body: { 
-              prompt: textToSend,
-              context: `المساعد الذكي لمنصة ذروة العلم ومنظومة دامج للتربية الخاصة والروبوتات والفيزياء. النمط: ${activePersona}. اسم المستخدم: ${userName || 'صديقي'}.` 
-            }
-          });
-
-          const { data, error } = await Promise.race([aiPromise, timeoutPromise]) as any;
-          if (!error && data?.response) {
-            finalAnswer = data.response;
+      await resilientStreamingService.streamAI({
+        prompt: textToSend,
+        systemInstruction,
+        chatHistory: recentHistory,
+        onChunk: (_delta, fullText) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === botMessageId ? { ...msg, text: fullText } : msg
+          ));
+        },
+        onComplete: (completedText) => {
+          // Generate 2 contextual follow-up suggestions
+          const dynamicSuggestions = [
+            `اشرح لي تطبيقاً عملياً إضافياً على هذا المفهوم 🔬`,
+            `ما هي التجربة ثلاثية الأبعاد المرتبطة بهذا الموضوع؟ 🚀`
+          ];
+          setMessages(prev => prev.map(msg => 
+            msg.id === botMessageId ? { 
+              ...msg, 
+              text: completedText,
+              suggestions: dynamicSuggestions,
+              navigationPath: matchedSims[0]?.route
+            } : msg
+          ));
+          if (isVoiceActive) {
+            handleSpeakText(completedText, botMessageId);
           }
-        } catch {
-          // Gracefully continue with instant local brain
         }
-      }
+      });
 
-      const botMessageId = (Date.now() + 1).toString();
-      const newBotMessage: Message = {
-        id: botMessageId,
-        text: finalAnswer,
-        isUser: false,
-        timestamp: new Date(),
-        recommendations: finalRecs,
-        suggestions: finalSuggestions,
-        navigationPath: finalNavPath,
-        persona: activePersona
-      };
-
-      setMessages(prev => [...prev, newBotMessage]);
-
-      if (isVoiceActive) {
-        handleSpeakText(finalAnswer, botMessageId);
-      }
-
-      if (finalNavPath && (textToSend.includes('افتح') || textToSend.includes('انتقل') || textToSend.includes('اذهب'))) {
-        toast.success('جاري توجيهك إلى وجهتك المطلوبة...');
+      if (isDirectNav && matchedSims[0]?.route) {
+        toast.success(`جاري توجيهك إلى: ${matchedSims[0].title}`);
         setTimeout(() => {
-          navigate(finalNavPath);
-        }, 1200);
+          navigate(matchedSims[0].route);
+        }, 1500);
       }
-    } catch {
+    } catch (streamError) {
+      console.warn('Streaming had an issue, falling back to instant local brain...', streamError);
       const fallbackResult = generateIntelligentResponse(textToSend, userName || 'صديقي', activePersona);
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        text: fallbackResult.answer,
-        isUser: false,
-        timestamp: new Date(),
-        recommendations: fallbackResult.recommendations,
-        suggestions: fallbackResult.suggestions,
-        persona: activePersona
-      }]);
+      setMessages(prev => prev.map(msg => 
+        msg.id === botMessageId ? {
+          ...msg,
+          text: fallbackResult.answer,
+          recommendations: fallbackResult.recommendations,
+          suggestions: fallbackResult.suggestions,
+          navigationPath: fallbackResult.navigationPath
+        } : msg
+      ));
+      if (isVoiceActive) {
+        handleSpeakText(fallbackResult.answer, botMessageId);
+      }
     } finally {
       setIsLoading(false);
     }
