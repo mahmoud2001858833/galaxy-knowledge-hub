@@ -13,6 +13,7 @@ import { GlobalVoiceInput } from '@/components/accessibility/GlobalVoiceInput';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import { InteractiveMindMap, MindMapNode } from './InteractiveMindMap';
 import { AIDocumentExporter, StructuredAIDocument, StructuredAISection } from './AIDocumentExporter';
+import { resilientStreamingService } from '@/services/resilientStreamingService';
 
 interface SubjectAIAssistantCoreProps {
   subjectKey: 'math' | 'physics' | 'chemistry' | 'biology';
@@ -189,19 +190,41 @@ export const SubjectAIAssistantCore: React.FC<SubjectAIAssistantCoreProps> = ({
 - سؤال تقييمي ذاتي لاختبار الفهم
 السؤال هو: "${query}"`;
 
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          prompt: enhancedPrompt,
-          subject: subjectKey,
-          useGemini: true
-        }
-      });
-
       let rawAnswer = '';
-      if (!error && data && data.result) {
-        rawAnswer = data.result;
-      } else {
-        // Fallback robust pedagogical answer
+
+      try {
+        // Primary path: High-speed resilient streaming service with model cascade
+        const streamResult = await resilientStreamingService.streamAI({
+          prompt: query,
+          systemInstruction: `أنت مساعد ذكي متقدم وخبير في مادة ${subjectTitle}. اشرح الموضوع أو أجب عن السؤال بطريقة تعليمية مقسمة ومنهجية للمرحلة الثانوية والجامعية:
+- المفهوم الجوهري بوضوح
+- القوانين والصيغ الرياضية إن وجدت
+- التطبيقات الواقعية في الحياة
+- مثال توضيحي محلول خطوة بخطوة
+- أخطاء شائعة يجب تجنبها
+- سؤال تقييمي ذاتي لاختبار الفهم`,
+          onChunk: () => {}, // aggregated result used below
+        });
+        if (streamResult?.text) {
+          rawAnswer = streamResult.text;
+        }
+      } catch (streamErr) {
+        console.warn('Direct AI query had issues, falling back to edge function...', streamErr);
+        const { data, error } = await supabase.functions.invoke('ai-assistant', {
+          body: {
+            prompt: enhancedPrompt,
+            subject: subjectKey,
+            useGemini: true
+          }
+        });
+
+        if (!error && data && data.result) {
+          rawAnswer = data.result;
+        }
+      }
+
+      if (!rawAnswer) {
+        // Robust pedagogical fallback
         rawAnswer = `المفهوم الجوهري:\nإن موضوع "${query}" يمثل إحدى الركائز العلمية الأساسية في مادة ${subjectTitle}، حيث يفسر التفاعلات والقوانين المنظمة للأنظمة الفيزيائية والحيوية.\n\nالقوانين والمعادلات العلمية:\nيخضع هذا المفهوم لعلاقات رياضية ونماذج كمية دقيقة تعبر عن التوازن وحفظ الطاقة والكتلة.\n\nالتطبيقات العملية والواقعية:\nنرى هذا المفهوم متجسداً في الصناعات الحديثة، والتقنيات الطبية، والأنظمة الطبيعية التي تحيط بنا يومياً.\n\nمثال تطبيقي محلول خطوة بخطوة:\nعند تطبيق القانون على حالة عملية، نقوم بتحديد المعطيات بدقة، ثم التعويض في المعادلة الأساسية، والتحقق من الوحدات الفيزيائية والكيميائية للوصول للنتيجة الصحيحة.\n\nتنبيهات وأخطاء شائعة:\nيقع العديد من الطلاب في خطأ الخلط بين المتغيرات أو إهمال الشروط الابتدائية؛ لذا احرص دائماً على مراجعة الفرضيات.\n\nسؤال اختبر فهمك:\nما هو الأثر المباشر لمضاعفة المتغير الأساسي على استجابة النظام الكلي؟`;
       }
 

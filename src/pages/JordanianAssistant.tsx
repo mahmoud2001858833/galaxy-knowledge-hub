@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ConversationsGrid } from "@/components/ConversationsGrid";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { resilientStreamingService } from "@/services/resilientStreamingService";
 
 interface Message {
   role: "user" | "assistant";
@@ -272,36 +273,97 @@ export default function JordanianAssistant() {
 
     setMessages(prev => [...prev, userMessage]);
     saveChatMessage(userMessage);
+    const questionToAsk = currentQuestion || "قم بتحليل هذه الصورة ومحتواها العلمي";
     setCurrentQuestion("");
     setLoading(true);
 
+    // Placeholder message for streaming response
+    const assistantPlaceholder: Message = {
+      role: "assistant",
+      content: "",
+      sources: [],
+    };
+    setMessages(prev => [...prev, assistantPlaceholder]);
+
     try {
-      let imageBase64 = imagePreview;
+      let imageBase64 = imagePreview || undefined;
 
-      const { data, error } = await supabase.functions.invoke('jordanian-assistant-answer', {
-        body: {
-          question: currentQuestion || "قم بتحليل هذه الصورة",
-          studentName,
-          grade,
-          subject: imageSubject,
+      const systemInstruction = `أنت "المساعد الأردني الذكي" لمنصة "ذروة العلم 2.0" المعتمد من وزارة التربية والتعليم ومدرسة عنبه الثانوية الشاملة للبنين.
+بيانات الطالب الحالية:
+- الاسم: ${studentName || 'طالب متميز'}
+- المرحلة والصف: ${grade || 'المرحلة الثانوية'}
+- الفصل: ${semester || 'الدراسي الحالي'}
+- المادة: ${imageSubject || 'المباحث العلمية والأكاديمية'}
+
+المهمة:
+الإجابة بدقة علمية وبيداغوجية باللغة العربية الفصحى، مع شرح الخطوات بالتفصيل واستخدام المعادلات الرياضية والأمثلة التوضيحية المتوافقة مع المناهج الأردنية والتوجيهي. تجنب التردد أو الانقطاع واجعل الإجابة منظمة في نقاط وفقرات أنيقة.`;
+
+      // Build chat history for context
+      const chatHistoryForAI = messages.slice(-6).map(m => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content
+      }));
+
+      let accumulatedAnswer = '';
+
+      try {
+        // Primary path: High-speed resilient streaming with model cascade
+        await resilientStreamingService.streamAI({
+          prompt: questionToAsk,
+          systemInstruction,
+          chatHistory: chatHistoryForAI,
           imageBase64,
-        }
-      });
+          onChunk: (_delta, accumulated) => {
+            accumulatedAnswer = accumulated;
+            setMessages(prev => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last && last.role === 'assistant') {
+                last.content = accumulated;
+              }
+              return updated;
+            });
+          },
+          onComplete: (fullText) => {
+            accumulatedAnswer = fullText;
+          }
+        });
+      } catch (streamErr) {
+        console.warn('Stream failed or had restrictions, falling back to edge function...', streamErr);
+        // Fallback path: Supabase Edge Function
+        const { data, error } = await supabase.functions.invoke('jordanian-assistant-answer', {
+          body: {
+            question: questionToAsk,
+            studentName,
+            grade,
+            subject: imageSubject,
+            imageBase64,
+          }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+        accumulatedAnswer = data?.answer || "عذراً، لم أتمكن من معالجة السؤال.";
+      }
 
-      const assistantMessage: Message = {
+      const finalAssistantMessage: Message = {
         role: "assistant",
-        content: data.answer || "عذراً، لم أتمكن من معالجة السؤال",
-        sources: data.sources,
+        content: accumulatedAnswer || "تمت معالجة السؤال بنجاح.",
+        sources: [],
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
-      saveChatMessage(assistantMessage);
+      setMessages(prev => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        if (last && last.role === 'assistant') {
+          last.content = finalAssistantMessage.content;
+        }
+        return updated;
+      });
 
+      await saveChatMessage(finalAssistantMessage);
       clearImage();
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Error in JordanianAssistant:', error);
       toast({
         title: "⚠️ خطأ",
         description: error.message || "حدث خطأ أثناء معالجة السؤال",
