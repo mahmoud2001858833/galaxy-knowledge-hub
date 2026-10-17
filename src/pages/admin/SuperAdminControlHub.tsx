@@ -80,6 +80,7 @@ import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsMana
 import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
 import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub';
 import SafeBoundary from '@/components/common/SafeBoundary';
+import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AdminTab = 
@@ -1043,7 +1044,18 @@ export const SuperAdminControlHub: React.FC = () => {
             {/* 0. Executive 360° Overview & Platform Digest */}
             {currentTab === 'overview' && (
               <SafeBoundary name="ExecutiveOverviewTab">
-                <ExecutiveOverviewTab onNavigateTab={(tab) => setCurrentTab(tab as AdminTab)} />
+                <div className="space-y-8">
+                  <ExecutiveOverviewTab onNavigateTab={(tab) => setCurrentTab(tab as AdminTab)} />
+                  <StudentMasteryPassportCard
+                    studentName="سجل بطاقة الإتقان الأكاديمي الموحدة للمدرسة"
+                    schoolName="مدرسة عنبه الثانوية الشاملة للبنين"
+                    gradeName="منظومة التقييم السيادي الموحد (49 مختبر + 30 بروتوكول + التكرار المتباعد)"
+                    governorate="لواء المزار الشمالي - إربد"
+                    avatarEmoji="🦅"
+                    baseScore={18500}
+                    baseSolvedPuzzles={48}
+                  />
+                </div>
               </SafeBoundary>
             )}
 

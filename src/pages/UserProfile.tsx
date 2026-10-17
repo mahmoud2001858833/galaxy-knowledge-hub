@@ -14,9 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import StarField from '@/components/StarField';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import SovereignPageLayout from '@/components/layout/SovereignPageLayout';
+import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -295,11 +294,13 @@ export const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-right bg-[#F8FAFC] dark:bg-[#050714] text-slate-900 dark:text-white font-sans transition-colors duration-300" dir="rtl">
-      <StarField starCount={80} speed={0.08} />
-      <Navbar />
-
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full space-y-6">
+    <SovereignPageLayout
+      title="الملف الأكاديمي وبطاقة الإتقان الموحدة"
+      subtitle="السجل الرقمي الموحد لإنجازات الطالب في المختبرات الافتراضية الثلاثية الأبعاد، التكرار المتباعد، الألغاز العلمية، والامتحانات الذكية"
+      badge="بطاقة الهوية الأكاديمية • ذروة العلم 2.0"
+      accentColor="cyan"
+    >
+      <div className="space-y-6">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-96">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-500 mb-4" />
@@ -317,6 +318,22 @@ export const UserProfile: React.FC = () => {
           </div>
         ) : profile && (
           <>
+            {/* Unified Student Mastery Passport Card */}
+            <StudentMasteryPassportCard
+              studentName={profile.full_name || profile.username}
+              schoolName={profile.school || 'مدرسة عنبه الثانوية الشاملة للبنين'}
+              gradeName={profile.grade || 'الصف العاشر الأساسي'}
+              governorate={profile.governorate || 'إربد'}
+              avatarEmoji={profile.avatar_url || '🚀'}
+              baseScore={profile.score}
+              baseSolvedPuzzles={profile.solved_puzzles}
+              onXpUpdated={(newXp) => {
+                if (newXp !== profile.score) {
+                  setProfile((prev) => (prev ? { ...prev, score: newXp } : prev));
+                }
+              }}
+            />
+
             {/* 1. Ultra-Luxurious Profile Persona Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -762,7 +779,7 @@ export const UserProfile: React.FC = () => {
             )}
           </>
         )}
-      </main>
+      </div>
 
       {/* Edit Profile Modal */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
@@ -896,9 +913,7 @@ export const UserProfile: React.FC = () => {
           </Button>
         </DialogContent>
       </Dialog>
-
-      <Footer />
-    </div>
+    </SovereignPageLayout>
   );
 };
 

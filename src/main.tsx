@@ -9,8 +9,16 @@ import { LanguageProvider } from '@/i18n/LanguageContext';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { NotificationProvider } from "@/components/NotificationProvider";
+import { offlineCacheService } from "@/services/offlineCacheService";
 
 const queryClient = new QueryClient();
+
+// Initialize Offline-First PWA Service Worker & IndexedDB Vault in the background
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    offlineCacheService.initializeOfflineVault().catch(() => {});
+  });
+}
 
 // damij-jo.life serves the Damij platform at the root path (handled in App router).
 

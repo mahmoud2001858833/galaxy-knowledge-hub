@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { streamAI } from '@/services/resilientStreamingService';
+import { studentMasteryPassportService } from '@/services/studentMasteryPassportService';
 
 interface PresetConcept {
   id: string;
@@ -273,7 +274,15 @@ export const MnemonicsGenerator: React.FC = () => {
         setConceptsList((prev) => [generated, ...prev]);
         setSelectedConcept(generated);
         setCustomPrompt('');
-        toast.success(`تم توليد الشيفرة الذهنية العلمية لـ «${generated.name}» بنجاح!`);
+        studentMasteryPassportService.recordActivity({
+          type: 'spaced_repetition',
+          title: `توليد شيفرة قصر ذاكرة: ${generated.name}`,
+          subject: generated.subject,
+          xpEarned: 35,
+          route: '/spaced-repetition',
+          silent: true,
+        });
+        toast.success(`تم توليد الشيفرة الذهنية العلمية لـ «${generated.name}» بنجاح (+35 XP)!`);
       } else {
         throw new Error('Invalid JSON');
       }

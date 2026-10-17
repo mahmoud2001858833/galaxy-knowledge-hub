@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import confetti from 'canvas-confetti';
 import { labSound } from '@/utils/labAudio';
+import { studentMasteryPassportService } from '@/services/studentMasteryPassportService';
 
 export interface SimMeta {
   id: string;
@@ -670,6 +671,13 @@ const InteractiveSimulationWorkbench: React.FC<Props> = ({ simId: propSimId }) =
     });
     setQuizScore(score);
     setQuizSubmitted(true);
+    studentMasteryPassportService.recordActivity({
+      type: 'lab',
+      title: `إتمام تجربة وتحدي: ${sim.title}`,
+      subject: sim.badge,
+      xpEarned: score === sim.quiz.length ? 65 : 40,
+      route: `/workbench/${sim.id}`,
+    });
     if (score === sim.quiz.length) {
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
