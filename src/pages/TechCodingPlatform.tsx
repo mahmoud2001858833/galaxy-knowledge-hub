@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { streamAI } from "@/services/resilientStreamingService";
 
 type Tab = "ai-code" | "fix-code" | "build-platform" | "platform-eval";
 
@@ -73,57 +74,47 @@ const TechCodingPlatform = () => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#05060f] text-white relative overflow-hidden">
+    <div dir="rtl" className="min-h-screen bg-[#F8FAFC] dark:bg-[#05060f] text-slate-900 dark:text-white relative overflow-hidden transition-colors duration-300">
       <Helmet>
         <title>منصة البرمجة الذكية - مستقبل التكنولوجيا</title>
         <meta name="description" content="بيئة برمجة متكاملة بالذكاء الاصطناعي: توليد الكود، تصحيحه، وبناء منصات كاملة" />
       </Helmet>
 
       {/* Animated background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
+      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-100">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600/15 dark:bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/15 dark:bg-cyan-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-fuchsia-500/10 rounded-full blur-[100px]" />
       </div>
 
-      {/* Grid overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-          backgroundSize: "50px 50px",
-        }}
-      />
-
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-white/5 backdrop-blur-xl bg-black/30 sticky top-0 z-50">
+        <header className="border-b border-slate-200 dark:border-white/5 backdrop-blur-xl bg-white/90 dark:bg-black/30 sticky top-0 z-50 shadow-sm">
           <div className="container mx-auto px-4 py-4 flex items-center justify-between">
             <Button
               variant="ghost"
               onClick={() => navigate("/gju-competition")}
-              className="text-white/70 hover:text-white hover:bg-white/5 gap-2"
+              className="text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               مستقبل التكنولوجيا
             </Button>
 
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/50">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
                 <Cpu className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold bg-gradient-to-l from-violet-400 to-cyan-400 bg-clip-text text-transparent">
+                <h1 className="text-lg font-bold bg-gradient-to-l from-violet-600 to-cyan-600 dark:from-violet-400 dark:to-cyan-400 bg-clip-text text-transparent">
                   منصة البرمجة الذكية
                 </h1>
-                <p className="text-xs text-white/50">AI-Powered Code Studio</p>
+                <p className="text-xs text-slate-500 dark:text-white/50">AI-Powered Code Studio</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-white/70">AI متصل</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-white/5 border border-emerald-200 dark:border-white/10">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-emerald-700 dark:text-white/70">AI متصل (Multi-Model)</span>
             </div>
           </div>
         </header>
@@ -149,10 +140,10 @@ const TechCodingPlatform = () => {
                 <button
                   key={t.id}
                   onClick={() => changeTab(t.id)}
-                  className={`group relative px-6 py-3 rounded-2xl font-medium transition-all duration-300 ${
+                  className={`group relative px-6 py-3 rounded-2xl font-bold transition-all duration-300 ${
                     active
-                      ? "text-white shadow-2xl scale-105"
-                      : "text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10"
+                      ? "text-white shadow-xl scale-105"
+                      : "text-slate-700 dark:text-white/60 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 shadow-sm"
                   }`}
                 >
                   {active && (
@@ -201,13 +192,31 @@ const AICodeStudio = () => {
     if (!prompt.trim()) return toast.error("اكتب وصفاً للكود");
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("dev-assistant-service", {
-        body: { action: "tech-code-gen", prompt, language, existingCode: code.startsWith("//") ? "" : code },
+      const sysPrompt = `أنت مهندس برمجيات خبير. المطلوب توليد كود برمجي احترافي وكامل بلغة ${language} بناءً على طلب المستخدم.
+قم بإرجاع كائن JSON صالح فقط بالشكل التالي:
+{
+  "code": "الكود البرمجي الكامل هنا جاهز للتشغيل",
+  "explanation": "شرح واضح ومختصر باللغة العربية لكيفية عمل الكود"
+}`;
+
+      const raw = await streamAI({
+        messages: [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: `اللغة: ${language}\nالطلب: ${prompt}\n${code && !code.startsWith("//") ? `الكود الحالي:\n${code}` : ""}` }
+        ],
+        temperature: 0.3,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setCode(data.code || "");
-      setExplanation(data.explanation || "");
+
+      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        setCode(parsed.code || "");
+        setExplanation(parsed.explanation || "");
+      } else {
+        setCode(cleaned);
+        setExplanation("تم توليد الكود بنجاح.");
+      }
       toast.success("تم توليد الكود ✨");
     } catch (e: any) {
       toast.error(e.message || "فشل التوليد");
@@ -275,38 +284,38 @@ const AICodeStudio = () => {
     >
       {/* Left: AI prompt panel */}
       <div className="space-y-4">
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl p-6 shadow-2xl">
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.04] dark:to-white/[0.01] backdrop-blur-xl p-6 shadow-md dark:shadow-2xl">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-lg font-bold">مساعد البرمجة الذكي</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">مساعد البرمجة الذكي</h2>
           </div>
 
-          <label className="text-xs text-white/60 mb-1 block">لغة البرمجة</label>
+          <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block font-semibold">لغة البرمجة</label>
           <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="bg-black/40 border-white/10 text-white mb-4">
+            <SelectTrigger className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white mb-4">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-[#0a0b18] border-white/10 text-white">
+            <SelectContent className="bg-white dark:bg-[#0a0b18] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
               {LANGUAGES.map((l) => (
                 <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <label className="text-xs text-white/60 mb-1 block">وصف ما تريده</label>
+          <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block font-semibold">وصف ما تريده</label>
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="مثال: دالة تحسب أعداد فيبوناتشي بطريقة العودية مع memoization"
-            className="bg-black/40 border-white/10 text-white min-h-[120px] resize-none mb-4"
+            className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white min-h-[120px] resize-none mb-4"
           />
 
           <Button
             onClick={generate}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 shadow-lg shadow-purple-500/30"
+            className="w-full bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-purple-500/30"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             <span className="mr-2">{loading ? "جارٍ التوليد..." : "توليد الكود"}</span>
@@ -317,29 +326,29 @@ const AICodeStudio = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-5"
+            className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] backdrop-blur-xl p-5 shadow-sm"
           >
-            <h3 className="text-sm font-bold text-violet-300 mb-2">شرح الكود</h3>
-            <p className="text-sm text-white/70 whitespace-pre-wrap leading-relaxed">{explanation}</p>
+            <h3 className="text-sm font-bold text-violet-700 dark:text-violet-300 mb-2">شرح الكود</h3>
+            <p className="text-sm text-slate-700 dark:text-white/70 whitespace-pre-wrap leading-relaxed">{explanation}</p>
           </motion.div>
         )}
 
         {/* Save as project */}
-        <div className="rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl p-5 space-y-3">
-          <h3 className="text-sm font-bold flex items-center gap-2">
-            <Save className="w-4 h-4 text-cyan-400" /> رفع كمشروع
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] backdrop-blur-xl p-5 space-y-3 shadow-sm">
+          <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+            <Save className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /> رفع كمشروع
           </h3>
           <Input
             value={projectTitle}
             onChange={(e) => setProjectTitle(e.target.value)}
             placeholder="اسم المشروع"
-            className="bg-black/40 border-white/10 text-white"
+            className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
           />
           <Button
             onClick={saveAsProject}
             disabled={saving}
             variant="outline"
-            className="w-full bg-cyan-500/10 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20"
+            className="w-full bg-cyan-50 dark:bg-cyan-500/10 border-cyan-300 dark:border-cyan-500/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-500/20"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             <span className="mr-2">حفظ كمشروع</span>
@@ -348,8 +357,8 @@ const AICodeStudio = () => {
       </div>
 
       {/* Right: Editor + Preview */}
-      <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02]">
+      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-900 dark:bg-black/40 backdrop-blur-xl overflow-hidden shadow-xl">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/[0.02] text-white">
           <div className="flex items-center gap-2">
             <FileCode className="w-4 h-4 text-violet-400" />
             <span className="text-sm font-medium">main.{language === "javascript" ? "js" : language === "typescript" ? "ts" : language}</span>
@@ -436,7 +445,6 @@ const LivePreview = ({ code, language }: { code: string; language: string }) => 
       return `${base}<div id="app"></div><script>${consoleSetup}try{${src}}catch(e){console.error(e.message)}<\/script></body></html>`;
     }
     if (lang === "typescript") {
-      // strip TS types crudely via Babel
       return `${base}<div id="app"></div>
         <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"><\/script>
         <script>${consoleSetup}try{const __js=Babel.transform(${JSON.stringify(src)},{presets:['typescript'],filename:'f.ts'}).code;(0,eval)(__js)}catch(e){console.error(e.message)}<\/script></body></html>`;
@@ -510,13 +518,31 @@ const CodeFixerStudio = () => {
     if (!code.trim()) return toast.error("ألصق الكود أو ارفع ملفاً");
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("dev-assistant-service", {
-        body: { action: "tech-code-fix", code, language, errorMessage: errMsg },
+      const sysPrompt = `أنت خبير في اكتشاف الأخطاء البرمجية وتصحيحها بلغة ${language}.
+قم بإرجاع كائن JSON صالح فقط بالشكل التالي:
+{
+  "fixedCode": "الكود الكامل بعد تصحيح جميع الأخطاء البرمجية والمنطقية",
+  "analysis": "شرح مفصل باللغة العربية للأخطاء التي تم العثور عليها وكيف تم إصلاحها"
+}`;
+
+      const raw = await streamAI({
+        messages: [
+          { role: "system", content: sysPrompt },
+          { role: "user", content: `اللغة: ${language}\n${errMsg ? `رسالة الخطأ: ${errMsg}\n` : ""}الكود:\n${code}` }
+        ],
+        temperature: 0.2,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setFixed(data.fixedCode || "");
-      setAnalysis(data.analysis || "");
+
+      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        setFixed(parsed.fixedCode || "");
+        setAnalysis(parsed.analysis || "");
+      } else {
+        setFixed(cleaned);
+        setAnalysis("تم تحليل وتصحيح الكود بنجاح.");
+      }
       toast.success("تم تحليل وتصحيح الكود ✨");
     } catch (e: any) {
       toast.error(e.message || "فشل التصحيح");
@@ -537,23 +563,23 @@ const CodeFixerStudio = () => {
       exit={{ opacity: 0, y: -20 }}
       className="space-y-6"
     >
-      <div className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.05] to-orange-500/[0.02] backdrop-blur-xl p-6">
+      <div className="rounded-3xl border border-amber-300 dark:border-amber-500/20 bg-white dark:bg-gradient-to-br dark:from-amber-500/[0.05] dark:to-orange-500/[0.02] backdrop-blur-xl p-6 shadow-md">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
             <Wrench className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-bold">تصليح الكود الذكي</h2>
-            <p className="text-xs text-white/60">ارفع ملفاً أو ألصق الكود وسيقوم الذكاء الاصطناعي بتحليله وتصحيحه</p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">تصليح الكود الذكي</h2>
+            <p className="text-xs text-slate-600 dark:text-white/60">ارفع ملفاً أو ألصق الكود وسيقوم الذكاء الاصطناعي بتحليله وتصحيحه</p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 mb-4">
           <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="bg-black/40 border-white/10 text-white">
+            <SelectTrigger className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-[#0a0b18] border-white/10 text-white">
+            <SelectContent className="bg-white dark:bg-[#0a0b18] border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
               {LANGUAGES.map((l) => (
                 <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
               ))}
@@ -562,7 +588,7 @@ const CodeFixerStudio = () => {
 
           <label className="cursor-pointer">
             <input type="file" accept=".js,.ts,.py,.html,.css,.java,.cpp,.cs,.php,.go,.rs,.sql,.txt" onChange={onFile} className="hidden" />
-            <div className="bg-black/40 border border-white/10 hover:border-amber-500/30 rounded-md px-4 py-2 text-sm flex items-center gap-2 justify-center text-white/70 hover:text-white transition">
+            <div className="bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 hover:border-amber-500 rounded-md px-4 py-2 text-sm flex items-center gap-2 justify-center text-slate-700 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition">
               <Upload className="w-4 h-4" /> رفع ملف
             </div>
           </label>
@@ -570,7 +596,7 @@ const CodeFixerStudio = () => {
           <Button
             onClick={fix}
             disabled={loading}
-            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
             <span className="mr-2">{loading ? "جارٍ التحليل..." : "صحّح الكود"}</span>
@@ -581,13 +607,13 @@ const CodeFixerStudio = () => {
           value={errMsg}
           onChange={(e) => setErrMsg(e.target.value)}
           placeholder="رسالة الخطأ (اختياري)"
-          className="bg-black/40 border-white/10 text-white mb-4"
+          className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white mb-4"
         />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="rounded-3xl border border-white/10 bg-black/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-900 dark:bg-black/40 overflow-hidden shadow-lg">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between text-white">
             <span className="text-sm font-medium text-white/70">الكود الأصلي</span>
             {code && (
               <Button size="sm" variant="ghost" onClick={() => setCode("")} className="text-white/50 hover:text-red-400">
@@ -605,8 +631,8 @@ const CodeFixerStudio = () => {
           />
         </div>
 
-        <div className="rounded-3xl border border-amber-500/20 bg-black/40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+        <div className="rounded-3xl border border-amber-500/30 bg-slate-900 dark:bg-black/40 overflow-hidden shadow-lg">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between text-white">
             <span className="text-sm font-medium text-amber-300">الكود المصحّح</span>
             {fixed && (
               <Button size="sm" variant="ghost" onClick={copyFixed} className="text-white/70 hover:text-white">
@@ -628,12 +654,12 @@ const CodeFixerStudio = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-3xl border border-amber-500/20 bg-amber-500/[0.05] backdrop-blur-xl p-6"
+          className="rounded-3xl border border-amber-300 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/[0.05] backdrop-blur-xl p-6"
         >
-          <h3 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-3 flex items-center gap-2">
             <Sparkles className="w-4 h-4" /> التحليل والإصلاحات
           </h3>
-          <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{analysis}</p>
+          <p className="text-sm text-slate-800 dark:text-white/80 whitespace-pre-wrap leading-relaxed">{analysis}</p>
         </motion.div>
       )}
     </motion.div>
@@ -641,25 +667,20 @@ const CodeFixerStudio = () => {
 };
 
 /* ============================== PLATFORM BUILDER ============================== */
-// Wraps any AI-generated HTML with a safe shell so the preview never goes black,
-// always has a viewport, base font, and a visible background even before the AI styles load.
 function wrapWithSafeShell(raw: string): string {
   if (!raw) return "";
   let html = raw.trim();
-  // Strip accidental markdown fences
   html = html.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
 
   const baseStyle = `<style id="__safe_shell__">html,body{background:#ffffff;color:#0f172a;margin:0;min-height:100vh;font-family:'Cairo','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}body:empty::before{content:'جارٍ تشغيل المنصة...';display:flex;align-items:center;justify-content:center;min-height:100vh;color:#7c3aed;font-size:1.1rem;font-weight:700}img{max-width:100%}</style>`;
   const viewport = `<meta name="viewport" content="width=device-width,initial-scale=1">`;
   const cairo = `<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">`;
 
-  // If it has <head>, inject base style FIRST so AI styles still win on cascade
   if (/<head[^>]*>/i.test(html)) {
     html = html.replace(/<head([^>]*)>/i, `<head$1>${viewport}${cairo}${baseStyle}`);
   } else if (/<html[^>]*>/i.test(html)) {
     html = html.replace(/<html([^>]*)>/i, `<html$1><head>${viewport}${cairo}${baseStyle}</head>`);
   } else {
-    // No skeleton at all → wrap everything
     html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">${viewport}${cairo}${baseStyle}</head><body>${html}</body></html>`;
   }
   return html;
@@ -672,7 +693,7 @@ const PlatformBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [projectTitle, setProjectTitle] = useState("");
   const [saving, setSaving] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
+  const [, setPreviewError] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const safeHtml = useMemo(() => wrapWithSafeShell(html), [html]);
@@ -690,15 +711,23 @@ const PlatformBuilder = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("tech-ai-platform-builder", {
-        body: { description: input, conversation: messages },
+      const sysPrompt = `أنت مهندس واجهات ومطور منصات ويب محترف. قم ببناء تطبيق ويب تفاعلي متكامل بملف HTML واحد (يتضمن TailwindCSS عبر CDN وJavaScript تفاعلي كامل وتصميم عربي عصري اتجاه RTL).
+أرجع كود HTML الكامل فقط بدون أي شرح خارجه.`;
+
+      const generatedHtml = await streamAI({
+        messages: [
+          { role: "system", content: sysPrompt },
+          ...messages.slice(-4).map(m => ({ role: m.role, content: m.content })),
+          { role: "user", content: `ابنِ أو حدّث المنصة التالية بالكامل كملف HTML تفاعلي واحد:\n${userMsg.content}` }
+        ],
+        temperature: 0.4,
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setHtml(data.html || "");
+
+      const cleanedHtml = generatedHtml.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
+      setHtml(cleanedHtml);
       setMessages([
         ...newMessages,
-        { role: "assistant", content: "تم بناء المنصة! شاهد المعاينة على اليسار. اطلب أي تعديلات إضافية." },
+        { role: "assistant", content: "تم بناء المنصة بنجاح! شاهد المعاينة التفاعلية الحية على اليسار، ويمكنك طلب أي تعديلات إضافية." },
       ]);
       toast.success("تم البناء 🎉");
     } catch (e: any) {
@@ -767,38 +796,38 @@ const PlatformBuilder = () => {
       className="space-y-4"
     >
       {/* Capabilities banner */}
-      <div className="rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 via-blue-500/5 to-purple-500/5 backdrop-blur-xl p-4">
+      <div className="rounded-2xl border border-cyan-300 dark:border-cyan-500/20 bg-white dark:bg-gradient-to-r dark:from-cyan-500/5 dark:via-blue-500/5 dark:to-purple-500/5 backdrop-blur-xl p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="font-bold text-white/90">قدرات المنصة المُولّدة:</span>
-          <span className="px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">🗄️ قاعدة بيانات</span>
-          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">🔐 تسجيل دخول</span>
-          <span className="px-3 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">🤖 مساعد AI</span>
-          <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">🐍 Python</span>
-          <span className="px-3 py-1 rounded-full bg-pink-500/15 text-pink-300 border border-pink-500/30">⚙️ C++</span>
-          <span className="px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">📱 Responsive</span>
+          <span className="font-bold text-slate-900 dark:text-white/90">قدرات المنصة المُولّدة:</span>
+          <span className="px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 font-semibold">🗄️ قاعدة بيانات</span>
+          <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-semibold">🔐 تسجيل دخول</span>
+          <span className="px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30 font-semibold">🤖 مساعد AI</span>
+          <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 font-semibold">🐍 Python</span>
+          <span className="px-3 py-1 rounded-full bg-pink-50 dark:bg-pink-500/15 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-500/30 font-semibold">⚙️ C++</span>
+          <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 font-semibold">📱 Responsive</span>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-[380px_1fr] gap-4">
         {/* Chat panel */}
-        <div className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.04] to-blue-500/[0.02] backdrop-blur-xl flex flex-col h-[760px]">
-          <div className="p-5 border-b border-white/10 flex items-center gap-3">
+        <div className="rounded-3xl border border-slate-200 dark:border-cyan-500/20 bg-white dark:bg-gradient-to-br dark:from-cyan-500/[0.04] dark:to-blue-500/[0.02] backdrop-blur-xl flex flex-col h-[760px] shadow-md">
+          <div className="p-5 border-b border-slate-200 dark:border-white/10 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30">
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">باني المنصات الذكي</h2>
-              <p className="text-xs text-white/60">صف منصتك وسأبنيها كاملة</p>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">باني المنصات الذكي</h2>
+              <p className="text-xs text-slate-500 dark:text-white/60">صف منصتك وسأبنيها كاملة</p>
             </div>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
-              <div className="text-center py-8 text-white/50 text-sm space-y-3">
+              <div className="text-center py-8 text-slate-500 dark:text-white/50 text-sm space-y-3">
                 <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-semibold text-white/70">اكتب وصفاً لمنصتك</p>
-                <div className="text-xs space-y-2 text-right bg-white/5 rounded-xl p-3 border border-white/10">
-                  <p className="text-cyan-300 font-bold">أمثلة:</p>
+                <p className="font-semibold text-slate-700 dark:text-white/70">اكتب وصفاً لمنصتك</p>
+                <div className="text-xs space-y-2 text-right bg-slate-50 dark:bg-white/5 rounded-xl p-3 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300">
+                  <p className="text-cyan-700 dark:text-cyan-300 font-bold">أمثلة:</p>
                   <p>• منصة لإدارة المهام مع AI لاقتراح الأولويات</p>
                   <p>• متجر إلكتروني بسلة مشتريات وقاعدة منتجات</p>
                   <p>• منصة تعليم برمجة بمحرر Python و C++</p>
@@ -812,7 +841,7 @@ const PlatformBuilder = () => {
                   className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
                     m.role === "user"
                       ? "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
-                      : "bg-white/5 border border-white/10 text-white/90"
+                      : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-white/90"
                   }`}
                 >
                   {m.content}
@@ -821,15 +850,15 @@ const PlatformBuilder = () => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2 text-slate-700 dark:text-white">
+                  <Loader2 className="w-4 h-4 animate-spin text-cyan-600 dark:text-cyan-400" />
                   جارٍ بناء المنصة الكاملة...
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-4 border-t border-white/10 space-y-2">
+          <div className="p-4 border-t border-slate-200 dark:border-white/10 space-y-2">
             <div className="flex gap-2">
               <Textarea
                 value={input}
@@ -841,12 +870,12 @@ const PlatformBuilder = () => {
                   }
                 }}
                 placeholder="اوصف منصتك بالتفصيل..."
-                className="bg-black/40 border-white/10 text-white min-h-[70px] resize-none"
+                className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white min-h-[70px] resize-none"
               />
               <Button
                 onClick={send}
                 disabled={loading}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 self-end shadow-lg shadow-cyan-500/30"
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white self-end shadow-lg shadow-cyan-500/30"
               >
                 <Send className="w-4 h-4" />
               </Button>
@@ -855,8 +884,8 @@ const PlatformBuilder = () => {
         </div>
 
         {/* Preview panel */}
-        <div className="rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden flex flex-col h-[760px]">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-slate-900 dark:bg-black/40 backdrop-blur-xl overflow-hidden flex flex-col h-[760px] shadow-xl">
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02] text-white">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-cyan-400" />
               <span className="text-sm font-medium">معاينة حية تفاعلية</span>
@@ -888,7 +917,6 @@ const PlatformBuilder = () => {
                     const url = URL.createObjectURL(blob);
                     const w = window.open(url, "_blank");
                     if (!w) {
-                      // popup blocked → fallback document.write
                       const w2 = window.open("", "_blank");
                       if (w2) { w2.document.open(); w2.document.write(safeHtml); w2.document.close(); }
                     }
@@ -926,7 +954,7 @@ const PlatformBuilder = () => {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-white/30 p-8">
+            <div className="flex-1 flex flex-col items-center justify-center text-white/40 p-8">
               <Code2 className="w-20 h-20 mb-4 opacity-50" />
               <p className="text-sm font-semibold mb-2">المعاينة الحية ستظهر هنا</p>
               <p className="text-xs text-center max-w-md leading-relaxed">
@@ -964,13 +992,14 @@ const PlatformEvaluator = () => {
     try {
       const prompt = `قيّم منصة الويب التالية بشكل احترافي وحيادي.\n\nالرابط: ${url || "غير محدد"}\nالوصف: ${description}\n\nأعد JSON صارم بهذا الشكل بدون أي شرح:\n{\n  "score": رقم من 0 إلى 100,\n  "strengths": ["نقطة قوة 1", ...],\n  "weaknesses": ["نقطة ضعف 1", ...],\n  "suggestions": ["اقتراح تحسين 1", ...],\n  "summary": "ملخص نهائي بالعربية في 2-3 جمل"\n}\n\nركّز على: تجربة المستخدم، التصميم، الأداء، إمكانية الوصول، القيمة الفعلية، الاحترافية.`;
 
-      const { data, error } = await supabase.functions.invoke("ai-assistant", {
-        body: { messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } },
+      const raw = await streamAI({
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
       });
-      if (error) throw error;
-      const raw = (data as any)?.message || (data as any)?.content || (data as any)?.text || "";
+
       const cleaned = String(raw).replace(/```json|```/g, "").trim();
-      setResult(JSON.parse(cleaned));
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      setResult(JSON.parse(jsonMatch ? jsonMatch[0] : cleaned));
       toast.success("تم تقييم المنصة بنجاح");
     } catch (e: any) {
       console.error(e);
@@ -987,38 +1016,38 @@ const PlatformEvaluator = () => {
       exit={{ opacity: 0, y: -20 }}
       className="max-w-3xl mx-auto space-y-6"
     >
-      <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl p-6 shadow-2xl">
+      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gradient-to-br dark:from-white/[0.04] dark:to-white/[0.01] backdrop-blur-xl p-6 shadow-md dark:shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500 to-pink-600 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <h2 className="text-xl font-bold">تقييم المنصات بالذكاء الاصطناعي</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">تقييم المنصات بالذكاء الاصطناعي</h2>
         </div>
-        <p className="text-white/60 text-sm mb-6">
+        <p className="text-slate-600 dark:text-white/60 text-sm mb-6">
           أدخل رابط منصتك ووصفها لتحصل على تقييم احترافي شامل مع نقاط القوة والضعف واقتراحات التحسين.
         </p>
 
-        <label className="text-xs text-white/60 mb-1 block">رابط المنصة (اختياري)</label>
+        <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block font-semibold">رابط المنصة (اختياري)</label>
         <Input
           dir="ltr"
           placeholder="https://example.com"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="bg-black/40 border-white/10 text-white mb-4"
+          className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white mb-4"
         />
 
-        <label className="text-xs text-white/60 mb-1 block">وصف المنصة وأهدافها</label>
+        <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block font-semibold">وصف المنصة وأهدافها</label>
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="مثال: منصة تعليمية للأطفال تركز على تعلّم الرياضيات بأسلوب تفاعلي..."
-          className="bg-black/40 border-white/10 text-white min-h-[140px] resize-none mb-4"
+          className="bg-slate-50 dark:bg-black/40 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white min-h-[140px] resize-none mb-4"
         />
 
         <Button
           onClick={evaluate}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 shadow-lg shadow-pink-500/30"
+          className="w-full bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 text-white shadow-lg shadow-pink-500/30"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           <span className="mr-2">{loading ? "جارٍ التقييم..." : "قيّم منصتي الآن"}</span>
@@ -1027,30 +1056,30 @@ const PlatformEvaluator = () => {
 
       {result && (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          <div className="rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-500/10 to-pink-500/10 p-8 text-center">
-            <div className="text-7xl font-black bg-gradient-to-r from-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+          <div className="rounded-3xl border border-fuchsia-300 dark:border-fuchsia-500/30 bg-fuchsia-50 dark:bg-gradient-to-br dark:from-fuchsia-500/10 dark:to-pink-500/10 p-8 text-center">
+            <div className="text-7xl font-black bg-gradient-to-r from-fuchsia-600 to-pink-600 dark:from-fuchsia-300 dark:to-pink-300 bg-clip-text text-transparent">
               {result.score}/100
             </div>
-            <p className="text-white/80 mt-3 leading-relaxed">{result.summary}</p>
+            <p className="text-slate-700 dark:text-white/80 mt-3 leading-relaxed font-medium">{result.summary}</p>
           </div>
 
-          <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-6">
-            <h3 className="text-base font-bold text-emerald-300 mb-3">✓ نقاط القوة</h3>
-            <ul className="space-y-2 text-white/80 text-sm">
+          <div className="rounded-3xl border border-emerald-300 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/5 p-6">
+            <h3 className="text-base font-bold text-emerald-700 dark:text-emerald-300 mb-3">✓ نقاط القوة</h3>
+            <ul className="space-y-2 text-slate-700 dark:text-white/80 text-sm">
               {result.strengths?.map((s, i) => <li key={i}>• {s}</li>)}
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-orange-500/20 bg-orange-500/5 p-6">
-            <h3 className="text-base font-bold text-orange-300 mb-3">⚠ نقاط تحتاج تحسين</h3>
-            <ul className="space-y-2 text-white/80 text-sm">
+          <div className="rounded-3xl border border-orange-300 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/5 p-6">
+            <h3 className="text-base font-bold text-orange-700 dark:text-orange-300 mb-3">⚠ نقاط تحتاج تحسين</h3>
+            <ul className="space-y-2 text-slate-700 dark:text-white/80 text-sm">
               {result.weaknesses?.map((s, i) => <li key={i}>• {s}</li>)}
             </ul>
           </div>
 
-          <div className="rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-6">
-            <h3 className="text-base font-bold text-cyan-300 mb-3">💡 اقتراحات التحسين</h3>
-            <ul className="space-y-2 text-white/80 text-sm">
+          <div className="rounded-3xl border border-cyan-300 dark:border-cyan-500/20 bg-cyan-50 dark:bg-cyan-500/5 p-6">
+            <h3 className="text-base font-bold text-cyan-700 dark:text-cyan-300 mb-3">💡 اقتراحات التحسين</h3>
+            <ul className="space-y-2 text-slate-700 dark:text-white/80 text-sm">
               {result.suggestions?.map((s, i) => <li key={i}>• {s}</li>)}
             </ul>
           </div>

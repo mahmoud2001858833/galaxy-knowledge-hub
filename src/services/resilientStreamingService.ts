@@ -16,7 +16,8 @@ export interface ChatMessage {
 }
 
 export interface StreamOptions {
-  prompt: string;
+  prompt?: string;
+  messages?: ChatMessage[];
   systemInstruction?: string;
   chatHistory?: ChatMessage[];
   imageBase64?: string;
@@ -24,7 +25,7 @@ export interface StreamOptions {
   temperature?: number;
   maxOutputTokens?: number;
   signal?: AbortSignal;
-  onChunk: (delta: string, accumulated: string) => void;
+  onChunk?: (delta: string, accumulated: string) => void;
   onComplete?: (fullText: string) => void;
   onError?: (error: Error) => void;
 }
@@ -66,9 +67,10 @@ class ResilientStreamingService {
    */
   public async streamAI(options: StreamOptions): Promise<StreamResult> {
     const {
-      prompt,
+      prompt: rawPrompt,
+      messages = [],
       systemInstruction = 'أنت المرشد والمساعد الأكاديمي الذكي لمنصة ذروة العلم 2.0، تجيب بدقة علمية وترتيب بيداغوجي رفيع باللغة العربية الفصحى.',
-      chatHistory = [],
+      chatHistory: rawChatHistory = [],
       imageBase64,
       mimeType = 'image/jpeg',
       temperature = 0.7,
@@ -78,6 +80,17 @@ class ResilientStreamingService {
       onComplete,
       onError,
     } = options;
+
+    // Normalize messages + prompt if caller passed `messages` array
+    const prompt =
+      rawPrompt ??
+      (messages.length > 0 ? messages[messages.length - 1].content : '');
+    const chatHistory =
+      rawChatHistory.length > 0
+        ? rawChatHistory
+        : messages.length > 1
+        ? messages.slice(0, -1)
+        : [];
 
     const apiKey = this.getApiKey();
     let accumulatedText = '';
@@ -218,7 +231,7 @@ class ResilientStreamingService {
               if (delta) {
                 accumulatedText += delta;
                 totalChunks++;
-                onChunk(delta, accumulatedText);
+                onChunk?.(delta, accumulatedText);
               }
             } catch {
               // Masterstroke: Prepend unparsed fragmented line back to buffer and wait for next chunk
@@ -273,7 +286,7 @@ class ResilientStreamingService {
         const data = await fallbackRes.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
-          onChunk(text, text);
+          onChunk?.(text, text);
           onComplete?.(text);
           return {
             text,
@@ -293,3 +306,5 @@ class ResilientStreamingService {
 }
 
 export const resilientStreamingService = new ResilientStreamingService();
+export const streamAI = (options: StreamOptions): Promise<StreamResult> =>
+  resilientStreamingService.streamAI(options);

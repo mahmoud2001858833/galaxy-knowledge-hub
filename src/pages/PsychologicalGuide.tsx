@@ -44,6 +44,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import StarField from '@/components/StarField';
 import { supabase } from '@/integrations/supabase/client';
+import { streamAI } from '@/services/resilientStreamingService';
 import { SEO } from '@/components/SEO';
 
 interface Message {
@@ -79,7 +80,7 @@ const moods: MoodOption[] = [
     label: 'قلق وتوتر امتحانات', 
     desc: 'تسارع نبضات، خوف من النتيجة، وثقل في الصدر',
     color: 'from-amber-500 via-orange-600 to-rose-600', 
-    bgGradient: 'from-orange-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-orange-50/40 to-slate-100 dark:from-orange-950/80 dark:via-slate-950 dark:to-black',
     accent: '#f97316',
     pulseColor: 'bg-orange-500'
   },
@@ -89,7 +90,7 @@ const moods: MoodOption[] = [
     label: 'إرهاق واحتراق دراسي', 
     desc: 'إنهاك ذهني، فقدان الشغف، وصعوبة الاستمرار',
     color: 'from-amber-600 via-orange-600 to-slate-700', 
-    bgGradient: 'from-amber-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-amber-50/40 to-slate-100 dark:from-amber-950/80 dark:via-slate-950 dark:to-black',
     accent: '#f59e0b',
     pulseColor: 'bg-amber-500'
   },
@@ -99,7 +100,7 @@ const moods: MoodOption[] = [
     label: 'حزن أو ضيق ووحدة', 
     desc: 'شعور بالإحباط، العزلة، والحاجة لأذن صاغية',
     color: 'from-blue-500 via-cyan-600 to-indigo-700', 
-    bgGradient: 'from-blue-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-blue-50/40 to-slate-100 dark:from-blue-950/80 dark:via-slate-950 dark:to-black',
     accent: '#3b82f6',
     pulseColor: 'bg-blue-500'
   },
@@ -109,7 +110,7 @@ const moods: MoodOption[] = [
     label: 'غضب وتشتت سريع', 
     desc: 'انفعال، شعور بعدم العدالة، وفقدان الصبر',
     color: 'from-red-500 via-rose-600 to-orange-600', 
-    bgGradient: 'from-red-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-rose-50/40 to-slate-100 dark:from-red-950/80 dark:via-slate-950 dark:to-black',
     accent: '#ef4444',
     pulseColor: 'bg-red-500'
   },
@@ -119,7 +120,7 @@ const moods: MoodOption[] = [
     label: 'سكينة وصفاء ذهني', 
     desc: 'ذهن هادئ، رغبة بتنظيم الأفكار والأولويات',
     color: 'from-teal-500 via-emerald-600 to-cyan-700', 
-    bgGradient: 'from-teal-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-teal-50/40 to-slate-100 dark:from-teal-950/80 dark:via-slate-950 dark:to-black',
     accent: '#14b8a6',
     pulseColor: 'bg-teal-500'
   },
@@ -129,7 +130,7 @@ const moods: MoodOption[] = [
     label: 'حماس وشغف متوقد', 
     desc: 'طاقة إيجابية عالية، جاهز للتحديات الأكاديمية',
     color: 'from-emerald-500 via-green-600 to-teal-700', 
-    bgGradient: 'from-emerald-950/80 via-slate-950 to-black',
+    bgGradient: 'from-[#F8FAFC] via-emerald-50/40 to-slate-100 dark:from-emerald-950/80 dark:via-slate-950 dark:to-black',
     accent: '#10b981',
     pulseColor: 'bg-emerald-500'
   }
@@ -343,11 +344,10 @@ export const PsychologicalGuide: React.FC = () => {
     ]);
   };
 
-  // Local Cognitive Empathy Fallback Engine (Guaranteed 0-fail clinical-grade psychological response)
-  const generateEmpatheticFallback = (userQuery: string, currentMood: string): { text: string; suggestions?: any[] } => {
+  // Local Cognitive Empathy Fallback Engine
+  const generateEmpatheticFallback = (userQuery: string): { text: string; suggestions?: any[] } => {
     const q = userQuery.toLowerCase();
     
-    // Exam anxiety & fear of failure
     if (q.includes('امتحان') || q.includes('امتحانات') || q.includes('توجيهي') || q.includes('خايف') || q.includes('خوف') || q.includes('معدل')) {
       return {
         text: `أسمعك بكل وضوح وعطف، وقلقك بشأن الامتحانات أو التوقعات شعور إنساني يمر به كل طالب حريص وطموح 💙\n\nإليك ثلاث حقائق علمية نفسية أرجو أن تضعها في قلبك:\n\n1. **قلق الأداء المعتدل مفيد، لكن القلق المفرط يشل الذاكرة العاملة**، لذلك هدفنا ليس إلغاء الخوف بل خفض شدته ليبقى في نطاق التركيز.\n2. **تقسيم المهام (Chunking)**: لا تفكر في الكتاب كاملاً. افتح فصلاً واحداً فقط واقرأ لمدة 20 دقيقة، ثم كافئ نفسك.\n3. **النوم والماء**: الدماغ يفرز هرمون الكورتيزول مع الجفاف وقلة النوم، مما يضاعف التوتر. اشرب كوب ماء بارد الآن.\n\nتذكر: أنت تبذل وسعك، والله لا يضيع أجر المحسنين. أنا هنا لأي استفسار آخر تريده.`,
@@ -359,8 +359,7 @@ export const PsychologicalGuide: React.FC = () => {
       };
     }
 
-    // Concentration & Distraction
-    if (q.includes('تركيز') || q.includes('تشتت') || q.includes('نسيان') || q.includes('انسى') || q.includes('بنسی')) {
+    if (q.includes('تركيز') || q.includes('تشتت') || q.includes('نسيان') || q.includes('انسى')) {
       return {
         text: `التشتت والنسيان ليسا علامة على ضعف في ذكائك على الإطلاق! عقولنا تتعرض لسيل من الإشعارات والمنبهات اليومية تجعل الدماغ في حالة تنبيه دائم 🧠\n\nلإعادة برمجة تركيزك اليوم:\n\n• **قاعدة الـ 5 دقائق**: قل لنفسك «سأجلس للدراسة 5 دقائق فقط وإذا لم استطع سأتوقف». 90% من الوقت ستواصل تلقائياً لأن أصعب خطوة هي البداية.\n• **أبعد الهاتف تماماً** خارج الغرفة وليس بجانبك.\n• **استخدم طريقة التكرار المتباعد**: مراجعة بطاقة المعلومات بعد 24 ساعة، ثم بعد 3 أيام، ثم أسبوع تنقلها للذاكرة الدائمة بنسبة 95%.\n\nهل تحب أن نحدد مادة معينة لتبدأ بها الآن؟`,
         suggestions: [
@@ -370,18 +369,6 @@ export const PsychologicalGuide: React.FC = () => {
       };
     }
 
-    // Exhaustion & Burnout
-    if (q.includes('تعبان') || q.includes('ارهاق') || q.includes('فاشل') || q.includes('يئست') || q.includes('زهقت') || q.includes('مخنوق')) {
-      return {
-        text: `لا تقسُ على نفسك يا صديقي 🌸\n\nالكلمات التي تخاطب بها نفسك في لحظات الضعف تترك أثراً عميقاً في كيمياء دماغك. الشعور بالاختناق أو الإحباط رسالة مفادها: «توقف مؤقتاً والتقط أنفاسك»، وليس «أنت فاشل».\n\nأطلب منك الآن طلباً صغيراً:\n1. قف وابتعد عن الكتب والشاشات لمدة 15 دقيقة.\n2. اغسل وجهك بماء بارد منعش.\n3. تذكر إنجازاً قديماً ظننت يوماً أنك لن تتجاوزه وتجاوزته بفضل الله.\n\nأنا فخور بك لأنك تحاول رغم التعب، وموجود معك في كل خطوة.`,
-        suggestions: [
-          { type: 'tool', title: 'افتح حقيبة التأريض 5-4-3-2-1', url: '#grounding', icon: '🛡️' },
-          { type: 'tool', title: 'آيات السكينة والاطمئنان', url: '#quran', icon: '📖' }
-        ]
-      };
-    }
-
-    // Default warm reflective response
     return {
       text: `أشكرك من القلب على مشاركتي هذه الكلمات الصادقة 💙\n\nكل فكرة أو شعور عبّرت عنه يستحق التقدير والاهتمام. عندما نتعلم كيف نسمي مشاعرنا بدقة، يفقد التوتر نصف قوته علينا.\n\nأنا معك لأساعدك على تفكيك هذه الأفكار وتحويلها إلى خطوات ملموسة وواقعية تمنحك الراحة والتركيز.\n\nما هي الخطوة الأولى الصغيرة التي تشعر أنك قادر على اتخاذها اليوم؟`,
       suggestions: [
@@ -403,65 +390,60 @@ export const PsychologicalGuide: React.FC = () => {
       timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const aiMessageId = `${Date.now()}-ai`;
+    const currentMoodObj = moods.find(m => m.id === selectedMood) || moods[0];
+    const fallbackData = generateEmpatheticFallback(userText);
+
+    setMessages(prev => [
+      ...prev,
+      userMessage,
+      {
+        id: aiMessageId,
+        role: 'ai',
+        content: '',
+        timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+        suggestions: fallbackData.suggestions,
+      }
+    ]);
     setInputText('');
     setIsLoading(true);
 
     try {
-      const conversationHistory = messages.slice(-6).map(msg => ({
-        role: msg.role,
-        content: msg.content
+      const systemInstruction = `أنت المرشد النفسي والأكاديمي الذكي (واحة السكينة) في منصة "ذروة العلم" لمدرسة عنبه الثانوية الشاملة للبنين.
+مهمتك تقديم إرشاد نفسي وتربوي دافئ ومبني على العلاج المعرفي السلوكي (CBT) وعلم الأعصاب التربوي باللغة العربية الفصحى الميسرة واللطيفة.
+الحالة الوجدانية الحالية للطالب: ${currentMoodObj.label} (${currentMoodObj.desc}).
+قواعد الرد:
+1. ابدأ باحتواء عاطفي صادق وتفهم لمشاعر الطالب دون إطلاق أحكام.
+2. فكك الأفكار السلبية أو القلق بأسلوب علمي مبسط (إعادة التأطير المعرفي CBT).
+3. قدم 3 خطوات عملية فورية وقابلة للتطبيق الآن لتهدئة الجهاز العصبي واستعادة التوازن الدراسي.`;
+
+      const historyMessages = messages.slice(-6).map(m => ({
+        role: (m.role === 'ai' ? 'assistant' : 'user') as 'user' | 'assistant',
+        content: m.content
       }));
 
-      // Edge Function with timeout race
-      const invokePromise = supabase.functions.invoke('psychological-guide-ai', {
-        body: {
-          message: userText,
-          mood: selectedMood,
-          conversationHistory
+      await streamAI({
+        messages: [
+          { role: 'system', content: systemInstruction },
+          ...historyMessages,
+          { role: 'user', content: userText }
+        ],
+        temperature: 0.65,
+        onToken: (_delta, fullText) => {
+          setMessages(prev =>
+            prev.map(m => (m.id === aiMessageId ? { ...m, content: fullText } : m))
+          );
         }
       });
 
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('timeout')), 5000)
-      );
-
-      const result: any = await Promise.race([invokePromise, timeoutPromise]);
-
-      if (result.error || !result.data?.answer) {
-        throw new Error(result.error?.message || 'Empty response');
-      }
-
-      const aiMessage: Message = {
-        id: `${Date.now()}-ai`,
-        role: 'ai',
-        content: result.data.answer,
-        timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-        redirectTo: result.data.redirectTo,
-        redirectMessage: result.data.redirectMessage,
-        suggestions: result.data.suggestions
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsLoading(false);
       playSynthesizedChime(480);
-
     } catch (err) {
-      console.warn('Psychological AI edge function fallback triggered:', err);
-      
-      setTimeout(() => {
-        const fallback = generateEmpatheticFallback(userText, selectedMood);
-        const aiMessage: Message = {
-          id: `${Date.now()}-ai-fallback`,
-          role: 'ai',
-          content: fallback.text,
-          timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-          suggestions: fallback.suggestions
-        };
-        setMessages(prev => [...prev, aiMessage]);
-        setIsLoading(false);
-        playSynthesizedChime(480);
-      }, 350);
+      setMessages(prev =>
+        prev.map(m => (m.id === aiMessageId ? { ...m, content: fallbackData.text } : m))
+      );
+      playSynthesizedChime(480);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -497,15 +479,15 @@ export const PsychologicalGuide: React.FC = () => {
   const currentMoodData = moods.find(m => m.id === selectedMood) || moods[0];
 
   return (
-    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b ${currentMoodData.bgGradient} text-white transition-colors duration-700 selection:bg-rose-500 selection:text-white font-sans`} dir="rtl">
+    <div className={`min-h-screen flex flex-col text-right bg-gradient-to-b ${currentMoodData.bgGradient} text-slate-900 dark:text-white transition-colors duration-700 selection:bg-rose-500 selection:text-white font-sans`} dir="rtl">
       <SEO 
         title="مرشدك النفسي الذكي (واحة السكينة) | منصة ذروة العلم"
         description="المرشد النفسي والأكاديمي الذكي المبني على العلاج المعرفي السلوكي (CBT): تنظيم قلق الامتحانات، التنفس الصندوقي 4-4-4-4، التأريض الحسي 5-4-3-2-1، وآيات السكينة والاطمئنان."
         keywords="مرشد نفسي, دعم نفسي للطلاب, قلق الامتحانات, تنفس صندوقي, تأريض نفسي, ذروة العلم, علاج معرفي سلوكي"
       />
       
-      {/* Background Calm Starfield */}
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-30">
+      {/* Background Calm Starfield (Dark Mode only) */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-30 hidden dark:block">
         <StarField starCount={350} />
       </div>
       
@@ -513,11 +495,11 @@ export const PsychologicalGuide: React.FC = () => {
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10 flex flex-col max-w-5xl space-y-4">
         {/* Top Control Bar & Quick-Calm Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 p-3 sm:p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 dark:bg-slate-900/60 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm backdrop-blur-md">
           <Button
             onClick={() => navigate('/ai-assistant-section')}
             variant="ghost"
-            className="text-slate-300 hover:text-white hover:bg-white/10 text-xs sm:text-sm font-semibold rounded-xl"
+            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 text-xs sm:text-sm font-bold rounded-xl"
           >
             <ArrowRight className="w-4 h-4 ml-1.5" />
             <span>مركز المساعدين الأذكياء</span>
@@ -533,9 +515,9 @@ export const PsychologicalGuide: React.FC = () => {
               }}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-cyan-950/40 border-cyan-500/40 text-cyan-200 hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border-cyan-300 dark:border-cyan-500/40 text-cyan-800 dark:text-cyan-200 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Wind className="w-3.5 h-3.5 text-cyan-400" />
+              <Wind className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span>التنفس الصندوقي 4-4-4-4</span>
             </Button>
 
@@ -543,9 +525,9 @@ export const PsychologicalGuide: React.FC = () => {
               onClick={() => setActiveSosTab(activeSosTab === 'grounding' ? 'none' : 'grounding')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-rose-950/40 border-rose-500/40 text-rose-200 hover:bg-rose-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-500/40 text-rose-800 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+              <ShieldAlert className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
               <span>التأريض الحسي 5-4-3-2-1</span>
             </Button>
 
@@ -553,9 +535,9 @@ export const PsychologicalGuide: React.FC = () => {
               onClick={() => setActiveSosTab(activeSosTab === 'reframing' ? 'none' : 'reframing')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-cyan-950/40 border-cyan-500/40 text-cyan-200 hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-indigo-50 dark:bg-cyan-950/40 border-indigo-300 dark:border-cyan-500/40 text-indigo-800 dark:text-cyan-200 hover:bg-indigo-100 dark:hover:bg-cyan-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Brain className="w-3.5 h-3.5 text-cyan-400" />
+              <Brain className="w-3.5 h-3.5 text-indigo-600 dark:text-cyan-400" />
               <span>إعادة التأطير المعرفي CBT</span>
             </Button>
 
@@ -563,9 +545,9 @@ export const PsychologicalGuide: React.FC = () => {
               onClick={() => setActiveSosTab(activeSosTab === 'quran' ? 'none' : 'quran')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-emerald-950/40 border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>آيات السكينة</span>
             </Button>
 
@@ -573,9 +555,9 @@ export const PsychologicalGuide: React.FC = () => {
               onClick={() => setActiveSosTab(activeSosTab === 'pomodoro' ? 'none' : 'pomodoro')}
               variant="outline"
               size="sm"
-              className="rounded-xl bg-amber-950/40 border-amber-500/40 text-amber-200 hover:bg-amber-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              className="rounded-xl bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              <Coffee className="w-3.5 h-3.5 text-amber-400" />
+              <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               <span>استراحة التعافي 25/5</span>
             </Button>
           </div>
@@ -592,15 +574,15 @@ export const PsychologicalGuide: React.FC = () => {
               exit={{ opacity: 0, y: -15 }}
               className="flex-1 flex items-center justify-center py-4"
             >
-              <Card className="p-6 sm:p-10 bg-slate-900/85 border-white/10 backdrop-blur-xl max-w-3xl w-full rounded-3xl shadow-2xl space-y-8">
+              <Card className="p-6 sm:p-10 bg-white/95 dark:bg-slate-900/85 border-slate-200 dark:border-white/10 backdrop-blur-xl max-w-3xl w-full rounded-3xl shadow-xl dark:shadow-2xl space-y-8">
                 <div className="text-center space-y-3">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-400/30 text-rose-300 mb-1">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-500/20 border border-rose-200 dark:border-rose-400/30 text-rose-600 dark:text-rose-300 mb-1">
                     <Heart className="w-8 h-8 animate-pulse" />
                   </div>
-                  <h2 className="text-2xl sm:text-4xl font-black text-white">
+                  <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white">
                     كيف تشعر في هذه اللحظة؟
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl mx-auto font-medium">
                     اختر الحالة الوجدانية الأقرب لما يدور في صدرك الآن لنخصص لك جلسة إرشادية آمنة ومريحة تلبي احتياجك الفعلي.
                   </p>
                 </div>
@@ -653,12 +635,12 @@ export const PsychologicalGuide: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-6 rounded-3xl bg-slate-900/95 border border-cyan-500/40 backdrop-blur-2xl shadow-2xl relative overflow-hidden text-center space-y-4"
+                    className="p-6 rounded-3xl bg-white dark:bg-slate-900/95 border border-cyan-300 dark:border-cyan-500/40 backdrop-blur-2xl shadow-xl relative overflow-hidden text-center space-y-4"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Wind className="w-5 h-5 text-cyan-400" />
-                        <span className="text-sm font-bold text-cyan-300">
+                        <Wind className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <span className="text-sm font-bold text-cyan-800 dark:text-cyan-300">
                           تمرين التنفس الصندوقي العيادي (4-4-4-4 Box Breathing)
                         </span>
                       </div>
@@ -666,7 +648,7 @@ export const PsychologicalGuide: React.FC = () => {
                         onClick={() => setIsBreathingOpen(false)}
                         variant="ghost"
                         size="sm"
-                        className="rounded-lg text-slate-400 hover:text-white h-7 px-2"
+                        className="rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white h-7 px-2"
                       >
                         إغلاق
                       </Button>
@@ -675,7 +657,6 @@ export const PsychologicalGuide: React.FC = () => {
                     {/* Animated Concentric Breathing Orb */}
                     <div className="py-6 flex flex-col items-center justify-center">
                       <div className="relative flex items-center justify-center">
-                        {/* Ripple Aura */}
                         <motion.div
                           animate={{
                             scale: breathingPhase === 'inhale' ? 1.5 : breathingPhase === 'hold1' ? 1.5 : breathingPhase === 'exhale' ? 0.85 : 0.85,
@@ -688,13 +669,13 @@ export const PsychologicalGuide: React.FC = () => {
                         <motion.div
                           animate={{
                             scale: breathingPhase === 'inhale' ? 1.35 : breathingPhase === 'hold1' ? 1.35 : breathingPhase === 'exhale' ? 0.9 : 0.9,
-                            borderColor: breathingPhase === 'inhale' ? '#38bdf8' : breathingPhase === 'hold1' ? '#a855f7' : breathingPhase === 'exhale' ? '#34d399' : '#94a3b8'
+                            borderColor: breathingPhase === 'inhale' ? '#0284c7' : breathingPhase === 'hold1' ? '#9333ea' : breathingPhase === 'exhale' ? '#10b981' : '#64748b'
                           }}
                           transition={{ duration: 4, ease: 'easeInOut' }}
-                          className="w-40 h-40 rounded-full border-4 flex flex-col items-center justify-center shadow-2xl bg-cyan-950/40 z-10"
+                          className="w-40 h-40 rounded-full border-4 flex flex-col items-center justify-center shadow-xl bg-cyan-50 dark:bg-cyan-950/40 z-10"
                         >
-                          <span className="text-4xl font-black text-white font-mono">{breathingSeconds}</span>
-                          <span className="text-xs font-bold text-cyan-200 mt-1">
+                          <span className="text-4xl font-black text-slate-900 dark:text-white font-mono">{breathingSeconds}</span>
+                          <span className="text-xs font-bold text-cyan-800 dark:text-cyan-200 mt-1">
                             {breathingPhase === 'inhale' && 'شهيق عميق من الأنف'}
                             {breathingPhase === 'hold1' && 'حبس النفس بهدوء'}
                             {breathingPhase === 'exhale' && 'زفير بطيء ومريح'}
@@ -703,7 +684,7 @@ export const PsychologicalGuide: React.FC = () => {
                         </motion.div>
                       </div>
 
-                      <p className="text-xs text-slate-300 mt-4 max-w-md leading-relaxed">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-4 max-w-md leading-relaxed font-medium">
                         {breathingPhase === 'inhale' && 'املأ رئتيك بالهواء ببطء من أنفك، واشعر بتمدد بطنك وهدوء نبضاتك.'}
                         {breathingPhase === 'hold1' && 'ابقَ هادئاً تماماً... لا تشد عضلات رقبتك أو كتفيك.'}
                         {breathingPhase === 'exhale' && 'اخرج الهواء بهدوء وتدرج من فمك كأنك تطفئ شمعة بعيدة.'}
@@ -715,7 +696,7 @@ export const PsychologicalGuide: React.FC = () => {
                           onClick={() => setIsBreathingRunning(!isBreathingRunning)}
                           size="sm"
                           variant="outline"
-                          className="rounded-xl border-cyan-500/40 text-xs text-cyan-300"
+                          className="rounded-xl border-cyan-300 dark:border-cyan-500/40 text-xs text-cyan-700 dark:text-cyan-300"
                         >
                           {isBreathingRunning ? <Pause className="w-3.5 h-3.5 ml-1" /> : <Play className="w-3.5 h-3.5 ml-1" />}
                           {isBreathingRunning ? 'إيقاف مؤقت' : 'استئناف'}
@@ -727,13 +708,13 @@ export const PsychologicalGuide: React.FC = () => {
                           }}
                           size="sm"
                           variant="outline"
-                          className="rounded-xl border-slate-700 text-xs text-slate-300"
+                          className="rounded-xl border-slate-300 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300"
                         >
                           <RotateCcw className="w-3.5 h-3.5 ml-1" />
                           <span>إعادة البدء</span>
                         </Button>
                         {completedBreathingCycles > 0 && (
-                          <span className="text-xs text-emerald-400 font-bold mr-2">
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mr-2">
                             تم إكمال {completedBreathingCycles} دورات استرخاء
                           </span>
                         )}
@@ -750,12 +731,12 @@ export const PsychologicalGuide: React.FC = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="p-5 rounded-3xl bg-slate-900/95 border border-white/10 backdrop-blur-xl shadow-xl space-y-4"
+                    className="p-5 rounded-3xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-white/10 backdrop-blur-xl shadow-lg space-y-4"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2">
-                        <ShieldAlert className="w-4 h-4 text-rose-400" />
-                        <span className="text-xs sm:text-sm font-bold text-slate-200">
+                        <ShieldAlert className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-200">
                           حقيبة التدخل النفسي العاجل (Clinical SOS Arsenal)
                         </span>
                       </div>
@@ -763,25 +744,25 @@ export const PsychologicalGuide: React.FC = () => {
                       <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                         <button
                           onClick={() => setActiveSosTab('grounding')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'grounding' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'grounding' ? 'bg-rose-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
                         >
                           التأريض 5-4-3-2-1
                         </button>
                         <button
                           onClick={() => setActiveSosTab('reframing')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'reframing' ? 'bg-cyan-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
                         >
                           التأطير المعرفي CBT
                         </button>
                         <button
                           onClick={() => setActiveSosTab('quran')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'quran' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'quran' ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
                         >
                           آيات السكينة
                         </button>
                         <button
                           onClick={() => setActiveSosTab('pomodoro')}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'pomodoro' ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300'}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${activeSosTab === 'pomodoro' ? 'bg-amber-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}
                         >
                           مؤقت 25/5
                         </button>
@@ -789,7 +770,7 @@ export const PsychologicalGuide: React.FC = () => {
                           onClick={() => setActiveSosTab('none')}
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-slate-400"
+                          className="h-7 px-2 text-slate-500 dark:text-slate-400"
                         >
                           ✕
                         </Button>
@@ -799,7 +780,7 @@ export const PsychologicalGuide: React.FC = () => {
                     {/* Grounding Tab Content */}
                     {activeSosTab === 'grounding' && (
                       <div className="space-y-3 pt-2">
-                        <p className="text-xs text-slate-300">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                           بروتوكول التأريض الحسي يقطع فجأة إشارات الذعر في اللوزة الدماغية (Amygdala) ويعيد تنشيط الفص الجبهي المسؤول عن التفكير والهدوء:
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
@@ -814,18 +795,18 @@ export const PsychologicalGuide: React.FC = () => {
                               }}
                               className={`p-3.5 rounded-2xl border transition-all cursor-pointer text-right space-y-1 ${
                                 groundingChecked[idx] 
-                                  ? 'bg-emerald-950/60 border-emerald-500/50 shadow-md' 
-                                  : 'bg-slate-800/80 border-slate-700/80 hover:border-slate-500'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-400 dark:border-emerald-500/50 shadow-sm' 
+                                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/80 hover:border-slate-400'
                               }`}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-xl font-black text-rose-400 font-mono">{gs.count}</span>
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${groundingChecked[idx] ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-bold' : 'border-slate-500'}`}>
+                                <span className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono">{gs.count}</span>
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${groundingChecked[idx] ? 'bg-emerald-500 text-white border-emerald-400 font-bold' : 'border-slate-400'}`}>
                                   {groundingChecked[idx] ? '✓' : ''}
                                 </div>
                               </div>
-                              <div className="text-xs font-bold text-white">{gs.label}</div>
-                              <div className="text-[10px] text-slate-300 leading-tight">{gs.desc}</div>
+                              <div className="text-xs font-bold text-slate-900 dark:text-white">{gs.label}</div>
+                              <div className="text-[10px] text-slate-600 dark:text-slate-300 leading-tight">{gs.desc}</div>
                             </div>
                           ))}
                         </div>
@@ -835,23 +816,23 @@ export const PsychologicalGuide: React.FC = () => {
                     {/* Reframing Tab Content */}
                     {activeSosTab === 'reframing' && (
                       <div className="space-y-3 pt-2">
-                        <p className="text-xs text-slate-300">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                           مختبر إعادة التأطير المعرفي (CBT Cognitive Re-framing) لتحويل الأفكار الكارثية إلى حقائق عقلانية متزنة:
                         </p>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {reframingCards.map((rc, idx) => (
-                            <div key={idx} className="p-4 rounded-2xl bg-slate-800/90 border border-slate-700 text-right space-y-2.5 shadow-sm">
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">
+                            <div key={idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-right space-y-2.5 shadow-sm">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold">
                                 تشويه: {rc.distortionType}
                               </span>
-                              <div className="text-[11px] text-rose-300/90 font-medium">
+                              <div className="text-[11px] text-rose-700 dark:text-rose-300/90 font-semibold">
                                 ❌ «{rc.distorted}»
                               </div>
-                              <div className="text-xs font-bold text-emerald-300 leading-snug">
+                              <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 leading-snug">
                                 ✔ «{rc.rational}»
                               </div>
-                              <div className="text-[10px] text-slate-300 border-t border-slate-700 pt-1.5 flex items-center gap-1">
-                                <span className="font-bold text-cyan-400">خطوة فورية:</span>
+                              <div className="text-[10px] text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-700 pt-1.5 flex items-center gap-1">
+                                <span className="font-bold text-cyan-700 dark:text-cyan-400">خطوة فورية:</span>
                                 <span>{rc.action}</span>
                               </div>
                             </div>
@@ -865,14 +846,14 @@ export const PsychologicalGuide: React.FC = () => {
                       <div className="space-y-3 pt-2">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           {quranicVerses.map((qv, idx) => (
-                            <div key={idx} className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-right space-y-2 shadow-sm">
-                              <div className="text-sm font-bold text-emerald-200">
+                            <div key={idx} className="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 text-right space-y-2 shadow-sm">
+                              <div className="text-sm font-bold text-emerald-900 dark:text-emerald-200">
                                 {qv.verse}
                               </div>
-                              <div className="text-[11px] text-emerald-400 font-semibold">
+                              <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
                                 {qv.surah}
                               </div>
-                              <p className="text-xs text-slate-300 leading-relaxed">
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                                 {qv.reflection}
                               </p>
                             </div>
@@ -883,11 +864,11 @@ export const PsychologicalGuide: React.FC = () => {
 
                     {/* Pomodoro Timer Content */}
                     {activeSosTab === 'pomodoro' && (
-                      <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 text-center space-y-3">
-                        <div className="text-xs font-bold text-amber-300">
+                      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-center space-y-3">
+                        <div className="text-xs font-bold text-amber-700 dark:text-amber-300">
                           مؤقت بومودورو للتركيز المتقطع (25 دقيقة تركيز • 5 دقائق راحة)
                         </div>
-                        <div className="text-4xl font-black font-mono text-white" dir="ltr">
+                        <div className="text-4xl font-black font-mono text-slate-900 dark:text-white" dir="ltr">
                           {Math.floor(pomodoroSeconds / 60).toString().padStart(2, '0')}:
                           {(pomodoroSeconds % 60).toString().padStart(2, '0')}
                         </div>
@@ -906,7 +887,7 @@ export const PsychologicalGuide: React.FC = () => {
                             }}
                             size="sm"
                             variant="outline"
-                            className="rounded-xl border-slate-600 text-xs text-slate-300"
+                            className="rounded-xl border-slate-300 dark:border-slate-600 text-xs text-slate-700 dark:text-slate-300"
                           >
                             إعادة الضبط
                           </Button>
@@ -918,21 +899,21 @@ export const PsychologicalGuide: React.FC = () => {
               </AnimatePresence>
 
               {/* Chat Message Window */}
-              <Card className="flex-1 p-4 sm:p-6 bg-slate-900/85 border-white/10 backdrop-blur-xl flex flex-col justify-between rounded-3xl min-h-[520px] shadow-2xl">
+              <Card className="flex-1 p-4 sm:p-6 bg-white/95 dark:bg-slate-900/85 border-slate-200 dark:border-white/10 backdrop-blur-xl flex flex-col justify-between rounded-3xl min-h-[520px] shadow-xl dark:shadow-2xl">
                 {/* Header Profile */}
-                <div className="flex items-center justify-between pb-4 border-b border-white/10">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-600 to-blue-600 flex items-center justify-center text-white shadow-lg">
                       <Heart className="w-6 h-6 animate-pulse" />
                     </div>
                     <div>
-                      <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                         <span>مرشدك النفسي الذكي</span>
-                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
-                          CBT & Empathy Active
+                        <Badge className="bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30 text-[10px]">
+                          CBT & Empathy AI Live
                         </Badge>
                       </h2>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                         مساحة استماع آمنة ومحمية بالكامل وخالية من أي أحكام
                       </div>
                     </div>
@@ -940,9 +921,9 @@ export const PsychologicalGuide: React.FC = () => {
 
                   <Button
                     onClick={() => setStep('mood')}
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="rounded-xl text-xs text-rose-300 hover:text-white hover:bg-white/10"
+                    className="rounded-xl text-xs border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-white/10"
                   >
                     تغيير الحالة ({currentMoodData.emoji} {currentMoodData.label})
                   </Button>
@@ -961,12 +942,12 @@ export const PsychologicalGuide: React.FC = () => {
                         <div
                           className={`max-w-[90%] sm:max-w-[80%] p-4 sm:p-5 rounded-3xl ${
                             message.role === 'user'
-                              ? 'bg-cyan-600/30 border border-cyan-500/50 text-white rounded-tr-none shadow-sm'
-                              : 'bg-slate-800/90 border border-white/10 text-slate-100 rounded-tl-none shadow-md'
+                              ? 'bg-cyan-600 text-white rounded-tr-none shadow-sm'
+                              : 'bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-100 rounded-tl-none shadow-sm'
                           }`}
                         >
-                          <div className="whitespace-pre-line text-xs sm:text-sm leading-relaxed">
-                            {message.content}
+                          <div className="whitespace-pre-line text-xs sm:text-sm leading-relaxed font-medium">
+                            {message.content || (isLoading ? 'جاري صياغة الإرشاد النفسي...' : '')}
                           </div>
 
                           {/* Direct Platform Link Action */}
@@ -983,8 +964,8 @@ export const PsychologicalGuide: React.FC = () => {
 
                           {/* Suggested Resources Links */}
                           {message.suggestions && message.suggestions.length > 0 && (
-                            <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
-                              <div className="text-[11px] font-bold text-cyan-300">
+                            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-white/10 space-y-2">
+                              <div className="text-[11px] font-bold text-cyan-700 dark:text-cyan-300">
                                 خطوات مقترحة لأجلك الآن:
                               </div>
                               <div className="grid grid-cols-1 gap-1.5">
@@ -1000,13 +981,13 @@ export const PsychologicalGuide: React.FC = () => {
                                           if (sug.url === '#quran') setActiveSosTab('quran');
                                           if (sug.url === '#pomodoro') setActiveSosTab('pomodoro');
                                         }}
-                                        className="flex items-center justify-between p-2.5 rounded-xl bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-right transition-colors text-xs font-semibold text-cyan-200"
+                                        className="flex items-center justify-between p-2.5 rounded-xl bg-cyan-50/80 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 border border-cyan-200 dark:border-cyan-500/30 text-right transition-colors text-xs font-semibold text-cyan-900 dark:text-cyan-200"
                                       >
                                         <span className="flex items-center gap-2">
                                           <span>{sug.icon}</span>
                                           <span>{sug.title}</span>
                                         </span>
-                                        <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                                        <Zap className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                                       </button>
                                     );
                                   }
@@ -1015,7 +996,7 @@ export const PsychologicalGuide: React.FC = () => {
                                     <button
                                       key={sIdx}
                                       onClick={() => navigate(sug.url)}
-                                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 hover:bg-slate-900 border border-white/10 text-right transition-colors text-xs font-semibold text-slate-300"
+                                      className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900/70 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-white/10 text-right transition-colors text-xs font-semibold text-slate-700 dark:text-slate-300"
                                     >
                                       <span className="flex items-center gap-2">
                                         <span>{sug.icon}</span>
@@ -1030,51 +1011,39 @@ export const PsychologicalGuide: React.FC = () => {
                           )}
 
                           {/* Message Footer: Voice read out & timestamp */}
-                          <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/5 text-[10px] text-slate-400">
+                          <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-200/60 dark:border-white/5 text-[10px] text-slate-400">
                             {message.role === 'ai' ? (
                               <button
                                 onClick={() => speakMessage(message.id, message.content)}
-                                className="flex items-center gap-1 hover:text-white transition-colors"
+                                className="flex items-center gap-1 text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-white transition-colors font-semibold"
                               >
                                 {speakingMessageId === message.id ? (
-                                  <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                                  <VolumeX className="w-3.5 h-3.5 text-rose-500" />
                                 ) : (
-                                  <Volume2 className="w-3.5 h-3.5 text-cyan-300" />
+                                  <Volume2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-300" />
                                 )}
                                 <span>{speakingMessageId === message.id ? 'إيقاف الصوت' : 'استماع صوتي'}</span>
                               </button>
-                            ) : <span />}
-                            <span>{message.timestamp}</span>
+                            ) : <span className="text-white/80" />}
+                            <span className={message.role === 'user' ? 'text-white/80' : ''}>{message.timestamp}</span>
                           </div>
                         </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>
 
-                  {isLoading && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex justify-end"
-                    >
-                      <div className="max-w-[80%] p-4 rounded-2xl bg-slate-800/80 border border-white/10 flex items-center gap-2 text-slate-300 text-xs">
-                        <Loader2 className="w-4 h-4 animate-spin text-rose-400" />
-                        <span>المرشد النفسي يكتب رداً دافئاً وموجهاً لأجلك...</span>
-                      </div>
-                    </motion.div>
-                  )}
                   <div ref={messagesEndRef} />
                 </div>
 
                 {/* Input Bar */}
-                <div className="pt-3 border-t border-white/10 flex items-end gap-2">
+                <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex items-end gap-2">
                   <Textarea
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="تحدث بحرية عما تشعر به، أو اسأل عن كيفية تخفيف توتر الامتحانات..."
                     disabled={isLoading}
-                    className="flex-1 min-h-[50px] max-h-32 bg-slate-800/70 border-white/10 text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-cyan-500"
+                    className="flex-1 min-h-[50px] max-h-32 bg-slate-50 dark:bg-slate-800/70 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 rounded-2xl resize-none text-xs sm:text-sm p-3 focus:border-cyan-500"
                   />
                   <Button
                     onClick={sendMessage}

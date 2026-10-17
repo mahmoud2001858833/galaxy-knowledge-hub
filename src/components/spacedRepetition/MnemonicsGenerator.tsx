@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Sparkles, 
   BrainCircuit, 
   Copy, 
   Check, 
   BookmarkPlus, 
-  Lightbulb, 
   Castle, 
   KeyRound, 
   Eye, 
-  ArrowRight,
-  BookOpen,
-  Send
+  Send,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { streamAI } from '@/services/resilientStreamingService';
 
 interface PresetConcept {
   id: string;
@@ -96,7 +95,7 @@ const PRESET_CONCEPTS: PresetConcept[] = [
     techniques: {
       palace: {
         room: 'بوابة التذاكر المغناطيسية',
-        scene: 'تصل محطة قطار وممعك عملة ذهبية (طاقة الفوتون h·ν). البواب يقتطع رسوم الدخول الثابتة (دالة الشغل φ)، وما تبقى في محفظتك هو سرعة ركضك داخل المحطة (KE_max)!',
+        scene: 'تصل محطة قطار ومعك عملة ذهبية (طاقة الفوتون h·ν). البواب يقتطع رسوم الدخول الثابتة (دالة الشغل φ)، وما تبقى في محفظتك هو سرعة ركضك داخل المحطة (KE_max)!',
         cue: 'إذا كانت نقودك أقل من تذكرة البوابة، لن يمر أي إلكترون مهما انتظرت لساعات!'
       },
       acrostic: {
@@ -156,6 +155,7 @@ const PRESET_CONCEPTS: PresetConcept[] = [
 ];
 
 export const MnemonicsGenerator: React.FC = () => {
+  const [conceptsList, setConceptsList] = useState<PresetConcept[]>(PRESET_CONCEPTS);
   const [selectedConcept, setSelectedConcept] = useState<PresetConcept>(PRESET_CONCEPTS[0]);
   const [activeTechnique, setActiveTechnique] = useState<'palace' | 'acrostic' | 'analogy'>('palace');
   const [copied, setCopied] = useState(false);
@@ -205,82 +205,125 @@ export const MnemonicsGenerator: React.FC = () => {
     }
   };
 
-  const handleCustomGenerate = (e: React.FormEvent) => {
+  const handleCustomGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customPrompt.trim()) return;
+    const topic = customPrompt.trim();
+    if (!topic) return;
 
     setIsGeneratingCustom(true);
-    setTimeout(() => {
-      setIsGeneratingCustom(false);
-      const generated: PresetConcept = {
-        id: `custom_${Date.now()}`,
-        subject: 'مفهوم مخصص',
-        name: customPrompt,
-        formula: 'مفهوم أكاديمي مشفر بالذكاء',
-        description: `شيفرة ذهنية مخصصة مولدة بالذكاء الاصطناعي لمفهوم: "${customPrompt}"`,
-        techniques: {
-          palace: {
-            room: 'قاعة العرش في قصر الذاكرة',
-            scene: `تخيل تمثالاً ضخماً في منتصف القاعة يجسد (${customPrompt})، محاطاً بأضواء نيون ثلاثية الأبعاد تنبض بالخطوات الرئيسية والتفرعات.`,
-            cue: `اربط البداية بمدخل القاعة والنهاية بالخروج من النافذة البلورية.`
-          },
-          acrostic: {
-            phrase: `«كل فكرة تبدأ بشرارة إبداع وتركيز عميق لتثبيت (${customPrompt})»`,
-            breakdown: 'الحروف الأولى تمثل العناصر الجوهرية والترتيب الزمني للمفهوم.'
-          },
-          analogy: {
-            metaphor: 'نظام التروس المسننة في الساعة السويسرية',
-            explanation: `كل جزء في (${customPrompt}) يدير الجزء التالي تماماً كحركة التروس المترابطة بدقة متناهية.`
-          }
-        }
-      };
+    try {
+      const systemInstruction = `أنت خبير عالمي في علوم الذاكرة المكانية (Method of Loci) والفيزياء والكيمياء والأحياء والرياضيات وفق المنهاج الأردني.
+عندما يطلب الطالب قانوناً أو مفهوماً علمياً، قم بإرجاع كائن JSON صالح فقط (بدون أي نصوص إضافية خارجه) يحتوي على الشيفرة الذهنية الحقيقية والدقيقة علمياً لهذا المفهوم، بالهيكل التالي:
+{
+  "subject": "اسم المبحث العلمي (مثل: الفيزياء / الكيمياء / الأحياء / الرياضيات)",
+  "name": "الاسم العلمي الدقيق للقانون أو المفهوم",
+  "formula": "المعادلة الرياضية أو الصيغة العلمية الحقيقية بالرموز الدقيقة",
+  "description": "شرح علمي موجز ودقيق للمفهوم (سطرين)",
+  "techniques": {
+    "palace": {
+      "room": "اسم غرفة مميزة في قصر الذاكرة تناسب طبيعة القانون",
+      "scene": "مشهد بصري خيالي حي يربط كل رمز أو متغير في المعادلة الحقيقية بعنصر ملموس في الغرفة",
+      "cue": "ملخص الربط العصبي المباشر بين المشهد والرموز العلمية"
+    },
+    "acrostic": {
+      "phrase": "جملة عربية إيقاعية ذكية يسهل حفظها تمثل عناصر القانون بالترتيب",
+      "breakdown": "توضيح كيف يطابق كل لفظ في الجملة رمزاً حقيقياً في المعادلة أو الخطوات"
+    },
+    "analogy": {
+      "metaphor": "تشبيه واقعي مألوف من الحياة اليومية",
+      "explanation": "كيف يعمل هذا التشبيه الفيزيائي أو العلمي بنفس آلية القانون بالضبط"
+    }
+  }
+}`;
 
-      setSelectedConcept(generated);
-      setCustomPrompt('');
-      toast.success('تم توليد الشيفرة الذهنية بنجاح!');
-    }, 600);
+      const fullText = await streamAI({
+        messages: [
+          { role: 'system', content: systemInstruction },
+          { role: 'user', content: `ولّد شيفرة ذهنية علمية متكاملة ودقيقة لمفهوم أو قانون: "${topic}"` }
+        ],
+        temperature: 0.4,
+      });
+
+      const cleaned = fullText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const generated: PresetConcept = {
+          id: `custom_${Date.now()}`,
+          subject: parsed.subject || 'مفهوم علمي',
+          name: parsed.name || topic,
+          formula: parsed.formula || topic,
+          description: parsed.description || `شيفرة ذهنية علمية لمفهوم ${topic}`,
+          techniques: {
+            palace: {
+              room: parsed.techniques?.palace?.room || 'قاعة المختبر الملكي',
+              scene: parsed.techniques?.palace?.scene || parsed.description || '',
+              cue: parsed.techniques?.palace?.cue || parsed.formula || '',
+            },
+            acrostic: {
+              phrase: parsed.techniques?.acrostic?.phrase || parsed.name || topic,
+              breakdown: parsed.techniques?.acrostic?.breakdown || parsed.formula || '',
+            },
+            analogy: {
+              metaphor: parsed.techniques?.analogy?.metaphor || 'نموذج تطبيقي واقعي',
+              explanation: parsed.techniques?.analogy?.explanation || parsed.description || '',
+            },
+          },
+        };
+        setConceptsList((prev) => [generated, ...prev]);
+        setSelectedConcept(generated);
+        setCustomPrompt('');
+        toast.success(`تم توليد الشيفرة الذهنية العلمية لـ «${generated.name}» بنجاح!`);
+      } else {
+        throw new Error('Invalid JSON');
+      }
+    } catch (err) {
+      toast.error('تعذر توليد الشيفرة الذهنية حالياً، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsGeneratingCustom(false);
+    }
   };
 
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-slate-900/90 border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.12)] backdrop-blur-xl">
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-cyan-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(6,182,212,0.12)] backdrop-blur-xl">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <BrainCircuit className="w-6 h-6 text-cyan-400" />
-              <h2 className="text-xl sm:text-2xl font-black text-white">
+              <BrainCircuit className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                 مولد الشيفرات الذهنية وقصور الذاكرة (AI Mnemonics Engine)
               </h2>
             </div>
-            <p className="text-slate-400 text-xs sm:text-sm">
-              حوّل القوانين والمعادلات المعقدة التي تنساها دائماً إلى مشاهد بصرية وقصور ذاكرة لا تُنسى مدى الحياة
+            <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium">
+              حوّل القوانين والمعادلات المعقدة التي تنساها دائماً إلى مشاهد بصرية وقصور ذاكرة علمية لا تُنسى مدى الحياة
             </p>
           </div>
 
-          <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/40 text-xs px-3 py-1 font-mono">
-            Method of Loci + Neuro-Acrostics
+          <Badge className="bg-cyan-50 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/40 text-xs px-3 py-1 font-mono">
+            Method of Loci + Neuro-Acrostics AI
           </Badge>
         </div>
       </div>
 
       {/* Preset Concept Selector Tabs */}
       <div className="space-y-2">
-        <label className="text-xs text-slate-400 font-bold block">
-          اختر قانوناً أو مفهوماً وزارياً شائع النسيان:
+        <label className="text-xs text-slate-600 dark:text-slate-400 font-bold block">
+          اختر قانوناً أو مفهوماً وزارياً شائع النسيان (أو ولّد مفهومك الخاص بالذكاء الاصطناعي بالأسفل):
         </label>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 flex-nowrap scrollbar-thin">
-          {PRESET_CONCEPTS.map((concept) => (
+          {conceptsList.map((concept) => (
             <button
               key={concept.id}
               onClick={() => setSelectedConcept(concept)}
               className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border shrink-0 ${
                 selectedConcept.id === concept.id
-                  ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-500/30'
-                  : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                  ? 'bg-cyan-600 text-white border-cyan-500 shadow-md shadow-cyan-500/25'
+                  : 'bg-white dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-cyan-400 dark:hover:border-slate-700'
               }`}
             >
-              <span className="opacity-70 text-[10px] ml-1.5">[{concept.subject}]</span>
+              <span className="opacity-75 text-[10px] ml-1.5">[{concept.subject}]</span>
               <span>{concept.name}</span>
             </button>
           ))}
@@ -288,19 +331,20 @@ export const MnemonicsGenerator: React.FC = () => {
       </div>
 
       {/* Main Concept Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-slate-900/95 border border-cyan-500/30 space-y-6 shadow-2xl backdrop-blur-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-cyan-500/30 space-y-6 shadow-md dark:shadow-2xl backdrop-blur-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-cyan-400 font-mono">[{selectedConcept.subject}]</span>
-              <h3 className="text-lg sm:text-xl font-black text-white">{selectedConcept.name}</h3>
+              <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 font-mono">[{selectedConcept.subject}]</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">{selectedConcept.name}</h3>
             </div>
-            <div className="mt-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-cyan-300 text-sm inline-block">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">{selectedConcept.description}</p>
+            <div className="mt-2.5 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 font-mono text-cyan-700 dark:text-cyan-300 text-sm inline-block font-bold" dir="ltr">
               {selectedConcept.formula}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               onClick={handleSaveToFlashcards}
               className="rounded-2xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white gap-1.5 shadow-md shadow-emerald-500/20"
@@ -312,13 +356,13 @@ export const MnemonicsGenerator: React.FC = () => {
         </div>
 
         {/* Technique Switcher Tabs */}
-        <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800">
+        <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800">
           <button
             onClick={() => setActiveTechnique('palace')}
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
               activeTechnique === 'palace'
                 ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/25'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Castle className="w-4 h-4" />
@@ -330,7 +374,7 @@ export const MnemonicsGenerator: React.FC = () => {
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
               activeTechnique === 'acrostic'
                 ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/25'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <KeyRound className="w-4 h-4" />
@@ -342,7 +386,7 @@ export const MnemonicsGenerator: React.FC = () => {
             className={`py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
               activeTechnique === 'analogy'
                 ? 'bg-cyan-600 text-white shadow-md shadow-cyan-500/25'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <Eye className="w-4 h-4" />
@@ -351,7 +395,7 @@ export const MnemonicsGenerator: React.FC = () => {
         </div>
 
         {/* Technique Content Display */}
-        <div className="p-6 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+        <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-4">
           {activeTechnique === 'palace' && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -359,7 +403,7 @@ export const MnemonicsGenerator: React.FC = () => {
               className="space-y-4"
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                <span className="font-bold text-cyan-700 dark:text-cyan-400 flex items-center gap-1.5">
                   <Castle className="w-4 h-4" />
                   مكان المشهد في قصر الذاكرة: {selectedConcept.techniques.palace.room}
                 </span>
@@ -367,18 +411,18 @@ export const MnemonicsGenerator: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCopy(selectedConcept.techniques.palace.scene)}
-                  className="text-xs text-slate-400 hover:text-white h-7 gap-1"
+                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white h-7 gap-1"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   نسخ المشهد
                 </Button>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-xs sm:text-sm leading-relaxed">
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed font-medium">
                 {selectedConcept.techniques.palace.scene}
               </div>
 
-              <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/20 text-xs text-cyan-300">
+              <div className="p-3 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-500/20 text-xs text-cyan-800 dark:text-cyan-300">
                 💡 <strong>رابط التثبيت العصبي:</strong> {selectedConcept.techniques.palace.cue}
               </div>
             </motion.div>
@@ -391,7 +435,7 @@ export const MnemonicsGenerator: React.FC = () => {
               className="space-y-4"
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-teal-400 flex items-center gap-1.5">
+                <span className="font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
                   <KeyRound className="w-4 h-4" />
                   الجملة التذكيرية السريعة
                 </span>
@@ -399,20 +443,20 @@ export const MnemonicsGenerator: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCopy(selectedConcept.techniques.acrostic.phrase)}
-                  className="text-xs text-slate-400 hover:text-white h-7 gap-1"
+                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white h-7 gap-1"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   نسخ الجملة
                 </Button>
               </div>
 
-              <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 text-center">
-                <span className="text-base sm:text-lg font-black text-amber-300">
+              <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                <span className="text-base sm:text-lg font-black text-amber-600 dark:text-amber-300">
                   {selectedConcept.techniques.acrostic.phrase}
                 </span>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                 🔍 <strong>تفكيك الرموز والمعادلة:</strong> {selectedConcept.techniques.acrostic.breakdown}
               </div>
             </motion.div>
@@ -425,7 +469,7 @@ export const MnemonicsGenerator: React.FC = () => {
               className="space-y-4"
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                <span className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                   <Eye className="w-4 h-4" />
                   التشبيه الحي الواقعي
                 </span>
@@ -433,18 +477,18 @@ export const MnemonicsGenerator: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCopy(selectedConcept.techniques.analogy.explanation)}
-                  className="text-xs text-slate-400 hover:text-white h-7 gap-1"
+                  className="text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white h-7 gap-1"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   نسخ التشبيه
                 </Button>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-emerald-300 font-bold text-sm">
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-300 font-bold text-sm">
                 🎯 {selectedConcept.techniques.analogy.metaphor}
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                 {selectedConcept.techniques.analogy.explanation}
               </div>
             </motion.div>
@@ -452,29 +496,32 @@ export const MnemonicsGenerator: React.FC = () => {
         </div>
 
         {/* Custom Concept Prompt Generator */}
-        <form onSubmit={handleCustomGenerate} className="pt-4 border-t border-slate-800 space-y-3">
-          <label className="text-xs text-slate-300 font-bold block flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>هل لديك معادلة أو مفهوم آخر تريد تشفيره بقصر الذاكرة؟</span>
+        <form onSubmit={handleCustomGenerate} className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+          <label className="text-xs text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span>هل لديك معادلة أو مفهوم آخر تريد تشفيره بقصر الذاكرة عبر الذكاء الاصطناعي؟</span>
           </label>
           <div className="flex gap-2">
             <Input
               value={customPrompt}
               onChange={(e) => setCustomPrompt(e.target.value)}
-              placeholder="اكتب اسم القانون أو النظرية (مثال: قانون سنيل في الانكسار، نظرية رابطة التكافؤ...)"
-              className="bg-slate-950 border-slate-800 text-white text-xs h-10 rounded-xl"
+              placeholder="اكتب اسم القانون أو النظرية (مثال: قانون سنيل في الانكسار، قوانين كبلر، حلقة كريبس...)"
+              className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs h-10 rounded-xl"
             />
             <Button
               type="submit"
               disabled={isGeneratingCustom || !customPrompt.trim()}
-              className="rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white px-4 gap-1.5 shrink-0"
+              className="rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white px-4 gap-1.5 shrink-0 shadow-sm"
             >
               {isGeneratingCustom ? (
-                <span>جاري التوليد...</span>
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>يبني قصر الذاكرة...</span>
+                </>
               ) : (
                 <>
                   <Send className="w-3.5 h-3.5" />
-                  <span>توليد الشيفرة</span>
+                  <span>توليد الشيفرة الذكية</span>
                 </>
               )}
             </Button>

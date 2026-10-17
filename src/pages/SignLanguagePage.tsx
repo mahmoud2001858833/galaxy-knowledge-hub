@@ -716,23 +716,23 @@ const SignLanguagePage: React.FC = () => {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-950" dir="rtl">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-gradient-to-br dark:from-slate-950 dark:via-indigo-950 dark:to-slate-950 text-slate-900 dark:text-white transition-colors duration-300" dir="rtl">
       {/* Header */}
-      <div className="border-b border-indigo-500/20 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
+      <div className="border-b border-slate-200 dark:border-indigo-500/20 bg-white/90 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-xl">
-              <Hand className="h-7 w-7 text-indigo-400" />
+            <div className="p-2.5 bg-indigo-50 dark:bg-indigo-500/20 rounded-xl border border-indigo-200 dark:border-indigo-500/30">
+              <Hand className="h-7 w-7 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">مترجم لغة الإشارة</h1>
-              <p className="text-sm text-slate-400">تحويل إشارات اليد إلى نص وكلام بالذكاء الاصطناعي</p>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white">مترجم لغة الإشارة الذكي</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">تحويل إشارات اليد إلى نص وكلام بالذكاء الاصطناعي</p>
             </div>
           </div>
           <Button variant="outline" onClick={() => {
             const isGJU = sessionStorage.getItem('gju_mode') === 'true';
             navigate(isGJU ? '/gju-competition' : '/');
-          }} className="border-indigo-500/30 text-slate-300">
+          }} className="border-slate-200 dark:border-indigo-500/30 text-slate-700 dark:text-slate-300 rounded-xl">
             <ArrowRight className="ml-2 h-4 w-4" />
             {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'رجوع'}
           </Button>
@@ -741,16 +741,16 @@ const SignLanguagePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs defaultValue={new URLSearchParams(window.location.search).get('tab') || 'camera'} className="w-full">
-          <TabsList className="w-full max-w-3xl mx-auto bg-slate-800/60 border border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-3 h-auto p-1 gap-1">
-            <TabsTrigger value="camera" className="data-[state=active]:bg-indigo-600 py-2.5">
+          <TabsList className="w-full max-w-3xl mx-auto bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-indigo-500/20 mb-8 grid grid-cols-2 sm:grid-cols-3 h-auto p-1.5 gap-1.5 rounded-2xl shadow-sm">
+            <TabsTrigger value="camera" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 py-2.5 rounded-xl font-bold">
               <Camera className="ml-2 h-4 w-4" />
               الكاميرا
             </TabsTrigger>
-            <TabsTrigger value="text-to-sign" className="data-[state=active]:bg-indigo-600 py-2.5">
+            <TabsTrigger value="text-to-sign" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 py-2.5 rounded-xl font-bold">
               <Type className="ml-2 h-4 w-4" />
               نص → إشارة
             </TabsTrigger>
-            <TabsTrigger value="dictionary" className="data-[state=active]:bg-indigo-600 py-2.5">
+            <TabsTrigger value="dictionary" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 py-2.5 rounded-xl font-bold">
               <BookOpen className="ml-2 h-4 w-4" />
               القاموس
             </TabsTrigger>
@@ -761,13 +761,13 @@ const SignLanguagePage: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Camera Section */}
               <div className="space-y-4">
-                <Card className="bg-slate-900/60 border-indigo-500/20 overflow-hidden">
-                  <div className="relative aspect-video bg-slate-800">
+                <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 overflow-hidden shadow-md rounded-2xl">
+                  <div className="relative aspect-video bg-slate-900">
                     {!cameraActive && !isLoading && !error && !demoMode && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
+                        <div className="text-center p-4">
                           <div className="relative mx-auto mb-6">
-                            <Camera className="h-20 w-20 text-indigo-400/40 mx-auto" />
+                            <Camera className="h-20 w-20 text-indigo-400/60 mx-auto" />
                             <motion.div 
                               animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
                               transition={{ repeat: Infinity, duration: 2 }}
@@ -776,17 +776,17 @@ const SignLanguagePage: React.FC = () => {
                               <Zap className="h-3 w-3 text-white" />
                             </motion.div>
                           </div>
-                          <p className="text-slate-300 text-lg mb-2 font-medium">مترجم لغة الإشارة بالذكاء الاصطناعي</p>
-                          <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">يدعم 12 إشارة مختلفة مع تعرف فوري ونطق تلقائي</p>
+                          <p className="text-slate-100 text-lg mb-2 font-bold">مترجم لغة الإشارة بالذكاء الاصطناعي</p>
+                          <p className="text-slate-400 text-sm mb-6 max-w-xs mx-auto">يدعم 20 إشارة مختلفة مع تعرف فوري ونطق تلقائي</p>
                           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white text-lg px-8 rounded-xl">
                               <Camera className="ml-2 h-5 w-5" />
                               تشغيل الكاميرا
                             </Button>
                             <Button
                               variant="outline"
                               size="lg"
-                              className="border-indigo-500/30 text-slate-200"
+                              className="border-indigo-400/40 bg-slate-800/80 text-white hover:bg-slate-800 rounded-xl"
                               onClick={() => {
                                 setError(null);
                                 setNoCamera(false);
@@ -803,17 +803,17 @@ const SignLanguagePage: React.FC = () => {
                     {demoMode && !cameraActive && !isLoading && !error && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center p-6">
-                          <p className="text-slate-200 text-lg mb-2 font-medium">الوضع التجريبي</p>
-                          <p className="text-slate-500 text-sm mb-6">اختر إشارات من الأسفل لتجربة التحويل بدون كاميرا</p>
+                          <p className="text-slate-100 text-lg mb-2 font-bold">الوضع التجريبي</p>
+                          <p className="text-slate-400 text-sm mb-6">اختر إشارات من الأسفل لتجربة التحويل بدون كاميرا</p>
                           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8">
+                            <Button onClick={startCamera} size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white text-lg px-8 rounded-xl">
                               <Camera className="ml-2 h-5 w-5" />
                               تشغيل الكاميرا
                             </Button>
                             <Button
                               variant="outline"
                               size="lg"
-                              className="border-slate-600 text-slate-200"
+                              className="border-slate-600 bg-slate-800 text-slate-200 rounded-xl"
                               onClick={() => setDemoMode(false)}
                             >
                               إيقاف الوضع التجريبي
@@ -823,12 +823,12 @@ const SignLanguagePage: React.FC = () => {
                       </div>
                     )}
                     {isLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-800/90">
+                      <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/90">
                         <div className="text-center w-72">
                           <Loader2 className="h-14 w-14 text-indigo-400 animate-spin mx-auto mb-4" />
-                          <p className="text-slate-300 font-medium mb-3 text-lg">{loadingStep}</p>
+                          <p className="text-slate-200 font-medium mb-3 text-lg">{loadingStep}</p>
                           <Progress value={loadingProgress} className="h-2.5 mb-2" />
-                          <p className="text-slate-500 text-sm">{loadingProgress}%</p>
+                          <p className="text-slate-400 text-sm">{loadingProgress}%</p>
                         </div>
                       </div>
                     )}
@@ -924,16 +924,16 @@ const SignLanguagePage: React.FC = () => {
                 </Card>
 
                 {cameraActive && (
-                  <Button variant="destructive" className="w-full" onClick={stopCamera}>
+                  <Button variant="destructive" className="w-full rounded-xl" onClick={stopCamera}>
                     <CameraOff className="ml-2 h-4 w-4" />
                     إيقاف الكاميرا
                   </Button>
                 )}
 
                 {!cameraActive && demoMode && (
-                  <Card className="bg-slate-900/60 border-indigo-500/20">
+                  <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 shadow-sm rounded-2xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-lg text-white">جرّب الإشارات (بدون كاميرا)</CardTitle>
+                      <CardTitle className="text-lg text-slate-900 dark:text-white">جرّب الإشارات (بدون كاميرا)</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -941,7 +941,7 @@ const SignLanguagePage: React.FC = () => {
                           <Button
                             key={key}
                             variant="outline"
-                            className="justify-start border-slate-700/40 bg-slate-800/30"
+                            className="justify-start border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-800/30 text-slate-800 dark:text-slate-200"
                             onClick={() => handleGestureDetected(key, 0.99)}
                           >
                             <span className="ml-2">{info.emoji}</span>
@@ -957,23 +957,23 @@ const SignLanguagePage: React.FC = () => {
               {/* Results Section */}
               <div className="space-y-4">
                 {/* Detected Text */}
-                <Card className="bg-slate-900/60 border-indigo-500/20">
+                <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 shadow-sm rounded-2xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center gap-2">
-                      <Volume2 className="h-5 w-5 text-indigo-400" />
+                    <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                      <Volume2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                       النص المكتشف
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="min-h-[120px] bg-slate-800/60 rounded-xl p-4 text-white text-xl leading-relaxed border border-slate-700/50 mb-4">
-                      {detectedText || <span className="text-slate-500">سيظهر النص المترجم هنا عند اكتشاف إشارات اليد...</span>}
+                    <div className="min-h-[120px] bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-slate-900 dark:text-white text-xl leading-relaxed border border-slate-200 dark:border-slate-700/50 mb-4 font-semibold">
+                      {detectedText || <span className="text-slate-400 dark:text-slate-500 text-base font-normal">سيظهر النص المترجم هنا عند اكتشاف إشارات اليد...</span>}
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={() => speakText(detectedText)} disabled={!detectedText.trim()} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+                      <Button onClick={() => speakText(detectedText)} disabled={!detectedText.trim()} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
                         <Volume2 className="ml-2 h-4 w-4" />
                         نطق النص
                       </Button>
-                      <Button variant="outline" onClick={() => { setDetectedText(''); acceptedTokensRef.current = []; setGestureHistory([]); }} className="border-slate-600">
+                      <Button variant="outline" onClick={() => { setDetectedText(''); acceptedTokensRef.current = []; setGestureHistory([]); }} className="border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-xl">
                         <Trash2 className="ml-2 h-4 w-4" />
                         مسح
                       </Button>
@@ -982,12 +982,12 @@ const SignLanguagePage: React.FC = () => {
                 </Card>
 
                 {/* Gesture History */}
-                <Card className="bg-slate-900/60 border-indigo-500/20">
+                <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 shadow-sm rounded-2xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg text-white">سجل الإشارات</CardTitle>
+                      <CardTitle className="text-lg text-slate-900 dark:text-white">سجل الإشارات</CardTitle>
                       {gestureHistory.length > 0 && (
-                        <Badge variant="secondary" className="bg-indigo-500/20 text-indigo-300">
+                        <Badge variant="secondary" className="bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300">
                           {gestureHistory.length} إشارة
                         </Badge>
                       )}
@@ -1004,11 +1004,11 @@ const SignLanguagePage: React.FC = () => {
                               key={`${item.time}-${index}`}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
-                              className="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/30"
+                              className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700/30"
                             >
                               <div className="flex items-center gap-3">
                                 <span className="text-xl">{item.emoji}</span>
-                                <span className="text-base font-bold text-indigo-300">{item.text}</span>
+                                <span className="text-base font-bold text-indigo-700 dark:text-indigo-300">{item.text}</span>
                               </div>
                               <span className="text-xs text-slate-500">{item.time}</span>
                             </motion.div>
@@ -1020,10 +1020,10 @@ const SignLanguagePage: React.FC = () => {
                 </Card>
 
                 {/* Supported Gestures */}
-                <Card className="bg-slate-900/60 border-indigo-500/20">
+                <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 shadow-sm rounded-2xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-white flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-yellow-400" />
+                    <CardTitle className="text-lg text-slate-900 dark:text-white flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-amber-500 dark:text-yellow-400" />
                       الإشارات المدعومة ({Object.keys(gestureToArabic).length})
                     </CardTitle>
                   </CardHeader>
@@ -1034,13 +1034,13 @@ const SignLanguagePage: React.FC = () => {
                           key={key} 
                           className={`flex items-center gap-2.5 p-3 rounded-lg border transition-all ${
                             currentGesture === key 
-                              ? 'bg-green-500/20 border-green-500/50 shadow-lg shadow-green-500/10' 
-                              : 'bg-slate-800/40 border-slate-700/30 hover:border-indigo-500/30'
+                              ? 'bg-green-50 dark:bg-green-500/20 border-green-500/50 shadow-md' 
+                              : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/30 hover:border-indigo-500/30'
                           }`}
                         >
                           <span className="text-xl">{value.emoji}</span>
                           <div>
-                            <p className="text-sm font-medium text-white">{value.text}</p>
+                            <p className="text-sm font-bold text-slate-900 dark:text-white">{value.text}</p>
                             <p className="text-[10px] text-slate-500">{value.description}</p>
                           </div>
                         </div>
@@ -1059,10 +1059,10 @@ const SignLanguagePage: React.FC = () => {
 
           {/* Dictionary Tab */}
           <TabsContent value="dictionary">
-            <Card className="bg-slate-900/60 border-indigo-500/20">
+            <Card className="bg-white dark:bg-slate-900/60 border-slate-200 dark:border-indigo-500/20 shadow-sm rounded-2xl">
               <CardHeader>
-                <CardTitle className="text-xl text-white flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-indigo-400" />
+                <CardTitle className="text-xl text-slate-900 dark:text-white flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                   قاموس لغة الإشارة العربية
                 </CardTitle>
                 <div className="flex flex-col sm:flex-row gap-3 mt-4">
@@ -1072,7 +1072,7 @@ const SignLanguagePage: React.FC = () => {
                       placeholder="ابحث عن كلمة..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pr-10 bg-slate-800/60 border-slate-700"
+                      className="pr-10 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1105,12 +1105,12 @@ const SignLanguagePage: React.FC = () => {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: Math.min(index * 0.015, 0.5) }}
                       onClick={() => speakText(item.word)}
-                      className="group flex flex-col items-center gap-2 p-4 bg-slate-800/40 rounded-xl border border-slate-700/30 hover:border-indigo-500/50 hover:bg-slate-800/60 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer transition-all duration-200"
+                      className="group flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700/30 hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-slate-800/60 hover:shadow-md cursor-pointer transition-all duration-200"
                     >
                       <span className="text-3xl group-hover:scale-125 transition-transform duration-200">{item.gesture}</span>
-                      <span className="text-sm font-bold text-white">{item.word}</span>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">{item.word}</span>
                       {item.description && (
-                        <p className="text-[10px] text-slate-400 text-center leading-tight opacity-0 group-hover:opacity-100 transition-opacity">{item.description}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-tight opacity-0 group-hover:opacity-100 transition-opacity">{item.description}</p>
                       )}
                       <Badge variant="outline" className="text-[10px]">{item.category}</Badge>
                     </motion.div>

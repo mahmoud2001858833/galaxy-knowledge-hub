@@ -127,11 +127,13 @@ export const SpacedRepetitionSystem: React.FC = () => {
   const retentionWithRepetition = Math.round(Math.min(98, 92 + (calcDaysPassed > 10 ? 4 : 2)));
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 relative overflow-hidden" dir="rtl">
-      <StarField starCount={400} />
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#030712] text-slate-900 dark:text-slate-100 relative overflow-hidden transition-colors duration-300" dir="rtl">
+      <div className="hidden dark:block">
+        <StarField starCount={400} />
+      </div>
       
       {/* Top Header */}
-      <header className="relative z-10 py-5 px-4 border-b border-indigo-500/20 bg-slate-950/80 backdrop-blur-2xl">
+      <header className="relative z-10 py-5 px-4 border-b border-slate-200 dark:border-indigo-500/20 bg-white/90 dark:bg-slate-950/80 backdrop-blur-2xl shadow-sm">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, y: -15 }}
@@ -140,28 +142,28 @@ export const SpacedRepetitionSystem: React.FC = () => {
           >
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="outline"
                 onClick={() => navigate('/')}
-                className="text-slate-400 hover:text-white hover:bg-slate-900 rounded-2xl"
+                className="text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-2xl"
               >
                 <ArrowRight className="h-5 w-5 ml-1.5" />
                 الرئيسية
               </Button>
 
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-cyan-600/30 via-blue-600/30 to-teal-500/20 rounded-2xl border border-cyan-500/40 shadow-lg shadow-cyan-500/25">
-                  <Brain className="h-8 w-8 text-cyan-400 animate-pulse" />
+                <div className="p-3 bg-gradient-to-br from-cyan-500/15 via-blue-500/15 to-teal-500/15 dark:from-cyan-600/30 dark:via-blue-600/30 dark:to-teal-500/20 rounded-2xl border border-cyan-500/30 dark:border-cyan-500/40 shadow-sm dark:shadow-lg dark:shadow-cyan-500/25">
+                  <Brain className="h-8 w-8 text-cyan-600 dark:text-cyan-400 animate-pulse" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-blue-300">
+                    <h1 className="text-xl md:text-3xl font-black text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-cyan-300 dark:via-teal-200 dark:to-blue-300">
                       نظام المراجعة الذكي والتكرار المتباعد
                     </h1>
-                    <Badge variant="outline" className="text-[10px] font-mono border-cyan-400/40 text-cyan-300 bg-cyan-950/40">
+                    <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40">
                       Spaced Repetition 2.0 Pro
                     </Badge>
                   </div>
-                  <p className="text-slate-400 text-xs sm:text-sm mt-0.5">
+                  <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm mt-0.5 font-medium">
                     خوارزمية SM-2 ومنحنى النسيان لإبنجهاوس لمكافحة النسيان وتثبيت المعرفة الدائمة 95%+
                   </p>
                 </div>
@@ -182,9 +184,9 @@ export const SpacedRepetitionSystem: React.FC = () => {
               <Button
                 onClick={() => setIsCalcOpen(true)}
                 variant="outline"
-                className="rounded-2xl text-xs gap-1.5 border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10"
+                className="rounded-2xl text-xs gap-1.5 border-indigo-300 dark:border-indigo-500/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10"
               >
-                <Gauge className="w-3.5 h-3.5 text-indigo-400" />
+                <Gauge className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 <span className="hidden sm:inline">حاسبة الذاكرة</span>
               </Button>
 
@@ -192,10 +194,10 @@ export const SpacedRepetitionSystem: React.FC = () => {
               <Button
                 onClick={reloadCurriculumPlan}
                 variant="outline"
-                className="rounded-2xl text-xs gap-1.5 border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10"
+                className="rounded-2xl text-xs gap-1.5 border-cyan-300 dark:border-cyan-500/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
                 title="شحن خطة نموذجية لمباحث التوجيهي والعلوم"
               >
-                <BookmarkPlus className="w-3.5 h-3.5 text-cyan-400" />
+                <BookmarkPlus className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 <span className="hidden sm:inline">خطة المنهاج</span>
               </Button>
 
@@ -209,10 +211,10 @@ export const SpacedRepetitionSystem: React.FC = () => {
               </Button>
 
               {/* Streak Badge */}
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 px-3.5 py-1.5 rounded-2xl border border-orange-500/40 shadow-sm">
-                <Flame className="h-4 w-4 text-orange-400 animate-bounce" />
-                <span className="text-white font-black text-sm">{streak}</span>
-                <span className="text-orange-400 text-xs font-bold">أيام</span>
+              <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-gradient-to-r dark:from-orange-500/20 dark:to-red-500/20 px-3.5 py-1.5 rounded-2xl border border-orange-300 dark:border-orange-500/40 shadow-sm">
+                <Flame className="h-4 w-4 text-orange-500 dark:text-orange-400 animate-bounce" />
+                <span className="text-slate-900 dark:text-white font-black text-sm">{streak}</span>
+                <span className="text-orange-600 dark:text-orange-400 text-xs font-bold">أيام</span>
               </div>
 
               {/* Notification System */}
@@ -228,70 +230,70 @@ export const SpacedRepetitionSystem: React.FC = () => {
       {/* Main Content */}
       <main className="relative z-10 container mx-auto px-4 py-8 pb-16 space-y-8 max-w-7xl">
         
-        {/* 5-Card Hero Dashboard Metrics HUD with Glowing Borders */}
+        {/* 5-Card Hero Dashboard Metrics HUD */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
           
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-indigo-500/30 shadow-[0_0_30px_rgba(99,102,241,0.12)] space-y-2 hover:border-indigo-400/60 transition-all group backdrop-blur-xl">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-indigo-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(99,102,241,0.12)] space-y-2 hover:border-indigo-400 transition-all group backdrop-blur-xl">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span className="font-bold">المهمات اليوم</span>
-              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
                 <Target className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-white">{dueTodayReviews.length}</div>
-            <span className="text-[11px] text-indigo-300 font-medium block">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{dueTodayReviews.length}</div>
+            <span className="text-[11px] text-indigo-600 dark:text-indigo-300 font-semibold block">
               {dueTodayReviews.length > 0 ? 'جاهزة للاسترجاع الفوري' : '✓ منجزة بنجاح'}
             </span>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.12)] space-y-2 hover:border-cyan-400/60 transition-all group backdrop-blur-xl">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-cyan-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(6,182,212,0.12)] space-y-2 hover:border-cyan-400 transition-all group backdrop-blur-xl">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span className="font-bold">الدروس بالدورة</span>
-              <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-cyan-50 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform">
                 <BookOpen className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-cyan-300">{lessons.length}</div>
-            <span className="text-[11px] text-cyan-400 font-medium block">
+            <div className="text-2xl sm:text-3xl font-black text-cyan-600 dark:text-cyan-300">{lessons.length}</div>
+            <span className="text-[11px] text-cyan-700 dark:text-cyan-400 font-semibold block">
               عبر 8 فترات زمنية علمية
             </span>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-teal-500/30 shadow-[0_0_30px_rgba(20,184,166,0.12)] space-y-2 hover:border-teal-400/60 transition-all group backdrop-blur-xl col-span-2 sm:col-span-1">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-teal-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(20,184,166,0.12)] space-y-2 hover:border-teal-400 transition-all group backdrop-blur-xl col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span className="font-bold">الجاهزية للامتحان</span>
-              <div className="p-2 rounded-xl bg-teal-500/20 text-teal-400 group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-teal-300">{examReadinessScore}%</div>
-            <span className="text-[11px] text-teal-400 font-medium block">
+            <div className="text-2xl sm:text-3xl font-black text-teal-600 dark:text-teal-300">{examReadinessScore}%</div>
+            <span className="text-[11px] text-teal-700 dark:text-teal-400 font-semibold block">
               نضج فترات SM-2 للدروس
             </span>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-orange-500/30 shadow-[0_0_30px_rgba(249,115,22,0.12)] space-y-2 hover:border-orange-400/60 transition-all group backdrop-blur-xl">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-orange-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(249,115,22,0.12)] space-y-2 hover:border-orange-400 transition-all group backdrop-blur-xl">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span className="font-bold">سلسلة الالتزام</span>
-              <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400 group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform">
                 <Flame className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-orange-400">{streak} أيام</div>
-            <span className="text-[11px] text-orange-300 font-medium block">
+            <div className="text-2xl sm:text-3xl font-black text-orange-600 dark:text-orange-400">{streak} أيام</div>
+            <span className="text-[11px] text-orange-700 dark:text-orange-300 font-semibold block">
               عادات دراسية مستمرة
             </span>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-3xl bg-slate-900/90 border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.12)] space-y-2 hover:border-emerald-400/60 transition-all group backdrop-blur-xl col-span-2 sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-emerald-500/30 shadow-sm dark:shadow-[0_0_30px_rgba(16,185,129,0.12)] space-y-2 hover:border-emerald-400 transition-all group backdrop-blur-xl col-span-2 sm:col-span-2 lg:col-span-1">
+            <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
               <span className="font-bold">استبقاء الذاكرة</span>
-              <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                 <Award className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-400">{memoryRetentionAverage}%</div>
-            <span className="text-[11px] text-emerald-300 font-medium block">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">{memoryRetentionAverage}%</div>
+            <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold block">
               تثبيت عصبي دائم 95%+
             </span>
           </div>
@@ -302,10 +304,10 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
         {/* Tabs System */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-slate-900/95 border border-indigo-500/30 p-1.5 rounded-3xl w-full justify-start overflow-x-auto flex-nowrap shadow-2xl backdrop-blur-xl">
+          <TabsList className="bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-indigo-500/30 p-1.5 rounded-3xl w-full justify-start overflow-x-auto flex-nowrap shadow-md dark:shadow-2xl backdrop-blur-xl">
             <TabsTrigger
               value="today"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <Target className="h-4 w-4 ml-2" />
               <span>مهمات اليوم</span>
@@ -318,34 +320,34 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
             <TabsTrigger
               value="mastery"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-600 data-[state=active]:to-blue-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
-              <Sparkles className="h-4 w-4 ml-2 text-cyan-400" />
+              <Sparkles className="h-4 w-4 ml-2 text-cyan-600 dark:text-cyan-400" />
               <span>مصفوفة الإتقان الأكاديمي</span>
-              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-cyan-500/30 text-cyan-300 font-bold">جديد 🌟</Badge>
+              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-bold">جديد 🌟</Badge>
             </TabsTrigger>
 
             <TabsTrigger
               value="flashcards"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
-              <Layers className="h-4 w-4 ml-2 text-teal-400" />
+              <Layers className="h-4 w-4 ml-2 text-teal-600 dark:text-teal-400" />
               <span>بطاقات الاسترجاع النشط (Active Recall)</span>
-              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-teal-500/30 text-teal-300 font-bold">12 بطاقة + مخصص</Badge>
+              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-teal-500/20 text-teal-700 dark:text-teal-300 font-bold">12 بطاقة + مخصص</Badge>
             </TabsTrigger>
 
             <TabsTrigger
               value="mnemonics"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
-              <Lightbulb className="h-4 w-4 ml-2 text-emerald-400" />
+              <Lightbulb className="h-4 w-4 ml-2 text-emerald-600 dark:text-emerald-400" />
               <span>مولد الشيفرات وقصور الذاكرة</span>
-              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-emerald-500/30 text-emerald-300 font-bold">AI Pro</Badge>
+              <Badge className="mr-2 px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">AI Pro</Badge>
             </TabsTrigger>
 
             <TabsTrigger
               value="add"
-              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <BookOpen className="h-4 w-4 ml-2" />
               <span>إضافة درس</span>
@@ -353,7 +355,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
             <TabsTrigger
               value="calendar"
-              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <CalendarDays className="h-4 w-4 ml-2" />
               <span>التقويم التفاعلي</span>
@@ -361,7 +363,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
             <TabsTrigger
               value="schedule"
-              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <Calendar className="h-4 w-4 ml-2" />
               <span>الجدول الكامل</span>
@@ -369,7 +371,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
             <TabsTrigger
               value="curve"
-              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <Brain className="h-4 w-4 ml-2" />
               <span>منحنى النسيان</span>
@@ -377,7 +379,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
             <TabsTrigger
               value="analytics"
-              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
+              className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-slate-700 dark:text-slate-300 px-5 py-3 rounded-2xl transition-all whitespace-nowrap text-xs sm:text-sm font-black"
             >
               <BarChart3 className="h-4 w-4 ml-2" />
               <span>تحليلات الأداء</span>
@@ -462,50 +464,50 @@ export const SpacedRepetitionSystem: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-6 sm:p-8 bg-gradient-to-br from-slate-900/95 via-cyan-950/40 to-slate-950/90 rounded-3xl border border-cyan-500/30 shadow-2xl space-y-5"
+          className="p-6 sm:p-8 bg-white dark:bg-gradient-to-br dark:from-slate-900/95 dark:via-cyan-950/40 dark:to-slate-950/90 rounded-3xl border border-slate-200 dark:border-cyan-500/30 shadow-md dark:shadow-2xl space-y-5"
         >
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h3 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5">
-              <Brain className="h-6 w-6 text-cyan-400" />
+            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+              <Brain className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
               <span>كيف يحوّل نظام التكرار المتباعد معلوماتك إلى ذاكرة دائمة؟</span>
             </h3>
             <Button
               onClick={() => setIsTourOpen(true)}
               variant="ghost"
               size="sm"
-              className="text-xs text-indigo-300 hover:text-white"
+              className="text-xs text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-white"
             >
               فتح الجولة التعليمية &larr;
             </Button>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-1.5">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
               <div className="text-2xl">📚</div>
-              <h4 className="text-white font-bold text-sm">1. أضف الدرس وصعوبته</h4>
-              <p className="text-slate-400 text-xs leading-relaxed">حدد المادة والدرس ودرجة الصعوبة لحساب مضاعف الفترات الزمنية بدقة.</p>
+              <h4 className="text-slate-900 dark:text-white font-bold text-sm">1. أضف الدرس وصعوبته</h4>
+              <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">حدد المادة والدرس ودرجة الصعوبة لحساب مضاعف الفترات الزمنية بدقة.</p>
             </div>
-            <div className="p-4 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-1.5">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
               <div className="text-2xl">📅</div>
-              <h4 className="text-white font-bold text-sm">2. جدولة ذكية 8 فترات</h4>
-              <p className="text-slate-400 text-xs leading-relaxed">يحسب النظام مواعيد متباعدة: (+1، +3، +6، +10، +15، +21، +30، +45 يوماً).</p>
+              <h4 className="text-slate-900 dark:text-white font-bold text-sm">2. جدولة ذكية 8 فترات</h4>
+              <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">يحسب النظام مواعيد متباعدة: (+1، +3، +6، +10، +15، +21، +30، +45 يوماً).</p>
             </div>
-            <div className="p-4 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-1.5">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
               <div className="text-2xl">🗂️</div>
-              <h4 className="text-white font-bold text-sm">3. استرجاع نشط وتقييم SM-2</h4>
-              <p className="text-slate-400 text-xs leading-relaxed">تدرّب ببطاقات الفلاشكارد وقيم تذكرك لتعديل الفاصل الزمني ديناميكياً.</p>
+              <h4 className="text-slate-900 dark:text-white font-bold text-sm">3. استرجاع نشط وتقييم SM-2</h4>
+              <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">تدرّب ببطاقات الفلاشكارد وقيم تذكرك لتعديل الفاصل الزمني ديناميكياً.</p>
             </div>
-            <div className="p-4 bg-slate-900/70 rounded-2xl border border-slate-800 space-y-1.5">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900/70 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
               <div className="text-2xl">📈</div>
-              <h4 className="text-white font-bold text-sm">4. استبقاء 95%+ في الامتحان</h4>
-              <p className="text-slate-400 text-xs leading-relaxed">تثبيت المعلومات في الذاكرة طويلة المدى وضمان التفوق في الامتحانات الوزارية.</p>
+              <h4 className="text-slate-900 dark:text-white font-bold text-sm">4. استبقاء 95%+ في الامتحان</h4>
+              <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">تثبيت المعلومات في الذاكرة طويلة المدى وضمان التفوق في الامتحانات الوزارية.</p>
             </div>
           </div>
           
-          <div className="p-4 bg-indigo-950/40 rounded-2xl border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="p-4 bg-indigo-50/80 dark:bg-indigo-950/40 rounded-2xl border border-indigo-200 dark:border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="text-indigo-200 font-semibold">
+              <Lightbulb className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+              <span className="text-indigo-900 dark:text-indigo-200 font-semibold">
                 فواصل المراجعة المعتمدة علمياً: [1, 3, 6, 10, 15, 21, 30, 45] يوماً.
               </span>
             </div>
@@ -513,7 +515,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
               {[1, 3, 6, 10, 15, 21, 30, 45].map((day) => (
                 <span
                   key={day}
-                  className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 rounded-lg text-[11px] font-mono font-bold"
+                  className="px-2.5 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-[11px] font-mono font-bold"
                 >
                   +{day}d
                 </span>
@@ -525,23 +527,23 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
       {/* Pomodoro Focus Studio Modal */}
       <Dialog open={isPomodoroOpen} onOpenChange={setIsPomodoroOpen}>
-        <DialogContent className="max-w-md bg-slate-950/95 border-rose-500/30 text-slate-100 rounded-3xl p-6 sm:p-8 space-y-6 text-center shadow-[0_0_50px_rgba(244,63,94,0.2)]" dir="rtl">
-          <DialogHeader className="space-y-1 pb-3 border-b border-slate-800 text-center">
-            <DialogTitle className="text-2xl font-black text-white flex items-center justify-center gap-2">
-              <Timer className="w-6 h-6 text-rose-400" />
+        <DialogContent className="max-w-md bg-white dark:bg-slate-950/95 border-slate-200 dark:border-rose-500/30 text-slate-900 dark:text-slate-100 rounded-3xl p-6 sm:p-8 space-y-6 text-center shadow-xl" dir="rtl">
+          <DialogHeader className="space-y-1 pb-3 border-b border-slate-200 dark:border-slate-800 text-center">
+            <DialogTitle className="text-2xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
+              <Timer className="w-6 h-6 text-rose-500 dark:text-rose-400" />
               <span>جلسة تركيز بومودورو (Pomodoro)</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-slate-600 dark:text-slate-400">
               25 دقيقة من المذاكرة والاسترجاع الذهني الصافي بدون أي مشتتات
             </DialogDescription>
           </DialogHeader>
 
           {/* Big Glowing Timer Display */}
-          <div className="relative p-8 rounded-3xl bg-slate-900/90 border border-rose-500/30 shadow-inner flex flex-col items-center justify-center space-y-2">
-            <span className="text-5xl sm:text-6xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-amber-300 tracking-wider">
+          <div className="relative p-8 rounded-3xl bg-slate-50 dark:bg-slate-900/90 border border-rose-200 dark:border-rose-500/30 shadow-inner flex flex-col items-center justify-center space-y-2">
+            <span className="text-5xl sm:text-6xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500 dark:from-rose-400 dark:to-amber-300 tracking-wider">
               {formatTimer(pomodoroSeconds)}
             </span>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
               {isPomodoroRunning ? '⚡ الجلسة جارية الآن.. ركز بعمق' : 'جاهز للبدء؟ اضغط تشغيل'}
             </span>
           </div>
@@ -575,7 +577,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
                 setPomodoroSeconds(25 * 60);
               }}
               variant="outline"
-              className="rounded-2xl text-xs border-slate-700 text-slate-300 hover:text-white"
+              className="rounded-2xl text-xs border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
             >
               <RotateCcw className="w-4 h-4 ml-1" />
               <span>إعادة ضبط</span>
@@ -586,22 +588,22 @@ export const SpacedRepetitionSystem: React.FC = () => {
 
       {/* Neural Retention Calculator Modal */}
       <Dialog open={isCalcOpen} onOpenChange={setIsCalcOpen}>
-        <DialogContent className="max-w-lg bg-slate-950/95 border-indigo-500/30 text-slate-100 rounded-3xl p-6 sm:p-8 space-y-6" dir="rtl">
-          <DialogHeader className="text-right space-y-1 pb-3 border-b border-slate-800">
-            <DialogTitle className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
-              <Gauge className="w-6 h-6 text-indigo-400" />
+        <DialogContent className="max-w-lg bg-white dark:bg-slate-950/95 border-slate-200 dark:border-indigo-500/30 text-slate-900 dark:text-slate-100 rounded-3xl p-6 sm:p-8 space-y-6" dir="rtl">
+          <DialogHeader className="text-right space-y-1 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <Gauge className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               <span>محاكي قوة الذاكرة ومنحنى النسيان</span>
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-slate-600 dark:text-slate-400">
               حرّك المؤشر لرؤية الفرق الهائل بين التعلم التقليدي مقابل نظام التكرار المتباعد
             </DialogDescription>
           </DialogHeader>
 
           {/* Slider input */}
-          <div className="space-y-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-300">الزمن المنقضي بعد المذاكرة الأولى:</span>
-              <span className="font-mono text-indigo-400 font-bold text-sm">{calcDaysPassed} يوماً</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">الزمن المنقضي بعد المذاكرة الأولى:</span>
+              <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-sm">{calcDaysPassed} يوماً</span>
             </div>
             <input 
               type="range"
@@ -609,7 +611,7 @@ export const SpacedRepetitionSystem: React.FC = () => {
               max={60}
               value={calcDaysPassed}
               onChange={(e) => setCalcDaysPassed(Number(e.target.value))}
-              className="w-full accent-indigo-500 cursor-pointer"
+              className="w-full accent-indigo-600 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>اليوم 1</span>
@@ -622,25 +624,25 @@ export const SpacedRepetitionSystem: React.FC = () => {
           {/* Comparison Cards */}
           <div className="grid grid-cols-2 gap-4">
             {/* Without spaced repetition */}
-            <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/30 space-y-2 text-center">
-              <span className="text-xs font-bold text-rose-300 block">بدون تكرار متباعد (تقليدي)</span>
-              <div className="text-3xl font-black text-rose-400">{retentionWithoutReview}%</div>
-              <span className="text-[10px] text-rose-300/80 block">
+            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 space-y-2 text-center">
+              <span className="text-xs font-bold text-rose-700 dark:text-rose-300 block">بدون تكرار متباعد (تقليدي)</span>
+              <div className="text-3xl font-black text-rose-600 dark:text-rose-400">{retentionWithoutReview}%</div>
+              <span className="text-[10px] text-rose-700/80 dark:text-rose-300/80 block">
                 تلاشي أثر الذاكرة ونقصان التشابكات العصبية
               </span>
             </div>
 
             {/* With spaced repetition */}
-            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 space-y-2 text-center shadow-lg shadow-emerald-500/10">
-              <span className="text-xs font-bold text-emerald-300 block">مع التكرار المتباعد الذكي</span>
-              <div className="text-3xl font-black text-emerald-400">{retentionWithRepetition}%</div>
-              <span className="text-[10px] text-emerald-300/80 block">
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 space-y-2 text-center shadow-sm">
+              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 block">مع التكرار المتباعد الذكي</span>
+              <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{retentionWithRepetition}%</div>
+              <span className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 block">
                 تثبيت صلب في قشرة الدماغ الدائمة
               </span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 text-xs text-slate-300 leading-relaxed">
+          <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-500/20 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
             💡 <strong>التفسير العصبي:</strong> كل مراجعة متباعدة تجبر الدماغ على إعادة بناء مسار استرجاع عصبي جديد، مما يجعل مقاومة النسيان تتضاعف بمقدار 200% بعد كل جلسة.
           </div>
         </DialogContent>
