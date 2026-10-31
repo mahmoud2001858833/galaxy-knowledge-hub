@@ -429,7 +429,7 @@ export const PsychologicalGuide: React.FC = () => {
           { role: 'user', content: userText }
         ],
         temperature: 0.65,
-        onToken: (_delta, fullText) => {
+        onChunk: (_delta, fullText) => {
           setMessages(prev =>
             prev.map(m => (m.id === aiMessageId ? { ...m, content: fullText } : m))
           );

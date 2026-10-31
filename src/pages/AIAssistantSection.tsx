@@ -458,7 +458,7 @@ export const AIAssistantSection: React.FC = () => {
               className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs sm:text-sm rounded-2xl h-12 px-4 focus:ring-2 focus:ring-cyan-500"
             />
             <Button
-              onClick={handleCustomQuery}
+              onClick={() => handleCustomQuery()}
               disabled={isTyping || !activeQuery.trim()}
               className="rounded-2xl px-5 h-12 bg-cyan-600 hover:bg-cyan-500 text-white shrink-0 font-bold text-xs gap-1.5 shadow-md"
             >
