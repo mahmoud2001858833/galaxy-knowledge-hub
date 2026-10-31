@@ -211,7 +211,6 @@ const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionS
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
 const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
-const ExamGeneratorStudio = wrap(lazy(() => import("./pages/ExamGeneratorStudio")));
 const AIConceptMindmapStudioPage = wrap(lazy(() => import("./pages/AIConceptMindmapStudioPage")));
 const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
 const ExamCreator = wrap(lazy(() => import("./pages/ExamCreator")));
@@ -597,7 +596,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'exam-generator-legacy',
-        element: <PublicRoute><ExamGeneratorStudio /></PublicRoute>,
+        element: <Navigate to="/exam-creator" replace />,
       },
       {
         path: 'agent/:token',
