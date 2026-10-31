@@ -72,7 +72,6 @@ const StudyOrganization = wrap(lazy(() => import("./pages/StudyOrganization")));
 const ChatRooms = wrap(lazy(() => import("./pages/ChatRooms")));
 const Auth = wrap(lazy(() => import("./pages/Auth")));
 const FalakKnowledgeAI = wrap(lazy(() => import("./pages/FalakKnowledgeAI")));
-const MathPuzzles = wrap(lazy(() => import("./pages/MathPuzzles")));
 const UserProfile = wrap(lazy(() => import("./pages/UserProfile")));
 const Contact = wrap(lazy(() => import("./pages/Contact")));
 const PuzzleDetails = wrap(lazy(() => import("./pages/PuzzleDetails")));
@@ -702,7 +701,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'math-puzzles',
-        element: <AuthGuard><MathPuzzles /></AuthGuard>,
+        element: <Navigate to={`/subject-puzzles?subject=${encodeURIComponent('الرياضيات')}`} replace />,
       },
       {
         path: 'profile',
