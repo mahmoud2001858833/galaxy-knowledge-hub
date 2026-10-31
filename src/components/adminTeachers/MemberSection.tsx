@@ -70,14 +70,10 @@ const MemberSection = ({ userId }: MemberSectionProps) => {
       }
 
       // Find a supervisor (prefer super_admin)
-      const { data: superAdmins } = await supabase
-        .from('admin_teacher_access')
-        .select('user_id')
-        .eq('access_level', 'super_admin')
-        .order('created_at', { ascending: true })
-        .limit(1);
+      // Members can't read the access list (RLS), so resolve it server-side
+      const { data: supervisorUserId } = await supabase.rpc('get_primary_supervisor_id');
 
-      const supervisorId = superAdmins?.[0]?.user_id || null;
+      const supervisorId = supervisorUserId || null;
 
       // Insert project assigned to supervisor
       const { error: insertError } = await supabase

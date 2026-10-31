@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -27,8 +27,6 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { QUESTIONS } from './DamijDoctorSurvey';
-
-const RESULTS_PASSWORD = '200400200';
 
 type Survey = {
   id: string;
@@ -227,8 +225,9 @@ const QuestionChart: React.FC<{
 // Main page
 // ============================================================
 const DamijResults: React.FC = () => {
-  const [pwd, setPwd] = useState('');
-  const [unlocked, setUnlocked] = useState(false);
+  // Results are RLS-locked to platform admins; access is checked server-side.
+  const [access, setAccess] = useState<'checking' | 'signed_out' | 'denied' | 'allowed'>('checking');
+  const unlocked = access === 'allowed';
   const [loading, setLoading] = useState(false);
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [tab, setTab] = useState<'overview' | 'charts' | 'feedback' | 'responses'>('overview');
@@ -247,15 +246,23 @@ const DamijResults: React.FC = () => {
     setLoading(false);
   };
 
-  const handleUnlock = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwd !== RESULTS_PASSWORD) {
-      toast.error('كلمة مرور غير صحيحة');
-      return;
-    }
-    setUnlocked(true);
-    await loadSurveys();
-  };
+  useEffect(() => {
+    const verify = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setAccess('signed_out');
+        return;
+      }
+      const { data, error } = await supabase.rpc('is_platform_admin', { _user_id: session.user.id });
+      if (error || data !== true) {
+        setAccess('denied');
+        return;
+      }
+      setAccess('allowed');
+      await loadSurveys();
+    };
+    verify();
+  }, []);
 
   const deleteOne = async (id: string) => {
     setDeleting(true);
@@ -316,8 +323,7 @@ const DamijResults: React.FC = () => {
         dir="rtl"
         style={{ background: 'linear-gradient(135deg, hsl(var(--damij-bg)), hsl(var(--damij-bg-2)))' }}
       >
-        <motion.form
-          onSubmit={handleUnlock}
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-md rounded-3xl shadow-2xl p-8"
@@ -340,29 +346,20 @@ const DamijResults: React.FC = () => {
             نتائج استبيان الأطباء
           </h1>
           <p className="text-sm mb-6" style={{ color: 'hsl(var(--damij-muted))' }}>
-            هذه الصفحة محمية. أدخل كلمة المرور للوصول إلى النتائج التفصيلية والرسوم البيانية.
+            {access === 'checking' && 'جارٍ التحقق من صلاحياتك...'}
+            {access === 'signed_out' && 'هذه الصفحة محمية. سجّل الدخول بحساب مشرف للوصول إلى النتائج التفصيلية والرسوم البيانية.'}
+            {access === 'denied' && 'حسابك الحالي لا يملك صلاحية الاطلاع على نتائج الاستبيان.'}
           </p>
-          <input
-            type="password"
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            placeholder="كلمة المرور"
-            className="w-full px-4 py-3 rounded-xl border-2 outline-none focus:border-[hsl(var(--damij-primary))] mb-4"
-            style={{
-              background: 'hsl(var(--damij-bg))',
-              borderColor: 'hsl(var(--damij-border))',
-              color: 'hsl(var(--damij-text))',
-            }}
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="w-full py-3 rounded-xl text-white font-bold shadow-lg hover:opacity-90 transition"
-            style={{ background: 'hsl(var(--damij-primary))' }}
-          >
-            دخول
-          </button>
-        </motion.form>
+          {access === 'signed_out' && (
+            <Link
+              to="/damij/auth"
+              className="block w-full py-3 rounded-xl text-white font-bold text-center shadow-lg hover:opacity-90 transition"
+              style={{ background: 'hsl(var(--damij-primary))' }}
+            >
+              تسجيل الدخول
+            </Link>
+          )}
+        </motion.div>
       </div>
     );
   }

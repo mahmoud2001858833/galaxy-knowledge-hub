@@ -5540,6 +5540,8 @@ export type Database = {
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
       get_exam_agent: { Args: { p_token: string }; Returns: Json }
+      get_primary_supervisor_id: { Args: Record<PropertyKey, never>; Returns: string }
+      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       get_public_adhd_diagnostic_report: {
         Args: { p_token: string }
         Returns: {

@@ -190,17 +190,27 @@ export const SuperAdminControlHub: React.FC = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
-  // Authentication & Passkey State
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('auth') === 'admin') return true;
-    } catch {}
-    return sessionStorage.getItem('galaxy_admin_authenticated') === 'true' || 
-           localStorage.getItem('galaxy_admin_authenticated') === 'true';
-  });
-  const [passkeyInput, setPasskeyInput] = useState('');
-  const [passkeyError, setPasskeyError] = useState(false);
+  // Authentication: a signed-in platform admin, verified server-side (is_platform_admin).
+  // The tables this hub manages are RLS-locked to the same check.
+  const [authState, setAuthState] = useState<'checking' | 'signed_out' | 'denied' | 'allowed'>('checking');
+  const isAuthenticated = authState === 'allowed';
+
+  useEffect(() => {
+    const verify = async (userId: string | undefined) => {
+      if (!userId) {
+        setAuthState('signed_out');
+        return;
+      }
+      const { data, error } = await supabase.rpc('is_platform_admin', { _user_id: userId });
+      setAuthState(!error && data === true ? 'allowed' : 'denied');
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => verify(session?.user?.id));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      verify(session?.user?.id);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Active Tab State with URL query syncing
   const [currentTab, setCurrentTab] = useState<AdminTab>(() => {
@@ -566,26 +576,6 @@ export const SuperAdminControlHub: React.FC = () => {
     }
   };
 
-  // Passkey Verification Handler
-  const handlePasskeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passkeyInput === 'mahmoud200' || passkeyInput === 'admin2026' || passkeyInput === 'galaxy') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('galaxy_admin_authenticated', 'true');
-      toast.success('مرحباً بك في مركز القيادة والتحكم الإداري الفائق لذروة العلم 🚀');
-      auditLogger.record({
-        action: 'LOGIN',
-        module: 'Admin Authentication',
-        description: 'تسجيل دخول ناجح إلى لوحة التحكم الإدارية الفائقة',
-        user: { id: 'admin-master', name: 'المشرف العام', email: 'jowmahmoud6@gmail.com', role: 'super_admin' },
-        severity: 'info'
-      });
-    } else {
-      setPasskeyError(true);
-      toast.error('رمز المرور غير صحيح');
-    }
-  };
-
   // Footer Save Handler
   const handleSaveFooterSettings = () => {
     platformSettings.updateSettings(settings);
@@ -735,39 +725,20 @@ export const SuperAdminControlHub: React.FC = () => {
               لوحة التحكم الإدارية الفائقة
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              يرجى إدخال رمز المرور الإداري (Master Passkey) أو تسجيل الدخول كمشرف عام
+              {authState === 'checking' && 'جارٍ التحقق من صلاحياتك...'}
+              {authState === 'signed_out' && 'يرجى تسجيل الدخول بحساب مشرف ثم العودة إلى هذه الصفحة'}
+              {authState === 'denied' && 'حسابك الحالي لا يملك صلاحية الوصول إلى لوحة التحكم'}
             </p>
           </div>
 
-          <form onSubmit={handlePasskeySubmit} className="space-y-4">
-            <div className="space-y-1 text-right">
-              <Input
-                type="password"
-                value={passkeyInput}
-                onChange={(e) => {
-                  setPasskeyInput(e.target.value);
-                  setPasskeyError(false);
-                }}
-                placeholder="أدخل رمز المرور الإداري..."
-                className={`h-11 rounded-2xl text-center text-sm bg-slate-50 dark:bg-slate-800 ${
-                  passkeyError ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-slate-300 dark:border-slate-700'
-                }`}
-                autoFocus
-              />
-              {passkeyError && (
-                <span className="text-[11px] text-rose-500 font-bold block text-center mt-1">
-                  رمز المرور غير صحيح. (رمز المالك: mahmoud200)
-                </span>
-              )}
-            </div>
-
+          {authState === 'signed_out' && (
             <Button
-              type="submit"
+              onClick={() => navigate('/auth')}
               className="w-full h-11 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/25"
             >
-              الدخول إلى مركز التحكم الكامل 🚀
+              تسجيل الدخول
             </Button>
-          </form>
+          )}
 
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
             <Link to="/" className="text-slate-500 hover:text-cyan-500 flex items-center gap-1">
@@ -913,9 +884,8 @@ export const SuperAdminControlHub: React.FC = () => {
           </Link>
 
           <Button
-            onClick={() => {
-              sessionStorage.removeItem('galaxy_admin_authenticated');
-              setIsAuthenticated(false);
+            onClick={async () => {
+              await supabase.auth.signOut();
               toast.info('تم قفل لوحة التحكم الإدارية بنجاح');
             }}
             variant="outline"

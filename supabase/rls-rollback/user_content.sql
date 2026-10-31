@@ -1,0 +1,22 @@
+-- Emergency rollback for 20261101160000_rls_lockdown_user_content.sql (restores the previous, insecure state)
+CREATE POLICY "Public access for class_chat_messages" ON public.class_chat_messages AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for class_chat_messages" ON public.class_chat_messages AS PERMISSIVE FOR ALL TO public USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for user_solved_puzzles" ON public.user_solved_puzzles AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for users_profiles" ON public.users_profiles AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for watched_videos" ON public.watched_videos AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for ai_exam_packages" ON public.ai_exam_packages AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Anyone can update exam packages" ON public.ai_exam_packages AS PERMISSIVE FOR UPDATE TO public USING (true);
+CREATE POLICY "Public access for ai_exam_submissions" ON public.ai_exam_submissions AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Public access for items" ON public.items AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Anyone can insert items" ON public.items AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public can read items" ON public.items AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Public access for posts" ON public.posts AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Anyone can insert posts" ON public.posts AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public can read posts" ON public.posts AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Public access for users" ON public.users AS PERMISSIVE FOR ALL TO anon, authenticated, service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Anyone can insert users" ON public.users AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public can read users" ON public.users AS PERMISSIVE FOR SELECT TO public USING (true);
+CREATE POLICY "Anyone can insert platform chat" ON public.platform_chat_messages AS PERMISSIVE FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Public can read platform chat" ON public.platform_chat_messages AS PERMISSIVE FOR SELECT TO public USING (true);
+DROP POLICY IF EXISTS "Authenticated can read solved puzzles for leaderboards" ON public.user_solved_puzzles;
+DROP POLICY IF EXISTS "Admins can delete solved puzzle records" ON public.user_solved_puzzles;
