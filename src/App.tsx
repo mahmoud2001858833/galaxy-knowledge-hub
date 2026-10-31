@@ -190,7 +190,6 @@ const ParentDashboard = wrap(lazy(() => import("./pages/ParentDashboard")));
 const ParentAssignments = wrap(lazy(() => import("./pages/ParentAssignments")));
 const ParentNotes = wrap(lazy(() => import("./pages/ParentNotes")));
 const ClassChat = wrap(lazy(() => import("./pages/ClassChat")));
-const ControlCenter = wrap(lazy(() => import("./pages/ControlCenter")));
 const SuperAdminControlHub = wrap(lazy(() => import("./pages/admin/SuperAdminControlHub")));
 const StudentCommunityForum = wrap(lazy(() => import("./pages/StudentCommunityForum")));
 const EducationSection = wrap(lazy(() => import("./pages/EducationSection")));
