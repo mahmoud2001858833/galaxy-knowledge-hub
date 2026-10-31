@@ -1,4 +1,4 @@
-import { Recycle } from 'lucide-react';
+import { Recycle, Lightbulb } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
+import { CORE_SECTIONS, FUTURE_PROJECTS_PATH, findSectionByPath } from '@/config/platformSections';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 
@@ -152,15 +153,13 @@ const Navbar = () => {
     );
   }
 
-  const navLinks = [
-    { label: 'المختبرات 3D', path: '/experiments-section', badge: '49 محاكاة', icon: Atom },
-    { label: 'الروبوتات و AI', path: '/robotics-section', icon: Cpu },
-    { label: 'مجتمع الطلبة', path: '/community', badge: 'حي', icon: MessageSquare },
-    { label: 'منصة دامج', path: '/damij', icon: HeartHandshake },
-    { label: 'التعليم الشامل', path: '/education-section', icon: Layers },
-    { label: 'المكتبة العلمية', path: '/damij/sources', icon: BookOpen },
-    { label: 'المرشد الذكي', path: '/ai-assistant-section', icon: Sparkles },
+  // Main navigation comes from the platform sections config (src/config/platformSections.ts)
+  const navLinks: { label: string; path: string; icon: React.ElementType; badge?: string }[] = [
+    ...CORE_SECTIONS.map((section) => ({ label: section.navLabel, path: section.path, icon: section.icon })),
+    { label: 'مشاريع مستقبلية', path: FUTURE_PROJECTS_PATH, icon: Lightbulb },
   ];
+  const isNavActive = (path: string) =>
+    location.pathname === path || findSectionByPath(location.pathname)?.path === path;
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all w-full max-w-full">
@@ -187,7 +186,7 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center gap-1">
           <a href="https://smart-upcycling-platform.vercel.app/" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Recycle className="w-3.5 h-3.5" /><span>مدام</span></a>
           {navLinks.map((item) => {
-            const active = isActive(item.path);
+            const active = isNavActive(item.path);
             const Icon = item.icon;
             return (
               <Link
@@ -387,7 +386,7 @@ const Navbar = () => {
                       to={item.path} 
                       className={cn(
                         "px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between",
-                        isActive(item.path)
+                        isNavActive(item.path)
                           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-sm"
                           : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                       )}

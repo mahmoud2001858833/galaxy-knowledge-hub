@@ -51,6 +51,8 @@ const wrap = <P extends object>(Comp: React.LazyExoticComponent<ComponentType<P>
 const StudyScheduleCreator = wrap(lazy(() => import("./pages/StudyScheduleCreator")));
 const StudentProgress = wrap(lazy(() => import("./pages/StudentProgress")));
 const NotFound = wrap(lazy(() => import("./pages/NotFound")));
+const SectionHubPage = wrap(lazy(() => import("./pages/sections/SectionHubPage")));
+const FutureProjectsPage = wrap(lazy(() => import("./pages/sections/FutureProjectsPage")));
 const Physics = wrap(lazy(() => import("./pages/Physics")));
 const Chemistry = wrap(lazy(() => import("./pages/Chemistry")));
 const Mathematics = wrap(lazy(() => import("./pages/Mathematics")));
@@ -428,6 +430,30 @@ const router = createBrowserRouter([
       {
         path: 'autism/c/:token',
         element: <AutismChildPage />,
+      },
+      {
+        path: 'learn',
+        element: <PublicRoute><SectionHubPage sectionId="learn" /></PublicRoute>,
+      },
+      {
+        path: 'exams',
+        element: <PublicRoute><SectionHubPage sectionId="exams" /></PublicRoute>,
+      },
+      {
+        path: 'labs',
+        element: <PublicRoute><SectionHubPage sectionId="labs" /></PublicRoute>,
+      },
+      {
+        path: 'tools',
+        element: <PublicRoute><SectionHubPage sectionId="tools" /></PublicRoute>,
+      },
+      {
+        path: 'school',
+        element: <PublicRoute><SectionHubPage sectionId="school" /></PublicRoute>,
+      },
+      {
+        path: 'future-projects',
+        element: <PublicRoute><FutureProjectsPage /></PublicRoute>,
       },
       {
         path: 'auth',
