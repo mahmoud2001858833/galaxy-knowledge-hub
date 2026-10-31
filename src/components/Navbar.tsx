@@ -42,7 +42,7 @@ const Navbar = () => {
       } = await supabase.auth.getSession();
       setUser(session?.user || null);
       if (session?.user) {
-        const { data } = await supabase.from('users_profiles').select('*').eq('id', session.user.id).single();
+        const { data } = await supabase.from('profiles').select('id, username, avatar_url').eq('id', session.user.id).single();
         setProfile(data);
 
         // Check if user is super admin
@@ -64,7 +64,7 @@ const Navbar = () => {
     } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user || null);
       if (session?.user) {
-        supabase.from('users_profiles').select('*').eq('id', session.user.id).single().then(({ data }) => {
+        supabase.from('profiles').select('id, username, avatar_url').eq('id', session.user.id).single().then(({ data }) => {
           setProfile(data);
         });
 
