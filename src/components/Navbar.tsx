@@ -1,3 +1,4 @@
+import { Recycle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -184,6 +185,7 @@ const Navbar = () => {
         
         {/* Desktop Nav Items */}
         <div className="hidden lg:flex items-center gap-1">
+          <a href="https://smart-upcycling-platform.vercel.app/" target="_blank" rel="noopener noreferrer" className="px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"><Recycle className="w-3.5 h-3.5" /><span>مدام</span></a>
           {navLinks.map((item) => {
             const active = isActive(item.path);
             const Icon = item.icon;
@@ -378,6 +380,7 @@ const Navbar = () => {
                   <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block px-2 mb-2">
                     المنظومة الأكاديمية والمختبرات
                   </span>
+                  <a href="https://smart-upcycling-platform.vercel.app/" target="_blank" rel="noopener noreferrer" className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50"><Recycle className="w-4 h-4" /><span>مدام</span></a>
                   {navLinks.map((item) => (
                     <Link 
                       key={item.path}
