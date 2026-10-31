@@ -105,7 +105,6 @@ const Function3DVisualization = wrap(lazy(() => import("./pages/Function3DVisual
 const OpticsLabSimulation = wrap(lazy(() => import("./pages/OpticsLabSimulation")));
 const CircuitBuilderSimulation = wrap(lazy(() => import("./pages/CircuitBuilderSimulation")));
 const CircuitBuilderAdvanced = wrap(lazy(() => import("./pages/CircuitBuilderAdvanced")));
-const ProjectileMotionSimulation = wrap(lazy(() => import("./pages/ProjectileMotionSimulation")));
 const ProjectileMotion3D = wrap(lazy(() => import("./pages/ProjectileMotion3D")));
 const SolarSystemSimulation = wrap(lazy(() => import("./pages/SolarSystemSimulation")));
 const SolarSystem3D = wrap(lazy(() => import("./pages/SolarSystem3D")));
@@ -123,15 +122,11 @@ const HumanBodySimulation = wrap(lazy(() => import("./pages/HumanBodySimulation"
 const AdvancedNuclearSimulation = wrap(lazy(() => import("./pages/AdvancedNuclearSimulation")));
 const DigitalElectronicsSimulation = wrap(lazy(() => import("./pages/DigitalElectronicsSimulation")));
 const EarthSciencesSimulation = wrap(lazy(() => import("./pages/EarthSciencesSimulation")));
-const RocketScienceSimulation = wrap(lazy(() => import("./pages/RocketScienceSimulation")));
 const AdvancedOpticsSimulation = wrap(lazy(() => import("./pages/AdvancedOpticsSimulation")));
 const MaterialsScienceSimulation = wrap(lazy(() => import("./pages/MaterialsScienceSimulation")));
-const ThermodynamicsSimulation = wrap(lazy(() => import("./pages/ThermodynamicsSimulation")));
 const Thermodynamics3D = wrap(lazy(() => import("./pages/Thermodynamics3D")));
 const RocketScience3D = wrap(lazy(() => import("./pages/RocketScience3D")));
-const FluidMechanicsSimulation = wrap(lazy(() => import("./pages/FluidMechanicsSimulation")));
 const FluidMechanics3D = wrap(lazy(() => import("./pages/FluidMechanics3D")));
-const CircularMotionSimulation = wrap(lazy(() => import("./pages/CircularMotionSimulation")));
 const CircularMotion3D = wrap(lazy(() => import("./pages/CircularMotion3D")));
 const SpecialRelativitySimulation = wrap(lazy(() => import("./pages/SpecialRelativitySimulation")));
 const InterferenceDiffractionSimulation = wrap(lazy(() => import("./pages/InterferenceDiffractionSimulation")));
@@ -795,7 +790,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/projectile-motion-classic',
-        element: <PublicRoute><ProjectileMotionSimulation /></PublicRoute>,
+        element: <Navigate to="/simulation/projectile-motion" replace />,
       },
 
 
@@ -869,7 +864,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/rocket-science-classic',
-        element: <PublicRoute><RocketScienceSimulation /></PublicRoute>,
+        element: <Navigate to="/simulation/rocket-science" replace />,
       },
       {
         path: 'simulation/advanced-optics',
@@ -885,7 +880,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/thermodynamics-classic',
-        element: <PublicRoute><ThermodynamicsSimulation /></PublicRoute>,
+        element: <Navigate to="/simulation/thermodynamics" replace />,
       },
       {
         path: 'simulation/fluid-mechanics',
@@ -893,7 +888,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/fluid-mechanics-classic',
-        element: <PublicRoute><FluidMechanicsSimulation /></PublicRoute>,
+        element: <Navigate to="/simulation/fluid-mechanics" replace />,
       },
       {
         path: 'simulation/circular-motion',
@@ -901,7 +896,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'simulation/circular-motion-classic',
-        element: <PublicRoute><CircularMotionSimulation /></PublicRoute>,
+        element: <Navigate to="/simulation/circular-motion" replace />,
       },
       {
         path: 'simulation/special-relativity',
