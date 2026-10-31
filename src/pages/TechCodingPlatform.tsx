@@ -207,7 +207,7 @@ const AICodeStudio = () => {
         temperature: 0.3,
       });
 
-      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const cleaned = (typeof raw === "string" ? raw : (raw as any).text).replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -533,7 +533,7 @@ const CodeFixerStudio = () => {
         temperature: 0.2,
       });
 
-      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      const cleaned = (typeof raw === "string" ? raw : (raw as any).text).replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -723,7 +723,7 @@ const PlatformBuilder = () => {
         temperature: 0.4,
       });
 
-      const cleanedHtml = generatedHtml.replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
+      const cleanedHtml = (typeof generatedHtml === "string" ? generatedHtml : (generatedHtml as any).text).replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
       setHtml(cleanedHtml);
       setMessages([
         ...newMessages,

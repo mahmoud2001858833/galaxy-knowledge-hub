@@ -245,7 +245,7 @@ export const MnemonicsGenerator: React.FC = () => {
         temperature: 0.4,
       });
 
-      const cleaned = fullText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      const cleaned = (typeof fullText === "string" ? fullText : (fullText as any).text).replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
