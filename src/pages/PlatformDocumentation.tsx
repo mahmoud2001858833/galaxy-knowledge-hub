@@ -150,6 +150,14 @@ export const PlatformDocumentation: React.FC = () => {
                 أي محتوى أو محاكاة أو مصدر تضيفه بالمنصة يُربط تلقائياً بالتوثيق وينزل في ملف الـ PDF لحظياً.
               </p>
               <div className="pt-1 flex flex-col gap-2">
+                <a
+                  href="/downloads/Zarwat_Al_Ilm_Complete_Technical_Encyclopedia.pdf"
+                  download="Zarwat_Al_Ilm_Complete_Technical_Encyclopedia.pdf"
+                  className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-l from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xs px-4 py-2.5 shadow-md shadow-blue-500/20 transition-all"
+                >
+                  <FileText className="w-4 h-4 flex-shrink-0" />
+                  <span>تنزيل الموسوعة البرمجية الشاملة (PDF • 72 صفحة)</span>
+                </a>
                 <DocsExportSyncToolbar />
               </div>
             </div>
