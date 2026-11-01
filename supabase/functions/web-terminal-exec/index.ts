@@ -115,8 +115,8 @@ const COMMANDS: Record<string, Command> = {
       }
       out(`  ${c.cyan(pad('claude <prompt>', 28))} Ask Claude Code on the principal's computer`);
       out(`  ${c.cyan(pad('claude', 28))} Chat mode with Claude (exit to leave)`);
-      out(`  ${c.cyan(pad('antigravity <prompt>', 28))} Send a task to the Antigravity agent there (also: agy)`);
-      out(`  ${c.cyan(pad('antigravity', 28))} Antigravity mode (exit to leave)`);
+      out(`  ${c.cyan(pad('antigravity <prompt>', 28))} Ask the Antigravity agent there (also: agy)`);
+      out(`  ${c.cyan(pad('antigravity', 28))} Chat mode with Antigravity (exit to leave)`);
       out(`  ${c.cyan(pad('ai <prompt>', 28))} Your assigned agent (Claude or Antigravity)`);
       out(`  ${c.cyan(pad('sh <command>', 28))} Run a shell command there (also: $ <command>)`);
       out(`  ${c.cyan(pad('shell', 28))} Shell mode (exit to leave)`);
@@ -602,7 +602,7 @@ serve(async (req) => {
         if (!masterKey()) return fail('Bridge is not configured on the server (BRIDGE_MASTER_KEY missing).');
         const device = await onlineDevice(service);
         if (!device) return fail("Bridge offline: the principal's computer is not connected.");
-        const resume = kind === 'claude' && typeof body.resume_session === 'string' && /^[A-Za-z0-9-]{8,80}$/.test(body.resume_session) ? body.resume_session : null;
+        const resume = (kind === 'claude' || kind === 'antigravity') && typeof body.resume_session === 'string' && /^[A-Za-z0-9-]{8,80}$/.test(body.resume_session) ? body.resume_session : null;
         const job = {
           id: crypto.randomUUID(),
           device_id: device.id,

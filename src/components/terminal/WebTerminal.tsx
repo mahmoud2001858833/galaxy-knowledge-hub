@@ -112,6 +112,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     // 'cloud' = platform commands; 'claude' / 'shell' = every line goes to the principal's computer
     mode: 'cloud' as Mode,
     claudeSession: null as string | null,
+    agentSession: null as string | null, // Antigravity conversation id
     job: null as { id: string; stop: () => void } | null,
   });
   const feedRef = useRef<(data: string) => void>(() => {});
@@ -176,6 +177,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
           finished = true;
           window.clearTimeout(waitHint);
           if (kind === 'claude' && job.claude_session) s.claudeSession = job.claude_session;
+          if (kind === 'antigravity' && job.claude_session) s.agentSession = job.claude_session;
           const latin = (t: string | null) => (t && !/[\u0600-\u06FF]/.test(t) ? t : '');
           if (job.status === 'cancelled') term.write(`\r\n\x1b[33m■ stopped${latin(job.error) ? ': ' + latin(job.error) : ''}\x1b[0m`);
           else if (job.status === 'rejected') term.write(`\r\n\x1b[31m${latin(job.error) || 'Refused by the computer.'}\x1b[0m`);
@@ -256,18 +258,19 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
           s.mode === 'claude'
             ? `\r\n\x1b[35mClaude Code on the principal's computer.\x1b[0m \x1b[2mEvery line is a message${s.claudeSession ? ' (continuing the last conversation)' : ''}. /new starts over, exit leaves.\x1b[0m`
             : s.mode === 'antigravity'
-              ? "\r\n\x1b[34mAntigravity agent on the principal's computer.\x1b[0m \x1b[2mEach line is sent as a task; the agent answers inside the Antigravity app. exit leaves.\x1b[0m"
+              ? `\r\n\x1b[34mAntigravity agent on the principal's computer.\x1b[0m \x1b[2mEvery line is a message${s.agentSession ? ' (continuing the last conversation)' : ''}. /new starts over, exit leaves.\x1b[0m`
               : "\r\n\x1b[33mShell on the principal's computer, in the project folder.\x1b[0m \x1b[2mNon-interactive commands only. exit leaves.\x1b[0m",
         );
         return prompt();
       }
-      if (s.mode === 'claude' && cmd === '/new') {
-        s.claudeSession = null;
-        term.write('\r\n\x1b[2mNew Claude conversation.\x1b[0m');
+      if ((s.mode === 'claude' || s.mode === 'antigravity') && cmd === '/new') {
+        if (s.mode === 'claude') s.claudeSession = null;
+        else s.agentSession = null;
+        term.write(`\r\n\x1b[2mNew ${s.mode === 'claude' ? 'Claude' : 'Antigravity'} conversation.\x1b[0m`);
         return prompt();
       }
       const wire = /^(submit|request-push)(\s|$)/i.test(cmd) ? cmd : s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'antigravity' ? `antigravity ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
-      const resume = s.mode === 'claude' ? s.claudeSession : null;
+      const resume = s.mode === 'claude' ? s.claudeSession : s.mode === 'antigravity' ? s.agentSession : null;
 
       s.busy = true;
       const abort = new AbortController();

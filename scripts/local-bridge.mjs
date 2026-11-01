@@ -29,7 +29,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, platform } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
 const VERSION = '2.1.0';
@@ -97,7 +97,11 @@ function pair(code) {
         '/Applications/Antigravity IDE.app/Contents/Resources/app/bin/antigravity-ide',
         'antigravity',
       ]),
-      // chat modes: agent (can act), edit, ask (answers only). Others get ask.
+      // app: "desktop" = /Applications/Antigravity.app (replies stream back); "ide" = Antigravity IDE CLI.
+      // ide chat modes: agent (can act), edit, ask (answers only). Others get ask.
+      app: 'desktop',
+      model: null, // a label such as "Gemini 3.8 Flash (High)"; null = the app's default
+      allowOthers: false, // the desktop agent runs any command: principal only unless true
       mode: 'agent',
       othersMode: 'ask',
     },
@@ -280,6 +284,41 @@ exec ${JSON.stringify(REAL_GIT)} "$@"
     GIT_CONFIG_VALUE_0: hooks,
     ZARWA_TERMINAL_JOB: '1',
   };
+}
+
+// The Antigravity agent runs commands from its own process, outside the shims above. This hook in the
+// project refuses ref updates (commit, branch, reset…) and pushes made from inside Antigravity's
+// language server; everything else (you, your editor, the bridge's approved push) is unaffected.
+const REPO_HOOK_MARK = '# zarwa-bridge approval gate';
+function installRepoGuard(cfg) {
+  let hooksDir;
+  try {
+    hooksDir = resolve(cfg.workdir, git(cfg, ['rev-parse', '--git-path', 'hooks']).stdout.trim());
+  } catch {
+    return;
+  }
+  const body = `#!/bin/sh
+${REPO_HOOK_MARK}: no commit/push from the Antigravity agent; changes go to the principal for approval.
+[ "$(basename "$0")" = reference-transaction ] && [ "$1" != prepared ] && exit 0
+p=$PPID
+while [ -n "$p" ] && [ "$p" -gt 1 ]; do
+  case "$(ps -o comm= -p "$p" 2>/dev/null)" in
+    *[Aa]ntigravity*language_serve*) echo "zarwa: git from the Antigravity agent is blocked; changes go to the principal for approval." >&2; exit 1;;
+  esac
+  p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+done
+exit 0
+`;
+  mkdirSync(hooksDir, { recursive: true });
+  for (const name of ['reference-transaction', 'pre-push']) {
+    const file = join(hooksDir, name);
+    if (existsSync(file) && !readFileSync(file, 'utf8').includes(REPO_HOOK_MARK)) {
+      log(`note: ${file} exists and is not ours; left unchanged`);
+      continue;
+    }
+    writeFileSync(file, body);
+    chmodSync(file, 0o755);
+  }
 }
 
 // The bridge's own git (not shimmed). Throws with git's output on failure.
@@ -539,21 +578,236 @@ async function runClaude(cfg, job, out) {
 }
 
 
-// Antigravity has no headless mode: the task is opened in its agent panel on this computer and the
-// agent works (and answers) inside the app. We report that it was delivered.
+// ---------------------------------------------------------------- Antigravity
+// The Antigravity desktop app (/Applications/Antigravity.app) has no CLI. Its agent runs in a local
+// language server that the app's own window talks to over Connect/JSON on 127.0.0.1 with a CSRF
+// token passed on its command line; the bridge uses that same local API to start a conversation in
+// workdir, send the task with the user's default model, and stream the steps back. This interface
+// is undocumented, so an Antigravity update may change it; `antigravity.app: "ide"` in the config
+// falls back to the Antigravity IDE CLI (task delivered, reply stays in the app).
+// The agent there runs any command and writes anywhere (tool limits are ignored), so it is for the
+// principal only unless antigravity.allowOthers is true.
+const AG_APP = '/Applications/Antigravity.app';
+const AG_API = 'exa.language_server_pb.LanguageServerService';
+const AG_NOTE = GATE_NOTE.replace('Just edit the files; when you finish, your changes are sent automatically', 'Just edit the files; when you finish, your changes are sent');
+let agConn = null;
+
+function findAgServer() {
+  const ps = execFileSync('/bin/ps', ['-axo', 'pid=,args='], { encoding: 'utf8' });
+  const line = ps.split('\n').find((l) => l.includes(`${AG_APP}/Contents/Resources/bin/language_server`) && l.includes('--csrf_token'));
+  if (!line) return null;
+  const pid = line.trim().split(/\s+/)[0];
+  const token = line.match(/--csrf_token[=\s]+(\S+)/)?.[1];
+  let ports = [];
+  try {
+    ports = execFileSync('/usr/sbin/lsof', ['-a', '-p', pid, '-iTCP', '-sTCP:LISTEN', '-nP', '-Fn'], { encoding: 'utf8' })
+      .split('\n')
+      .filter((l) => l.startsWith('n127.0.0.1:'))
+      .map((l) => l.split(':').pop());
+  } catch {}
+  return token ? { token, ports } : null;
+}
+
+async function agCall(method, body, conn = agConn, timeout = 30000) {
+  const res = await fetch(`${conn.base}/${AG_API}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-codeium-csrf-token': conn.token },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeout),
+  });
+  const text = await res.text();
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = { message: text.slice(0, 200) };
+  }
+  if (!res.ok) throw new Error(`Antigravity ${method}: ${data.message ?? res.status}`);
+  return data;
+}
+
+// Finds (or starts) the running app's local server.
+async function agConnect(out) {
+  if (agConn) {
+    try {
+      await agCall('GetUserStatus', {}, agConn, 5000);
+      return agConn;
+    } catch {
+      agConn = null;
+    }
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const found = findAgServer();
+    for (const port of found?.ports ?? []) {
+      const conn = { base: `http://127.0.0.1:${port}`, token: found.token };
+      try {
+        await agCall('GetUserStatus', {}, conn, 3000);
+        return (agConn = conn);
+      } catch {}
+    }
+    if (attempt === 0) {
+      out?.push('sys', '\x1b[2mStarting Antigravity…\x1b[0m\n');
+      spawnSync('/usr/bin/open', ['-g', '-a', AG_APP]);
+      for (let i = 0; i < 30 && !findAgServer()?.ports?.length; i++) await sleep(1000);
+      await sleep(3000);
+    }
+  }
+  throw new Error('Antigravity is not running or not reachable. Open the Antigravity app on the computer and sign in.');
+}
+
+async function agModel(cfg) {
+  const data = await agCall('GetCascadeModelConfigData', {});
+  const list = data.clientModelConfigs ?? [];
+  const want = cfg.antigravity?.model;
+  const pick = (want && list.find((c) => c.label === want || c.modelOrAlias?.model === want)) || null;
+  const id = pick?.modelOrAlias?.model ?? data.defaultOverrideModelConfig?.modelOrAlias?.model ?? list[0]?.modelOrAlias?.model;
+  if (!id) throw new Error('Antigravity: no model available for this account');
+  return { id, label: list.find((c) => c.modelOrAlias?.model === id)?.label ?? id };
+}
+
+const agText = (s) => String(s ?? '').replace(/\]\(file:\/\/[^)]+\)/g, ']').replace(/\n*$/, '\n');
+const BLOCKED_COMMAND = new RegExp(`(^|[;&|(\\s])(git\\s+(${BLOCKED_GIT.filter((c) => c !== 'config').join('|')})\\b|(${BLOCKED_TOOLS.join('|')})\\s)`);
+
+// Prints one finished step; returns true for a step that ends the agent's turn.
+function showAgStep(step, out) {
+  const t = step.type ?? '';
+  if (t.endsWith('PLANNER_RESPONSE')) {
+    const r = step.plannerResponse ?? {};
+    const text = r.modifiedResponse ?? r.response;
+    if (text) out.push('out', agText(text));
+    return !(r.toolCalls?.length);
+  }
+  if (t.endsWith('CODE_ACTION')) {
+    const spec = step.codeAction?.actionSpec ?? {};
+    const [kind, v] = Object.entries(spec)[0] ?? [];
+    const uri = v?.path?.absoluteUri ?? v?.absoluteUri ?? v?.targetFile?.absoluteUri ?? '';
+    const tool = step.metadata?.toolCall;
+    let target = uri ? decodeURIComponent(uri.replace('file://', '')) : '';
+    if (!target && tool?.argumentsJson) {
+      try {
+        const a = JSON.parse(tool.argumentsJson);
+        target = a.TargetFile ?? a.Path ?? a.AbsolutePath ?? '';
+      } catch {}
+    }
+    out.push('sys', `\x1b[36m⚙ ${tool?.name ?? kind ?? 'edit'}${target ? `: ${target}` : ''}\x1b[0m\n`);
+  } else if (t.endsWith('RUN_COMMAND')) {
+    const c = step.runCommand ?? {};
+    out.push('sys', `\x1b[36m⚙ $ ${String(c.commandLine ?? c.proposedCommandLine ?? '').slice(0, 300)}${c.exitCode ? ` (exit ${c.exitCode})` : ''}\x1b[0m\n`);
+  } else if (t.endsWith('ERROR_MESSAGE')) {
+    const e = step.errorMessage?.error ?? {};
+    out.push('err', `${e.userErrorMessage ?? 'Error'}${e.shortError ? `: ${e.shortError}` : ''}\n`);
+    return true;
+  } else if (t.endsWith('USER_INPUT') || t.endsWith('CHECKPOINT') || t.endsWith('EPHEMERAL_MESSAGE')) {
+    // nothing to show
+  } else if (step.metadata?.toolCall?.name) {
+    out.push('sys', `\x1b[36m⚙ ${step.metadata.toolCall.name}\x1b[0m\n`);
+  }
+  return false;
+}
+
+function agVersion(cfg) {
+  try {
+    if (cfg.antigravity?.app === 'ide')
+      return cfg.antigravity?.bin ? 'Antigravity IDE ' + execFileSync(cfg.antigravity.bin, ['--version'], { encoding: 'utf8' }).split('\n')[0].trim() : null;
+    if (!existsSync(AG_APP)) return null;
+    return 'Antigravity ' + execFileSync('/usr/bin/defaults', ['read', `${AG_APP}/Contents/Info`, 'CFBundleShortVersionString'], { encoding: 'utf8' }).trim();
+  } catch {
+    return 'installed';
+  }
+}
+
 async function runAntigravity(cfg, job, out) {
   const ag = cfg.antigravity ?? {};
-  if (!ag.bin) return { code: -1, error: 'Antigravity is not installed on this computer' };
+  if (ag.app === 'ide') return runAntigravityIde(cfg, job, out);
+  if (!job.is_principal && !ag.allowOthers)
+    return { code: -1, error: 'Antigravity on this computer is for the principal only: its agent runs commands without limits.' };
+  if (!existsSync(AG_APP)) return { code: -1, error: 'Antigravity is not installed on this computer' };
+  await agConnect(out);
+  const model = await agModel(cfg);
+
+  let cascadeId = job.resume_session;
+  let offset = 0;
+  if (cascadeId) {
+    try {
+      offset = ((await agCall('GetCascadeTrajectorySteps', { cascadeId, stepOffset: 0 })).steps ?? []).length;
+    } catch {
+      cascadeId = null;
+    }
+  }
+  if (!cascadeId) {
+    cascadeId = (await agCall('StartCascade', { source: 'CORTEX_TRAJECTORY_SOURCE_JETBOX', workspaceUris: [pathToFileURL(cfg.workdir).href] })).cascadeId;
+    offset = 0;
+  }
+  out.push('sys', `\x1b[2mAntigravity · ${model.label}${offset ? ' · continuing' : ''}\x1b[0m\n`);
+  await agCall('SendUserCascadeMessage', {
+    cascadeId,
+    items: [{ text: `${job.input}\n\n(${AG_NOTE})` }],
+    cascadeConfig: { plannerConfig: { conversational: {}, planModel: model.id, requestedModel: { model: model.id } } },
+  });
+
+  let stop = null;
+  out.onCancel = () => (stop = 'cancelled');
+  const deadline = Date.now() + (job.is_principal ? cfg.maxMinutes.principal : cfg.maxMinutes.others) * 60000;
+  const finished = new Set(['CORTEX_STEP_STATUS_DONE', 'CORTEX_STEP_STATUS_ERROR', 'CORTEX_STEP_STATUS_CANCELED', 'CORTEX_STEP_STATUS_INTERRUPTED']);
+  let next = offset; // first step not printed yet
+  let turnOver = false;
+  let waitingShown = false;
+  for (;;) {
+    if (!stop && Date.now() > deadline) stop = 'timeout';
+    if (stop) {
+      await agCall('CancelCascadeInvocation', { cascadeId }).catch(() => {});
+      return { code: 1, killed: stop, session: cascadeId };
+    }
+    await sleep(1200);
+    let steps;
+    try {
+      steps = (await agCall('GetCascadeTrajectorySteps', { cascadeId, stepOffset: next })).steps ?? [];
+    } catch (e) {
+      out.push('err', `${e.message}\n`);
+      await agConnect(out).catch(() => {});
+      continue;
+    }
+    for (const step of steps) {
+      const cmd = step.runCommand?.proposedCommandLine ?? step.runCommand?.commandLine ?? '';
+      if (cmd && BLOCKED_COMMAND.test(cmd)) {
+        out.push('err', `Blocked: "${cmd.slice(0, 120)}" (no commit, push or deploy from the web terminal). The agent was stopped.\n`);
+        stop = 'cancelled';
+        break;
+      }
+      if (!finished.has(step.status)) {
+        if (step.status === 'CORTEX_STEP_STATUS_WAITING' && !waitingShown) {
+          out.push('sys', '\x1b[33mThe agent is waiting for a confirmation inside the Antigravity app.\x1b[0m\n');
+          waitingShown = true;
+        }
+        break;
+      }
+      turnOver = showAgStep(step, out);
+      next++;
+    }
+    if (stop) continue;
+    if (turnOver) {
+      const all = await agCall('GetAllCascadeTrajectories', { excludeSubtrajectories: true }).catch(() => null);
+      const status = all?.trajectorySummaries?.[cascadeId]?.status;
+      if (!status || status === 'CASCADE_RUN_STATUS_IDLE') return { code: 0, session: cascadeId };
+    }
+  }
+}
+
+// Antigravity IDE (config antigravity.app = "ide"): the CLI opens the task in the IDE's agent panel;
+// it has no headless output, so the reply stays in the app.
+async function runAntigravityIde(cfg, job, out) {
+  const ag = cfg.antigravity ?? {};
+  if (!ag.bin) return { code: -1, error: 'Antigravity IDE is not installed on this computer' };
   const mode = job.is_principal ? ag.mode ?? 'agent' : ag.othersMode ?? 'ask';
-  out.push('sys', `\x1b[2mAntigravity · ${mode} · ${cfg.workdir}\x1b[0m\n`);
-  const r = await runProcess(ag.bin, ['chat', '--mode', mode, '--reuse-window', `${job.input}\n\n(${GATE_NOTE.replace('automatically', 'when the user types submit')})`], {
+  out.push('sys', `\x1b[2mAntigravity IDE · ${mode} · ${cfg.workdir}\x1b[0m\n`);
+  const r = await runProcess(ag.bin, ['chat', '--mode', mode, '--reuse-window', `${job.input}\n\n(${AG_NOTE})`], {
     cwd: cfg.workdir,
     env: process.env,
     minutes: 2,
     out,
   });
   if (r.code === 0) {
-    out.push('out', `Sent to the Antigravity agent on ${hostname()} (${mode} mode).\nThe agent works inside the Antigravity app; its reply appears there, not here.\nWhen it has finished editing, type: submit  (sends the changes to the admin for approval)\n`);
+    out.push('out', `Sent to the Antigravity IDE agent on ${hostname()} (${mode} mode).\nIts reply appears in the app, not here. When it has finished editing, type: submit\n`);
   }
   return r;
 }
@@ -581,7 +835,7 @@ async function handle(cfg, rpc, job, state) {
   let r;
   // files the job changes are sent for approval afterwards
   let before = null;
-  if (job.kind === 'claude' || job.kind === 'shell') {
+  if (job.kind === 'claude' || job.kind === 'shell' || (job.kind === 'antigravity' && cfg.antigravity?.app !== 'ide')) {
     try {
       before = snapshot(cfg);
     } catch (e) {
@@ -635,7 +889,7 @@ async function main() {
     platform: platform(),
     workdir: cfg.workdir,
     claude: cfg.claude.bin ? (() => { try { return execFileSync(cfg.claude.bin, ['--version'], { encoding: 'utf8' }).trim(); } catch { return 'installed'; } })() : null,
-    antigravity: cfg.antigravity?.bin ? (() => { try { return 'Antigravity ' + execFileSync(cfg.antigravity.bin, ['--version'], { encoding: 'utf8' }).split('\n')[0].trim(); } catch { return 'installed'; } })() : null,
+    antigravity: agVersion(cfg),
   };
 
   // Doorbell: new job → poll now; cancelled current job → kill now.
@@ -648,6 +902,7 @@ async function main() {
     .on('broadcast', { event: 'deploy' }, () => state.wake?.())
     .subscribe((s) => log(`realtime: ${s}`));
 
+  installRepoGuard(cfg);
   log(`Zarwa bridge ${VERSION} · ${info.host} · ${cfg.workdir}`);
   let delay = 5000;
   for (;;) {
@@ -691,10 +946,15 @@ async function check() {
   } catch {
     console.log('claude       ✗ not found');
   }
-  try {
-    console.log(`antigravity  ${cfg.antigravity?.bin ? execFileSync(cfg.antigravity.bin, ['--version'], { encoding: 'utf8' }).split('\n')[0] : '✗ not found'} · ${cfg.antigravity?.mode} / others ${cfg.antigravity?.othersMode}`);
-  } catch {
-    console.log('antigravity  ✗ not working');
+  if (cfg.antigravity?.app === 'ide') console.log(`antigravity  ${agVersion(cfg) ?? '✗ not found'} · ${cfg.antigravity?.mode} / others ${cfg.antigravity?.othersMode}`);
+  else {
+    try {
+      await agConnect();
+      const m = await agModel(cfg);
+      console.log(`antigravity  ${agVersion(cfg)} ✓ reachable · model ${m.label} · others ${cfg.antigravity?.allowOthers ? 'allowed' : 'not allowed'}`);
+    } catch (e) {
+      console.log(`antigravity  ${agVersion(cfg) ?? '✗ not installed'} · ${e.message}`);
+    }
   }
   const { rpc } = makeApi(cfg);
   try {

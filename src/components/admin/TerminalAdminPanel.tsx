@@ -235,8 +235,9 @@ const BridgeCard: React.FC = () => {
       )}
       <p className="text-xs text-muted-foreground">
         الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت تستخدم Claude وAntigravity معاً. لكل مستخدم آخر اختر
-        وكيله (Claude أو Antigravity) أو Shell من جدول المستخدمين أدناه، ويكتب هو <code dir="ltr">ai &lt;طلبه&gt;</code>. Claude يعمل لهم للقراءة فقط،
-        وAntigravity بوضع ask، وShell لهم مقفل على جهازك إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code> في{' '}
+        وكيله (Claude أو Antigravity) أو Shell من جدول المستخدمين أدناه، ويكتب هو <code dir="ltr">ai &lt;طلبه&gt;</code>. Claude يعدّل لهم الملفات
+        فقط (بلا أوامر)، وتعديلاتهم تنتظر موافقتك. أما Antigravity فوكيله ينفّذ أي أمر على جهازك بلا قيود، لذلك هو لك وحدك إلا إذا غيّرت{' '}
+        <code dir="ltr">antigravity.allowOthers</code>، وكذلك Shell إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code>، وكلاهما في{' '}
         <code dir="ltr">~/.zarwa-bridge/config.json</code>.
       </p>
     </section>
@@ -444,7 +445,7 @@ export const TerminalAdminPanel: React.FC = () => {
                           onChange={(e) => {
                             const v = e.target.value;
                             if (v === 'off') update(q, { allow_claude: false }, 'أُوقف وكيل الذكاء له');
-                            else update(q, { allow_claude: true, agent: v }, v === 'claude' ? 'وكيله الآن Claude (قراءة فقط)' : 'وكيله الآن Antigravity (وضع ask)');
+                            else update(q, { allow_claude: true, agent: v }, v === 'claude' ? 'وكيله الآن Claude (تعديل ملفات بموافقتك)' : 'وكيله الآن Antigravity — يعمل له فقط إذا فعّلت antigravity.allowOthers على جهازك');
                           }}
                           className="rounded-lg border border-border bg-background px-2 py-1 text-xs"
                         >
