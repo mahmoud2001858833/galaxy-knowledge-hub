@@ -18,6 +18,8 @@ import SovereignPageLayout from '@/components/layout/SovereignPageLayout';
 import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTeamRoles } from '@/components/team/teamApi';
+import { TeamDashboard, teamTabsFor } from '@/components/team/TeamPortal';
 
 interface UserProfileData {
   id: string;
@@ -86,7 +88,10 @@ export const UserProfile: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'badges' | 'puzzles' | 'labs' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'badges' | 'puzzles' | 'labs' | 'settings' | `team:${string}`>('overview');
+  // Team role dashboards appear here as soon as a lead adds this user's email to a role
+  const team = useTeamRoles();
+  const teamTabs = teamTabsFor(team.roles);
 
   // Modals & Editing
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -541,6 +546,20 @@ export const UserProfile: React.FC = () => {
 
             {/* 3. Navigation Tabs */}
             <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              {teamTabs.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(`team:${t.id}`)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                    activeTab === `team:${t.id}`
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>{t.label}</span>
+                </button>
+              ))}
               <button
                 onClick={() => setActiveTab('overview')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
@@ -589,6 +608,10 @@ export const UserProfile: React.FC = () => {
                 <span>المختبرات والمحاكاة 3D ({completedLabs.length})</span>
               </button>
             </div>
+
+            {activeTab.startsWith('team:') && team.userId && (
+              <TeamDashboard tab={activeTab.slice(5)} me={team.userId} roles={team.roles} />
+            )}
 
             {/* Tab 1: Activity Timeline */}
             {activeTab === 'overview' && (

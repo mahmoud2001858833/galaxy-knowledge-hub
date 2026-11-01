@@ -1,10 +1,11 @@
-import { Recycle, Lightbulb } from 'lucide-react';
+import { Recycle, Lightbulb, Briefcase } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, User, ChevronDown, LogOut, Settings, ArrowRight, Atom, Sparkles, HeartHandshake, Accessibility, BookOpen, Layers, Bot, Cpu, MessageSquare, ShieldCheck, FileText, Key, Terminal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTeamRoles } from '@/components/team/teamApi';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
@@ -29,6 +30,7 @@ const Navbar = () => {
   const { activeFeaturesCount } = useAccessibility();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { roles: teamRoles } = useTeamRoles();
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
@@ -276,6 +278,15 @@ const Navbar = () => {
                     <span>الملف الشخصي</span>
                   </DropdownMenuItem>
                 </Link>
+
+                {teamRoles.length > 0 && (
+                  <Link to="/team">
+                    <DropdownMenuItem className="flex items-center cursor-pointer text-primary hover:bg-primary/10 rounded-xl px-2 py-2 text-xs font-bold">
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      <span>فريق العمل ومهامي</span>
+                    </DropdownMenuItem>
+                  </Link>
+                )}
 
                 <Link to="/security-report">
                   <DropdownMenuItem className="flex items-center cursor-pointer text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 rounded-xl px-2 py-2 text-xs font-semibold">

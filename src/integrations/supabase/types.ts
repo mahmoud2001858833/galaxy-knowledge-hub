@@ -4420,6 +4420,268 @@ export type Database = {
         }
         Relationships: []
       }
+      team_members: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_name: string | null
+          email: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          email: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          email?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_messages: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          image_path: string | null
+          poll_id: string | null
+          recipient_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          poll_id?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          poll_id?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_messages_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "team_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          recipient_role: string
+          task_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          recipient_role: string
+          task_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          recipient_role?: string
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "team_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_poll_votes: {
+        Row: {
+          created_at: string
+          option_index: number
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          option_index: number
+          poll_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          option_index?: number
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "team_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_polls: {
+        Row: {
+          closed: boolean
+          created_at: string
+          created_by: string
+          id: string
+          options: string[]
+          question: string
+        }
+        Insert: {
+          closed?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          options: string[]
+          question: string
+        }
+        Update: {
+          closed?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          options?: string[]
+          question?: string
+        }
+        Relationships: []
+      }
+      team_task_submissions: {
+        Row: {
+          created_at: string
+          description: string | null
+          extra_answers: Json
+          id: string
+          images: string[]
+          problem_location: string | null
+          school_name: string | null
+          submitted_by: string
+          task_id: string
+          teacher_names: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          extra_answers?: Json
+          id?: string
+          images?: string[]
+          problem_location?: string | null
+          school_name?: string | null
+          submitted_by: string
+          task_id: string
+          teacher_names?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          extra_answers?: Json
+          id?: string
+          images?: string[]
+          problem_location?: string | null
+          school_name?: string | null
+          submitted_by?: string
+          task_id?: string
+          teacher_names?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_task_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "team_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_tasks: {
+        Row: {
+          assignee_role: string
+          assignee_user_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          details: string | null
+          due_at: string | null
+          extra_requirements: string[]
+          id: string
+          source_task_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_role: string
+          assignee_user_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          extra_requirements?: string[]
+          id?: string
+          source_task_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_role?: string
+          assignee_user_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: string | null
+          due_at?: string | null
+          extra_requirements?: string[]
+          id?: string
+          source_task_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_tasks_source_task_id_fkey"
+            columns: ["source_task_id"]
+            isOneToOne: false
+            referencedRelation: "team_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_members: {
         Row: {
           created_at: string | null
@@ -4739,6 +5001,28 @@ export type Database = {
       is_agent_file: { Args: { p_path: string }; Returns: boolean }
       is_agent_file_id: { Args: { p_id: string }; Returns: boolean }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      team_complete_task: {
+        Args: {
+          p_description?: string
+          p_extra_answers?: Json
+          p_images?: string[]
+          p_problem_location?: string
+          p_school_name?: string
+          p_task_id: string
+          p_teacher_names?: string
+        }
+        Returns: string
+      }
+      team_has_role: { Args: { p_role: string }; Returns: boolean }
+      team_is_lead: { Args: never; Returns: boolean }
+      team_is_member: { Args: never; Returns: boolean }
+      team_is_my_task: {
+        Args: { p_assignee: string; p_role: string }
+        Returns: boolean
+      }
+      team_my_email: { Args: never; Returns: string }
+      team_my_roles: { Args: never; Returns: string[] }
+      team_start_task: { Args: { p_task_id: string }; Returns: undefined }
       user_belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean

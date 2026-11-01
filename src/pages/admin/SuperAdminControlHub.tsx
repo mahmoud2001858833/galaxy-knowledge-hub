@@ -71,6 +71,7 @@ import { QuantumQuestionGenerator } from '@/components/admin/QuantumQuestionGene
 import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow';
 import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
 import SchoolContentModeration from '@/components/admin/SchoolContentModeration';
+import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
 import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
 import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
@@ -88,6 +89,7 @@ export type AdminTab =
   | 'overview'
   | 'exam-library'
   | 'school-content'
+  | 'employees'
   | 'lcm'
   | 'faculty'
   | 'broadcasts'
@@ -615,6 +617,7 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
+        { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
         { id: 'audit', label: 'سجل النشاط والأمان ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}`, description: 'رصد كل حركة وتعديل بالثانية مع التفاصيل' },
@@ -1717,6 +1720,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'questions' && (
               <SafeBoundary name="QuantumQuestionGenerator">
                 <QuantumQuestionGenerator />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'employees' && (
+              <SafeBoundary name="EmployeesControlCenter">
+                <EmployeesControlCenter />
               </SafeBoundary>
             )}
 

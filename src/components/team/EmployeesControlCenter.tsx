@@ -1,0 +1,346 @@
+import React, { useMemo, useState } from 'react';
+import { Bell, ClipboardList, Crown, Loader2, MessagesSquare, Plus, UserCog, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TaskBoard } from './TaskBoard';
+import { TeamChat } from './TeamChat';
+import {
+  PRINCIPAL,
+  ROLE_LABELS,
+  WORKER_ROLES,
+  errorMessage,
+  formatDate,
+  useTeamMembers,
+  useTeamNotifications,
+  useTeamRoles,
+  useTeamTasks,
+  type TeamMember,
+  type TeamRole,
+  type WorkerRole,
+} from './teamApi';
+
+const ASSIGNABLE: TeamRole[] = ['supervisor', ...WORKER_ROLES];
+
+/** Emails assigned to one role, with add/remove. */
+const RoleEmails: React.FC<{ role: TeamRole; members: TeamMember[]; onChanged: () => void }> = ({ role, members, onChanged }) => {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const rows = members.filter((m) => m.role === role);
+
+  const add = async () => {
+    const value = email.trim().toLowerCase();
+    if (!value.includes('@')) {
+      toast.error('اكتب إيميلاً صحيحاً');
+      return;
+    }
+    setBusy(true);
+    // user_id is resolved from the email by a database trigger
+    const { error } = await supabase.from('team_members').insert({ email: value, role } as never);
+    setBusy(false);
+    if (error) toast.error(error.code === '23505' ? 'هذا الإيميل مضاف لهذا الدور مسبقاً' : errorMessage(error));
+    else {
+      setEmail('');
+      toast.success('أضيف العضو');
+      onChanged();
+    }
+  };
+
+  const remove = async (m: TeamMember) => {
+    if (!window.confirm(`إزالة ${m.email} من دور ${ROLE_LABELS[role]}؟`)) return;
+    const { error } = await supabase.from('team_members').delete().eq('id', m.id);
+    if (error) toast.error(errorMessage(error));
+    else onChanged();
+  };
+
+  return (
+    <div className="space-y-3 rounded-3xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-bold">{ROLE_LABELS[role]}</h4>
+        <span className="text-xs text-muted-foreground">{rows.length}</span>
+      </div>
+      <ul className="space-y-1.5">
+        {rows.map((m) => (
+          <li key={m.id} className="flex items-center justify-between gap-2 rounded-xl bg-muted px-3 py-1.5 text-sm">
+            <span className="min-w-0">
+              <span className="block truncate font-semibold">{m.display_name}</span>
+              <span className="block truncate text-[11px] text-muted-foreground" dir="ltr">
+                {m.email}
+              </span>
+            </span>
+            <button type="button" onClick={() => remove(m)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="إزالة">
+              <X className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+        {rows.length === 0 && <li className="text-xs text-muted-foreground">لا يوجد أحد بعد</li>}
+      </ul>
+      <div className="flex gap-2">
+        <Input
+          dir="ltr"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && add()}
+          placeholder="email@example.com"
+          className="text-left"
+        />
+        <Button size="icon" onClick={add} disabled={busy} aria-label="إضافة">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = ({ members, onCreated }) => {
+  const [title, setTitle] = useState('');
+  const [details, setDetails] = useState('');
+  const [role, setRole] = useState<WorkerRole>('speaker');
+  const [assignee, setAssignee] = useState('any');
+  const [due, setDue] = useState('');
+  const [reqs, setReqs] = useState<string[]>([]);
+  const [req, setReq] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const candidates = members.filter((m) => m.role === role);
+
+  const create = async () => {
+    if (!title.trim()) {
+      toast.error('اكتب عنوان المهمة');
+      return;
+    }
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const { error } = await supabase.from('team_tasks').insert({
+      title: title.trim(),
+      details: details.trim() || null,
+      assignee_role: role,
+      assignee_user_id: assignee === 'any' ? null : assignee,
+      due_at: due ? new Date(due).toISOString() : null,
+      extra_requirements: reqs,
+      created_by: session?.user.id,
+    });
+    setSaving(false);
+    if (error) toast.error(errorMessage(error));
+    else {
+      toast.success('أُسندت المهمة');
+      setTitle('');
+      setDetails('');
+      setDue('');
+      setReqs([]);
+      onCreated();
+    }
+  };
+
+  return (
+    <div className="space-y-4 rounded-3xl border border-border bg-card p-5">
+      <h3 className="font-bold">إسناد مهمة جديدة</h3>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>عنوان المهمة</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>التفاصيل</Label>
+          <Textarea rows={3} value={details} onChange={(e) => setDetails(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>الدور</Label>
+          <Select
+            value={role}
+            onValueChange={(v) => {
+              setRole(v as WorkerRole);
+              setAssignee('any');
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {WORKER_ROLES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>الشخص</Label>
+          <Select value={assignee} onValueChange={setAssignee}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">أي {ROLE_LABELS[role]}</SelectItem>
+              {candidates.map((m) => (
+                <SelectItem key={m.user_id} value={m.user_id}>
+                  {m.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>موعد التسليم (اختياري)</Label>
+          <Input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>متطلبات إضافية لإغلاق المهمة</Label>
+          <div className="flex gap-2">
+            <Input value={req} onChange={(e) => setReq(e.target.value)} placeholder="مثال: عدد الطلاب الحاضرين" />
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={!req.trim()}
+              onClick={() => {
+                setReqs([...reqs, req.trim()]);
+                setReq('');
+              }}
+              aria-label="إضافة متطلب"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {reqs.map((r) => (
+              <span key={r} className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs">
+                {r}
+                <button type="button" onClick={() => setReqs(reqs.filter((x) => x !== r))} aria-label="حذف">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <Button onClick={create} disabled={saving} className="gap-2">
+        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+        إسناد المهمة
+      </Button>
+    </div>
+  );
+};
+
+/** لوحة تحكم الموظفين — for the principal and supervisors only (enforced by RLS). */
+export const EmployeesControlCenter: React.FC = () => {
+  const { loading: rolesLoading, userId, roles } = useTeamRoles();
+  const isLead = roles.includes('principal') || roles.includes('supervisor');
+  const { members, reload: reloadMembers } = useTeamMembers();
+  const { tasks, reload: reloadTasks } = useTeamTasks();
+  const notifications = useTeamNotifications();
+  const [roleFilter, setRoleFilter] = useState<'all' | WorkerRole>('all');
+
+  const shown = useMemo(() => (roleFilter === 'all' ? tasks : tasks.filter((t) => t.assignee_role === roleFilter)), [tasks, roleFilter]);
+
+  if (rolesLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!userId || !isLead) {
+    return (
+      <div className="rounded-3xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        لوحة تحكم الموظفين متاحة للرئيس والمشرفين فقط.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6" dir="rtl">
+      <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-5">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-from to-brand-to text-white">
+          <Crown className="h-5 w-5" aria-hidden />
+        </div>
+        <div>
+          <div className="font-bold">الرئيس: {PRINCIPAL.name}</div>
+          <div className="text-xs text-muted-foreground" dir="ltr">
+            {PRINCIPAL.email}
+          </div>
+        </div>
+        <span className="mr-auto rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">
+          {roles.includes('principal') ? 'أنت الرئيس' : 'أنت مشرف'}
+        </span>
+      </div>
+
+      <Tabs defaultValue="roles" dir="rtl">
+        <TabsList className="mb-4 flex h-auto flex-wrap justify-start gap-1 rounded-2xl bg-muted p-1">
+          <TabsTrigger value="roles" className="gap-1.5 rounded-xl">
+            <UserCog className="h-4 w-4" /> الأدوار والإيميلات
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="gap-1.5 rounded-xl">
+            <ClipboardList className="h-4 w-4" /> المهام ({tasks.length})
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-1.5 rounded-xl">
+            <Bell className="h-4 w-4" /> الإنجازات والإشعارات
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="gap-1.5 rounded-xl">
+            <MessagesSquare className="h-4 w-4" /> المحادثات
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="roles" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            أضف إيميلاً أو أكثر لكل دور. يجب أن يكون صاحب الإيميل قد أنشأ حساباً في المنصة. تظهر لوحة الدور في صفحته الشخصية فور إضافته.
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {ASSIGNABLE.map((r) => (
+              <RoleEmails key={r} role={r} members={members} onChanged={reloadMembers} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-6">
+          <NewTaskForm members={members} onCreated={reloadTasks} />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold">عرض:</span>
+            {(['all', ...WORKER_ROLES] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRoleFilter(r)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                  roleFilter === r ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                }`}
+              >
+                {r === 'all' ? 'كل الأدوار' : ROLE_LABELS[r]}
+              </button>
+            ))}
+          </div>
+          <TaskBoard tasks={shown} members={members} canWork={() => false} onChanged={reloadTasks} isLead />
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">لا توجد إشعارات بعد.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {notifications.map((n) => (
+                <li key={n.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 text-sm">
+                  <span>{n.message}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {n.recipient_role === 'lead' ? 'للإدارة' : ROLE_LABELS[n.recipient_role as TeamRole]} · {formatDate(n.created_at)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <TeamChat me={userId} members={members} isLead />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default EmployeesControlCenter;
