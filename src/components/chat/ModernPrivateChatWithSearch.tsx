@@ -29,7 +29,7 @@ const ModernPrivateChatWithSearch = ({ user }: { user: any }) => {
   const fetchAllUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('users_profiles')
+        .from('profiles')
         .select('id, username, avatar_url')
         .neq('id', user.id);
 

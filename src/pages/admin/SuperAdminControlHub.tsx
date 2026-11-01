@@ -70,6 +70,7 @@ import { liveSupportService, type SupportSession } from '@/services/liveSupportS
 import { QuantumQuestionGenerator } from '@/components/admin/QuantumQuestionGenerator';
 import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow';
 import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
+import SchoolContentModeration from '@/components/admin/SchoolContentModeration';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
 import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
 import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
@@ -86,6 +87,7 @@ import { supabase } from '@/integrations/supabase/client';
 export type AdminTab = 
   | 'overview'
   | 'exam-library'
+  | 'school-content'
   | 'lcm'
   | 'faculty'
   | 'broadcasts'
@@ -621,6 +623,7 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'المحتوى والأكاديميا وإدارة المعرفة',
       tabs: [
+        { id: 'school-content', label: 'محتوى المدرسة والمستخدمين', icon: BookOpen, description: 'المعلمون وأولياء الأمور والواجبات والمجلات والتوجيهي والمكتبة المرئية والمشاريع' },
         { id: 'lcm', label: 'إدارة المحتوى والمناهج LCM', icon: BookOpen, badge: '32 مقرر', description: 'إدارة الوحدات، الدروس، المناهج ومسارات BTEC' },
         { id: 'faculty', label: 'الكوادر والصلاحيات الأكاديمية', icon: GraduationCap, badge: `${realFacultyCount}`, description: 'إدارة المعلمين، المشرفين، ورتب التدريس' },
         { id: 'simulations', label: 'إدارة المحاكيات العلمية 3D', icon: Atom, badge: '49 تجربة', description: 'الفهرس المتكامل لكافة المختبرات ثلاثية الأبعاد' },
@@ -1714,6 +1717,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'questions' && (
               <SafeBoundary name="QuantumQuestionGenerator">
                 <QuantumQuestionGenerator />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'school-content' && (
+              <SafeBoundary name="SchoolContentModeration">
+                <SchoolContentModeration />
               </SafeBoundary>
             )}
 

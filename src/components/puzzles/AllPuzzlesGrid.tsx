@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Brain, 
   Filter, 
@@ -69,7 +69,12 @@ export const AllPuzzlesGrid: React.FC<AllPuzzlesGridProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [searchParams] = useSearchParams();
+  // Deep links such as /subject-puzzles?subject=الرياضيات open on that subject's tab
+  const [selectedSubject, setSelectedSubject] = useState(() => {
+    const fromUrl = searchParams.get('subject');
+    return fromUrl && SUBJECT_TABS.some((t) => t.id === fromUrl) ? fromUrl : 'all';
+  });
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'unsolved' | 'solved' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');

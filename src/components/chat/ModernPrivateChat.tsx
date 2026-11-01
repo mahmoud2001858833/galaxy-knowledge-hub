@@ -53,9 +53,9 @@ const ModernPrivateChat = ({ user }: ModernPrivateChatProps) => {
       if (contactsData && contactsData.length > 0) {
         const contactIds = contactsData.map(contact => contact.contact_id);
         
-        // جلب معلومات المستخدمين من جدول users_profiles
+        // جلب معلومات المستخدمين من جدول profiles
         const { data: profilesData, error: profilesError } = await supabase
-          .from('users_profiles')
+          .from('profiles')
           .select('id, username, avatar_url')
           .in('id', contactIds);
 
