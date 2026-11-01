@@ -793,132 +793,6 @@ export type Database = {
           },
         ]
       }
-      arabic_poets: {
-        Row: {
-          achievements: string | null
-          biography: string
-          birth_year: string | null
-          created_at: string
-          death_year: string | null
-          era: string
-          famous_works: string[] | null
-          full_name: string | null
-          id: string
-          image_url: string | null
-          name: string
-          region: string | null
-        }
-        Insert: {
-          achievements?: string | null
-          biography: string
-          birth_year?: string | null
-          created_at?: string
-          death_year?: string | null
-          era: string
-          famous_works?: string[] | null
-          full_name?: string | null
-          id?: string
-          image_url?: string | null
-          name: string
-          region?: string | null
-        }
-        Update: {
-          achievements?: string | null
-          biography?: string
-          birth_year?: string | null
-          created_at?: string
-          death_year?: string | null
-          era?: string
-          famous_works?: string[] | null
-          full_name?: string | null
-          id?: string
-          image_url?: string | null
-          name?: string
-          region?: string | null
-        }
-        Relationships: []
-      }
-      arabic_scholars: {
-        Row: {
-          category: string
-          created_at: string
-          death_year: string
-          description: string
-          id: string
-          image_url: string | null
-          major_works: Json | null
-          name: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          death_year: string
-          description: string
-          id?: string
-          image_url?: string | null
-          major_works?: Json | null
-          name: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          death_year?: string
-          description?: string
-          id?: string
-          image_url?: string | null
-          major_works?: Json | null
-          name?: string
-        }
-        Relationships: []
-      }
-      arabic_words: {
-        Row: {
-          category: string
-          created_at: string
-          derivatives: Json | null
-          dialect_region: string | null
-          id: string
-          is_verified: boolean | null
-          meaning: string
-          poetry_examples: Json | null
-          quran_examples: Json | null
-          user_id: string | null
-          votes_count: number | null
-          word: string
-          word_pattern: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          derivatives?: Json | null
-          dialect_region?: string | null
-          id?: string
-          is_verified?: boolean | null
-          meaning: string
-          poetry_examples?: Json | null
-          quran_examples?: Json | null
-          user_id?: string | null
-          votes_count?: number | null
-          word: string
-          word_pattern?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          derivatives?: Json | null
-          dialect_region?: string | null
-          id?: string
-          is_verified?: boolean | null
-          meaning?: string
-          poetry_examples?: Json | null
-          quran_examples?: Json | null
-          user_id?: string | null
-          votes_count?: number | null
-          word?: string
-          word_pattern?: string | null
-        }
-        Relationships: []
-      }
       art_project_comments: {
         Row: {
           comment: string
@@ -2100,45 +1974,6 @@ export type Database = {
           },
         ]
       }
-      chemistry_puzzles: {
-        Row: {
-          correct_answer: string
-          created_at: string
-          created_by: string | null
-          difficulty: string
-          id: string
-          image: string | null
-          options: string[]
-          points: number
-          question: string
-          title: string
-        }
-        Insert: {
-          correct_answer: string
-          created_at?: string
-          created_by?: string | null
-          difficulty: string
-          id?: string
-          image?: string | null
-          options: string[]
-          points: number
-          question: string
-          title: string
-        }
-        Update: {
-          correct_answer?: string
-          created_at?: string
-          created_by?: string | null
-          difficulty?: string
-          id?: string
-          image?: string | null
-          options?: string[]
-          points?: number
-          question?: string
-          title?: string
-        }
-        Relationships: []
-      }
       class_assignments: {
         Row: {
           assignment_name: string
@@ -2929,125 +2764,6 @@ export type Database = {
         }
         Relationships: []
       }
-      developer_api_keys: {
-        Row: {
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          key_hash: string
-          last_used_at: string | null
-          name: string
-          prefix: string
-          rate_limit_per_minute: number | null
-          revoked: boolean | null
-          scopes: Json
-          total_usage: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          expires_at?: string | null
-          id: string
-          key_hash: string
-          last_used_at?: string | null
-          name: string
-          prefix: string
-          rate_limit_per_minute?: number | null
-          revoked?: boolean | null
-          scopes?: Json
-          total_usage?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          key_hash?: string
-          last_used_at?: string | null
-          name?: string
-          prefix?: string
-          rate_limit_per_minute?: number | null
-          revoked?: boolean | null
-          scopes?: Json
-          total_usage?: number | null
-        }
-        Relationships: []
-      }
-      developer_api_logs: {
-        Row: {
-          client_ip: string | null
-          endpoint: string
-          error: string | null
-          id: string
-          key_prefix: string | null
-          latency_ms: number
-          method: string
-          request_body: Json | null
-          response_body: Json | null
-          status_code: number
-          timestamp: string | null
-        }
-        Insert: {
-          client_ip?: string | null
-          endpoint: string
-          error?: string | null
-          id: string
-          key_prefix?: string | null
-          latency_ms: number
-          method: string
-          request_body?: Json | null
-          response_body?: Json | null
-          status_code: number
-          timestamp?: string | null
-        }
-        Update: {
-          client_ip?: string | null
-          endpoint?: string
-          error?: string | null
-          id?: string
-          key_prefix?: string | null
-          latency_ms?: number
-          method?: string
-          request_body?: Json | null
-          response_body?: Json | null
-          status_code?: number
-          timestamp?: string | null
-        }
-        Relationships: []
-      }
-      drawing_challenge_messages: {
-        Row: {
-          challenge_id: string
-          created_at: string
-          id: string
-          message_text: string
-          user_id: string
-          username: string
-        }
-        Insert: {
-          challenge_id: string
-          created_at?: string
-          id?: string
-          message_text: string
-          user_id: string
-          username: string
-        }
-        Update: {
-          challenge_id?: string
-          created_at?: string
-          id?: string
-          message_text?: string
-          user_id?: string
-          username?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "drawing_challenge_messages_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "drawing_challenges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       drawing_challenges: {
         Row: {
           ai_evaluation: string | null
@@ -3338,105 +3054,6 @@ export type Database = {
         }
         Relationships: []
       }
-      generated_codes: {
-        Row: {
-          code: string
-          created_at: string
-          documentation: string
-          id: string
-          is_shared: boolean
-          language: string
-          prompt: string
-          title: string
-          user_id: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          documentation: string
-          id?: string
-          is_shared?: boolean
-          language: string
-          prompt: string
-          title: string
-          user_id?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          documentation?: string
-          id?: string
-          is_shared?: boolean
-          language?: string
-          prompt?: string
-          title?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      grammar_foundation_files: {
-        Row: {
-          created_at: string
-          description: string | null
-          file_name: string
-          file_url: string
-          folder_image_url: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          file_name: string
-          file_url: string
-          folder_image_url?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          file_name?: string
-          file_url?: string
-          folder_image_url?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      grammar_rules: {
-        Row: {
-          category: string
-          created_at: string
-          difficulty_level: string | null
-          examples: Json | null
-          id: string
-          rule_description: string
-          rule_name: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          difficulty_level?: string | null
-          examples?: Json | null
-          id?: string
-          rule_description: string
-          rule_name: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          difficulty_level?: string | null
-          examples?: Json | null
-          id?: string
-          rule_description?: string
-          rule_name?: string
-        }
-        Relationships: []
-      }
       group_chats: {
         Row: {
           created_at: string
@@ -3454,38 +3071,6 @@ export type Database = {
           name?: string
         }
         Relationships: []
-      }
-      group_messages: {
-        Row: {
-          chat_id: string | null
-          content: string
-          created_at: string
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          chat_id?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          chat_id?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_messages_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "group_chats"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       institutional_partnerships: {
         Row: {
@@ -3958,45 +3543,6 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_chat_messages: {
-        Row: {
-          created_at: string | null
-          id: string
-          image_url: string | null
-          message_text: string
-          metadata: Json | null
-          room_id: string
-          sender_avatar: string | null
-          sender_id: string | null
-          sender_name: string
-          sender_role: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          message_text: string
-          metadata?: Json | null
-          room_id?: string
-          sender_avatar?: string | null
-          sender_id?: string | null
-          sender_name: string
-          sender_role?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          image_url?: string | null
-          message_text?: string
-          metadata?: Json | null
-          room_id?: string
-          sender_avatar?: string | null
-          sender_id?: string | null
-          sender_name?: string
-          sender_role?: string | null
-        }
-        Relationships: []
-      }
       platform_complaints: {
         Row: {
           category: string | null
@@ -4033,47 +3579,6 @@ export type Database = {
         }
         Relationships: []
       }
-      poems: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          meter: string | null
-          occasion: string | null
-          poet_id: string | null
-          theme: string | null
-          title: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          meter?: string | null
-          occasion?: string | null
-          poet_id?: string | null
-          theme?: string | null
-          title: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          meter?: string | null
-          occasion?: string | null
-          poet_id?: string | null
-          theme?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "poems_poet_id_fkey"
-            columns: ["poet_id"]
-            isOneToOne: false
-            referencedRelation: "arabic_poets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       posts: {
         Row: {
           author_id: string | null
@@ -4100,79 +3605,6 @@ export type Database = {
           title?: string
         }
         Relationships: []
-      }
-      private_chat_participants: {
-        Row: {
-          chat_id: string | null
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          chat_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          chat_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "private_chat_participants_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "private_chats"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      private_chats: {
-        Row: {
-          created_at: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-        }
-        Relationships: []
-      }
-      private_messages: {
-        Row: {
-          chat_id: string | null
-          content: string
-          created_at: string
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          chat_id?: string | null
-          content: string
-          created_at?: string
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          chat_id?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "private_messages_chat_id_fkey"
-            columns: ["chat_id"]
-            isOneToOne: false
-            referencedRelation: "private_chats"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
@@ -4246,84 +3678,6 @@ export type Database = {
           points?: number
           question?: string
           title?: string
-        }
-        Relationships: []
-      }
-      recorded_lessons: {
-        Row: {
-          created_at: string
-          description: string | null
-          grade_level: string | null
-          id: string
-          subject: string
-          teacher_id: string
-          title: string
-          updated_at: string
-          video_duration: number | null
-          video_url: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          grade_level?: string | null
-          id?: string
-          subject: string
-          teacher_id: string
-          title: string
-          updated_at?: string
-          video_duration?: number | null
-          video_url: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          grade_level?: string | null
-          id?: string
-          subject?: string
-          teacher_id?: string
-          title?: string
-          updated_at?: string
-          video_duration?: number | null
-          video_url?: string
-        }
-        Relationships: []
-      }
-      scheduled_puzzle_jobs: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          difficulty: string
-          id: string
-          is_active: boolean | null
-          last_run_at: string | null
-          puzzles_per_day: number
-          schedule_days: string[]
-          subject: string
-          topic_description: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          difficulty: string
-          id?: string
-          is_active?: boolean | null
-          last_run_at?: string | null
-          puzzles_per_day?: number
-          schedule_days: string[]
-          subject: string
-          topic_description: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          difficulty?: string
-          id?: string
-          is_active?: boolean | null
-          last_run_at?: string | null
-          puzzles_per_day?: number
-          schedule_days?: string[]
-          subject?: string
-          topic_description?: string
         }
         Relationships: []
       }
@@ -4646,98 +4000,6 @@ export type Database = {
           id?: number
           updated_at?: string
           version?: number
-        }
-        Relationships: []
-      }
-      sim_ai_events: {
-        Row: {
-          at_seconds: number
-          created_at: string
-          id: string
-          kind: string
-          label: string | null
-          payload: Json
-          session_id: string
-          user_id: string | null
-        }
-        Insert: {
-          at_seconds?: number
-          created_at?: string
-          id?: string
-          kind: string
-          label?: string | null
-          payload?: Json
-          session_id: string
-          user_id?: string | null
-        }
-        Update: {
-          at_seconds?: number
-          created_at?: string
-          id?: string
-          kind?: string
-          label?: string | null
-          payload?: Json
-          session_id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sim_ai_events_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "sim_ai_sessions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sim_ai_sessions: {
-        Row: {
-          ai_summary: string | null
-          created_at: string
-          duration_seconds: number
-          ended_at: string | null
-          events_count: number
-          hints_count: number
-          id: string
-          metrics: Json
-          mistakes_count: number
-          score: number | null
-          sim_id: string
-          sim_title: string | null
-          started_at: string
-          user_id: string | null
-        }
-        Insert: {
-          ai_summary?: string | null
-          created_at?: string
-          duration_seconds?: number
-          ended_at?: string | null
-          events_count?: number
-          hints_count?: number
-          id?: string
-          metrics?: Json
-          mistakes_count?: number
-          score?: number | null
-          sim_id: string
-          sim_title?: string | null
-          started_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          ai_summary?: string | null
-          created_at?: string
-          duration_seconds?: number
-          ended_at?: string | null
-          events_count?: number
-          hints_count?: number
-          id?: string
-          metrics?: Json
-          mistakes_count?: number
-          score?: number | null
-          sim_id?: string
-          sim_title?: string | null
-          started_at?: string
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -5448,44 +4710,6 @@ export type Database = {
         }
         Relationships: []
       }
-      word_contributions: {
-        Row: {
-          contribution_type: string | null
-          created_at: string
-          id: string
-          suggestion_text: string | null
-          user_id: string
-          vote_type: string | null
-          word_id: string
-        }
-        Insert: {
-          contribution_type?: string | null
-          created_at?: string
-          id?: string
-          suggestion_text?: string | null
-          user_id: string
-          vote_type?: string | null
-          word_id: string
-        }
-        Update: {
-          contribution_type?: string | null
-          created_at?: string
-          id?: string
-          suggestion_text?: string | null
-          user_id?: string
-          vote_type?: string | null
-          word_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "word_contributions_word_id_fkey"
-            columns: ["word_id"]
-            isOneToOne: false
-            referencedRelation: "arabic_words"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -5540,8 +4764,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["admin_teacher_access_level"]
       }
       get_exam_agent: { Args: { p_token: string }; Returns: Json }
-      get_primary_supervisor_id: { Args: Record<PropertyKey, never>; Returns: string }
-      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      get_primary_supervisor_id: { Args: never; Returns: string }
       get_public_adhd_diagnostic_report: {
         Args: { p_token: string }
         Returns: {
@@ -5581,6 +4804,7 @@ export type Database = {
       }
       is_agent_file: { Args: { p_path: string }; Returns: boolean }
       is_agent_file_id: { Args: { p_id: string }; Returns: boolean }
+      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
       user_belongs_to_tenant: {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
