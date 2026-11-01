@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Ban, Check, Copy, KeyRound, Laptop, Loader2, Plus, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, Users } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
+import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
 import { callTerminal } from '@/components/terminal/WebTerminal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -314,6 +315,8 @@ export const TerminalAdminPanel: React.FC = () => {
 
   return (
     <div className="space-y-6" dir="rtl">
+      <DeployApprovalsCard />
+
       <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-5">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-from to-brand-to text-white">
           <TerminalSquare className="h-5 w-5" />

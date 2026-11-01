@@ -2,13 +2,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Browser terminal (xterm.js). Commands go to the web-terminal-exec Edge Function, which checks the
  * session, quota and ban in the database before running anything, and streams output back as NDJSON.
  * The session row is watched through realtime, so a kill switch from the admin panel locks this
- * screen immediately.
+ * screen immediately. Approval requests for changes made from here are watched too: the user sees
+ * when the principal approves (and the bridge pushes) or rejects them.
  */
 
 export interface QuotaInfo {
@@ -96,6 +98,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     job: null as { id: string; stop: () => void } | null,
   });
   const feedRef = useRef<(data: string) => void>(() => {});
+  // prints a line above the input line without disturbing what the user is typing
+  const noticeRef = useRef<(text: string) => void>(() => {});
   const [ready, setReady] = useState(false);
 
   const promptText = useCallback(() => {
@@ -132,7 +136,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
    * through realtime. Resolves when the job is finished, stopped or the session is locked.
    */
   const followJob = useCallback(
-    (jobId: string, kind: 'claude' | 'antigravity' | 'shell') =>
+    (jobId: string, kind: 'claude' | 'antigravity' | 'shell' | 'submit') =>
       new Promise<void>((resolveJob) => {
         const term = termRef.current!;
         const s = state.current;
@@ -243,7 +247,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         term.write('\r\n\x1b[2mNew Claude conversation.\x1b[0m');
         return prompt();
       }
-      const wire = s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'antigravity' ? `antigravity ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
+      const wire = /^(submit|request-push)(\s|$)/i.test(cmd) ? cmd : s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'antigravity' ? `antigravity ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
       const resume = s.mode === 'claude' ? s.claudeSession : null;
 
       s.busy = true;
@@ -338,6 +342,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       term.write(`${promptTextRef.current()}${s.line}`);
       const back = s.line.length - s.cursor;
       if (back > 0) term.write(`\x1b[${back}D`);
+    };
+
+    noticeRef.current = (text: string) => {
+      const s = state.current;
+      if (s.ended) return;
+      if (s.busy) return void term.write(`\r\n${text}`);
+      term.write(`\x1b[2K\r${text}\r\n`);
+      redraw();
     };
 
     const feed = (data: string) => {
@@ -458,6 +470,41 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       supabase.removeChannel(channel);
     };
   }, [lockWith, session.session_id]);
+
+  // Approval gate: changes are pushed only when the principal approves them in /admin?tab=terminal.
+  // RLS limits the rows to the user's own requests (the principal sees all).
+  useEffect(() => {
+    const seen = new Map<string, string>();
+    const channel = supabase
+      .channel(`terminal-deploys-${session.session_id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'terminal_deploy_requests' }, (payload) => {
+        if (payload.eventType === 'DELETE') return;
+        const r = payload.new as { id: string; status: string; commit_sha: string | null; changed_files: unknown[]; user_email: string | null };
+        if (seen.get(r.id) === r.status) return;
+        seen.set(r.id, r.status);
+        const n = Array.isArray(r.changed_files) ? r.changed_files.length : 0;
+        const who = session.is_principal && r.user_email && r.user_email !== session.email ? ` (${r.user_email})` : '';
+        const say = noticeRef.current;
+        if (r.status === 'pending' && payload.eventType === 'INSERT') {
+          toast.info('تم تجهيز التعديلات وإرسال طلب موافقة للأدمن. سيتم الرفع فور موافقة الأدمن.');
+        } else if (r.status === 'pushing') {
+          say(`\x1b[2m● Approved by the admin${who}; pushing ${n} file(s)…\x1b[0m`);
+        } else if (r.status === 'deployed') {
+          say(`\x1b[1;32m✓ Approved and pushed${who}: ${r.commit_sha?.slice(0, 7) ?? ''}. The site deploys automatically.\x1b[0m`);
+          toast.success('وافق الأدمن على التعديلات ورُفعت بنجاح. سيُنشر الموقع تلقائياً.');
+        } else if (r.status === 'rejected') {
+          say(`\x1b[1;31m✗ The admin rejected the changes${who}; they will be reverted on the computer.\x1b[0m`);
+          toast.error('رفض الأدمن التعديلات وأُلغيت.');
+        } else if (r.status === 'failed') {
+          say(`\x1b[1;31m✗ The push failed${who}; the admin can see the details.\x1b[0m`);
+          toast.error('تعذّر رفع التعديلات. التفاصيل في لوحة الأدمن.');
+        }
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session.session_id, session.is_principal, session.email]);
 
   // Close the session when the page goes away. The unmount close is deferred so React StrictMode's
   // simulated unmount/remount in development does not end a fresh session.

@@ -120,6 +120,8 @@ const COMMANDS: Record<string, Command> = {
       out(`  ${c.cyan(pad('ai <prompt>', 28))} Your assigned agent (Claude or Antigravity)`);
       out(`  ${c.cyan(pad('sh <command>', 28))} Run a shell command there (also: $ <command>)`);
       out(`  ${c.cyan(pad('shell', 28))} Shell mode (exit to leave)`);
+      out(`  ${c.cyan(pad('submit [message]', 28))} Send the changes for the admin's approval (also: request-push)`);
+      out(c.dim('  No commit, push or deploy from here: changed files go to the admin, who approves and pushes them.'));
       out(`  ${c.cyan(pad('clear', 28))} Clear the screen (local, not counted)`);
       out(`  ${c.cyan(pad('exit', 28))} End this session`);
       if (isPrincipal) {
@@ -568,12 +570,20 @@ serve(async (req) => {
       }
 
       // ---- commands for the principal's computer
-      const bridgeMatch = line.match(/^(claude|antigravity|agy|ai|sh)\s+([\s\S]+)$/i) ?? (line.startsWith('$') ? ['', 'sh', line.slice(1).trim()] : null);
+      // `submit [message]` / `request-push`: send the project's changes for the principal's approval
+      const submitMatch = line.match(/^(submit|request-push)(?:\s+([\s\S]+))?$/i);
+      const bridgeMatch = submitMatch
+        ? ['', 'submit', submitMatch[2]?.trim() || '-']
+        : line.match(/^(claude|antigravity|agy|ai|sh)\s+([\s\S]+)$/i) ?? (line.startsWith('$') ? ['', 'sh', line.slice(1).trim()] : null);
       if (bridgeMatch && bridgeMatch[2]) {
         const word = bridgeMatch[1].toLowerCase();
         // `ai` goes to the user's assigned agent (Claude for the principal)
         const kind =
-          word === 'sh' ? 'shell' : word === 'claude' ? 'claude' : word === 'ai' ? (begin.is_principal ? 'claude' : begin.agent) : 'antigravity';
+          word === 'submit' ? 'submit'
+          : word === 'sh' ? 'shell'
+          : word === 'claude' ? 'claude'
+          : word === 'ai' ? (begin.is_principal ? 'claude' : begin.agent)
+          : 'antigravity';
         const input = bridgeMatch[2];
         const fail = async (msg: string) => {
           out(c.red(msg));
@@ -581,7 +591,9 @@ serve(async (req) => {
           send({ t: 'end', status: 'error', quota: begin.quota ?? null });
           controller.close();
         };
-        if (kind !== 'shell' && !begin.is_principal) {
+        if (kind === 'submit') {
+          if (!begin.allow_claude && !begin.allow_shell) return fail('submit: not allowed for your account. Ask the principal.');
+        } else if (kind !== 'shell' && !begin.is_principal) {
           const agentName = begin.agent === 'antigravity' ? 'Antigravity' : 'Claude';
           if (!begin.allow_claude) return fail('AI agent: not allowed for your account. Ask the principal.');
           if (begin.agent !== kind) return fail(`Your AI agent is ${agentName}. Use: ai <prompt>  (or: ${begin.agent} <prompt>)`);

@@ -4944,6 +4944,90 @@ export type Database = {
           },
         ]
       }
+      terminal_deploy_requests: {
+        Row: {
+          branch: string | null
+          changed_files: Json
+          claimed_at: string | null
+          commit_message: string
+          commit_sha: string | null
+          completed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          device_id: string | null
+          diff_hash: string
+          diff_preview: string | null
+          id: string
+          job_id: string | null
+          prompt: string | null
+          result_log: string | null
+          status: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          branch?: string | null
+          changed_files?: Json
+          claimed_at?: string | null
+          commit_message: string
+          commit_sha?: string | null
+          completed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          device_id?: string | null
+          diff_hash: string
+          diff_preview?: string | null
+          id?: string
+          job_id?: string | null
+          prompt?: string | null
+          result_log?: string | null
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          branch?: string | null
+          changed_files?: Json
+          claimed_at?: string | null
+          commit_message?: string
+          commit_sha?: string | null
+          completed_at?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          device_id?: string | null
+          diff_hash?: string
+          diff_preview?: string | null
+          id?: string
+          job_id?: string | null
+          prompt?: string | null
+          result_log?: string | null
+          status?: string
+          updated_at?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terminal_deploy_requests_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "terminal_deploy_requests_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_quotas: {
         Row: {
           agent: string
@@ -5263,6 +5347,66 @@ export type Database = {
         }[]
       }
       bridge_cancel_job: { Args: { p_job_id: string }; Returns: undefined }
+      bridge_deploy_claim: {
+        Args: { p_auth_key: string; p_device_id: string }
+        Returns: {
+          branch: string | null
+          changed_files: Json
+          claimed_at: string | null
+          commit_message: string
+          commit_sha: string | null
+          completed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          device_id: string | null
+          diff_hash: string
+          diff_preview: string | null
+          id: string
+          job_id: string | null
+          prompt: string | null
+          result_log: string | null
+          status: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "terminal_deploy_requests"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      bridge_deploy_finish: {
+        Args: {
+          p_auth_key: string
+          p_commit_sha?: string
+          p_device_id: string
+          p_id: string
+          p_log?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      bridge_deploy_pending: {
+        Args: { p_auth_key: string; p_device_id: string }
+        Returns: Json
+      }
+      bridge_deploy_submit: {
+        Args: {
+          p_auth_key: string
+          p_branch: string
+          p_changed_files: Json
+          p_commit_message: string
+          p_device_id: string
+          p_diff_hash: string
+          p_diff_preview: string
+          p_job_id: string
+          p_prompt: string
+        }
+        Returns: Json
+      }
       bridge_device_check: {
         Args: { p_auth_key: string; p_device_id: string }
         Returns: boolean
@@ -5390,6 +5534,43 @@ export type Database = {
           table_name: string
           total_bytes: number
         }[]
+      }
+      terminal_deploy_decide: {
+        Args: {
+          p_approve: boolean
+          p_commit_message?: string
+          p_diff_hash: string
+          p_id: string
+          p_reason?: string
+        }
+        Returns: {
+          branch: string | null
+          changed_files: Json
+          claimed_at: string | null
+          commit_message: string
+          commit_sha: string | null
+          completed_at: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          device_id: string | null
+          diff_hash: string
+          diff_preview: string | null
+          id: string
+          job_id: string | null
+          prompt: string | null
+          result_log: string | null
+          status: string
+          updated_at: string
+          user_email: string | null
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "terminal_deploy_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       terminal_end_session: {
         Args: { p_session_id: string; p_user_id: string }
