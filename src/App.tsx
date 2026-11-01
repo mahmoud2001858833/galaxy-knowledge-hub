@@ -54,6 +54,7 @@ const NotFound = wrap(lazy(() => import("./pages/NotFound")));
 const SectionHubPage = wrap(lazy(() => import("./pages/sections/SectionHubPage")));
 const FutureProjectsPage = wrap(lazy(() => import("./pages/sections/FutureProjectsPage")));
 const TeamPage = wrap(lazy(() => import("./pages/team/TeamPage")));
+const TerminalPage = wrap(lazy(() => import("./pages/terminal/TerminalPage")));
 const Physics = wrap(lazy(() => import("./pages/Physics")));
 const Chemistry = wrap(lazy(() => import("./pages/Chemistry")));
 const Mathematics = wrap(lazy(() => import("./pages/Mathematics")));
@@ -451,6 +452,10 @@ const router = createBrowserRouter([
       {
         path: 'team',
         element: <TeamPage />,
+      },
+      {
+        path: 'terminal',
+        element: <TerminalPage />,
       },
       {
         path: 'auth',

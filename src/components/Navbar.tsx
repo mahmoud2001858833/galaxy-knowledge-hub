@@ -279,6 +279,15 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
+                {teamRoles.includes('principal') && (
+                  <Link to="/terminal">
+                    <DropdownMenuItem className="flex items-center cursor-pointer text-primary hover:bg-primary/10 rounded-xl px-2 py-2 text-xs font-bold">
+                      <Terminal className="mr-2 h-4 w-4" />
+                      <span>الطرفية</span>
+                    </DropdownMenuItem>
+                  </Link>
+                )}
+
                 {teamRoles.length > 0 && (
                   <Link to="/team">
                     <DropdownMenuItem className="flex items-center cursor-pointer text-primary hover:bg-primary/10 rounded-xl px-2 py-2 text-xs font-bold">

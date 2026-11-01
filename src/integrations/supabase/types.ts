@@ -3642,6 +3642,136 @@ export type Database = {
         }
         Relationships: []
       }
+      remote_devices: {
+        Row: {
+          auth_hash: string
+          bridge_info: Json
+          created_at: string
+          id: string
+          last_seen_at: string | null
+          name: string
+          owner_id: string
+          revoked: boolean
+        }
+        Insert: {
+          auth_hash: string
+          bridge_info?: Json
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          name: string
+          owner_id?: string
+          revoked?: boolean
+        }
+        Update: {
+          auth_hash?: string
+          bridge_info?: Json
+          created_at?: string
+          id?: string
+          last_seen_at?: string | null
+          name?: string
+          owner_id?: string
+          revoked?: boolean
+        }
+        Relationships: []
+      }
+      remote_job_chunks: {
+        Row: {
+          content: string
+          created_at: string
+          id: number
+          job_id: string
+          kind: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: number
+          job_id: string
+          kind: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: number
+          job_id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remote_job_chunks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "remote_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      remote_jobs: {
+        Row: {
+          cost_usd: number | null
+          created_at: string
+          device_id: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          issued_at: number
+          owner_id: string
+          prompt: string
+          result: string | null
+          resume_session: string | null
+          session_id: string | null
+          signature: string
+          started_at: string | null
+          status: string
+          target: string
+        }
+        Insert: {
+          cost_usd?: number | null
+          created_at?: string
+          device_id: string
+          error?: string | null
+          finished_at?: string | null
+          id: string
+          issued_at: number
+          owner_id?: string
+          prompt: string
+          result?: string | null
+          resume_session?: string | null
+          session_id?: string | null
+          signature: string
+          started_at?: string | null
+          status?: string
+          target: string
+        }
+        Update: {
+          cost_usd?: number | null
+          created_at?: string
+          device_id?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          issued_at?: number
+          owner_id?: string
+          prompt?: string
+          result?: string | null
+          resume_session?: string | null
+          session_id?: string | null
+          signature?: string
+          started_at?: string | null
+          status?: string
+          target?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "remote_jobs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "remote_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_broadcasts: {
         Row: {
           acknowledged_count: number | null
@@ -5001,6 +5131,49 @@ export type Database = {
       is_agent_file: { Args: { p_path: string }; Returns: boolean }
       is_agent_file_id: { Args: { p_id: string }; Returns: boolean }
       is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      remote_bridge_finish: {
+        Args: {
+          p_auth_key: string
+          p_cost?: number
+          p_device_id: string
+          p_error?: string
+          p_job_id: string
+          p_result?: string
+          p_session_id?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      remote_bridge_output: {
+        Args: {
+          p_auth_key: string
+          p_chunks: Json
+          p_device_id: string
+          p_job_id: string
+        }
+        Returns: string
+      }
+      remote_bridge_poll: {
+        Args: {
+          p_auth_key: string
+          p_device_id: string
+          p_info?: Json
+          p_reset?: boolean
+        }
+        Returns: {
+          id: string
+          issued_at: number
+          prompt: string
+          resume_session: string
+          signature: string
+          target: string
+        }[]
+      }
+      remote_cancel_job: { Args: { p_job_id: string }; Returns: undefined }
+      remote_device_check: {
+        Args: { p_auth_key: string; p_device_id: string }
+        Returns: boolean
+      }
       team_complete_task: {
         Args: {
           p_description?: string
