@@ -49,3 +49,29 @@
 
 ## ملاحظة عن اللغة
 مخرجات الطرفية بالإنجليزية لأن xterm لا يعرض العربية من اليمين لليسار. الأسباب والرسائل العربية تظهر في واجهة الصفحة نفسها.
+
+## الجسر إلى جهاز الرئيس (Claude Code وأوامر Shell)
+الأوامر `claude <prompt>` و`claude` (وضع المحادثة) و`sh <command>` و`$ <command>` و`shell` (وضع الطرفية) تُنفَّذ على جهاز الرئيس عبر `scripts/local-bridge.mjs`.
+
+- **قاعدة البيانات:** `supabase/migrations/20261101230000_terminal_bridge.sql`، وفيه جداول `bridge_devices` و`bridge_jobs` و`bridge_job_chunks`، والعمودان `allow_claude` و`allow_shell` في `usage_quotas`.
+- **المسار:** يمرّ الأمر بالخطوات التالية:
+  1. فحوصات `terminal_begin_command()` نفسها.
+  2. التحقق من `allow_claude` أو `allow_shell`، علماً أن الرئيس مسموح له دائماً.
+  3. يُنشأ صف في `bridge_jobs` موقّعاً بـ `HMAC(HMAC(BRIDGE_MASTER_KEY, 'bridge-device:'+id), payload)`.
+  4. يرنّ "جرس" Realtime على القناة `bridge-<device_id>`.
+  5. يستلم الجسر الأمر بمفتاح جهازه، ويتحقق من التوقيع، وينفّذ، ويبث المخرجات.
+  6. يتابع المتصفح المهمة عبر Realtime، وليس عبر الدالة السحابية، لذلك لا حد زمنياً على المهام الطويلة.
+- **زر الإيقاف:** إنهاء الجلسة (أو الحظر أو سحب الصلاحية أو انتهاء الوقت) يُلغي مهامها عبر trigger. الجرس يخبر الجسر فيقتل مجموعة العمليات كلها (SIGTERM ثم SIGKILL). `Ctrl+C` يوقف المهمة الحالية فقط.
+- **حماية جهازك من المستخدمين الآخرين:**
+  - Shell مقفل لهم في `~/.zarwa-bridge/config.json` (`shell.allowOthers: false`) حتى لو فُعّل لهم في المنصة.
+  - Claude يعمل لهم بوضع `plan` للقراءة فقط (`claude.othersPermissionMode`).
+  - مدة المهمة 5 دقائق لهم و30 للرئيس (`maxMinutes`).
+
+### الإعداد لمرة واحدة
+1. سر التوقيع في Edge Function secrets:
+   `supabase secrets set BRIDGE_MASTER_KEY=$(openssl rand -hex 32) --project-ref esifpjjehdnpkhyilctv`
+2. من `/admin?tab=terminal` اضغط **ربط جهازي**، ثم في مجلد المشروع:
+   `npm run bridge -- pair <الرمز>`
+3. شغّل الجسر: `npm run bridge`، أو `npm run bridge -- install-service` ليعمل دائماً في الخلفية على macOS.
+
+الأمر `npm run bridge -- check` يفحص الإعداد والاتصال دون أن يغيّر شيئاً.

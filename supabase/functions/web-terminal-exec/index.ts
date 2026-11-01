@@ -113,6 +113,10 @@ const COMMANDS: Record<string, Command> = {
         if (cmd.admin) continue;
         out(`  ${c.cyan(pad(cmd.usage, 28))} ${cmd.help}`);
       }
+      out(`  ${c.cyan(pad('claude <prompt>', 28))} Ask Claude Code on the principal's computer`);
+      out(`  ${c.cyan(pad('claude', 28))} Chat mode with Claude (exit to leave)`);
+      out(`  ${c.cyan(pad('sh <command>', 28))} Run a shell command there (also: $ <command>)`);
+      out(`  ${c.cyan(pad('shell', 28))} Shell mode (exit to leave)`);
       out(`  ${c.cyan(pad('clear', 28))} Clear the screen (local, not counted)`);
       out(`  ${c.cyan(pad('exit', 28))} End this session`);
       if (isPrincipal) {
@@ -402,6 +406,51 @@ const COMMANDS: Record<string, Command> = {
   },
 };
 
+// ---------------------------------------------------------------- local bridge (scripts/local-bridge.mjs)
+// Jobs for the principal's computer are signed with HMAC(deviceKey) where
+// deviceKey = HMAC(BRIDGE_MASTER_KEY, 'bridge-device:' + device_id). The master key exists only in the
+// Edge Function secrets, so rows written by anyone else (even with database access) are refused by the bridge.
+const enc = new TextEncoder();
+const toHex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+const hmacHex = async (key: string, msg: string) => {
+  const k = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return toHex(await crypto.subtle.sign('HMAC', k, enc.encode(msg)));
+};
+const sha256Hex = async (text: string) => toHex(await crypto.subtle.digest('SHA-256', enc.encode(text)));
+const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const masterKey = () => Deno.env.get('BRIDGE_MASTER_KEY') ?? '';
+const deviceKeyFor = (deviceId: string) => hmacHex(masterKey(), `bridge-device:${deviceId}`);
+export const jobPayload = (j: { id: string; device_id: string; kind: string; input: string; resume_session: string | null; is_principal: boolean; issued_at: number; user_email: string }) =>
+  [j.id, j.device_id, j.kind, j.input, j.resume_session ?? '', j.is_principal ? '1' : '0', String(j.issued_at), j.user_email].join('\n');
+
+const onlineDevice = async (service: SupabaseClient) => {
+  const { data } = await service
+    .from('bridge_devices')
+    .select('id, name, last_seen_at, info')
+    .eq('revoked', false)
+    .gt('last_seen_at', new Date(Date.now() - 20000).toISOString())
+    .order('last_seen_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+};
+
+COMMANDS.bridge = {
+  usage: 'bridge',
+  help: 'Status of the bridge to the principal\'s computer',
+  run: async ({ service, isPrincipal, out }) => {
+    const { data } = await service.from('bridge_devices').select('name, last_seen_at, info, revoked').eq('revoked', false).order('last_seen_at', { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
+    if (!masterKey()) out(c.yellow('Bridge signing key is not configured on the server (BRIDGE_MASTER_KEY).'));
+    if (!data) return out(c.yellow('No computer is paired. The principal pairs one from /admin?tab=terminal.'));
+    const online = !!data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 20000;
+    out(`${pad('status', 10)} ${online ? c.green('● online') : c.red('● offline')}`);
+    out(`${pad('device', 10)} ${data.name}${data.info?.host ? ' · ' + data.info.host : ''}`);
+    if (isPrincipal && data.info?.workdir) out(`${pad('workdir', 10)} ${data.info.workdir}`);
+    if (data.info?.claude) out(`${pad('claude', 10)} ${data.info.claude}`);
+    out(`${pad('seen', 10)} ${data.last_seen_at ? ammanTime(data.last_seen_at) : 'never'}`);
+  },
+};
+
 const DENIED: Record<string, string> = {
   no_access: 'You do not have terminal access.',
   banned: 'Your account is banned from the terminal.',
@@ -428,7 +477,7 @@ serve(async (req) => {
   if (authError || !auth?.user) return json({ error: 'unauthorized' }, 401);
   const user = auth.user;
 
-  let body: { action?: string; session_id?: string; command?: string };
+  let body: { action?: string; session_id?: string; command?: string; resume_session?: string; job_id?: string; name?: string };
   try {
     body = await req.json();
   } catch {
@@ -442,6 +491,35 @@ serve(async (req) => {
     });
     if (error) return json({ error: error.message }, 500);
     return json(data, data?.ok ? 200 : 403);
+  }
+
+  if (body.action === 'cancel') {
+    if (!body.job_id) return json({ error: 'bad request' }, 400);
+    const principal = (await service.rpc('terminal_is_principal', { p_user_id: user.id })).data === true;
+    let q = service.from('bridge_jobs').update({ status: 'cancelled', finished_at: new Date().toISOString(), error: 'Ctrl+C' }).eq('id', body.job_id).in('status', ['queued', 'running']);
+    if (!principal) q = q.eq('user_id', user.id);
+    await q;
+    return json({ ok: true });
+  }
+
+  if (body.action === 'pair') {
+    // Principal only: register this computer and return the one-time pairing code for local-bridge.mjs
+    const principal = (await service.rpc('terminal_is_principal', { p_user_id: user.id })).data === true;
+    if (!principal) return json({ error: 'principal only' }, 403);
+    if (!masterKey()) return json({ error: 'BRIDGE_MASTER_KEY is not set in the Edge Function secrets' }, 412);
+    const secret = b64url(crypto.getRandomValues(new Uint8Array(32)));
+    const authHash = await sha256Hex(await hmacHex(secret, 'zarwa-bridge-auth'));
+    await service.from('bridge_devices').update({ revoked: true }).eq('revoked', false);
+    const { data: dev, error } = await service
+      .from('bridge_devices')
+      .insert({ name: (body.name ?? 'Mac').slice(0, 60) || 'Mac', auth_hash: authHash })
+      .select('id')
+      .single();
+    if (error) return json({ error: error.message }, 500);
+    const code = b64url(
+      enc.encode(JSON.stringify({ u: supabaseUrl, k: Deno.env.get('SUPABASE_ANON_KEY'), d: dev.id, s: secret, g: await deviceKeyFor(dev.id) })),
+    );
+    return json({ ok: true, device_id: dev.id, code });
   }
 
   if (body.action === 'end') {
@@ -480,6 +558,45 @@ serve(async (req) => {
         const latin = begin.detail && !/[\u0600-\u06FF]/.test(begin.detail) ? c.dim(` (${begin.detail})`) : '';
         out(c.red(DENIED[begin.reason] ?? `Denied: ${begin.reason}`) + latin);
         send({ t: 'end', status: 'denied', reason: begin.reason, detail: begin.detail ?? null, session_ended: !!begin.session_ended, quota: begin.quota ?? null });
+        controller.close();
+        return;
+      }
+
+      // ---- commands for the principal's computer
+      const bridgeMatch = line.match(/^(claude|sh)\s+([\s\S]+)$/i) ?? (line.startsWith('$') ? ['', 'sh', line.slice(1).trim()] : null);
+      if (bridgeMatch && bridgeMatch[2]) {
+        const kind = bridgeMatch[1].toLowerCase() === 'claude' ? 'claude' : 'shell';
+        const input = bridgeMatch[2];
+        const fail = async (msg: string) => {
+          out(c.red(msg));
+          await service.rpc('terminal_finish_command', { p_log_id: begin.log_id, p_status: 'error', p_preview: msg, p_duration_ms: 0 });
+          send({ t: 'end', status: 'error', quota: begin.quota ?? null });
+          controller.close();
+        };
+        if (kind === 'claude' && !begin.allow_claude) return fail('claude: not allowed for your account. Ask the principal.');
+        if (kind === 'shell' && !begin.allow_shell) return fail('sh: not allowed for your account. Ask the principal.');
+        if (!masterKey()) return fail('Bridge is not configured on the server (BRIDGE_MASTER_KEY missing).');
+        const device = await onlineDevice(service);
+        if (!device) return fail("Bridge offline: the principal's computer is not connected.");
+        const resume = kind === 'claude' && typeof body.resume_session === 'string' && /^[A-Za-z0-9-]{8,80}$/.test(body.resume_session) ? body.resume_session : null;
+        const job = {
+          id: crypto.randomUUID(),
+          device_id: device.id,
+          kind,
+          input,
+          resume_session: resume,
+          is_principal: !!begin.is_principal,
+          issued_at: Date.now(),
+          user_email: begin.email as string,
+        };
+        const signature = await hmacHex(await deviceKeyFor(device.id), jobPayload(job));
+        const { user_email: _e, ...row } = job;
+        const { error: jobError } = await service
+          .from('bridge_jobs')
+          .insert({ ...row, session_id: body.session_id, user_id: user.id, log_id: begin.log_id, signature });
+        if (jobError) return fail(`bridge: ${jobError.message}`);
+        // The browser follows the job through realtime; bridge_finish() closes the command log.
+        send({ t: 'bridge', job_id: job.id, kind, quota: begin.quota ?? null });
         controller.close();
         return;
       }

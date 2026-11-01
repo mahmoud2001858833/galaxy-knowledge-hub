@@ -1469,6 +1469,156 @@ export type Database = {
         }
         Relationships: []
       }
+      bridge_devices: {
+        Row: {
+          auth_hash: string
+          created_at: string
+          id: string
+          info: Json
+          last_seen_at: string | null
+          name: string
+          revoked: boolean
+        }
+        Insert: {
+          auth_hash: string
+          created_at?: string
+          id?: string
+          info?: Json
+          last_seen_at?: string | null
+          name: string
+          revoked?: boolean
+        }
+        Update: {
+          auth_hash?: string
+          created_at?: string
+          id?: string
+          info?: Json
+          last_seen_at?: string | null
+          name?: string
+          revoked?: boolean
+        }
+        Relationships: []
+      }
+      bridge_job_chunks: {
+        Row: {
+          created_at: string
+          data: string
+          id: number
+          job_id: string
+          stream: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          id?: number
+          job_id: string
+          stream: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: number
+          job_id?: string
+          stream?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_job_chunks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bridge_jobs: {
+        Row: {
+          claude_session: string | null
+          cost_usd: number | null
+          created_at: string
+          device_id: string
+          error: string | null
+          exit_code: number | null
+          finished_at: string | null
+          id: string
+          input: string
+          is_principal: boolean
+          issued_at: number
+          kind: string
+          log_id: number | null
+          resume_session: string | null
+          session_id: string
+          signature: string
+          started_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          claude_session?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          device_id: string
+          error?: string | null
+          exit_code?: number | null
+          finished_at?: string | null
+          id: string
+          input: string
+          is_principal: boolean
+          issued_at: number
+          kind: string
+          log_id?: number | null
+          resume_session?: string | null
+          session_id: string
+          signature: string
+          started_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          claude_session?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          device_id?: string
+          error?: string | null
+          exit_code?: number | null
+          finished_at?: string | null
+          id?: string
+          input?: string
+          is_principal?: boolean
+          issued_at?: number
+          kind?: string
+          log_id?: number | null
+          resume_session?: string | null
+          session_id?: string
+          signature?: string
+          started_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_jobs_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bridge_jobs_log_id_fkey"
+            columns: ["log_id"]
+            isOneToOne: false
+            referencedRelation: "terminal_command_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bridge_jobs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "user_terminal_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       btec_custom_platforms: {
         Row: {
           created_at: string | null
@@ -4796,6 +4946,8 @@ export type Database = {
       }
       usage_quotas: {
         Row: {
+          allow_claude: boolean
+          allow_shell: boolean
           ban_reason: string | null
           banned: boolean
           created_at: string
@@ -4815,6 +4967,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allow_claude?: boolean
+          allow_shell?: boolean
           ban_reason?: string | null
           banned?: boolean
           created_at?: string
@@ -4834,6 +4988,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allow_claude?: boolean
+          allow_shell?: boolean
           ban_reason?: string | null
           banned?: boolean
           created_at?: string
@@ -5103,6 +5259,53 @@ export type Database = {
           rank: number
         }[]
       }
+      bridge_cancel_job: { Args: { p_job_id: string }; Returns: undefined }
+      bridge_device_check: {
+        Args: { p_auth_key: string; p_device_id: string }
+        Returns: boolean
+      }
+      bridge_finish: {
+        Args: {
+          p_auth_key: string
+          p_claude_session?: string
+          p_cost?: number
+          p_device_id: string
+          p_error?: string
+          p_exit_code?: number
+          p_job_id: string
+          p_preview?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      bridge_output: {
+        Args: {
+          p_auth_key: string
+          p_chunks: Json
+          p_device_id: string
+          p_job_id: string
+        }
+        Returns: string
+      }
+      bridge_poll: {
+        Args: {
+          p_auth_key: string
+          p_device_id: string
+          p_info?: Json
+          p_reset?: boolean
+        }
+        Returns: {
+          id: string
+          input: string
+          is_principal: boolean
+          issued_at: number
+          kind: string
+          resume_session: string
+          signature: string
+          user_email: string
+        }[]
+      }
+      bridge_status: { Args: never; Returns: Json }
       calculate_user_level: { Args: { usage_minutes: number }; Returns: number }
       get_admin_teacher_access_level: {
         Args: { user_uuid: string }

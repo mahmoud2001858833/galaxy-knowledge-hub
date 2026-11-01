@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Ban, Loader2, Plus, Power, RotateCcw, ScrollText, ShieldCheck, TerminalSquare, Trash2, Users } from 'lucide-react';
+import { Activity, Ban, Check, Copy, KeyRound, Laptop, Loader2, Plus, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, Users } from 'lucide-react';
+import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
+import { callTerminal } from '@/components/terminal/WebTerminal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -86,6 +88,157 @@ const useLive = () => {
   }, [loadQuotas, loadSessions, loadLogs]);
 
   return { quotas, sessions, logs, loadQuotas, loadSessions };
+};
+
+
+const CopyLine: React.FC<{ text: string }> = ({ text }) => {
+  const [done, setDone] = useState(false);
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-2" dir="ltr">
+      <code className="flex-1 whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed">{text}</code>
+      <button
+        type="button"
+        onClick={() => navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1500); })}
+        className="shrink-0 rounded-lg p-1 text-muted-foreground hover:text-foreground"
+        aria-label="نسخ"
+      >
+        {done ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+};
+
+type BridgeJob = Tables<'bridge_jobs'>;
+
+/** The principal's computer: online state, pairing, and jobs running on it right now. */
+const BridgeCard: React.FC = () => {
+  const { status, reload } = useBridgeStatus(true, 5000);
+  const [code, setCode] = useState<string | null>(null);
+  const [pairing, setPairing] = useState(false);
+  const [running, setRunning] = useState<BridgeJob[]>([]);
+
+  const loadRunning = useCallback(async () => {
+    const { data } = await supabase.from('bridge_jobs').select('*').in('status', ['queued', 'running']).order('created_at');
+    setRunning(data ?? []);
+  }, []);
+  useEffect(() => {
+    loadRunning();
+    const ch = supabase
+      .channel(`bridge-admin-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bridge_jobs' }, loadRunning)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [loadRunning]);
+
+  const pair = async () => {
+    if (status?.paired !== false && !window.confirm('ربط جهاز جديد يلغي ربط الجهاز الحالي. متابعة؟')) return;
+    setPairing(true);
+    try {
+      const res = await callTerminal({ action: 'pair', name: 'Mac' });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+      setCode(body.code);
+      reload();
+    } catch (e) {
+      toast.error(errText(e));
+    } finally {
+      setPairing(false);
+    }
+  };
+
+  const unpair = async () => {
+    if (!window.confirm('إلغاء ربط الجهاز؟ يتوقف الجسر عن استقبال الأوامر فوراً.')) return;
+    const { error } = await supabase.from('bridge_devices').update({ revoked: true }).eq('revoked', false);
+    if (error) toast.error(errText(error));
+    else {
+      toast.success('أُلغي الربط');
+      reload();
+    }
+  };
+
+  const online = !!status?.online;
+  return (
+    <section className="space-y-4 rounded-3xl border border-border bg-card p-5">
+      <div className="flex flex-wrap items-center gap-3">
+        <h3 className="flex items-center gap-2 font-bold">
+          <Laptop className="h-4 w-4" /> الجسر إلى جهازك
+        </h3>
+        <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${online ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
+          <span className={`h-2 w-2 rounded-full ${online ? 'animate-pulse bg-success' : 'bg-muted-foreground'}`} />
+          {online ? 'Bridge Online' : 'Bridge Offline'}
+        </span>
+        {status?.host && (
+          <span className="text-xs text-muted-foreground" dir="ltr">
+            {status.host}
+            {status.workdir ? ` · ${status.workdir}` : ''}
+          </span>
+        )}
+        {status?.last_seen_at && !online && <span className="text-xs text-muted-foreground">آخر ظهور: {fmt(status.last_seen_at)}</span>}
+        <div className="mr-auto flex gap-2">
+          <Button size="sm" onClick={pair} disabled={pairing} className="gap-1">
+            {pairing ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />} ربط جهازي
+          </Button>
+          {status?.paired !== false && status && (
+            <Button size="sm" variant="outline" onClick={unpair}>
+              إلغاء الربط
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {code && (
+        <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning/5 p-4 text-sm">
+          <p className="text-xs font-semibold text-warning">رمز الربط يظهر مرة واحدة ويحتوي مفاتيح الجهاز. لا تشاركه.</p>
+          <div className="font-bold">1. في مجلد المشروع على جهازك:</div>
+          <CopyLine text={`npm run bridge -- pair ${code}`} />
+          <div className="font-bold">2. شغّل الجسر (اترك النافذة مفتوحة):</div>
+          <CopyLine text="npm run bridge" />
+          <div className="text-xs text-muted-foreground">
+            ليعمل دائماً في الخلفية: <code dir="ltr">npm run bridge -- install-service</code>
+          </div>
+        </div>
+      )}
+      {!code && !online && (
+        <div className="space-y-2 text-sm">
+          <div className="text-muted-foreground">لتشغيل الجسر على جهازك (بعد الربط مرة واحدة):</div>
+          <CopyLine text="npm run bridge" />
+        </div>
+      )}
+
+      {running.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-bold text-muted-foreground">يعمل الآن على جهازك</div>
+          {running.map((j) => (
+            <div key={j.id} className="flex items-center gap-3 rounded-xl bg-muted/60 px-3 py-2 text-xs">
+              <span className={`font-bold ${j.kind === 'claude' ? 'text-primary' : 'text-warning'}`}>{j.kind}</span>
+              <span className="flex-1 truncate font-mono" dir="ltr">
+                {j.input}
+              </span>
+              <span className="text-muted-foreground">{j.status}</span>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 gap-1"
+                onClick={async () => {
+                  const { error } = await supabase.rpc('bridge_cancel_job', { p_job_id: j.id });
+                  if (error) toast.error(errText(error));
+                }}
+              >
+                <Square className="h-3 w-3" /> إيقاف
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">
+        الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت دائماً مسموح لك. للآخرين فعّل Claude أو Shell من جدول
+        المستخدمين أدناه. Claude يعمل لهم للقراءة فقط، وShell لهم مقفل على جهازك إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code> في{' '}
+        <code dir="ltr">~/.zarwa-bridge/config.json</code>.
+      </p>
+    </section>
+  );
 };
 
 export const TerminalAdminPanel: React.FC = () => {
@@ -184,6 +337,8 @@ export const TerminalAdminPanel: React.FC = () => {
         </Button>
       </div>
 
+      <BridgeCard />
+
       {/* active sessions + kill switch */}
       <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
         <h3 className="flex items-center gap-2 font-bold">
@@ -255,6 +410,8 @@ export const TerminalAdminPanel: React.FC = () => {
                 <tr className="text-right">
                   <th className="p-2">الإيميل</th>
                   <th className="p-2">مفعّل</th>
+                  <th className="p-2">Claude</th>
+                  <th className="p-2">Shell</th>
                   <th className="p-2">الحالة</th>
                   <th className="p-2">استهلاك اليوم</th>
                   <th className="p-2">حد يومي</th>
@@ -275,6 +432,18 @@ export const TerminalAdminPanel: React.FC = () => {
                       </td>
                       <td className="p-2">
                         <Switch checked={q.enabled} onCheckedChange={(v) => update(q, { enabled: v }, v ? 'فُعّلت الصلاحية' : 'سُحبت الصلاحية وأُنهيت الجلسات')} />
+                      </td>
+                      <td className="p-2">
+                        <Switch checked={q.allow_claude} onCheckedChange={(v) => update(q, { allow_claude: v }, v ? 'سُمح له بـ Claude (قراءة فقط)' : 'أُوقف Claude له')} />
+                      </td>
+                      <td className="p-2">
+                        <Switch
+                          checked={q.allow_shell}
+                          onCheckedChange={(v) => {
+                            if (v && !window.confirm(`السماح لـ ${q.email} بتنفيذ أوامر Shell على جهازك يعطيه نفس صلاحيات حسابك على الماك (قراءة وحذف أي ملف). متأكد؟`)) return;
+                            update(q, { allow_shell: v }, v ? 'سُمح له بـ Shell' : 'أُوقف Shell له');
+                          }}
+                        />
                       </td>
                       <td className="p-2">
                         {q.banned ? (

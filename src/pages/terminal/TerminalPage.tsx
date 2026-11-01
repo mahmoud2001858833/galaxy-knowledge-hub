@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Ban, Clock, Gauge, Loader2, Lock, RefreshCw, ShieldCheck, TerminalSquare } from 'lucide-react';
+import { Ban, Clock, Gauge, Laptop, Loader2, Lock, RefreshCw, ShieldCheck, TerminalSquare } from 'lucide-react';
+import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { SEO } from '@/components/SEO';
 import { PageHeader, PageShell } from '@/components/layout/PageShell';
@@ -94,6 +95,7 @@ const TerminalPage: React.FC = () => {
     };
   }, [userEmail, isPrincipal]);
 
+  const { status: bridge } = useBridgeStatus(state.kind === 'ready');
   const countdown = useCountdown(state.kind === 'ready' && !ended ? state.session.expires_at : null);
   const onEnded = useCallback((e: SessionEnd) => setEnded(e), []);
 
@@ -169,7 +171,16 @@ const TerminalPage: React.FC = () => {
                   </span>
                 )
               )}
-              {countdown && (
+              {bridge && (
+                <span
+                  className={`flex items-center gap-1 font-semibold ${bridge.online ? 'text-success' : 'text-muted-foreground'}`}
+                  title={bridge.online ? `${bridge.name ?? ''} ${bridge.host ?? ''}` : 'شغّل npm run bridge على جهاز الرئيس'}
+                >
+                  <Laptop className="h-3.5 w-3.5" />
+                  {bridge.online ? `الجسر متصل${bridge.host ? ` · ${bridge.host}` : ''}` : 'الجسر غير متصل'}
+                </span>
+              )}
+                            {countdown && (
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> متبقٍ {countdown}
                 </span>
@@ -196,7 +207,7 @@ const TerminalPage: React.FC = () => {
           )}
 
           <p className="text-xs text-muted-foreground">
-            اكتب <code dir="ltr">help</code> لعرض الأوامر. الأسهم ↑↓ للسجل، و<code dir="ltr">Ctrl+C</code> لإلغاء السطر، و<code dir="ltr">clear</code> لمسح الشاشة. مخرجات الطرفية بالإنجليزية لأن الطرفيات لا تعرض العربية بشكل صحيح.
+            اكتب <code dir="ltr">help</code> لعرض الأوامر، و<code dir="ltr">claude</code> لمحادثة Claude Code على جهاز الرئيس، و<code dir="ltr">shell</code> لأوامر الطرفية هناك. الأسهم ↑↓ للسجل، و<code dir="ltr">Ctrl+C</code> لإلغاء السطر، و<code dir="ltr">clear</code> لمسح الشاشة. مخرجات الطرفية بالإنجليزية لأن الطرفيات لا تعرض العربية بشكل صحيح.
           </p>
         </div>
       )}

@@ -28,6 +28,8 @@ export interface SessionInfo {
   started_at: string;
 }
 
+export type Mode = 'cloud' | 'claude' | 'shell';
+
 export type SessionEnd = { kind: 'terminated' | 'expired' | 'closed' | 'denied'; reason?: string | null };
 
 interface Props {
@@ -79,14 +81,35 @@ const themeFromTokens = () => ({
 export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
-  const state = useRef({ line: '', cursor: 0, busy: false, ended: false, history: [] as string[], histIndex: -1, abort: null as AbortController | null, pending: [] as string[] });
+  const state = useRef({
+    line: '',
+    cursor: 0,
+    busy: false,
+    ended: false,
+    history: [] as string[],
+    histIndex: -1,
+    abort: null as AbortController | null,
+    pending: [] as string[],
+    // 'cloud' = platform commands; 'claude' / 'shell' = every line goes to the principal's computer
+    mode: 'cloud' as Mode,
+    claudeSession: null as string | null,
+    job: null as { id: string; stop: () => void } | null,
+  });
   const feedRef = useRef<(data: string) => void>(() => {});
   const [ready, setReady] = useState(false);
 
-  const prompt = useCallback(() => {
-    const user = session.email.split('@')[0];
-    termRef.current?.write(`\r\n\x1b[1;32m${user}@zarwa\x1b[0m:\x1b[1;34m~\x1b[0m$ `);
+  const promptText = useCallback(() => {
+    const mode = state.current.mode;
+    if (mode === 'claude') return '\x1b[1;35mclaude\x1b[0m \x1b[2m›\x1b[0m ';
+    if (mode === 'shell') return '\x1b[1;33mmac\x1b[0m:\x1b[1;34mproject\x1b[0m$ ';
+    return `\x1b[1;32m${session.email.split('@')[0]}@zarwa\x1b[0m:\x1b[1;34m~\x1b[0m$ `;
   }, [session.email]);
+  const promptTextRef = useRef(promptText);
+  promptTextRef.current = promptText;
+
+  const prompt = useCallback(() => {
+    termRef.current?.write(`\r\n${promptText()}`);
+  }, [promptText]);
 
   const lockWith = useCallback(
     (end: SessionEnd, message: string) => {
@@ -94,11 +117,89 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       if (s.ended) return;
       s.ended = true;
       s.abort?.abort();
+      s.job?.stop();
       termRef.current?.write(`\r\n\r\n\x1b[1;31m■ ${message}\x1b[0m\r\n`);
       termRef.current?.options && (termRef.current.options.cursorBlink = false);
       onEnded(end);
     },
     [onEnded],
+  );
+
+
+  /**
+   * Streams a job running on the principal's computer: output chunks and the final status arrive
+   * through realtime. Resolves when the job is finished, stopped or the session is locked.
+   */
+  const followJob = useCallback(
+    (jobId: string, kind: 'claude' | 'shell') =>
+      new Promise<void>((resolveJob) => {
+        const term = termRef.current!;
+        const s = state.current;
+        let lastId = 0;
+        let finished = false;
+        let wroteAny = false;
+        const write = (chunk: { id: number; stream: string; data: string }) => {
+          if (chunk.id <= lastId) return;
+          lastId = chunk.id;
+          let data = chunk.data.replace(/\r?\n/g, '\r\n');
+          if (chunk.stream === 'err' && !data.includes('\x1b[')) data = `\x1b[31m${data}\x1b[0m`;
+          if (!wroteAny) {
+            term.write('\r\n');
+            wroteAny = true;
+          }
+          term.write(data);
+        };
+        const finish = (job: { status: string; exit_code: number | null; error: string | null; claude_session: string | null; cost_usd: number | null }) => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(waitHint);
+          if (kind === 'claude' && job.claude_session) s.claudeSession = job.claude_session;
+          const latin = (t: string | null) => (t && !/[\u0600-\u06FF]/.test(t) ? t : '');
+          if (job.status === 'cancelled') term.write(`\r\n\x1b[33m■ stopped${latin(job.error) ? ': ' + latin(job.error) : ''}\x1b[0m`);
+          else if (job.status === 'rejected') term.write(`\r\n\x1b[31m${latin(job.error) || 'Refused by the computer.'}\x1b[0m`);
+          else if (job.status === 'error') term.write(`\r\n\x1b[31m${latin(job.error) || 'The job failed.'}\x1b[0m`);
+          else if (job.exit_code) term.write(`\r\n\x1b[2;31mexit ${job.exit_code}\x1b[0m`);
+          if (job.cost_usd != null) term.write(`\r\n\x1b[2m$${Number(job.cost_usd).toFixed(4)}\x1b[0m`);
+          supabase.removeChannel(channel);
+          s.job = null;
+          resolveJob();
+        };
+        const waitHint = window.setTimeout(() => {
+          if (!wroteAny && !finished) term.write("\r\n\x1b[2mwaiting for the principal's computer…\x1b[0m");
+        }, 4000);
+        s.job = {
+          id: jobId,
+          stop: () => {
+            callTerminal({ action: 'cancel', job_id: jobId }).catch(() => {});
+            if (s.ended) finish({ status: 'cancelled', exit_code: null, error: null, claude_session: null, cost_usd: null });
+          },
+        };
+        const channel = supabase
+          .channel(`bridge-job-${jobId}`)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bridge_job_chunks', filter: `job_id=eq.${jobId}` }, (p) =>
+            write(p.new as { id: number; stream: string; data: string }),
+          )
+          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bridge_jobs', filter: `id=eq.${jobId}` }, async (p) => {
+            const job = p.new as { status: string };
+            if (['done', 'error', 'cancelled', 'rejected'].includes(job.status)) {
+              // pick up any chunk that raced the status change
+              const { data } = await supabase.from('bridge_job_chunks').select('id, stream, data').eq('job_id', jobId).gt('id', lastId).order('id');
+              (data ?? []).forEach(write);
+              finish(p.new as never);
+            }
+          })
+          .subscribe(async (st) => {
+            if (st !== 'SUBSCRIBED') return;
+            // catch up on anything written before the subscription was live
+            const [{ data: chunks }, { data: job }] = await Promise.all([
+              supabase.from('bridge_job_chunks').select('id, stream, data').eq('job_id', jobId).order('id'),
+              supabase.from('bridge_jobs').select('status, exit_code, error, claude_session, cost_usd').eq('id', jobId).maybeSingle(),
+            ]);
+            (chunks ?? []).forEach(write);
+            if (job && ['done', 'error', 'cancelled', 'rejected'].includes(job.status)) finish(job as never);
+          });
+      }),
+    [],
   );
 
   const run = useCallback(
@@ -115,11 +216,32 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         term.write('\x1b[2K\r');
         return prompt();
       }
+      if (s.mode !== 'cloud' && (cmd === 'exit' || cmd === 'quit')) {
+        s.mode = 'cloud';
+        term.write('\r\n\x1b[2mBack to platform commands.\x1b[0m');
+        return prompt();
+      }
       if (cmd === 'exit') {
         await callTerminal({ action: 'end', session_id: session.session_id }).catch(() => {});
         lockWith({ kind: 'closed' }, 'Session closed.');
         return;
       }
+      if (s.mode === 'cloud' && (cmd === 'claude' || cmd === 'shell')) {
+        s.mode = cmd;
+        term.write(
+          cmd === 'claude'
+            ? `\r\n\x1b[35mClaude Code on the principal's computer.\x1b[0m \x1b[2mEvery line is a message${s.claudeSession ? ' (continuing the last conversation)' : ''}. /new starts over, exit leaves.\x1b[0m`
+            : "\r\n\x1b[33mShell on the principal's computer, in the project folder.\x1b[0m \x1b[2mNon-interactive commands only. exit leaves.\x1b[0m",
+        );
+        return prompt();
+      }
+      if (s.mode === 'claude' && cmd === '/new') {
+        s.claudeSession = null;
+        term.write('\r\n\x1b[2mNew Claude conversation.\x1b[0m');
+        return prompt();
+      }
+      const wire = s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
+      const resume = s.mode === 'claude' ? s.claudeSession : null;
 
       s.busy = true;
       const abort = new AbortController();
@@ -127,7 +249,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       term.write('\r\n');
       let first = true;
       try {
-        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command: cmd }, abort.signal);
+        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command: wire, resume_session: resume }, abort.signal);
         if (!res.ok || !res.body) {
           const text = await res.text();
           term.write(`\x1b[31merror: ${res.status} ${text.slice(0, 200)}\x1b[0m`);
@@ -148,6 +270,10 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
               if (msg.t === 'out') {
                 term.write((first ? '' : '\r\n') + String(msg.d).replace(/\n/g, '\r\n'));
                 first = false;
+              } else if (msg.t === 'bridge') {
+                if (msg.quota !== undefined) onQuota(msg.quota);
+                s.abort = null;
+                await followJob(msg.job_id, msg.kind);
               } else if (msg.t === 'end') {
                 if (msg.quota !== undefined) onQuota(msg.quota);
                 if (msg.session_ended) {
@@ -172,6 +298,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         for (const d of queued) feedRef.current(d);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [lockWith, onQuota, prompt, session.session_id],
   );
 
@@ -205,8 +332,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       const s = state.current;
       // rewrite the current input line and put the cursor in place
       term.write('\x1b[2K\r');
-      const user = session.email.split('@')[0];
-      term.write(`\x1b[1;32m${user}@zarwa\x1b[0m:\x1b[1;34m~\x1b[0m$ ${s.line}`);
+      term.write(`${promptTextRef.current()}${s.line}`);
       const back = s.line.length - s.cursor;
       if (back > 0) term.write(`\x1b[${back}D`);
     };
@@ -218,7 +344,10 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         // Ctrl+C stops the running command; anything else is typed ahead and replayed afterwards
         if (data === '\x03') {
           s.pending = [];
-          s.abort?.abort();
+          if (s.job) {
+            term.write('\x1b[2m^C\x1b[0m');
+            s.job.stop();
+          } else s.abort?.abort();
         } else s.pending.push(data);
         return;
       }
