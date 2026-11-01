@@ -207,7 +207,7 @@ const TerminalPage: React.FC = () => {
           )}
 
           <p className="text-xs text-muted-foreground">
-            اكتب <code dir="ltr">help</code> لعرض الأوامر، و<code dir="ltr">claude</code> لمحادثة Claude Code على جهاز الرئيس، و<code dir="ltr">shell</code> لأوامر الطرفية هناك. لا يمكن تنفيذ commit أو push من هنا: الملفات التي تتغير تُرسل تلقائياً كطلب موافقة للأدمن، وتُرفع فور موافقته (أو اكتب <code dir="ltr">submit</code> لإرسالها بنفسك). الأسهم ↑↓ للسجل، و<code dir="ltr">Ctrl+C</code> لإلغاء السطر، و<code dir="ltr">clear</code> لمسح الشاشة. مخرجات الطرفية بالإنجليزية لأن الطرفيات لا تعرض العربية بشكل صحيح.
+            اكتب <code dir="ltr">help</code> لعرض الأوامر، و<code dir="ltr">claude</code> لمحادثة Claude Code على جهاز الرئيس، و<code dir="ltr">antigravity</code> لإرسال المهام إلى Antigravity هناك، و<code dir="ltr">shell</code> لأوامر الطرفية هناك. لا يمكن تنفيذ commit أو push من هنا: الملفات التي تتغير تُرسل تلقائياً كطلب موافقة للأدمن، وتُرفع فور موافقته (أو اكتب <code dir="ltr">submit</code> لإرسالها بنفسك). الأسهم ↑↓ للسجل، و<code dir="ltr">Ctrl+C</code> لإلغاء السطر، و<code dir="ltr">clear</code> لمسح الشاشة. مخرجات الطرفية بالإنجليزية لأن الطرفيات لا تعرض العربية بشكل صحيح.
           </p>
         </div>
       )}

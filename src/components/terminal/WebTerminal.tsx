@@ -80,6 +80,23 @@ const themeFromTokens = () => ({
   selectionBackground: tokenColor('--accent', '#1e3a5f'),
 });
 
+const editDistance = (a: string, b: string) => {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+};
+
+/** A line that switches mode: any letter case, short aliases, and small typos ("antigrafity"). */
+const modeFor = (word: string): Exclude<Mode, 'cloud'> | null => {
+  if (word === 'agy' || word === 'ag') return 'antigravity';
+  if (word === 'sh') return 'shell';
+  if (!/^[a-z]+$/.test(word)) return null;
+  for (const m of ['antigravity', 'claude', 'shell'] as const) if (word === m || (word.length >= 5 && editDistance(word, m) <= (m === 'antigravity' ? 2 : 1))) return m;
+  return null;
+};
+
 export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -221,7 +238,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         term.write('\x1b[2K\r');
         return prompt();
       }
-      if (s.mode !== 'cloud' && (cmd === 'exit' || cmd === 'quit')) {
+      const word = cmd.toLowerCase();
+      if (s.mode !== 'cloud' && (word === 'exit' || word === 'quit')) {
         s.mode = 'cloud';
         term.write('\r\n\x1b[2mBack to platform commands.\x1b[0m');
         return prompt();
@@ -231,8 +249,9 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         lockWith({ kind: 'closed' }, 'Session closed.');
         return;
       }
-      if (s.mode === 'cloud' && (cmd === 'claude' || cmd === 'shell' || cmd === 'antigravity' || cmd === 'agy')) {
-        s.mode = cmd === 'agy' ? 'antigravity' : cmd;
+      const modeWord = s.mode === 'cloud' ? modeFor(word) : null;
+      if (modeWord) {
+        s.mode = modeWord;
         term.write(
           s.mode === 'claude'
             ? `\r\n\x1b[35mClaude Code on the principal's computer.\x1b[0m \x1b[2mEvery line is a message${s.claudeSession ? ' (continuing the last conversation)' : ''}. /new starts over, exit leaves.\x1b[0m`
