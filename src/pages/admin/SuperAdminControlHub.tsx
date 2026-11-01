@@ -72,6 +72,7 @@ import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow'
 import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
 import SchoolContentModeration from '@/components/admin/SchoolContentModeration';
 import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
+import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
 import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
 import { FacultyStaffManager } from '@/components/admin/lcm/FacultyStaffManager';
@@ -90,6 +91,7 @@ export type AdminTab =
   | 'exam-library'
   | 'school-content'
   | 'employees'
+  | 'terminal'
   | 'lcm'
   | 'faculty'
   | 'broadcasts'
@@ -617,6 +619,7 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
+        { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
         { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
@@ -1720,6 +1723,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'questions' && (
               <SafeBoundary name="QuantumQuestionGenerator">
                 <QuantumQuestionGenerator />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'terminal' && (
+              <SafeBoundary name="TerminalAdminPanel">
+                <TerminalAdminPanel />
               </SafeBoundary>
             )}
 

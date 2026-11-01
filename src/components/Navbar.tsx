@@ -30,7 +30,20 @@ const Navbar = () => {
   const { activeFeaturesCount } = useAccessibility();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const { roles: teamRoles } = useTeamRoles();
+  const { roles: teamRoles, userId: teamUserId } = useTeamRoles();
+  // Terminal link for accounts the principal granted access to (own row is readable through RLS)
+  const [hasTerminal, setHasTerminal] = useState(false);
+  useEffect(() => {
+    if (!teamUserId) return setHasTerminal(false);
+    supabase
+      .from('usage_quotas')
+      .select('id')
+      .eq('user_id', teamUserId)
+      .eq('enabled', true)
+      .eq('banned', false)
+      .maybeSingle()
+      .then(({ data }) => setHasTerminal(!!data));
+  }, [teamUserId]);
   const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
@@ -279,7 +292,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                 </Link>
 
-                {teamRoles.includes('principal') && (
+                {(teamRoles.includes('principal') || hasTerminal) && (
                   <Link to="/terminal">
                     <DropdownMenuItem className="flex items-center cursor-pointer text-primary hover:bg-primary/10 rounded-xl px-2 py-2 text-xs font-bold">
                       <Terminal className="mr-2 h-4 w-4" />
