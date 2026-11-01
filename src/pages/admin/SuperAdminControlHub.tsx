@@ -557,7 +557,7 @@ export const SuperAdminControlHub: React.FC = () => {
   // Purge System Cache & Re-index
   const handlePurgeCache = () => {
     try {
-      const preserveKeys = ['galaxy_admin_authenticated', 'galaxy_platform_settings_v2', 'galaxy_platform_users_list_v2', 'galaxy_school_broadcasts_v1', 'galaxy_audit_trail_v1'];
+      const preserveKeys = ['galaxy_admin_authenticated', 'galaxy_platform_settings_v3', 'galaxy_platform_users_list_v2', 'galaxy_school_broadcasts_v1', 'galaxy_audit_trail_v1'];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && !preserveKeys.includes(key) && key.startsWith('galaxy_cache_')) {

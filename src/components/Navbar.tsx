@@ -176,7 +176,7 @@ const Navbar = () => {
                 ذروة العلم
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold hidden sm:inline -mt-1">
-                المنظومة الوطنية للتعليم التفاعلي 2.0
+                منصة تعليمية أردنية
               </span>
             </div>
           </Link>

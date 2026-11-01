@@ -11,7 +11,7 @@ export default function ExamCreator() {
         title="إنشاء الامتحانات بالذكاء الاصطناعي من ملفك | منصة ذروة العلم"
         description="ارفع كتابك أو ملزمتك، اختر الوحدات، فيُنشئ الذكاء الاصطناعي امتحاناً من ملفك فقط مع جداول وأشكال من الملف الأصلي، وتنزيل PDF ورابط امتحان إلكتروني."
         keywords="إنشاء امتحان, امتحان إلكتروني, ذكاء اصطناعي, تعليم, ذروة العلم"
-        canonicalUrl="https://yoursite.lovable.app/exam-creator"
+       
       />
       <SafeBoundary name="Navbar"><Navbar /></SafeBoundary>
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-8 px-4 py-10">

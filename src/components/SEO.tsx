@@ -25,6 +25,7 @@ export const SEO = ({
 }: SEOProps) => {
   const fullTitle = title.includes("ذروة العلم") ? title : `${title} | منصة ذروة العلم`;
   const currentUrl = canonicalUrl || window.location.href;
+  const siteUrl = window.location.origin;
   
   return (
     <Helmet>
@@ -69,7 +70,7 @@ export const SEO = ({
           "@type": "EducationalOrganization",
           "name": "ذروة العلم",
           "alternateName": "Peak Science Platform",
-          "url": "https://yoursite.lovable.app",
+          "url": siteUrl,
           "logo": ogImage,
           "description": "منصة تعليمية تفاعلية شاملة لتعلم العلوم والرياضيات واللغات مع مساعد ذكي وأدوات تعليمية متطورة",
           "sameAs": [],
@@ -87,12 +88,7 @@ export const SEO = ({
           "@context": "https://schema.org",
           "@type": "WebSite",
           "name": "ذروة العلم",
-          "url": "https://yoursite.lovable.app",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://yoursite.lovable.app/search?q={search_term_string}",
-            "query-input": "required name=search_term_string"
-          }
+          "url": siteUrl
         })}
       </script>
     </Helmet>

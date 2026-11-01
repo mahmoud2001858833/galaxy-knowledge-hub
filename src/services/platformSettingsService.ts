@@ -43,8 +43,8 @@ export interface PlatformSettings {
 
 const DEFAULT_SETTINGS: PlatformSettings = {
   siteName: 'منصة ذروة العلم',
-  tagline: 'منصة تفاعلية للتعلم الذكي، المحاكاة ثلاثية الأبعاد، والذكاء الاصطناعي',
-  schoolAttribution: 'تم إنشاء وتطوير المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين',
+  tagline: 'منصة تعليمية أردنية ذكية للطالب والمعلم والمدرسة',
+  schoolAttribution: 'تم إنشاء وتطوير المنصة بواسطة مدرسة عنبه الثانوية الشاملة للبنين',
   developedBy: 'إشراف وتطوير نخبة من الأكاديميين والمبرمجين',
   contactEmail: 'contact@zarwat-alelm.edu.jo',
   contactPhone: '+962 7 9000 0000',
@@ -70,7 +70,7 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   ]
 };
 
-const STORAGE_KEY = 'galaxy_platform_settings_v2';
+const STORAGE_KEY = 'galaxy_platform_settings_v3';
 
 class PlatformSettingsService {
   private settings: PlatformSettings = DEFAULT_SETTINGS;

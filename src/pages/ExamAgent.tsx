@@ -60,7 +60,7 @@ export default function ExamAgent() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F8FAFC] text-right text-slate-900 dark:bg-[#050714] dark:text-white" dir="rtl">
-      <SEO title={`${agent?.name ?? "وكيل مختص"} | منصة ذروة العلم`} description={agent?.description ?? "وكيل ذكاء اصطناعي مختص يجيب من ملفات محددة وينشئ امتحانات منها."} keywords="وكيل ذكاء اصطناعي, امتحانات, ذروة العلم" canonicalUrl="https://yoursite.lovable.app/agent" />
+      <SEO title={`${agent?.name ?? "وكيل مختص"} | منصة ذروة العلم`} description={agent?.description ?? "وكيل ذكاء اصطناعي مختص يجيب من ملفات محددة وينشئ امتحانات منها."} keywords="وكيل ذكاء اصطناعي, امتحانات, ذروة العلم" />
       <SafeBoundary name="Navbar"><Navbar /></SafeBoundary>
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-5 px-4 py-8">
         {agent === undefined && <Loader2 className="mx-auto mt-16 h-8 w-8 animate-spin" />}
