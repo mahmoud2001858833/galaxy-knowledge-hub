@@ -28,7 +28,7 @@ export interface SessionInfo {
   started_at: string;
 }
 
-export type Mode = 'cloud' | 'claude' | 'shell';
+export type Mode = 'cloud' | 'claude' | 'antigravity' | 'shell';
 
 export type SessionEnd = { kind: 'terminated' | 'expired' | 'closed' | 'denied'; reason?: string | null };
 
@@ -101,6 +101,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   const promptText = useCallback(() => {
     const mode = state.current.mode;
     if (mode === 'claude') return '\x1b[1;35mclaude\x1b[0m \x1b[2m›\x1b[0m ';
+    if (mode === 'antigravity') return '\x1b[1;34mantigravity\x1b[0m \x1b[2m›\x1b[0m ';
     if (mode === 'shell') return '\x1b[1;33mmac\x1b[0m:\x1b[1;34mproject\x1b[0m$ ';
     return `\x1b[1;32m${session.email.split('@')[0]}@zarwa\x1b[0m:\x1b[1;34m~\x1b[0m$ `;
   }, [session.email]);
@@ -131,7 +132,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
    * through realtime. Resolves when the job is finished, stopped or the session is locked.
    */
   const followJob = useCallback(
-    (jobId: string, kind: 'claude' | 'shell') =>
+    (jobId: string, kind: 'claude' | 'antigravity' | 'shell') =>
       new Promise<void>((resolveJob) => {
         const term = termRef.current!;
         const s = state.current;
@@ -226,12 +227,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         lockWith({ kind: 'closed' }, 'Session closed.');
         return;
       }
-      if (s.mode === 'cloud' && (cmd === 'claude' || cmd === 'shell')) {
-        s.mode = cmd;
+      if (s.mode === 'cloud' && (cmd === 'claude' || cmd === 'shell' || cmd === 'antigravity' || cmd === 'agy')) {
+        s.mode = cmd === 'agy' ? 'antigravity' : cmd;
         term.write(
-          cmd === 'claude'
+          s.mode === 'claude'
             ? `\r\n\x1b[35mClaude Code on the principal's computer.\x1b[0m \x1b[2mEvery line is a message${s.claudeSession ? ' (continuing the last conversation)' : ''}. /new starts over, exit leaves.\x1b[0m`
-            : "\r\n\x1b[33mShell on the principal's computer, in the project folder.\x1b[0m \x1b[2mNon-interactive commands only. exit leaves.\x1b[0m",
+            : s.mode === 'antigravity'
+              ? "\r\n\x1b[34mAntigravity agent on the principal's computer.\x1b[0m \x1b[2mEach line is sent as a task; the agent answers inside the Antigravity app. exit leaves.\x1b[0m"
+              : "\r\n\x1b[33mShell on the principal's computer, in the project folder.\x1b[0m \x1b[2mNon-interactive commands only. exit leaves.\x1b[0m",
         );
         return prompt();
       }
@@ -240,7 +243,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         term.write('\r\n\x1b[2mNew Claude conversation.\x1b[0m');
         return prompt();
       }
-      const wire = s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
+      const wire = s.mode === 'claude' ? `claude ${cmd}` : s.mode === 'antigravity' ? `antigravity ${cmd}` : s.mode === 'shell' ? `sh ${cmd}` : cmd;
       const resume = s.mode === 'claude' ? s.claudeSession : null;
 
       s.busy = true;

@@ -115,6 +115,9 @@ const COMMANDS: Record<string, Command> = {
       }
       out(`  ${c.cyan(pad('claude <prompt>', 28))} Ask Claude Code on the principal's computer`);
       out(`  ${c.cyan(pad('claude', 28))} Chat mode with Claude (exit to leave)`);
+      out(`  ${c.cyan(pad('antigravity <prompt>', 28))} Send a task to the Antigravity agent there (also: agy)`);
+      out(`  ${c.cyan(pad('antigravity', 28))} Antigravity mode (exit to leave)`);
+      out(`  ${c.cyan(pad('ai <prompt>', 28))} Your assigned agent (Claude or Antigravity)`);
       out(`  ${c.cyan(pad('sh <command>', 28))} Run a shell command there (also: $ <command>)`);
       out(`  ${c.cyan(pad('shell', 28))} Shell mode (exit to leave)`);
       out(`  ${c.cyan(pad('clear', 28))} Clear the screen (local, not counted)`);
@@ -438,7 +441,8 @@ const onlineDevice = async (service: SupabaseClient) => {
 COMMANDS.bridge = {
   usage: 'bridge',
   help: 'Status of the bridge to the principal\'s computer',
-  run: async ({ service, isPrincipal, out }) => {
+  run: async ({ service, isPrincipal, begin, out }) => {
+    if (!isPrincipal) out(`${pad('your agent', 10)} ${begin.allow_claude ? begin.agent : 'none'}`);
     const { data } = await service.from('bridge_devices').select('name, last_seen_at, info, revoked').eq('revoked', false).order('last_seen_at', { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
     if (!masterKey()) out(c.yellow('Bridge signing key is not configured on the server (BRIDGE_MASTER_KEY).'));
     if (!data) return out(c.yellow('No computer is paired. The principal pairs one from /admin?tab=terminal.'));
@@ -447,6 +451,7 @@ COMMANDS.bridge = {
     out(`${pad('device', 10)} ${data.name}${data.info?.host ? ' · ' + data.info.host : ''}`);
     if (isPrincipal && data.info?.workdir) out(`${pad('workdir', 10)} ${data.info.workdir}`);
     if (data.info?.claude) out(`${pad('claude', 10)} ${data.info.claude}`);
+    if (data.info?.antigravity) out(`${pad('antigrav.', 10)} ${data.info.antigravity}`);
     out(`${pad('seen', 10)} ${data.last_seen_at ? ammanTime(data.last_seen_at) : 'never'}`);
   },
 };
@@ -563,9 +568,12 @@ serve(async (req) => {
       }
 
       // ---- commands for the principal's computer
-      const bridgeMatch = line.match(/^(claude|sh)\s+([\s\S]+)$/i) ?? (line.startsWith('$') ? ['', 'sh', line.slice(1).trim()] : null);
+      const bridgeMatch = line.match(/^(claude|antigravity|agy|ai|sh)\s+([\s\S]+)$/i) ?? (line.startsWith('$') ? ['', 'sh', line.slice(1).trim()] : null);
       if (bridgeMatch && bridgeMatch[2]) {
-        const kind = bridgeMatch[1].toLowerCase() === 'claude' ? 'claude' : 'shell';
+        const word = bridgeMatch[1].toLowerCase();
+        // `ai` goes to the user's assigned agent (Claude for the principal)
+        const kind =
+          word === 'sh' ? 'shell' : word === 'claude' ? 'claude' : word === 'ai' ? (begin.is_principal ? 'claude' : begin.agent) : 'antigravity';
         const input = bridgeMatch[2];
         const fail = async (msg: string) => {
           out(c.red(msg));
@@ -573,7 +581,11 @@ serve(async (req) => {
           send({ t: 'end', status: 'error', quota: begin.quota ?? null });
           controller.close();
         };
-        if (kind === 'claude' && !begin.allow_claude) return fail('claude: not allowed for your account. Ask the principal.');
+        if (kind !== 'shell' && !begin.is_principal) {
+          const agentName = begin.agent === 'antigravity' ? 'Antigravity' : 'Claude';
+          if (!begin.allow_claude) return fail('AI agent: not allowed for your account. Ask the principal.');
+          if (begin.agent !== kind) return fail(`Your AI agent is ${agentName}. Use: ai <prompt>  (or: ${begin.agent} <prompt>)`);
+        }
         if (kind === 'shell' && !begin.allow_shell) return fail('sh: not allowed for your account. Ask the principal.');
         if (!masterKey()) return fail('Bridge is not configured on the server (BRIDGE_MASTER_KEY missing).');
         const device = await onlineDevice(service);

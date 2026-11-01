@@ -4946,6 +4946,7 @@ export type Database = {
       }
       usage_quotas: {
         Row: {
+          agent: string
           allow_claude: boolean
           allow_shell: boolean
           ban_reason: string | null
@@ -4967,6 +4968,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          agent?: string
           allow_claude?: boolean
           allow_shell?: boolean
           ban_reason?: string | null
@@ -4988,6 +4990,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          agent?: string
           allow_claude?: boolean
           allow_shell?: boolean
           ban_reason?: string | null

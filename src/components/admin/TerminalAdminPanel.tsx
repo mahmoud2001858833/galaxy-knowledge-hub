@@ -233,8 +233,9 @@ const BridgeCard: React.FC = () => {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت دائماً مسموح لك. للآخرين فعّل Claude أو Shell من جدول
-        المستخدمين أدناه. Claude يعمل لهم للقراءة فقط، وShell لهم مقفل على جهازك إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code> في{' '}
+        الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت تستخدم Claude وAntigravity معاً. لكل مستخدم آخر اختر
+        وكيله (Claude أو Antigravity) أو Shell من جدول المستخدمين أدناه، ويكتب هو <code dir="ltr">ai &lt;طلبه&gt;</code>. Claude يعمل لهم للقراءة فقط،
+        وAntigravity بوضع ask، وShell لهم مقفل على جهازك إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code> في{' '}
         <code dir="ltr">~/.zarwa-bridge/config.json</code>.
       </p>
     </section>
@@ -410,7 +411,7 @@ export const TerminalAdminPanel: React.FC = () => {
                 <tr className="text-right">
                   <th className="p-2">الإيميل</th>
                   <th className="p-2">مفعّل</th>
-                  <th className="p-2">Claude</th>
+                  <th className="p-2">وكيل الذكاء</th>
                   <th className="p-2">Shell</th>
                   <th className="p-2">الحالة</th>
                   <th className="p-2">استهلاك اليوم</th>
@@ -434,7 +435,20 @@ export const TerminalAdminPanel: React.FC = () => {
                         <Switch checked={q.enabled} onCheckedChange={(v) => update(q, { enabled: v }, v ? 'فُعّلت الصلاحية' : 'سُحبت الصلاحية وأُنهيت الجلسات')} />
                       </td>
                       <td className="p-2">
-                        <Switch checked={q.allow_claude} onCheckedChange={(v) => update(q, { allow_claude: v }, v ? 'سُمح له بـ Claude (قراءة فقط)' : 'أُوقف Claude له')} />
+                        <select
+                          aria-label="وكيل الذكاء"
+                          value={q.allow_claude ? q.agent : 'off'}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === 'off') update(q, { allow_claude: false }, 'أُوقف وكيل الذكاء له');
+                            else update(q, { allow_claude: true, agent: v }, v === 'claude' ? 'وكيله الآن Claude (قراءة فقط)' : 'وكيله الآن Antigravity (وضع ask)');
+                          }}
+                          className="rounded-lg border border-border bg-background px-2 py-1 text-xs"
+                        >
+                          <option value="off">معطّل</option>
+                          <option value="claude">Claude</option>
+                          <option value="antigravity">Antigravity</option>
+                        </select>
                       </td>
                       <td className="p-2">
                         <Switch

@@ -75,3 +75,9 @@
 3. شغّل الجسر: `npm run bridge`، أو `npm run bridge -- install-service` ليعمل دائماً في الخلفية على macOS.
 
 الأمر `npm run bridge -- check` يفحص الإعداد والاتصال دون أن يغيّر شيئاً.
+
+### Claude أو Antigravity لكل مستخدم
+- **من يستخدم ماذا:** الرئيس يستخدم الاثنين، بـ `claude <طلب>` و`antigravity <طلب>` (أو `agy`) ووضعيهما بالاسم نفسه. لكل مستخدم آخر يختار الرئيس "وكيل الذكاء" من لوحة الأدمن: معطّل أو Claude أو Antigravity، وهذا يُحفظ في `usage_quotas.agent` و`allow_claude`.
+- **أمر المستخدم:** يكتب `ai <طلبه>` فيذهب لوكيله. إن كتب اسم الوكيل الآخر يُرفض الطلب، والفحص في الدالة السحابية.
+- **Antigravity:** يعمل الجسر `antigravity-ide chat --mode <mode> --reuse-window "<prompt>"`، فيُفتح الطلب في وكيل Antigravity على الجهاز. لا توجد لـ Antigravity واجهة سطر أوامر تعيد الرد، لذلك تُظهر الطرفية تأكيد التسليم فقط، والرد يبقى داخل التطبيق.
+- **الأوضاع:** `antigravity.mode` (افتراضياً `agent`) للرئيس، و`antigravity.othersMode` (افتراضياً `ask`) للآخرين، وكلاهما في `~/.zarwa-bridge/config.json`.

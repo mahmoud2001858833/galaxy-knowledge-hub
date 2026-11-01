@@ -15,7 +15,7 @@
 // * Kill switch: a cancelled job kills the whole process group immediately.
 // * Other users (not the principal) only get what the principal enabled for them on the platform AND
 //   what this file allows: shell is off for them unless shell.allowOthers is true; Claude runs in
-//   read-only "plan" mode for them unless claude.othersPermissionMode is changed.
+//   read-only "plan" mode and Antigravity in "ask" mode for them unless the config says otherwise.
 
 import { spawn, execFileSync } from 'node:child_process';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -83,6 +83,17 @@ function pair(code) {
       othersPermissionMode: 'plan',
       model: null,
     },
+    antigravity: old.antigravity ?? {
+      bin: findBin([
+        'antigravity-ide',
+        join(homedir(), '.antigravity-ide/antigravity-ide/bin/antigravity-ide'),
+        '/Applications/Antigravity IDE.app/Contents/Resources/app/bin/antigravity-ide',
+        'antigravity',
+      ]),
+      // chat modes: agent (can act), edit, ask (answers only). Others get ask.
+      mode: 'agent',
+      othersMode: 'ask',
+    },
     shell: old.shell ?? { bin: process.env.SHELL || '/bin/zsh', allowOthers: false },
     maxMinutes: old.maxMinutes ?? { principal: 30, others: 5 },
   };
@@ -92,6 +103,7 @@ function pair(code) {
   console.log(`Paired. Config: ${CONFIG}`);
   console.log(`Working directory: ${cfg.workdir}`);
   console.log(`Claude Code: ${cfg.claude.bin ?? 'not found'}`);
+  console.log(`Antigravity: ${cfg.antigravity.bin ?? 'not found'}`);
   console.log('Start it with: npm run bridge');
 }
 
@@ -262,6 +274,26 @@ async function runClaude(cfg, job, out) {
   return { ...r, ...meta, code: meta.isError ? 1 : r.code };
 }
 
+
+// Antigravity has no headless mode: the task is opened in its agent panel on this computer and the
+// agent works (and answers) inside the app. We report that it was delivered.
+async function runAntigravity(cfg, job, out) {
+  const ag = cfg.antigravity ?? {};
+  if (!ag.bin) return { code: -1, error: 'Antigravity is not installed on this computer' };
+  const mode = job.is_principal ? ag.mode ?? 'agent' : ag.othersMode ?? 'ask';
+  out.push('sys', `\x1b[2mAntigravity · ${mode} · ${cfg.workdir}\x1b[0m\n`);
+  const r = await runProcess(ag.bin, ['chat', '--mode', mode, '--reuse-window', job.input], {
+    cwd: cfg.workdir,
+    env: process.env,
+    minutes: 2,
+    out,
+  });
+  if (r.code === 0) {
+    out.push('out', `Sent to the Antigravity agent on ${hostname()} (${mode} mode).\nThe agent works inside the Antigravity app; its reply appears there, not here.\n`);
+  }
+  return r;
+}
+
 async function handle(cfg, rpc, job, state) {
   log(`job ${job.id.slice(0, 8)} ${job.kind} from ${job.user_email}: ${job.input.slice(0, 80)}`);
   const problem = state.seen.has(job.id) ? 'job already ran' : verify(job, cfg);
@@ -275,7 +307,8 @@ async function handle(cfg, rpc, job, state) {
   state.current = { id: job.id, out };
   let r;
   try {
-    r = job.kind === 'claude' ? await runClaude(cfg, job, out) : await runShell(cfg, job, out);
+    r =
+      job.kind === 'claude' ? await runClaude(cfg, job, out) : job.kind === 'antigravity' ? await runAntigravity(cfg, job, out) : await runShell(cfg, job, out);
   } catch (e) {
     r = { code: -1, error: e.message };
   }
@@ -306,6 +339,7 @@ async function main() {
     platform: platform(),
     workdir: cfg.workdir,
     claude: cfg.claude.bin ? (() => { try { return execFileSync(cfg.claude.bin, ['--version'], { encoding: 'utf8' }).trim(); } catch { return 'installed'; } })() : null,
+    antigravity: cfg.antigravity?.bin ? (() => { try { return 'Antigravity ' + execFileSync(cfg.antigravity.bin, ['--version'], { encoding: 'utf8' }).split('\n')[0].trim(); } catch { return 'installed'; } })() : null,
   };
 
   // Doorbell: new job → poll now; cancelled current job → kill now.
@@ -358,6 +392,11 @@ async function check() {
     console.log(`claude       ${execFileSync(cfg.claude.bin, ['--version'], { encoding: 'utf8' }).trim()} · ${cfg.claude.permissionMode} / others ${cfg.claude.othersPermissionMode}`);
   } catch {
     console.log('claude       ✗ not found');
+  }
+  try {
+    console.log(`antigravity  ${cfg.antigravity?.bin ? execFileSync(cfg.antigravity.bin, ['--version'], { encoding: 'utf8' }).split('\n')[0] : '✗ not found'} · ${cfg.antigravity?.mode} / others ${cfg.antigravity?.othersMode}`);
+  } catch {
+    console.log('antigravity  ✗ not working');
   }
   const { rpc } = makeApi(cfg);
   try {
