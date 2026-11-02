@@ -13,6 +13,25 @@ const STYLE: Record<string, string> = {
   en: "Speak in a warm, calm, clear female voice, like a friend walking next to a blind person and guiding them. Don't rush.",
 };
 
+// Every clip is kept in the private "blind-eye-voice" bucket: a sentence is synthesised once, ever.
+const SB_URL = Deno.env.get("SUPABASE_URL")!;
+const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+async function clipPath(lang: string, text: string) {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${VOICE}|${lang}|${text}`));
+  return `${lang}/${[...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("")}.wav`;
+}
+async function stored(path: string): Promise<Uint8Array | null> {
+  const r = await fetch(`${SB_URL}/storage/v1/object/blind-eye-voice/${path}`, { headers: { Authorization: `Bearer ${SB_KEY}`, apikey: SB_KEY } });
+  return r.ok ? new Uint8Array(await r.arrayBuffer()) : null;
+}
+function store(path: string, audio: Uint8Array) {
+  fetch(`${SB_URL}/storage/v1/object/blind-eye-voice/${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${SB_KEY}`, apikey: SB_KEY, "Content-Type": "audio/wav", "x-upsert": "true" },
+    body: audio,
+  }).catch(() => {});
+}
+
 // repeated phrases are served from memory while the instance is warm
 const cache = new Map<string, Uint8Array>();
 let geminiBlockedUntil = 0;
@@ -43,6 +62,19 @@ async function viaGateway(text: string, lang: string): Promise<Uint8Array> {
   });
   if (!r.ok) throw new Error(`gateway ${r.status}: ${(await r.text()).slice(0, 200)}`);
   return new Uint8Array(await r.arrayBuffer());
+}
+
+/** The gateway limits bursts (429): wait a moment and try again instead of failing. */
+async function viaGatewayRetry(text: string, lang: string): Promise<Uint8Array> {
+  let last: unknown;
+  for (let i = 0; i < 4; i++) {
+    try { return await viaGateway(text, lang); } catch (e) {
+      last = e;
+      if (!String(e).includes("gateway 429")) throw e;
+      await new Promise((r) => setTimeout(r, 400 * (i + 1) + Math.random() * 300));
+    }
+  }
+  throw last;
 }
 
 async function viaGemini(text: string, lang: string): Promise<Uint8Array> {
@@ -76,16 +108,23 @@ Deno.serve(async (req) => {
     const key = `${lg}|${t}`;
     const hit = cache.get(key);
     if (hit) return new Response(hit, { headers: { ...corsHeaders, "Content-Type": "audio/wav", "X-Cache": "hit" } });
+    const path = await clipPath(lg, t);
+    const saved = await stored(path).catch(() => null);
+    if (saved) {
+      cache.set(key, saved);
+      return new Response(saved, { headers: { ...corsHeaders, "Content-Type": "audio/wav", "X-Cache": "stored" } });
+    }
 
     let lastErr = "";
-    for (const [name, fn] of [["gateway", viaGateway], ["gemini", viaGemini]] as const) {
+    for (const [name, fn] of [["gateway", viaGatewayRetry], ["gemini", viaGemini]] as const) {
       try {
         const audio = await fn(t, lg);
         if (cache.size > 400) cache.delete(cache.keys().next().value!);
         cache.set(key, audio);
+        store(path, audio);
         return new Response(audio, { headers: { ...corsHeaders, "Content-Type": "audio/wav", "X-Model": name } });
       } catch (e) {
-        lastErr = e instanceof Error ? e.message : String(e);
+        lastErr += `${name}: ${e instanceof Error ? e.message : String(e)}; `;
       }
     }
     console.warn("blind-eye-voice failed:", lastErr);

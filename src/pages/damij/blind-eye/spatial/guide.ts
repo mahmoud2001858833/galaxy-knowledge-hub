@@ -84,6 +84,7 @@ export class Guide {
   private avoiding: number | null = null;
   private lastMoveAt = Date.now();
   private lastStepCount = 0;
+  private lastObstacleAt = 0;
 
   constructor(private target: MapObject, private lang: Lang) {}
 
@@ -140,8 +141,9 @@ export class Guide {
 
     // an obstacle on the way, close: say it once, with which way to step
     const block = map.blockers(this.target, 2.2)[0];
-    if (block && !this.warned.has(block.m.id) && Math.abs(r.rel) < 40) {
+    if (block && !this.warned.has(block.m.id) && Math.abs(r.rel) < 40 && now - this.lastObstacleAt > 4000) {
       this.warned.add(block.m.id);
+      this.lastObstacleAt = now;
       this.avoiding = block.m.id;
       const s = p.obstacle(Math.max(1, Math.min(3, Math.round(block.along / STEP_M))), block.side >= 0);
       return out('obstacle', [s], s, { urgent: block.along < 1.2 });

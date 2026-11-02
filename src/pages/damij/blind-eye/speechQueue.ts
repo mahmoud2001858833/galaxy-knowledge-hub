@@ -20,6 +20,7 @@ type SpeechItem = {
   pan?: number; // kept for back-compat
   lang?: BELang;
   enqueuedAt: number;
+  seq?: number;
   onEnd?: () => void;
 };
 
@@ -35,6 +36,7 @@ let lastText = '';
 let volume = 1;
 let source: AudioBufferSourceNode | null = null;
 let generation = 0;
+let seqCounter = 0; // keeps the order things were asked to be said
 
 // natural voice
 let fetcher: VoiceFetcher | null = null;
@@ -74,23 +76,23 @@ export function cleanSpokenText(raw: string, lang: BELang = 'ar'): string {
   return clean;
 }
 
-/** Sentence-sized pieces (≤ ~170 chars) so no single utterance runs long. */
+/**
+ * One piece per sentence (≤ ~170 chars): no utterance runs long, and a sentence said before
+ * ("أحسنت، استمر.") is reused from the cache whatever comes around it.
+ */
 export function splitForSpeech(text: string, max = 170): string[] {
-  const sentences = text.split(/(?<=[.!؟?])\s+/).map((s) => s.trim()).filter(Boolean);
+  const sentences = text.split(/(?<=[.؟?])\s+/).map((s) => s.trim()).filter(Boolean);
   const out: string[] = [];
-  let cur = '';
   for (const s of sentences) {
     if (s.length > max) {
-      if (cur) { out.push(cur); cur = ''; }
       // very long sentence: break at commas
       let part = '';
       for (const c of s.split(/(?<=[،,])\s+/)) {
         if ((part + ' ' + c).trim().length > max && part) { out.push(part); part = c; } else part = (part + ' ' + c).trim();
       }
       if (part) out.push(part);
-    } else if ((cur + ' ' + s).trim().length > max) { out.push(cur); cur = s; } else cur = (cur + ' ' + s).trim();
+    } else out.push(s);
   }
-  if (cur) out.push(cur);
   return out.length ? out : [text];
 }
 
@@ -105,13 +107,11 @@ function scoreVoice(v: SpeechSynthesisVoice, lang: BELang) {
   if (/google/.test(name)) s += 40;
   if (/microsoft/.test(name)) s += 35;
   if (/apple|siri/.test(name)) s += 30;
-  if (lang === 'ar') {
-    if (/majed|ماجد/.test(name)) s += 90;
-    if (/tarik|طارق/.test(name)) s += 85;
-    if (/laila|ليلى/.test(name)) s += 80;
-    if (/mariam|مريم/.test(name)) s += 75;
-    if (/hamed|حامد|salma|سلمى|shakir|شاكر|zariyah|hoda/.test(name)) s += 75;
-  }
+  // the app speaks with a female voice; keep the phone's backup voice female too
+  if (/laila|ليلى|mariam|مريم|salma|سلمى|zariyah|hoda|sana|amina|nora|female|samantha|karen|moira|tessa|zira|jenny|aria/.test(name)) s += 120;
+  if (/majed|ماجد|tarik|طارق|hamed|حامد|shakir|شاكر|naayf|male|daniel|alex|fred|david|guy/.test(name)) s -= 80;
+  // Google's built-in voices are female
+  if (/google/.test(name)) s += 30;
   if (v.localService) s += 10; // works offline, starts faster
   if (v.default) s += 5;
   return s;
@@ -145,7 +145,32 @@ export function enableNaturalVoice(fetch: VoiceFetcher | null) {
 
 const naturalUsable = () => !!fetcher && Date.now() > disabledUntil && !!audioContext();
 
-function loadNatural(text: string, lang: BELang): Promise<AudioBuffer | null> {
+// clips survive reloads (Cache Storage), so a returning user hears the voice instantly
+const STORE = 'blind-eye-voice-v1';
+const storeKey = (key: string) => `https://voice.local/${encodeURIComponent(key)}`;
+async function fromStore(key: string): Promise<ArrayBuffer | null> {
+  try {
+    if (!('caches' in window)) return null;
+    const r = await (await caches.open(STORE)).match(storeKey(key));
+    return r ? await r.arrayBuffer() : null;
+  } catch { return null; }
+}
+function toStore(key: string, bytes: ArrayBuffer) {
+  try {
+    if (!('caches' in window)) return;
+    void caches.open(STORE).then((c) => c.put(storeKey(key), new Response(bytes, { headers: { 'Content-Type': 'audio/wav' } })));
+  } catch { /* storage unavailable */ }
+}
+
+// background preparation runs a few at a time so it never delays what must be said now
+let prefetchRunning = 0;
+const prefetchWaiting: (() => void)[] = [];
+const prefetchSlot = () => new Promise<void>((res) => {
+  if (prefetchRunning < 3) { prefetchRunning += 1; res(); } else prefetchWaiting.push(() => { prefetchRunning += 1; res(); });
+});
+const prefetchDone = () => { prefetchRunning -= 1; prefetchWaiting.shift()?.(); };
+
+function loadNatural(text: string, lang: BELang, background = false): Promise<AudioBuffer | null> {
   const key = `${lang}|${text}`;
   const hit = audioCache.get(key);
   if (hit) return Promise.resolve(hit);
@@ -153,21 +178,31 @@ function loadNatural(text: string, lang: BELang): Promise<AudioBuffer | null> {
   if (running) return running;
   if (!naturalUsable()) return Promise.resolve(null);
   const p = (async () => {
+    let slot = false;
     try {
-      const bytes = await fetcher!(text, lang);
+      let bytes = await fromStore(key);
+      const stored = !!bytes;
+      if (!bytes) {
+        if (background) { await prefetchSlot(); slot = true; }
+        bytes = await fetcher!(text, lang);
+      }
       const ctx = audioContext();
       if (!bytes || !ctx) throw new Error('no audio');
+      if (!stored) toStore(key, bytes.slice(0));
       const buf = await ctx.decodeAudioData(bytes);
       audioCache.set(key, buf);
       if (audioCache.size > 250) audioCache.delete(audioCache.keys().next().value!);
       failures = 0;
       return buf;
     } catch {
-      // stop trying for a while if the service keeps failing
-      failures += 1;
-      if (failures >= 3) { disabledUntil = Date.now() + 60_000; failures = 0; }
+      // the provider throttles bursts: after repeated live failures, use the phone voice briefly
+      if (!background) {
+        failures += 1;
+        if (failures >= 3) { disabledUntil = Date.now() + 20_000; failures = 0; }
+      }
       return null;
     } finally {
+      if (slot) prefetchDone();
       inflight.delete(key);
     }
   })();
@@ -178,7 +213,7 @@ function loadNatural(text: string, lang: BELang): Promise<AudioBuffer | null> {
 /** Fetch phrases ahead of time so they play instantly in the natural voice. */
 export function prefetchSpeech(texts: string[], lang: BELang = activeLang) {
   for (const t of texts) {
-    for (const piece of splitForSpeech(cleanSpokenText(t, lang))) void loadNatural(piece, lang);
+    for (const piece of splitForSpeech(cleanSpokenText(t, lang))) void loadNatural(piece, lang, true);
   }
 }
 
@@ -230,7 +265,7 @@ function drainQueue() {
   // guidance goes stale quickly
   queue = queue.filter((q) => !(q.priority === 'descriptive' && now - q.enqueuedAt > 8000) && !(q.priority === 'directional' && now - q.enqueuedAt > 2500));
   if (queue.length === 0) return;
-  queue.sort((a, b) => priWeight(b) - priWeight(a) || a.enqueuedAt - b.enqueuedAt);
+  queue.sort((a, b) => priWeight(b) - priWeight(a) || (a.seq ?? 0) - (b.seq ?? 0));
   const item = queue.shift()!;
   speakingItem = item;
   lastAnySpeechAt = now;
@@ -251,14 +286,14 @@ function drainQueue() {
   };
   const key = `${lang}|${text}`;
   const cached = audioCache.get(key);
-  if (cached && !item.urgent) { playBuffer(cached, finish); return; }
+  if (cached) { playBuffer(cached, finish); return; }
   if (item.urgent || !naturalUsable()) {
     speakDevice(item, text, lang, finish);
     if (!item.urgent) void loadNatural(text, lang); // next time it will be natural
     return;
   }
   // wait a little for the natural voice; long descriptions are worth a longer wait
-  const wait = text.length > 60 ? 3500 : 1300;
+  const wait = text.length > 60 ? 4500 : 2800;
   let settled = false;
   const fallback = window.setTimeout(() => {
     if (settled || gen !== generation) return;
@@ -280,7 +315,7 @@ export function enqueueSpeech(item: Omit<SpeechItem, 'enqueuedAt'>) {
   const pieces = splitForSpeech(item.text);
   const now = Date.now();
   const items: SpeechItem[] = pieces.map((p, i) => ({
-    ...item, text: p, enqueuedAt: now + i * 0.001, onEnd: i === pieces.length - 1 ? item.onEnd : undefined,
+    ...item, text: p, enqueuedAt: now, seq: ++seqCounter, onEnd: i === pieces.length - 1 ? item.onEnd : undefined,
   }));
   // start fetching every piece now so they play back to back
   if (!item.urgent && pieces.length > 1) for (const p of pieces) void loadNatural(cleanSpokenText(p, lang), lang);

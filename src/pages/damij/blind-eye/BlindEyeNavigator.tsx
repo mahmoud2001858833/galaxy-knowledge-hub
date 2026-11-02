@@ -20,12 +20,14 @@ import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 import { HeadingTracker, StepDetector, requestSensorPermissions, angleDiff } from './spatial/sensors';
 import {
-  WorldMap, cameraFov, guidanceTo, summaryText, describeObject, kindFromText, kindWord, stepsText, directionText, objectsToward,
+  WorldMap, cameraFov, summaryText, describeObject, kindFromText, kindWord, stepsText, directionText, objectsToward,
   type Instruction, type Kind, type MapObject, type CapturePose,
 } from './spatial/worldMap';
 import { aiToObservations, cocoDistance, cocoToObservations } from './spatial/perception';
 import { Beacon, chirp, unlockAudio } from './spatial/beacon';
 import MiniMap from './spatial/MiniMap';
+import { Guide, GUIDE_PHRASES, type GuideUpdate } from './spatial/guide';
+import { COMMON_PHRASES, HAZARD_PHRASES } from './spatial/phrases';
 
 /*
  * عين الأعمى — how it works
@@ -68,18 +70,6 @@ const fetchVoice = async (text: string, lang: string): Promise<ArrayBuffer | nul
   return r.arrayBuffer();
 };
 
-// said often: fetched in the natural voice before they are needed
-const COMMON_PHRASES: Record<'ar' | 'en', string[]> = {
-  ar: [
-    'مرحباً، أنا عين الأعمى.',
-    'سأتعرف على المكان من حولك. أمسك الهاتف أمام صدرك والكاميرا للأمام، واستدر حول نفسك ببطء دورة كاملة. ستسمع نقرة مع كل لقطة.',
-    'استمر بالدوران', 'نصف الدورة، استمر', 'انتهى المسح.', 'تحدث، أنا أستمع...',
-    'لحظة، أصف ما أمامك...', 'لحظة، أقرأ النص...', 'لحظة، أتعرف على ما أمامك...', 'تم إلغاء التوجيه',
-  ],
-  en: [
-    'Hello, this is Blind Eye.', 'Keep turning', 'Halfway, keep turning', 'Scan complete.', 'Speak, I am listening...',
-  ],
-};
 
 /** Resolve with `fallback` if the promise takes longer than `ms` (phone prompts can stay unanswered). */
 const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
@@ -115,6 +105,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const detectorReadyRef = useRef(false);
   const detectNextRef = useRef(0);
   const lastInstrRef = useRef<{ key: string; t: number; text: string }>({ key: '', t: 0, text: '' });
+  const guideRef = useRef<Guide | null>(null);
+  const quietUntilRef = useRef(0);
   const warnedRef = useRef<Map<string, number>>(new Map());
   const scanRef = useRef<ScanState | null>(null);
   const awaitingDestinationRef = useRef(false);
@@ -203,6 +195,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
     setSearching(null);
     setInstr(null);
     beaconRef.current.stop();
+    guideRef.current = null;
     lastInstrRef.current = { key: '', t: 0, text: '' };
   }, []);
 
@@ -214,10 +207,16 @@ const BlindEyeNavigatorInner: React.FC = () => {
     setTargetId(m.id);
     setSearching(null);
     lastInstrRef.current = { key: '', t: 0, text: '' };
+    const guide = new Guide(m, langRef.current === 'ar' ? 'ar' : 'en');
+    guideRef.current = guide;
+    const intro = guide.intro(mapRef.current);
     if (announce) {
       chirp.found();
       vibrate([60, 40, 60]);
-      speakTracked(L(`سأرشدك إلى ${m.label}. ${describeObject(mapRef.current, m, 'ar')}.`, `Guiding you to ${m.label}. ${describeObject(mapRef.current, m, 'en')}.`), 'critical');
+      cancelAllSpeech();
+      // one item per sentence: the fixed ones are already prepared in the voice
+      intro.forEach((t) => enqueueSpeech({ text: t, priority: 'critical', lang: langRef.current }));
+      lastSpokenRef.current = intro.join(' ');
     }
   }, []);
 
@@ -241,8 +240,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   // ------------------------------------------------------------------ cloud mapping
   const cloudMap = useCallback(async (reason: 'scan' | 'walk' | 'search') => {
     if (!onlineRef.current || Date.now() < cloudCooldownRef.current) return;
-    if (cloudInflightRef.current >= (reason === 'scan' ? 4 : 1)) return;
-    const img = captureFrame(512, 0.62);
+    if (cloudInflightRef.current >= (reason === 'scan' ? 4 : 2)) return;
+    const img = captureFrame(reason === 'scan' ? 512 : 448, 0.6);
     if (!img) return;
     const pose = currentPose();
     const map = mapRef.current;
@@ -428,6 +427,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
     setStartError(null);
     setPhaseBoth('starting');
     try { unlockAudio(); } catch { /* no audio */ }
+    // audio is allowed now: load the prepared sentences in her voice (stored once on the server)
+    const plg = langRef.current === 'ar' ? 'ar' : 'en';
+    prefetchSpeech([...COMMON_PHRASES[plg], ...HAZARD_PHRASES[plg], ...GUIDE_PHRASES(plg)], langRef.current);
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(' ');
@@ -560,11 +562,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
           const last = warnedRef.current.get(k) ?? 0;
           if (Date.now() - last > 3500) {
             warnedRef.current.set(k, Date.now());
-            const name = langRef.current === 'ar' ? labelToArabic(hz.label) : hz.label;
             const right = hz.x + hz.w / 2 < 0.5;
             chirp.warn(right ? -0.6 : 0.6);
             haptics.stop();
-            say(L(`قف! ${name} أمامك مباشرة. تحرك إلى ${right ? 'اليمين' : 'اليسار'}.`, `Stop! ${name} right in front. Move ${right ? 'right' : 'left'}.`), 'critical');
+            const hp = HAZARD_PHRASES[langRef.current === 'ar' ? 'ar' : 'en'];
+            enqueueSpeech({ text: hp[0], priority: 'critical', urgent: true, lang: langRef.current });
+            enqueueSpeech({ text: right ? hp[1] : hp[2], priority: 'critical', lang: langRef.current });
           }
         }
       } catch { /* detector not ready */ } finally {
@@ -586,8 +589,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const moved = Math.hypot(map.x - last.x, map.y - last.y);
       const turned = Math.abs(angleDiff(map.heading, last.heading));
       if (pendingRef.current) {
-        if (since > 1500 && (turned > 20 || moved > 0.6 || since > 4000)) cloudMap('search');
-      } else if (since > 2200 && (moved > 0.6 || turned > 25 || since > 9000)) {
+        if (since > 1000 && (turned > 15 || moved > 0.4 || since > 3000)) cloudMap('search');
+      } else if (since > 1200 && (moved > 0.5 || turned > 15 || since > 5000)) {
         cloudMap('walk');
       }
     }, 300);
@@ -616,31 +619,25 @@ const BlindEyeNavigatorInner: React.FC = () => {
           }
           return;
         }
-        const ins = guidanceTo(map, target, lg);
-        setInstr(ins);
-        beaconRef.current.update(ins.rel, ins.dist);
-        const prev = lastInstrRef.current;
-        const age = Date.now() - prev.t;
-        const changed = ins.key !== prev.key;
-        const repeatAfter = ins.key === 'forward' ? 6000 : ins.key === 'blocked' ? 3500 : 3200;
-        if ((changed && age > 1200) || age > repeatAfter) {
-          lastInstrRef.current = { key: ins.key, t: Date.now(), text: ins.text };
-          if (ins.key === 'arrived') {
-            chirp.arrived();
-            vibrate([120, 60, 120, 60, 200]);
-            speakTracked(ins.text, 'critical');
-            clearTarget();
-            setInstr(ins);
-            return;
-          }
-          if (ins.key.includes('left')) hapticForDirection('left');
-          else if (ins.key.includes('right')) hapticForDirection('right');
-          else if (ins.key === 'blocked') haptics.stop();
-          speakTracked(ins.text, ins.key === 'blocked' || ins.key === 'behind' ? 'critical' : 'directional');
+        const guide = guideRef.current ?? (guideRef.current = new Guide(target, lg === 'ar' ? 'ar' : 'en'));
+        const u: GuideUpdate = guide.tick(map);
+        const w = guide.where(map);
+        beaconRef.current.update(w.rel, w.dist);
+        setInstr({
+          key: u.arrived ? 'arrived' : u.urgent ? 'blocked' : w.facing ? 'forward' : w.rel > 0 ? 'turn-right' : 'turn-left',
+          text: u.display, dist: w.dist, rel: w.rel, arrived: !!u.arrived,
+        });
+        if (u.say.length) {
+          lastSpokenRef.current = u.say.join(' ');
+          if (u.arrived) { chirp.arrived(); vibrate([120, 60, 120, 60, 200]); }
+          else if (u.urgent) haptics.stop();
+          else if (!w.facing) hapticForDirection(w.rel > 0 ? 'right' : 'left');
+          u.say.forEach((t, i) => enqueueSpeech({ text: t, priority: 'critical', urgent: !!u.urgent && i === 0, lang: lg }));
+          if (u.arrived) { quietUntilRef.current = Date.now() + 6000; clearTarget(); setInstr({ key: 'arrived', text: u.display, dist: 0, rel: 0, arrived: true }); }
         }
         return;
       }
-      if (pendingRef.current || scanRef.current) return;
+      if (pendingRef.current || scanRef.current || Date.now() < quietUntilRef.current) return;
       // free walking: warn about mapped obstacles straight ahead
       const b = walking() ? map.blockers(null, 1.6)[0] : undefined;
       if (b) {
@@ -706,7 +703,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   // natural voice: on, and the usual phrases fetched ahead
   useEffect(() => {
     enableNaturalVoice((text, lg) => fetchVoice(text, lg));
-    prefetchSpeech(COMMON_PHRASES[lang === 'ar' ? 'ar' : 'en'], lang);
+    const lg = lang === 'ar' ? 'ar' : 'en';
+    prefetchSpeech([...COMMON_PHRASES[lg], ...HAZARD_PHRASES[lg], ...GUIDE_PHRASES(lg)], lang);
     return () => enableNaturalVoice(null);
   }, [lang]);
 
@@ -910,7 +908,11 @@ const BlindEyeNavigatorInner: React.FC = () => {
     const lg = langRef.current;
     const tid = targetIdRef.current;
     const tgt = tid != null ? map.objects.find((o) => o.id === tid) : null;
-    if (tgt) { speakTracked(guidanceTo(map, tgt, lg).text, 'critical'); return; }
+    if (tgt) {
+      const r = map.rel(tgt);
+      speakTracked(L(`${tgt.label} ${directionText(r.rel, 'ar')}، على بعد ${stepsText(r.dist, 'ar')}.`, `${tgt.label} is ${directionText(r.rel, 'en')}, ${stepsText(r.dist, 'en')} away.`), 'critical');
+      return;
+    }
     if (pendingRef.current) { say(L(`أبحث عن ${pendingRef.current.name}. استدر ببطء.`, `Looking for ${pendingRef.current.name}. Turn slowly.`), 'critical'); return; }
     if (scanRef.current) { say(L('أمسح المكان، استمر بالدوران ببطء.', 'Scanning, keep turning slowly.'), 'critical'); return; }
     speakTracked(summaryText(map, lg, 3), 'critical');
