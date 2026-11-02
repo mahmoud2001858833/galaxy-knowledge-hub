@@ -313,26 +313,68 @@ async function chat(body: any) {
 }
 
 // ---------- voice ----------
-const VOICE_STYLE = "تكلمي بالعربية بلهجة أردنية خفيفة، بصوت أنثوي دافئ وواثق وحيوي كإنسانة حقيقية، بإيقاع طبيعي غير مستعجل، مع تعابير ونبرة تتغير حسب المعنى.";
-async function speak(text: string) {
+// Same girl as Blind Eye (blind-eye-voice): gateway gpt-4o-mini-tts voice "nova" with the same style,
+// and Gemini TTS "Sulafat" as the backup, exactly like there.
+const VOICE = "nova";
+const VOICE_STYLE = "تحدثي بالعربية الفصحى المبسطة بصوت أنثوي دافئ وهادئ وواضح، كصديقة قريبة تتكلم بثقة. لا تستعجلي.";
+
+function wav(pcm: Uint8Array, rate = 24000): Uint8Array {
+  const h = new DataView(new ArrayBuffer(44));
+  const w = (o: number, s: string) => [...s].forEach((c, i) => h.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); h.setUint32(4, 36 + pcm.length, true); w(8, "WAVE");
+  w(12, "fmt "); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true);
+  h.setUint32(24, rate, true); h.setUint32(28, rate * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true);
+  w(36, "data"); h.setUint32(40, pcm.length, true);
+  const out = new Uint8Array(44 + pcm.length);
+  out.set(new Uint8Array(h.buffer), 0);
+  out.set(pcm, 44);
+  return out;
+}
+
+async function speakGateway(text: string): Promise<Uint8Array> {
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY missing");
   let last = "";
-  for (const voice of ["coral", "nova"]) {
-    for (let i = 0; i < 3; i++) {
-      const r = await fetch(`${GATEWAY}/audio/speech`, {
-        signal: AbortSignal.timeout(20_000),
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "openai/gpt-4o-mini-tts", voice, input: text, instructions: VOICE_STYLE, response_format: "mp3" }),
-      });
-      if (r.ok) return new Uint8Array(await r.arrayBuffer());
-      last = `${r.status}: ${(await r.text()).slice(0, 160)}`;
-      if (r.status !== 429) break;
-      await new Promise((s) => setTimeout(s, 500 * (i + 1)));
-    }
+  for (let i = 0; i < 4; i++) {
+    const r = await fetch(`${GATEWAY}/audio/speech`, {
+      signal: AbortSignal.timeout(20_000),
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "openai/gpt-4o-mini-tts", voice: VOICE, input: text, instructions: VOICE_STYLE, response_format: "wav" }),
+    });
+    if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    last = `${r.status}: ${(await r.text()).slice(0, 160)}`;
+    if (r.status !== 429) break;
+    await new Promise((s) => setTimeout(s, 400 * (i + 1) + Math.random() * 300));
   }
   throw new Error(`tts ${last}`);
+}
+
+async function speakGemini(text: string): Promise<Uint8Array> {
+  const key = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
+  if (!key) throw new Error("no gemini key");
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`, {
+    signal: AbortSignal.timeout(20_000),
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: `${VOICE_STYLE}\n${text}` }] }],
+      generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Sulafat" } } } },
+    }),
+  });
+  if (!r.ok) throw new Error(`gemini tts ${r.status}`);
+  const j = await r.json();
+  const part = j?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.data);
+  if (!part) throw new Error("gemini tts: no audio");
+  const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType ?? "")?.[1] ?? 24000);
+  return wav(Uint8Array.from(atob(part.inlineData.data), (c) => c.charCodeAt(0)), rate);
+}
+
+async function speak(text: string) {
+  try { return await speakGateway(text); } catch (e) {
+    console.warn("admin-brain voice: gateway failed, trying Gemini", String(e));
+    return await speakGemini(text);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -350,7 +392,7 @@ Deno.serve(async (req) => {
       const text = typeof body.text === "string" ? body.text.trim().slice(0, 900) : "";
       if (!text) return json({ error: "no text" }, 400);
       const audio = await speak(text);
-      return new Response(audio, { headers: { ...cors, "Content-Type": "audio/mpeg" } });
+      return new Response(audio, { headers: { ...cors, "Content-Type": "audio/wav" } });
     }
     return json(await chat(body));
   } catch (e) {

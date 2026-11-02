@@ -4,13 +4,14 @@
 // the results. Risky clicks wait for the admin's confirmation.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { X, Check, Mic, Send } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X, Check, Send, Sparkles, Activity, MessagesSquare, FlaskConical, Compass, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { CORE_SECTIONS } from '@/config/platformSections';
 import { VoiceBrain, type BrainStatus } from './voiceBrain';
 import { runExperiment, type ExperimentResult } from './experiments';
 import ExperimentPanel from './ExperimentPanel';
+import BrainVisual from './BrainVisual';
 import { RISKY, click, findClickable, isNo, isYes, readScreen, scrollPage, typeInto } from './screenControl';
 
 type Mode = 'corner' | 'center' | 'docked';
@@ -81,28 +82,16 @@ function Orb() {
   const brainRef = useRef<VoiceBrain | null>(null);
   const [experiment, setExperiment] = useState<ExperimentResult | null>(null);
   const [typed, setTyped] = useState('');
-  const level = useMotionValue(0);
-  const pulse = useSpring(level, { stiffness: 300, damping: 18 });
-  const auraScale = useTransform(pulse, (v) => 1 + v * 0.35);
-  const coreScale = useTransform(pulse, (v) => 1 + Math.min(0.12, v * 0.12));
+  const [arrivals, setArrivals] = useState(0); // bumps each time she lands in the centre (shockwave)
+  const getLevel = useCallback(() => brainRef.current?.level() ?? 0, []);
 
   // geometry for each mode
-  const size = mode === 'center' ? Math.min(260, vp.w * 0.62) : mode === 'docked' ? 76 : 58;
+  const size = mode === 'center' ? Math.min(230, vp.w * 0.5) : mode === 'docked' ? 72 : 58;
   const pos = mode === 'center'
     ? { left: (vp.w - size) / 2, top: Math.max(24, (vp.h - size) / 2 - 60) }
     : { left: 20, top: vp.h - size - 20 };
 
-  // the orb breathes with whoever is talking
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const b = brainRef.current;
-      level.set(b ? b.level() : 0);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [level]);
+  useEffect(() => { if (mode === 'center') setArrivals((n) => n + 1); }, [mode]);
 
   const setPendingAction = (p: { label: string; run: () => void } | null) => {
     pendingRef.current = p;
@@ -240,110 +229,158 @@ function Orb() {
     return () => window.clearInterval(id);
   }, [status]);
 
+
+  const suggest = (t: string) => {
+    if (!brainRef.current) return;
+    setUserLine(t);
+    void brainRef.current.ask(t);
+  };
+
   return (
     <div data-brain-ui dir="rtl">
       <AnimatePresence>
         {experiment && <ExperimentPanel key={experiment.id + experiment.params.map((p) => p.value).join()} res={experiment} onClose={() => setExperiment(null)} />}
       </AnimatePresence>
 
-      {/* dim the page while she is in the centre */}
+      {/* the stage: blurred page, a soft light behind her and drifting motes */}
       <AnimatePresence>
         {mode === 'center' && (
           <motion.div
             key="veil"
-            className="fixed inset-0 z-[9998] bg-background/55 backdrop-blur-md"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9998] overflow-hidden bg-background/60 backdrop-blur-xl"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.35 } }}
             onClick={() => setMode(live ? 'docked' : 'corner')}
+          >
+            <motion.div
+              className="absolute rounded-full blur-3xl"
+              style={{
+                width: size * 3.2, height: size * 3.2, left: pos.left + size / 2 - size * 1.6, top: pos.top + size / 2 - size * 1.6,
+                background: 'radial-gradient(circle, hsl(var(--brand-to) / .30), hsl(var(--brand-from) / .12) 45%, transparent 70%)',
+              }}
+              animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {MOTES.map((m, i) => (
+              <motion.span
+                key={i}
+                className="absolute rounded-full"
+                style={{ left: `${m.x}%`, top: `${m.y}%`, width: m.s, height: m.s, background: `hsl(var(${i % 2 ? '--brand-from' : '--brand-to'}) / .55)` }}
+                animate={{ y: [0, -40 - m.s * 6, 0], opacity: [0, 0.9, 0] }}
+                transition={{ duration: m.d, delay: m.delay, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* shockwave when she lands in the centre */}
+      <AnimatePresence>
+        {mode === 'center' && (
+          <motion.span key={`wave-${arrivals}`} className="pointer-events-none fixed z-[9998] rounded-full border-2" aria-hidden
+            style={{ left: pos.left, top: pos.top, width: size, height: size, borderColor: 'hsl(var(--brand-to) / .6)' }}
+            initial={{ scale: 0.6, opacity: 0.9 }} animate={{ scale: 2.6, opacity: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, delay: 0.45, ease: 'easeOut' }}
           />
         )}
       </AnimatePresence>
 
+      {/* the orb */}
       <motion.button
         type="button"
         aria-label="العقل المركزي"
         onClick={onOrbClick}
-        className="fixed z-[9999] rounded-full outline-none"
+        className="group fixed z-[9999] rounded-full outline-none"
         initial={false}
         animate={{ left: pos.left, top: pos.top, width: size, height: size }}
-        transition={{ type: 'spring', stiffness: 120, damping: 18, mass: 0.9 }}
+        transition={{ type: 'spring', stiffness: 110, damping: 17, mass: 1 }}
+        whileHover={{ scale: mode === 'center' ? 1.03 : 1.12 }}
+        whileTap={{ scale: 0.92 }}
       >
-        {/* outer aura */}
-        <motion.span
-          className="absolute -inset-[18%] rounded-full blur-2xl"
-          style={{ background: 'radial-gradient(circle, hsl(var(--brand-to) / .55), transparent 70%)', scale: auraScale }}
-          animate={{ opacity: live ? [0.55, 0.9, 0.55] : 0.35 }}
-          transition={{ duration: 3, repeat: Infinity }}
-        />
-        {/* rotating ring */}
-        <motion.span
-          className="absolute inset-0 rounded-full"
-          style={{ background: 'conic-gradient(from 0deg, hsl(var(--brand-from)), hsl(var(--brand-to)), transparent 55%, hsl(var(--brand-from)))', padding: 3 }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: status === 'thinking' || status === 'connecting' ? 1.4 : 6, repeat: Infinity, ease: 'linear' }}
-        />
-        {/* core */}
-        <motion.span
-          className="absolute inset-[6%] rounded-full shadow-2xl"
-          style={{
-            background: 'radial-gradient(circle at 35% 30%, hsl(0 0% 100% / .9), hsl(var(--brand-from)) 28%, hsl(var(--brand-to)) 62%, hsl(var(--brand-to) / .7))',
-            scale: coreScale,
-          }}
-        />
-        {/* swirling highlight */}
-        <motion.span
-          className="absolute inset-[18%] rounded-full mix-blend-screen opacity-60"
-          style={{ background: 'conic-gradient(from 90deg, transparent, hsl(0 0% 100% / .55), transparent 40%)' }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-        />
-        {mode === 'corner' && <Mic className="absolute inset-0 m-auto h-6 w-6 text-primary-foreground drop-shadow" />}
+        {/* idle invitation: a ping every few seconds while she sleeps in the corner */}
+        {mode === 'corner' && (
+          <>
+            <motion.span className="absolute inset-0 rounded-full border-2" style={{ borderColor: 'hsl(var(--brand-to) / .7)' }}
+              animate={{ scale: [1, 1.9], opacity: [0.7, 0] }} transition={{ duration: 1.8, repeat: Infinity, repeatDelay: 2.4, ease: 'easeOut' }} />
+            <span className="pointer-events-none absolute bottom-full left-0 mb-3 whitespace-nowrap rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+              العقل المركزي
+            </span>
+          </>
+        )}
+        <BrainVisual status={status} getLevel={getLevel} calm={mode === 'corner'} />
       </motion.button>
 
-      {/* captions + controls under the orb */}
+      {/* centre: status, captions, suggestions, input */}
       <AnimatePresence>
         {mode === 'center' && (
           <motion.div
             key="panel"
-            className="fixed z-[9999] left-1/2 w-[min(92vw,560px)] -translate-x-1/2 text-center"
-            style={{ top: pos.top + size + 28 }}
-            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
+            className="fixed z-[9999] left-1/2 w-[min(92vw,600px)] -translate-x-1/2 text-center"
+            style={{ top: pos.top + size + Math.min(110, size * 0.55) }}
+            initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { delay: 0.35, duration: 0.5 } }}
+            exit={{ opacity: 0, y: 16, filter: 'blur(6px)', transition: { duration: 0.25 } }}
           >
-            <p className="text-sm text-muted-foreground min-h-5">{status === 'speaking' ? '' : status === 'thinking' && secs > 1 ? `${label} ${secs}ث` : label}</p>
-            {error && <p className="mt-1 text-xs text-destructive break-words">{error}</p>}
-            {userLine && <p className="mt-2 text-sm text-muted-foreground line-clamp-2">«{userLine}»</p>}
-            {aiLine && <p className="mt-2 text-lg font-medium text-foreground leading-relaxed line-clamp-4">{aiLine}</p>}
+            <StatusChip status={status} secs={secs} />
+            {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-2 text-xs text-destructive break-words">{error}</motion.p>}
 
-            {pending && (
-              <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-xl">
-                <p className="text-sm text-foreground">تأكيد العملية: <b>{pending.label}</b></p>
-                <p className="mt-1 text-xs text-muted-foreground">قل «نعم» أو «لا»، أو اضغط</p>
-                <div className="mt-3 flex justify-center gap-3">
-                  <button onClick={() => confirmPending(false)} className="inline-flex items-center gap-1 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">
-                    <Check className="h-4 w-4" /> نفّذ
-                  </button>
-                  <button onClick={() => cancelPending(false)} className="rounded-xl border border-border px-4 py-2 text-sm text-foreground">
-                    إلغاء
-                  </button>
-                </div>
-              </div>
+            <AnimatePresence mode="popLayout">
+              {userLine && (
+                <motion.p key={`u-${userLine}`} className="mx-auto mt-4 w-fit max-w-full rounded-2xl rounded-bl-md border border-border bg-card/70 px-4 py-2 text-sm text-muted-foreground line-clamp-2"
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8 }}>
+                  {userLine}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            {aiLine && <Words key={aiLine} text={aiLine} />}
+
+            {!userLine && live && status !== 'connecting' && (
+              <motion.div className="mt-5 flex flex-wrap justify-center gap-2" initial="h" animate="s"
+                variants={{ s: { transition: { staggerChildren: 0.07, delayChildren: 0.3 } } }}>
+                {SUGGESTIONS.map(({ icon: Icon, text }) => (
+                  <motion.button key={text} type="button" onClick={() => suggest(text)}
+                    variants={{ h: { opacity: 0, y: 10, scale: 0.9 }, s: { opacity: 1, y: 0, scale: 1 } }}
+                    whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs text-foreground shadow-sm hover:border-primary/50">
+                    <Icon className="h-3.5 w-3.5 text-primary" /> {text}
+                  </motion.button>
+                ))}
+              </motion.div>
             )}
 
+            <AnimatePresence>
+              {pending && (
+                <motion.div className="mt-5 overflow-hidden rounded-3xl border border-destructive/40 bg-card p-4 shadow-2xl"
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}>
+                  <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                    <motion.span animate={{ rotate: [0, -12, 12, -8, 0] }} transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 1.5 }}>
+                      <ShieldAlert className="h-4 w-4 text-destructive" />
+                    </motion.span>
+                    تأكيد العملية: <b>{pending.label}</b>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">قل «نعم» أو «لا»، أو اضغط</p>
+                  <div className="mt-3 flex justify-center gap-3">
+                    <button onClick={() => confirmPending(false)} className="inline-flex items-center gap-1 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+                      <Check className="h-4 w-4" /> نفّذ
+                    </button>
+                    <button onClick={() => cancelPending(false)} className="rounded-xl border border-border px-4 py-2 text-sm text-foreground">إلغاء</button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <form
-              className="mt-4 flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5"
+              className="relative mt-5 flex items-center gap-2 rounded-full border border-border bg-card/80 p-1.5 pr-4 shadow-lg backdrop-blur focus-within:border-primary/60"
               onSubmit={(e) => { e.preventDefault(); sendTyped(); }}
             >
-              <input
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                placeholder="أو اكتب طلبك هون…"
-                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              />
-              <button type="submit" aria-label="إرسال" className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">
+              <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="أو اكتب طلبك هون…"
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none" />
+              <motion.button type="submit" aria-label="إرسال" whileTap={{ scale: 0.85 }} whileHover={{ rotate: -15 }}
+                className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-primary-foreground">
                 <Send className="h-3.5 w-3.5" />
-              </button>
+              </motion.button>
             </form>
 
-            <button onClick={stop} className="mt-4 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs text-muted-foreground">
+            <button onClick={stop} className="mt-4 inline-flex items-center gap-1 rounded-full px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground">
               <X className="h-3.5 w-3.5" /> إنهاء
             </button>
           </motion.div>
@@ -352,29 +389,94 @@ function Orb() {
 
       {/* docked: what she is saying, beside the orb */}
       <AnimatePresence>
-        {mode === 'docked' && aiLine && (status === 'speaking' || status === 'thinking') && (
-          <motion.p
-            key="docked-caption"
-            className="fixed z-[9999] max-w-[min(70vw,360px)] rounded-2xl border border-border bg-card/95 px-3 py-2 text-sm text-foreground shadow-lg line-clamp-3"
-            style={{ left: 20 + size + 12, bottom: 24 }}
-            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
-          >
-            {status === 'thinking' ? 'أفكر…' : aiLine}
-          </motion.p>
+        {mode === 'docked' && live && (aiLine || status === 'thinking') && (status === 'speaking' || status === 'thinking') && (
+          <motion.div key="docked-caption"
+            className="fixed z-[9999] max-w-[min(70vw,380px)] rounded-2xl rounded-bl-md border border-border bg-card/95 px-3 py-2 text-sm text-foreground shadow-xl backdrop-blur"
+            style={{ left: 20 + size + 14, bottom: 26 }}
+            initial={{ opacity: 0, x: -12, scale: 0.9 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: -12, scale: 0.9 }}>
+            {status === 'thinking' ? <ThinkingDots /> : <span className="line-clamp-3">{aiLine}</span>}
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {/* docked: a small end button beside the orb */}
       {mode === 'docked' && live && (
-        <button
-          onClick={stop}
-          aria-label="إنهاء"
-          className="fixed z-[9999] grid h-6 w-6 place-items-center rounded-full border border-border bg-card text-muted-foreground"
-          style={{ left: 20 + size - 14, top: vp.h - size - 26 }}
-        >
+        <motion.button onClick={stop} aria-label="إنهاء" initial={{ scale: 0 }} animate={{ scale: 1 }}
+          className="fixed z-[9999] grid h-6 w-6 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow"
+          style={{ left: 20 + size - 12, top: vp.h - size - 26 }}>
           <X className="h-3.5 w-3.5" />
-        </button>
+        </motion.button>
       )}
     </div>
+  );
+}
+
+const SUGGESTIONS = [
+  { icon: Activity, text: 'شو صار بالمنصة اليوم؟' },
+  { icon: MessagesSquare, text: 'شو آخر المحادثات؟' },
+  { icon: FlaskConical, text: 'اعمليلي تجربة خلية خارصين ونحاس' },
+  { icon: Compass, text: 'وديني على التجارب' },
+  { icon: Sparkles, text: 'مين سجّل جديد هالأسبوع؟' },
+];
+
+// fixed pseudo-random motes so they don't jump on re-render
+const MOTES = Array.from({ length: 26 }, (_, i) => {
+  const r = (n: number) => ((Math.sin(i * 91.7 + n * 13.3) + 1) / 2);
+  return { x: r(1) * 100, y: 20 + r(2) * 75, s: 2 + r(3) * 4, d: 5 + r(4) * 6, delay: r(5) * 5 };
+});
+
+/** her words appear one by one, like she is saying them */
+function Words({ text }: { text: string }) {
+  const words = text.split(/\s+/).filter(Boolean);
+  return (
+    <motion.p className="mt-4 text-lg font-medium leading-relaxed text-foreground sm:text-xl" initial="h" animate="s"
+      variants={{ s: { transition: { staggerChildren: Math.min(0.09, 2.4 / Math.max(1, words.length)) } } }}>
+      {words.map((w, i) => (
+        <motion.span key={i} className="inline-block"
+          variants={{ h: { opacity: 0, y: 6, filter: 'blur(4px)' }, s: { opacity: 1, y: 0, filter: 'blur(0px)' } }}>
+          {w}&nbsp;
+        </motion.span>
+      ))}
+    </motion.p>
+  );
+}
+
+function ThinkingDots() {
+  return (
+    <span className="inline-flex items-center gap-1.5 py-1" aria-label="أفكر">
+      {[0, 1, 2].map((i) => (
+        <motion.span key={i} className="h-1.5 w-1.5 rounded-full bg-primary"
+          animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 0.8, delay: i * 0.15, repeat: Infinity }} />
+      ))}
+    </span>
+  );
+}
+
+/** a small pill that shows what she is doing, each state with its own little animation */
+function StatusChip({ status, secs }: { status: BrainStatus; secs: number }) {
+  if (status === 'closed') return null;
+  const text = status === 'thinking' && secs > 1 ? `${STATUS_AR.thinking} ${secs}ث` : status === 'speaking' ? 'أحكي…' : STATUS_AR[status];
+  return (
+    <motion.div layout className="mx-auto inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur">
+      {status === 'listening' && (
+        <span className="relative flex h-2.5 w-2.5">
+          <motion.span className="absolute inset-0 rounded-full bg-primary" animate={{ scale: [1, 2.2], opacity: [0.6, 0] }} transition={{ duration: 1.2, repeat: Infinity }} />
+          <span className="relative h-2.5 w-2.5 rounded-full bg-primary" />
+        </span>
+      )}
+      {(status === 'thinking' || status === 'connecting') && (
+        <motion.span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent" animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+      )}
+      {status === 'speaking' && (
+        <span className="flex h-3 items-end gap-0.5">
+          {[0, 1, 2, 3].map((i) => (
+            <motion.span key={i} className="w-0.5 rounded-full bg-primary" animate={{ height: ['30%', '100%', '45%', '80%', '30%'] }} transition={{ duration: 0.9, delay: i * 0.12, repeat: Infinity }} />
+          ))}
+        </span>
+      )}
+      {status === 'error' && <span className="h-2.5 w-2.5 rounded-full bg-destructive" />}
+      <AnimatePresence mode="wait">
+        <motion.span key={text} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>{text}</motion.span>
+      </AnimatePresence>
+    </motion.div>
   );
 }
