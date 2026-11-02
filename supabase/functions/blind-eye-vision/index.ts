@@ -10,6 +10,7 @@ const corsHeaders = {
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODELS = [
+  "google/gemini-2.5-flash-lite",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
   "google/gemini-3-flash-preview",
@@ -277,7 +278,9 @@ function toGeminiSchema(s: any): any {
   return out;
 }
 
-const DIRECT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+const DIRECT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+// after a quota error the direct key is skipped for a minute (saves a wasted round trip per call)
+let directBlockedUntil = 0;
 
 async function callDirect(model: string, sysPrompt: string, userText: string, images: string[], tool: any, maxTokens: number) {
   const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
@@ -306,6 +309,7 @@ async function callDirect(model: string, sysPrompt: string, userText: string, im
         },
       }),
     });
+    if (r.status === 429) { directBlockedUntil = Date.now() + 60_000; throw new Error("direct quota"); }
     if (!r.ok) throw new Error(`direct ${model} ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const j = await r.json();
     const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
@@ -413,7 +417,7 @@ Deno.serve(async (req) => {
     const userText = context
       ? `Context: ${context}\nAnalyze the scene for the blind user in language "${useLang}".`
       : `Analyze the scene for the blind user in language "${useLang}".`;
-    for (const model of DIRECT_MODELS) {
+    for (const model of Date.now() < directBlockedUntil ? [] : DIRECT_MODELS) {
       try {
         const result = await callDirect(model, sysPrompt, userText, frames, tool, maxTokens);
         return new Response(
@@ -423,6 +427,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         lastErr = e instanceof Error ? e.message : String(e);
         console.warn("blind-eye-vision direct failed:", lastErr);
+        if (Date.now() < directBlockedUntil) break;
       }
     }
     for (const model of MODELS) {
