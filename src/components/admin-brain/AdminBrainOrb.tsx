@@ -1,13 +1,16 @@
 // "العقل المركزي": the admin-only AI orb. Idle in the corner; tap it and it flies to the centre,
-// grows and talks (OpenAI Realtime voice). When it acts on the screen it shrinks to the left
-// corner and keeps listening. Risky clicks wait for the admin's confirmation.
+// grows and talks. When it acts on the screen it shrinks to the left corner and keeps listening.
+// It knows the platform's data (admin-brain Edge Function), runs scientific experiments and shows
+// the results. Risky clicks wait for the admin's confirmation.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { X, Check, Mic } from 'lucide-react';
+import { X, Check, Mic, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { CORE_SECTIONS } from '@/config/platformSections';
-import { RealtimeBrain, type BrainStatus } from './realtime';
+import { VoiceBrain, type BrainStatus } from './voiceBrain';
+import { runExperiment, type ExperimentResult } from './experiments';
+import ExperimentPanel from './ExperimentPanel';
 import { RISKY, click, findClickable, isNo, isYes, readScreen, scrollPage, typeInto } from './screenControl';
 
 type Mode = 'corner' | 'center' | 'docked';
@@ -25,8 +28,8 @@ const allPages = () => [
 ];
 
 const STATUS_AR: Record<BrainStatus, string> = {
-  connecting: 'أتصل…',
-  listening: 'أسمعك',
+  connecting: 'لحظة…',
+  listening: 'أسمعك… احكي',
   thinking: 'أفكر…',
   speaking: '',
   error: 'انقطع الاتصال',
@@ -75,7 +78,9 @@ function Orb() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ label: string } | null>(null);
   const pendingRef = useRef<{ label: string; run: () => void } | null>(null);
-  const brainRef = useRef<RealtimeBrain | null>(null);
+  const brainRef = useRef<VoiceBrain | null>(null);
+  const [experiment, setExperiment] = useState<ExperimentResult | null>(null);
+  const [typed, setTyped] = useState('');
   const level = useMotionValue(0);
   const pulse = useSpring(level, { stiffness: 300, damping: 18 });
   const auraScale = useTransform(pulse, (v) => 1 + v * 0.35);
@@ -110,20 +115,14 @@ function Orb() {
     setPendingAction(null);
     setMode('docked');
     p.run();
-    const b = brainRef.current;
-    const msg = `[النظام] المدير أكّد، وتم تنفيذ: ${p.label}.`;
-    // by voice the model is already answering the "نعم"; just let it know it really happened
-    if (viaVoice) b?.send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: msg }] } });
-    else b?.notify(`${msg} أخبريه باختصار.`);
+    void brainRef.current?.ask(`[النظام] المدير أكّد${viaVoice ? ' بصوته' : ''}، وتم تنفيذ: ${p.label}. أخبريه باختصار.`);
   }, []);
 
   const cancelPending = useCallback((viaVoice: boolean) => {
     const p = pendingRef.current;
     if (!p) return;
     setPendingAction(null);
-    const msg = `[النظام] المدير ألغى: ${p.label}. لم يُنفّذ شيء.`;
-    if (viaVoice) brainRef.current?.send({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text: msg }] } });
-    else brainRef.current?.notify(msg);
+    void brainRef.current?.ask(`[النظام] المدير ألغى${viaVoice ? ' بصوته' : ''}: ${p.label}. لم يُنفّذ شيء.`);
   }, []);
 
   const onTool = useCallback(async (name: string, args: Record<string, unknown>) => {
@@ -160,6 +159,13 @@ function Orb() {
       case 'type_into':
         setMode('docked');
         return typeInto(String(args.field ?? ''), String(args.text ?? ''), Boolean(args.submit));
+      case 'run_experiment': {
+        const res = runExperiment(String(args.experiment ?? ''), (args.params ?? {}) as Record<string, unknown>);
+        if (!res) return { ok: false, error: 'unknown experiment' };
+        setExperiment(res);
+        setMode('docked');
+        return { ok: true, shown_to_admin: true, title: res.title, equation: res.equation, params: res.params, results: res.metrics };
+      }
       default:
         return { ok: false, error: `unknown tool ${name}` };
     }
@@ -169,38 +175,44 @@ function Orb() {
     setError(null);
     setUserLine('');
     setAiLine('');
-    setStatus('connecting');
+    const brain = new VoiceBrain({
+      pages: allPages,
+      onStatus: setStatus,
+      onCaption: (who, text) => (who === 'user' ? setUserLine(text) : setAiLine(text)),
+      onUserSaid: (t) => {
+        if (!pendingRef.current) return false;
+        if (isYes(t)) { confirmPending(true); return true; }
+        if (isNo(t)) { cancelPending(true); return true; }
+        return false;
+      },
+      onTool: (n, a) => onTool(n, a),
+    });
+    brainRef.current = brain;
+    if (!brain.supported) setError('متصفحك ما بيدعم التعرف على الصوت؛ استعمل Chrome، أو اكتب تحت.');
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke('admin-brain-session', {
-        body: { pages: allPages(), current: window.location.pathname },
-      });
-      if (fnErr || !data?.client_secret) throw new Error(data?.error || fnErr?.message || 'no session');
-      const brain = new RealtimeBrain({
-        clientSecret: data.client_secret,
-        onStatus: setStatus,
-        onCaption: (who, text) => (who === 'user' ? setUserLine(text) : setAiLine(text)),
-        onUserSaid: (t) => {
-          if (!pendingRef.current) return;
-          if (isYes(t)) confirmPending(true);
-          else if (isNo(t)) cancelPending(true);
-        },
-        onTool: (n, a) => onTool(n, a),
-      });
-      brainRef.current = brain;
-      await brain.connect();
+      await brain.start();
     } catch (e) {
       console.warn('admin brain', e);
-      setError('تعذّر تشغيل العقل المركزي. تأكد من الميكروفون ومن إعداد مفتاح OpenAI.');
+      setError('تعذّر تشغيل العقل المركزي. تأكد من الميكروفون وجرّب مرة ثانية.');
       setStatus('error');
-      brainRef.current?.close();
-      brainRef.current = null;
     }
   }, [onTool, confirmPending, cancelPending]);
+
+  const sendTyped = () => {
+    const t = typed.trim();
+    if (!t || !brainRef.current) return;
+    setTyped('');
+    setUserLine(t);
+    if (pendingRef.current && isYes(t)) return confirmPending(false);
+    if (pendingRef.current && isNo(t)) return cancelPending(false);
+    void brainRef.current.ask(t);
+  };
 
   const stop = useCallback(() => {
     brainRef.current?.close();
     brainRef.current = null;
     setPendingAction(null);
+    setExperiment(null);
     setStatus('closed');
     setMode('corner');
   }, []);
@@ -208,6 +220,7 @@ function Orb() {
   useEffect(() => () => { brainRef.current?.close(); }, []);
 
   const onOrbClick = () => {
+    if (status === 'speaking') brainRef.current?.interrupt(); // tap to cut her off
     if (mode === 'corner') { setMode('center'); start(); }
     else if (mode === 'docked') setMode('center');
     else setMode('docked');
@@ -218,6 +231,10 @@ function Orb() {
 
   return (
     <div data-brain-ui dir="rtl">
+      <AnimatePresence>
+        {experiment && <ExperimentPanel key={experiment.id + experiment.params.map((p) => p.value).join()} res={experiment} onClose={() => setExperiment(null)} />}
+      </AnimatePresence>
+
       {/* dim the page while she is in the centre */}
       <AnimatePresence>
         {mode === 'center' && (
@@ -299,10 +316,39 @@ function Orb() {
               </div>
             )}
 
-            <button onClick={stop} className="mt-5 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs text-muted-foreground">
+            <form
+              className="mt-4 flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1.5"
+              onSubmit={(e) => { e.preventDefault(); sendTyped(); }}
+            >
+              <input
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                placeholder="أو اكتب طلبك هون…"
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              />
+              <button type="submit" aria-label="إرسال" className="grid h-7 w-7 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </form>
+
+            <button onClick={stop} className="mt-4 inline-flex items-center gap-1 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs text-muted-foreground">
               <X className="h-3.5 w-3.5" /> إنهاء
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* docked: what she is saying, beside the orb */}
+      <AnimatePresence>
+        {mode === 'docked' && aiLine && (status === 'speaking' || status === 'thinking') && (
+          <motion.p
+            key="docked-caption"
+            className="fixed z-[9999] max-w-[min(70vw,360px)] rounded-2xl border border-border bg-card/95 px-3 py-2 text-sm text-foreground shadow-lg line-clamp-3"
+            style={{ left: 20 + size + 12, bottom: 24 }}
+            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }}
+          >
+            {status === 'thinking' ? 'أفكر…' : aiLine}
+          </motion.p>
         )}
       </AnimatePresence>
 
