@@ -16,6 +16,8 @@ type Opts = {
   onTool: ToolHandler;
   /** a readable reason when something fails (shown on screen) */
   onError: (msg: string | null) => void;
+  /** a finished turn, for the conversation list */
+  onTurn?: (who: 'user' | 'ai', text: string) => void;
 };
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://esifpjjehdnpkhyilctv.supabase.co'}/functions/v1/admin-brain`;
@@ -117,11 +119,13 @@ export class VoiceBrain {
     this.busy = true;
     this.set('thinking');
     this.history.push({ role: 'user', content: text });
+    if (!text.startsWith('[النظام]')) this.o.onTurn?.('user', text);
     this.o.onError(null);
     try {
       for (let round = 0; round < 6 && this.alive; round++) {
         const res = await this.call({ messages: this.history, pages: this.o.pages(), current: location.pathname + location.search });
         if (Array.isArray(res.added)) this.history.push(...res.added);
+        if (res.took) console.info('[admin-brain] round', round, res.took);
         if (res.client_calls?.length) {
           const talking = res.say ? this.say(res.say) : Promise.resolve();
           for (const c of res.client_calls) {
@@ -166,6 +170,7 @@ export class VoiceBrain {
   private async say(text: string) {
     if (!this.alive || !text) return;
     this.o.onCaption('ai', text);
+    this.o.onTurn?.('ai', text);
     this.stopListening();
     this.set('speaking');
     try {
@@ -203,7 +208,14 @@ export class VoiceBrain {
           void this.ctx.resume();
         }
       } catch { /* level meter optional */ }
-      const done = () => { this.stopSpeech = null; this.audio = null; resolve(); };
+      let loud = 0;
+      // barge-in: if the admin starts talking over her, she stops and listens
+      const watch = window.setInterval(() => {
+        const mic = this.micLevel(), out = this.outLevel();
+        loud = mic > 0.32 && mic > out * 0.9 + 0.12 ? loud + 1 : 0;
+        if (loud >= 4) this.stopSpeech?.();
+      }, 70);
+      const done = () => { window.clearInterval(watch); this.stopSpeech = null; this.audio = null; resolve(); };
       this.stopSpeech = () => { a.pause(); done(); };
       a.onended = done;
       a.onerror = done;
@@ -234,6 +246,17 @@ export class VoiceBrain {
   interrupt() {
     this.stopSpeech?.();
   }
+
+  private read(a: AnalyserNode | null) {
+    if (!a) return 0;
+    const buf = new Uint8Array(a.frequencyBinCount);
+    a.getByteFrequencyData(buf);
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i];
+    return Math.min(1, s / buf.length / 90);
+  }
+  private micLevel() { return this.read(this.inAnalyser); }
+  private outLevel() { return this.read(this.outAnalyser); }
 
   /** 0..1 loudness of whoever is talking (for the orb's pulse). */
   level(): number {

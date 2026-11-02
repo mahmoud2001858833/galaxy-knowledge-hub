@@ -17,7 +17,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const MODEL = "google/gemini-2.5-flash";
+const MODEL = "google/gemini-2.5-flash-lite"; // the fastest gateway model that handles tools well
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const service = createClient(SB_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -209,6 +209,7 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
   const list = pages.slice(0, 160).map((p) => `- ${p.title}: ${p.path}`).join("\n");
   const tables = Object.entries(CATALOG).map(([t, d]) => `- ${t}: ${d}`).join("\n");
   return `أنتِ "العقل المركزي" لمنصة ذروة العلم. تتحدثين فقط مع مدير المنصة، وكلامك سيُقرأ بصوت عالٍ.
+المدير رجل: خاطبيه دائماً بصيغة المذكّر (مثل: تفضّل، شو بدّك، جرّب).
 الشخصية: ذكية، دافئة، واثقة، سريعة البديهة. لهجة عربية طبيعية قريبة من الأردنية، جمل قصيرة كإنسان حقيقي، بلا مقدمات ولا تعداد طويل ولا رموز Markdown. أرقام قليلة ومهمة فقط. إذا تكلم بالإنجليزية فردّي بالإنجليزية.
 
 ما تستطيعين فعله:
@@ -226,44 +227,70 @@ ${list}
 ${tables}`;
 }
 
-/** Google's own Gemini API (OpenAI-compatible endpoint), used first when ADMIN_BRAIN_GEMINI_KEY is set. */
-async function googleDirect(messages: unknown[]) {
-  const key = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
-  if (!key) return null;
-  const model = Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash";
-  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
-    signal: AbortSignal.timeout(30_000),
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: "auto" }),
-  });
-  if (!r.ok) {
-    console.warn("gemini direct", r.status, (await r.text()).slice(0, 200));
-    return null; // fall back to the gateway
-  }
-  const j = await r.json();
-  return j?.choices?.[0]?.message ?? null;
+// ---------- which model answers ----------
+// Tried in order; a provider that fails is skipped for 5 minutes so it never slows every request.
+//  1. any OpenAI-compatible API you configure (fastest free option: Groq; Cloudflare Workers AI works too)
+//       ADMIN_BRAIN_LLM_URL   e.g. https://api.groq.com/openai/v1/chat/completions
+//                             or   https://api.cloudflare.com/client/v4/accounts/<ACCOUNT_ID>/ai/v1/chat/completions
+//       ADMIN_BRAIN_LLM_KEY   the API key / token
+//       ADMIN_BRAIN_LLM_MODEL e.g. openai/gpt-oss-120b (Groq) or @cf/meta/llama-4-scout-17b-16e-instruct (Cloudflare)
+//  2. Google Gemini directly (ADMIN_BRAIN_GEMINI_KEY, needs billing on that Google project)
+//  3. the Lovable AI gateway (LOVABLE_API_KEY)
+type Provider = { name: string; url: string; key: string; model: string };
+const skipUntil = new Map<string, number>();
+
+function providers(): Provider[] {
+  const list: Provider[] = [];
+  const u = Deno.env.get("ADMIN_BRAIN_LLM_URL"), k = Deno.env.get("ADMIN_BRAIN_LLM_KEY"), m = Deno.env.get("ADMIN_BRAIN_LLM_MODEL");
+  if (u && k && m) list.push({ name: "custom", url: u, key: k, model: m });
+  const g = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
+  if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash" });
+  const l = Deno.env.get("LOVABLE_API_KEY");
+  if (l) list.push({ name: "lovable", url: `${GATEWAY}/chat/completions`, key: l, model: MODEL });
+  return list;
 }
 
+const timing: { provider?: string; ms: number[] } = { ms: [] };
+
 async function gateway(messages: unknown[]) {
-  const direct = await googleDirect(messages).catch(() => null);
-  if (direct) return direct;
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
-  for (let i = 0; i < 3; i++) {
-    const r = await fetch(`${GATEWAY}/chat/completions`, {
-      signal: AbortSignal.timeout(30_000),
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: MODEL, messages, tools: TOOLS, tool_choice: "auto" }),
-    });
-    if (r.status === 429 && i < 2) { await new Promise((s) => setTimeout(s, 700 * (i + 1))); continue; }
-    if (r.status === 402) throw new Error("رصيد Lovable AI خلص (402)");
-    if (!r.ok) throw new Error(`gateway ${r.status}: ${(await r.text()).slice(0, 200)}`);
-    const j = await r.json();
-    return j?.choices?.[0]?.message;
+  const list = providers();
+  if (!list.length) throw new Error("ما في أي مزوّد ذكاء اصطناعي مضبوط");
+  let lastErr = "";
+  for (const p of list) {
+    if ((skipUntil.get(p.name) ?? 0) > Date.now() && p !== list[list.length - 1]) continue;
+    for (let i = 0; i < 3; i++) {
+      const t = Date.now();
+      try {
+        const r = await fetch(p.url, {
+          signal: AbortSignal.timeout(25_000),
+          method: "POST",
+          headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 800, temperature: 0.6,
+            // gpt-oss on Groq: little hidden reasoning = answers in well under a second
+            ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
+          }),
+        });
+        if (r.status === 429 && i < 2) { await new Promise((s) => setTimeout(s, 600 * (i + 1))); continue; }
+        if (!r.ok) {
+          lastErr = r.status === 402 ? `${p.name}: الرصيد خلص (402)` : `${p.name} ${r.status}: ${(await r.text()).slice(0, 160)}`;
+          break;
+        }
+        const j = await r.json();
+        const msg = j?.choices?.[0]?.message;
+        if (!msg) { lastErr = `${p.name}: empty`; break; }
+        timing.provider = p.name;
+        timing.ms.push(Date.now() - t);
+        return msg;
+      } catch (e) {
+        lastErr = `${p.name}: ${String(e).slice(0, 120)}`;
+        break;
+      }
+    }
+    console.warn("admin-brain provider failed", lastErr);
+    skipUntil.set(p.name, Date.now() + 5 * 60_000);
   }
-  throw new Error("gateway busy");
+  throw new Error(lastErr || "AI busy");
 }
 
 /** Keep the history short, never starting in the middle of a tool exchange. */
@@ -283,13 +310,16 @@ async function chat(body: any) {
   const added: any[] = [];
 
   const t0 = Date.now();
+  timing.ms = [];
+  timing.provider = undefined;
+  const took = () => ({ provider: timing.provider, model_ms: timing.ms, total_ms: Date.now() - t0 });
   for (let round = 0; round < 6 && Date.now() - t0 < 90_000; round++) {
     const msg = await gateway([{ role: "system", content: systemPrompt(pages, current) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
     const assistant = { role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) };
     added.push(assistant);
-    if (!calls.length) return { reply: String(msg.content ?? "").trim(), added };
+    if (!calls.length) return { reply: String(msg.content ?? "").trim(), added, took: took() };
 
     const clientCalls: any[] = [];
     for (const c of calls) {
@@ -307,7 +337,7 @@ async function chat(body: any) {
       added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12000) });
     }
     // the browser runs screen tools, appends their results and calls us again
-    if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added };
+    if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added, took: took() };
   }
   return { reply: "خلّيني أوقف هون، الطلب طوّل علي. شو بدك بالضبط؟", added };
 }
