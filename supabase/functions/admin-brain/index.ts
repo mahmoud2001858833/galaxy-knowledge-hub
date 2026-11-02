@@ -127,7 +127,18 @@ async function withNames(rows: Record<string, unknown>[]) {
   });
 }
 
+let PAGES: { title: string; path: string }[] = [];
+const normAr = (x: string) => x.toLowerCase().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[ًٌٍَُِّْـ]/g, "");
+
 const SERVER_TOOLS: Record<string, (a: any) => Promise<unknown>> = {
+  async find_page({ query }) {
+    const words = normAr(String(query ?? "")).split(/[\s/,-]+/).filter((w) => w.length > 1);
+    const scored = PAGES.map((p) => {
+      const hay = normAr(`${p.title} ${p.path.replace(/[-/]/g, " ")}`);
+      return { ...p, score: words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0) };
+    }).filter((p) => p.score > 0).sort((a, b) => b.score - a.score);
+    return { matches: scored.slice(0, 8).map(({ title, path }) => ({ title, path })) };
+  },
   async platform_activity({ hours = 24 }) {
     const since = sinceIso(Number(hours) || 24);
     const entries = await Promise.all(
@@ -181,6 +192,7 @@ const fn = (name: string, description: string, properties: Record<string, unknow
 });
 
 const TOOLS = [
+  fn("find_page", "Find platform pages/experiments by words (Arabic or English), returns title+path to use with navigate_to.", { query: { type: "string" } }, ["query"]),
   // server (data, read-only)
   fn("platform_activity", "What happened on the platform recently: new rows per area, newest users, total users.", { hours: { type: "number", description: "Look back this many hours (default 24)" } }),
   fn("latest_conversations", "Latest messages/conversations across the platform (student AI chats, user messages, team chat, forum, contact form).", {
@@ -222,8 +234,10 @@ const CLIENT_TOOLS = new Set([
 ]);
 
 function systemPrompt(pages: { title: string; path: string }[], current: string) {
-  const list = pages.slice(0, 260).map((p) => `- ${p.title}: ${p.path}`).join("\n");
-  const tables = Object.entries(CATALOG).map(([t, d]) => `- ${t}: ${d}`).join("\n");
+  // Groq's free tier allows 8k tokens/minute, so the prompt stays small: only the main sections here,
+  // every other page (≈260, incl. 70 experiments) is found with the find_page tool.
+  const list = pages.filter((p) => !p.title.startsWith("تجربة:")).slice(0, 25).map((p) => `${p.title} ${p.path}`).join(" | ");
+  const tables = Object.keys(CATALOG).join(", ");
   return `أنتِ "العقل المركزي" لمنصة ذروة العلم. تتحدثين فقط مع مدير المنصة، وكلامك سيُقرأ بصوت عالٍ.
 المدير رجل: خاطبيه دائماً بصيغة المذكّر (مثل: تفضّل، شو بدّك، جرّب).
 الشخصية: ذكية، دافئة، واثقة، سريعة البديهة. لهجة عربية طبيعية قريبة من الأردنية، جمل قصيرة كإنسان حقيقي، بلا مقدمات ولا تعداد طويل ولا رموز Markdown. أرقام قليلة ومهمة فقط. إذا تكلم بالإنجليزية فردّي بالإنجليزية.
@@ -243,11 +257,9 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
 - لا تكشفي كلمات مرور أو مفاتيح.
 
 الصفحة الحالية: ${current}
-صفحات المنصة:
-${list}
-
-جداول مهمة في قاعدة البيانات:
-${tables}`;
+صفحات رئيسية: ${list}
+لأي صفحة أو تجربة أخرى استعملي find_page أولاً (مثلاً find_page("موجات") ثم navigate_to).
+جداول مهمة (read_table): ${tables}`;
 }
 
 // ---------- which model answers ----------
@@ -264,8 +276,12 @@ const skipUntil = new Map<string, number>();
 
 function providers(): Provider[] {
   const list: Provider[] = [];
-  const u = Deno.env.get("ADMIN_BRAIN_LLM_URL"), k = Deno.env.get("ADMIN_BRAIN_LLM_KEY"), m = Deno.env.get("ADMIN_BRAIN_LLM_MODEL");
-  if (u && k && m) list.push({ name: "custom", url: u, key: k, model: m });
+  const u = Deno.env.get("ADMIN_BRAIN_LLM_URL"), k = Deno.env.get("ADMIN_BRAIN_LLM_KEY");
+  // ADMIN_BRAIN_LLM_MODEL may list several models, comma-separated; on Groq each model has its own
+  // free 8k-tokens/minute budget, so gpt-oss-20b is added as a backup automatically.
+  let models = (Deno.env.get("ADMIN_BRAIN_LLM_MODEL") ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+  if (u?.includes("groq.com") && !models.includes("openai/gpt-oss-20b")) models = [...models, "openai/gpt-oss-20b"];
+  if (u && k) for (const m of models) list.push({ name: m.split("/").pop()!, url: u, key: k, model: m });
   const g = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
   if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash" });
   const l = Deno.env.get("LOVABLE_API_KEY");
@@ -278,10 +294,12 @@ const timing: { provider?: string; ms: number[] } = { ms: [] };
 async function gateway(messages: unknown[]) {
   const list = providers();
   if (!list.length) throw new Error("ما في أي مزوّد ذكاء اصطناعي مضبوط");
-  let lastErr = "";
-  for (const p of list) {
-    if ((skipUntil.get(p.name) ?? 0) > Date.now() && p !== list[list.length - 1]) continue;
-    for (let i = 0; i < 3; i++) {
+  const errors: string[] = [];
+  const now = Date.now();
+  // providers that failed recently go last instead of being skipped entirely
+  const ordered = [...list.filter((p) => (skipUntil.get(p.name) ?? 0) <= now), ...list.filter((p) => (skipUntil.get(p.name) ?? 0) > now)];
+  for (const p of ordered) {
+    for (let i = 0; i < 2; i++) {
       const t = Date.now();
       try {
         const r = await fetch(p.url, {
@@ -294,41 +312,59 @@ async function gateway(messages: unknown[]) {
             ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
           }),
         });
-        if (r.status === 429 && i < 2) { await new Promise((s) => setTimeout(s, 600 * (i + 1))); continue; }
+        if (r.status === 429) {
+          const wait = Number(r.headers.get("retry-after") ?? "0");
+          errors.push(`${p.name}: حد الدقيقة (429)`);
+          if (i === 0 && wait > 0 && wait <= 4) { await new Promise((s) => setTimeout(s, wait * 1000 + 200)); continue; }
+          skipUntil.set(p.name, Date.now() + Math.max(20_000, wait * 1000));
+          break;
+        }
         if (!r.ok) {
-          lastErr = r.status === 402 ? `${p.name}: الرصيد خلص (402)` : `${p.name} ${r.status}: ${(await r.text()).slice(0, 160)}`;
+          const body = (await r.text()).slice(0, 140);
+          errors.push(r.status === 402 ? `${p.name}: الرصيد خلص (402)` : r.status === 413 ? `${p.name}: الطلب كبير (413)` : `${p.name} ${r.status}: ${body}`);
+          skipUntil.set(p.name, Date.now() + (r.status === 402 ? 30 * 60_000 : 60_000));
           break;
         }
         const j = await r.json();
         const msg = j?.choices?.[0]?.message;
-        if (!msg) { lastErr = `${p.name}: empty`; break; }
+        if (!msg) { errors.push(`${p.name}: رد فاضي`); break; }
         timing.provider = p.name;
         timing.ms.push(Date.now() - t);
+        skipUntil.delete(p.name);
         return msg;
       } catch (e) {
-        lastErr = `${p.name}: ${String(e).slice(0, 120)}`;
+        errors.push(`${p.name}: ${String(e).slice(0, 100)}`);
+        skipUntil.set(p.name, Date.now() + 60_000);
         break;
       }
     }
-    console.warn("admin-brain provider failed", lastErr);
-    skipUntil.set(p.name, Date.now() + 5 * 60_000);
   }
-  throw new Error(lastErr || "AI busy");
+  console.warn("admin-brain providers failed", errors);
+  throw new Error(errors.join(" · ") || "AI busy");
 }
 
 /** Keep the history short, never starting in the middle of a tool exchange. */
 function trim(history: any[]) {
-  let h = history.slice(-28);
+  let h = history.slice(-16);
   while (h.length && h[0].role !== "user") h = h.slice(1);
-  return h;
+  // only the current turn keeps full tool results; older ones are cut so the request stays small
+  let lastUser = -1;
+  h.forEach((m, i) => { if (m.role === "user") lastUser = i; });
+  return h.map((m, i) => {
+    if (i >= lastUser) return m;
+    if (m.role === "tool" && typeof m.content === "string" && m.content.length > 300) return { ...m, content: m.content.slice(0, 300) + "…" };
+    if (m.role === "assistant" && typeof m.content === "string" && m.content.length > 500) return { ...m, content: m.content.slice(0, 500) + "…" };
+    return m;
+  });
 }
 
 async function chat(body: any) {
   const pages = Array.isArray(body?.pages)
-    ? body.pages.filter((p: any) => typeof p?.title === "string" && typeof p?.path === "string" && p.path.startsWith("/"))
+    ? body.pages.slice(0, 400).filter((p: any) => typeof p?.title === "string" && typeof p?.path === "string" && p.path.startsWith("/"))
         .map((p: any) => ({ title: p.title.slice(0, 60), path: p.path.slice(0, 80) }))
     : [];
   const current = typeof body?.current === "string" ? body.current.slice(0, 120) : "/";
+  PAGES = pages.slice(0, 400);
   const history: any[] = trim(Array.isArray(body?.messages) ? body.messages : []);
   const added: any[] = [];
 
@@ -357,7 +393,7 @@ async function chat(body: any) {
           : { error: `unknown tool ${name}` };
       }
       catch (e) { out = { error: String(e).slice(0, 200) }; }
-      added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12000) });
+      added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 5000) });
     }
     // the browser runs screen tools, appends their results and calls us again
     if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added, took: took() };
@@ -423,11 +459,40 @@ async function speakGemini(text: string): Promise<Uint8Array> {
   return wav(Uint8Array.from(atob(part.inlineData.data), (c) => c.charCodeAt(0)), rate);
 }
 
-async function speak(text: string) {
-  try { return await speakGateway(text); } catch (e) {
-    console.warn("admin-brain voice: gateway failed, trying Gemini", String(e));
-    return await speakGemini(text);
+// Groq's Arabic voice (needs its terms accepted once in the Groq console)
+async function speakGroq(text: string): Promise<Uint8Array> {
+  const key = Deno.env.get("ADMIN_BRAIN_LLM_KEY");
+  if (!key || !Deno.env.get("ADMIN_BRAIN_LLM_URL")?.includes("groq.com")) throw new Error("no groq");
+  let voice = Deno.env.get("ADMIN_BRAIN_TTS_VOICE") || "lulwa";
+  for (let i = 0; i < 2; i++) {
+    const r = await fetch("https://api.groq.com/openai/v1/audio/speech", {
+      signal: AbortSignal.timeout(20_000),
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "canopylabs/orpheus-arabic-saudi", voice, input: text.slice(0, 1000), response_format: "wav" }),
+    });
+    if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    const err = await r.text();
+    // unknown voice: the error lists the valid ones, take the first
+    const valid = /voice[^\[]*\[([^\]]+)\]/i.exec(err)?.[1]?.split(",")[0]?.replace(/["'\s]/g, "");
+    if (i === 0 && valid && valid !== voice) { voice = valid; continue; }
+    throw new Error(`groq tts ${r.status}: ${err.slice(0, 120)}`);
   }
+  throw new Error("groq tts failed");
+}
+
+const ttsSkip = new Map<string, number>();
+async function speak(text: string) {
+  const errors: string[] = [];
+  for (const [name, fn] of [["lovable", speakGateway], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
+    if ((ttsSkip.get(name) ?? 0) > Date.now()) continue;
+    try { return await fn(text); } catch (e) {
+      errors.push(`${name}: ${String(e).slice(0, 120)}`);
+      ttsSkip.set(name, Date.now() + (/402|terms|quota|429/.test(String(e)) ? 15 * 60_000 : 30_000));
+    }
+  }
+  console.warn("admin-brain voice failed", errors);
+  throw new Error(errors.join(" · ") || "no voice available");
 }
 
 Deno.serve(async (req) => {
