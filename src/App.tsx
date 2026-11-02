@@ -327,6 +327,8 @@ if (typeof window !== 'undefined') {
     setTimeout(initDamijSideEffects, 800);
   }
 }
+// admin-only central AI orb (renders nothing unless is_platform_admin); lazy so it never delays first paint
+const AdminBrainOrb = lazy(() => import('./components/admin-brain/AdminBrainOrb'));
 import './App.css';
 
 // Root layout component that includes the PlatformGuideAssistant, WelcomeGuide, and AccessibilityPanel
@@ -346,6 +348,7 @@ const RootLayout = () => {
       {!isGJUMode && <SafeBoundary name="PlatformGuideAssistant"><PlatformGuideAssistant /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="LiveSupportCornerWidget"><LiveSupportCornerWidget /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="AccessibilityPanel"><AccessibilityPanel /></SafeBoundary>}
+      <SafeBoundary name="AdminBrainOrb"><Suspense fallback={null}><AdminBrainOrb /></Suspense></SafeBoundary>
       {isGJUMode && !isDamijRoute && <SafeBoundary name="GJUFloatingNav"><GJUFloatingNav /></SafeBoundary>}
     </AutoReadWrapper>
   );

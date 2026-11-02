@@ -149,11 +149,11 @@ export const Contact: React.FC = () => {
               </p>
             </div>
             <a 
-              href="tel:+962790000000" 
+              href="tel:0796830150" 
               className="text-xs font-mono font-bold text-purple-600 dark:text-purple-400 hover:underline block pt-2 border-t border-slate-100 dark:border-slate-800"
               dir="ltr"
             >
-              +962 7 9000 0000
+              0796830150
             </a>
           </div>
         </div>

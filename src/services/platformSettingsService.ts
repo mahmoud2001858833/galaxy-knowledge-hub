@@ -47,7 +47,7 @@ const DEFAULT_SETTINGS: PlatformSettings = {
   schoolAttribution: 'تم تطوير المنصة عن طريق فريق مدرسة عنبه الثانوية',
   developedBy: 'إشراف وتطوير نخبة من الأكاديميين والمبرمجين',
   contactEmail: 'contact@zarwat-alelm.edu.jo',
-  contactPhone: '+962 7 9000 0000',
+  contactPhone: '0796830150',
   address: 'المملكة الأردنية الهاشمية — إربد — لواء المزار الشمالي — عنبه',
   copyrightYear: '2026',
   showCompetitionBadge: true,
@@ -89,6 +89,10 @@ class PlatformSettingsService {
         this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
         if (this.settings.schoolAttribution === LEGACY_SCHOOL_ATTRIBUTION) {
           this.settings.schoolAttribution = DEFAULT_SETTINGS.schoolAttribution;
+          this.save();
+        }
+        if (!this.settings.contactPhone || this.settings.contactPhone === '+962 7 9000 0000') {
+          this.settings.contactPhone = DEFAULT_SETTINGS.contactPhone;
           this.save();
         }
       } else {
