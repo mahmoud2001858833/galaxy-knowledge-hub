@@ -69,6 +69,10 @@ export class VoiceBrain {
   }
 
   // ---------- ears ----------
+  // Continuous recognition: she keeps listening while you pause to think, and only answers after
+  // ~1.6 s of silence once you have said something (Chrome alone would cut you off at the first pause).
+  private bargeText = '';
+
   private listen() {
     if (!this.alive || this.busy) return;
     this.set('listening');
@@ -78,26 +82,65 @@ export class VoiceBrain {
     const rec = new SR();
     rec.lang = 'ar-JO';
     rec.interimResults = true;
-    rec.continuous = false;
+    rec.continuous = true;
     rec.maxAlternatives = 1;
-    let finalText = '';
+    let finalText = this.bargeText ? this.bargeText + ' ' : '';
+    this.bargeText = '';
+    let interim = '';
+    let silence = 0;
+    const finish = () => { window.clearTimeout(silence); try { rec.stop(); } catch { /* ended */ } };
+    if (finalText) silence = window.setTimeout(finish, 2500);
     rec.onresult = (e: any) => {
-      let interim = '';
+      interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += t; else interim += t;
+        if (e.results[i].isFinal) finalText += t + ' '; else interim += t;
       }
       this.o.onCaption('user', (finalText + interim).trim());
+      window.clearTimeout(silence);
+      silence = window.setTimeout(finish, interim ? 2000 : 1600);
     };
     rec.onerror = () => { /* no-speech / aborted: onend restarts */ };
     rec.onend = () => {
+      window.clearTimeout(silence);
       this.recActive = false;
       this.rec = null;
-      const text = finalText.trim();
+      const text = (finalText + interim).trim();
       if (text) this.heard(text);
       else if (this.alive && !this.busy && this.status === 'listening') window.setTimeout(() => this.listen(), 250);
     };
     try { rec.start(); this.rec = rec; this.recActive = true; } catch { /* already started */ }
+  }
+
+  /**
+   * While she talks, a second recogniser listens for the admin. Words that are just her own voice
+   * coming back through the speakers are ignored; real words from the admin stop her at once and
+   * are kept as the start of what he is saying.
+   */
+  private watchForBargeIn(spoken: string, stop: () => void) {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return () => {};
+    const mine = new Set(normWords(spoken));
+    const rec = new SR();
+    rec.lang = 'ar-JO';
+    rec.interimResults = true;
+    rec.continuous = true;
+    let active = true;
+    rec.onresult = (e: any) => {
+      let heard = '';
+      for (let i = 0; i < e.results.length; i++) heard += e.results[i][0].transcript + ' ';
+      const words = normWords(heard);
+      const foreign = words.filter((w) => !mine.has(w));
+      if (foreign.length >= 2 && foreign.length / words.length >= 0.5) {
+        this.bargeText = heard.trim();
+        active = false;
+        try { rec.abort(); } catch { /* ignore */ }
+        stop();
+      }
+    };
+    rec.onend = () => { if (active && this.alive && this.status === 'speaking') { try { rec.start(); } catch { /* ignore */ } } };
+    try { rec.start(); } catch { /* mic busy */ }
+    return () => { active = false; try { rec.abort(); } catch { /* ignore */ } };
   }
 
   private stopListening() {
@@ -174,6 +217,7 @@ export class VoiceBrain {
     this.stopListening();
     this.set('speaking');
     try {
+      if (Date.now() < this.serverVoiceOffUntil) throw new Error('server voice unavailable');
       const r = await fetch(FN_URL, {
         method: 'POST',
         signal: AbortSignal.timeout(25_000),
@@ -186,15 +230,17 @@ export class VoiceBrain {
       }
       const url = URL.createObjectURL(await r.blob());
       if (!this.alive) return;
-      await this.play(url);
+      await this.play(url, text);
       URL.revokeObjectURL(url);
     } catch (e) {
       console.warn('admin brain voice', e);
+      if (!String(e).includes('server voice unavailable')) this.serverVoiceOffUntil = Date.now() + 3 * 60_000;
       await this.browserVoice(text);
     }
   }
+  private serverVoiceOffUntil = 0;
 
-  private play(url: string) {
+  private play(url: string, text: string) {
     return new Promise<void>((resolve) => {
       const a = new Audio(url);
       this.audio = a;
@@ -215,7 +261,8 @@ export class VoiceBrain {
         loud = mic > 0.32 && mic > out * 0.9 + 0.12 ? loud + 1 : 0;
         if (loud >= 4) this.stopSpeech?.();
       }, 70);
-      const done = () => { window.clearInterval(watch); this.stopSpeech = null; this.audio = null; resolve(); };
+      const unwatch = this.watchForBargeIn(text, () => this.stopSpeech?.());
+      const done = () => { window.clearInterval(watch); unwatch(); this.stopSpeech = null; this.audio = null; resolve(); };
       this.stopSpeech = () => { a.pause(); done(); };
       a.onended = done;
       a.onerror = done;
@@ -229,9 +276,13 @@ export class VoiceBrain {
       if (!synth) return resolve();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'ar-SA';
-      const v = synth.getVoices().find((x) => x.lang.startsWith('ar'));
-      if (v) u.voice = v;
-      const done = () => { this.stopSpeech = null; resolve(); };
+      const { voice, isFemale } = pickFemaleArabic(synth.getVoices());
+      if (voice) u.voice = voice;
+      // only a male Arabic voice installed (e.g. macOS "Majed"): raise the pitch so it sounds softer
+      u.pitch = isFemale ? 1.05 : 1.6;
+      u.rate = 1.0;
+      const unwatch = this.watchForBargeIn(text, () => this.stopSpeech?.());
+      const done = () => { unwatch(); this.stopSpeech = null; resolve(); };
       this.stopSpeech = () => { synth.cancel(); done(); };
       u.onend = done;
       u.onerror = done;
@@ -277,4 +328,18 @@ export class VoiceBrain {
     try { void this.ctx?.close(); } catch { /* ignore */ }
     this.set('closed');
   }
+}
+
+const normWords = (t: string) =>
+  t.toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ًٌٍَُِّْـ،.؟?!,]/g, ' ')
+    .split(/\s+/).filter((w) => w.length > 1);
+
+// Arabic voices that are women, as named by macOS, Windows, Chrome/Android and Edge
+const FEMALE = /(laila|layla|mariam|maryam|amira|hoda|huda|salma|zariyah|sana|hala|noura|fatima|amina|rana|reem|female|woman|google)/i;
+const MALE = /(majed|maged|tarik|tariq|naayf|naif|hamed|shakir|omar|male)/i;
+
+function pickFemaleArabic(voices: SpeechSynthesisVoice[]) {
+  const ar = voices.filter((v) => v.lang?.toLowerCase().startsWith('ar'));
+  const female = ar.find((v) => FEMALE.test(v.name) && !/\bmale\b/i.test(v.name)) ?? ar.find((v) => !MALE.test(v.name));
+  return female ? { voice: female, isFemale: true } : { voice: ar[0] ?? null, isFemale: false };
 }
