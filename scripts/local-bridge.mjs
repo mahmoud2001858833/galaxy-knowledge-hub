@@ -733,6 +733,7 @@ function showAgStep(step, out) {
     if (text) out.push('out', agText(text));
     return !(r.toolCalls?.length);
   }
+  if (t.endsWith('ASK_QUESTION')) return false; // asked and answered through askInTerminal
   if (t.endsWith('CODE_ACTION')) {
     const spec = step.codeAction?.actionSpec ?? {};
     const [kind, v] = Object.entries(spec)[0] ?? [];
@@ -770,6 +771,55 @@ function agVersion(cfg) {
   } catch {
     return 'installed';
   }
+}
+
+// The agent asked a question (ask_question): show it in /terminal (OSC 1337 ZarwaAsk carries it for the
+// page to render in Arabic with buttons), wait for the job owner's answer (bridge_job_reply) or for an
+// answer given inside the app, then hand the answer to the agent.
+async function askInTerminal({ api, job, out, cascadeId, stepIndex, questions, stopped }) {
+  const { rpc } = api;
+  const stillWaiting = async () => {
+    const [st] = (await agCall('GetCascadeTrajectorySteps', { cascadeId, stepOffset: stepIndex }).catch(() => ({ steps: [] }))).steps ?? [];
+    return st?.status === 'CORTEX_STEP_STATUS_WAITING';
+  };
+  const responses = [];
+  await rpc('bridge_job_input', { p_job_id: job.id, p_mode: 'await' });
+  try {
+    for (const [i, q] of questions.entries()) {
+      const options = (q.options ?? []).map((o) => ({ id: String(o.id), text: String(o.text ?? '') }));
+      const multi = !!(q.isMultiSelect ?? q.is_multi_select);
+      const card = Buffer.from(JSON.stringify({ question: q.question, options: options.map((o) => o.text), multi, n: i + 1, of: questions.length })).toString('base64url');
+      out.push('out', `\n\x1b[1;33m?\x1b[0m ${questions.length > 1 ? `(${i + 1}/${questions.length}) ` : ''}${q.question}\n`);
+      options.forEach((o, k) => out.push('out', `  \x1b[36m${k + 1})\x1b[0m ${o.text}\n`));
+      out.push('sys', `\x1b[2mAnswer with ${multi ? 'numbers (e.g. 1,3)' : 'a number'} or your own words; "skip" skips.\x1b[0m\n\x1b]1337;ZarwaAsk=${card}\x07`);
+      let text = null;
+      for (let tick = 0; text === null; tick++) {
+        if (stopped()) return 'stopped';
+        if (tick % 3 === 2 && !(await stillWaiting())) {
+          out.push('sys', '\x1b]1337;ZarwaAskDone\x07\x1b[2m(answered in the Antigravity app)\x1b[0m\n');
+          return 'app';
+        }
+        text = await rpc('bridge_job_input', { p_job_id: job.id, p_mode: 'take' }).catch(() => null);
+        if (text === null) await sleep(1000);
+      }
+      const t = text.trim();
+      const nums = t.split(/[\s,،]+/).filter(Boolean).map(Number);
+      let entry;
+      if (/^(skip|تخطي|تخطى)$/i.test(t)) entry = { question: q.question, options, skipped: true };
+      else if (options.length && nums.length && nums.every((n) => Number.isInteger(n) && n >= 1 && n <= options.length) && (multi || nums.length === 1))
+        entry = { question: q.question, options, isMultiSelect: multi, selectedOptionIds: nums.map((n) => options[n - 1].id) };
+      else entry = { question: q.question, options, isMultiSelect: multi, writeInResponse: t };
+      responses.push(entry);
+      const shown = entry.skipped ? 'skipped' : entry.selectedOptionIds ? nums.map((n) => options[n - 1].text).join(', ') : t;
+      out.push('sys', `\x1b]1337;ZarwaAskDone\x07\x1b[2m→ ${shown}\x1b[0m\n`);
+    }
+  } finally {
+    await rpc('bridge_job_input', { p_job_id: job.id, p_mode: 'done' }).catch(() => {});
+  }
+  const all = await agCall('GetAllCascadeTrajectories', { excludeSubtrajectories: true });
+  const trajectoryId = all?.trajectorySummaries?.[cascadeId]?.trajectoryId;
+  await agCall('HandleCascadeUserInteraction', { cascadeId, interaction: { trajectoryId, stepIndex, askQuestion: { responses } } });
+  return 'answered';
 }
 
 async function runAntigravity(cfg, job, out, api) {
@@ -812,6 +862,7 @@ async function runAntigravity(cfg, job, out, api) {
   let childNoticeShown = false;
   const images = new Set();
   const uploaded = new Set();
+  const asked = new Set(); // step indexes whose question was already put to the user
   for (;;) {
     if (!stop && Date.now() > deadline) stop = 'timeout';
     if (stop) {
@@ -835,7 +886,14 @@ async function runAntigravity(cfg, job, out, api) {
         break;
       }
       if (!finished.has(step.status)) {
-        if (step.status === 'CORTEX_STEP_STATUS_WAITING' && !waitingShown) {
+        if (step.status === 'CORTEX_STEP_STATUS_WAITING' && step.askQuestion?.questions?.length && !asked.has(next)) {
+          asked.add(next);
+          try {
+            await askInTerminal({ api, job, out, cascadeId, stepIndex: next, questions: step.askQuestion.questions, stopped: () => stop || Date.now() > deadline });
+          } catch (e) {
+            out.push('err', `Could not pass the answer to Antigravity (${e.message}); answer it inside the app.\n`);
+          }
+        } else if (step.status === 'CORTEX_STEP_STATUS_WAITING' && !step.askQuestion && !waitingShown) {
           out.push('sys', '\x1b[33mThe agent is waiting for a confirmation inside the Antigravity app.\x1b[0m\n');
           waitingShown = true;
         }

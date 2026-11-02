@@ -113,6 +113,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     mode: 'cloud' as Mode,
     claudeSession: null as string | null,
     agentSession: null as string | null, // Antigravity conversation id
+    asking: false, // the running job's agent asked a question: Enter sends the line as the answer
     job: null as { id: string; stop: () => void } | null,
   });
   const feedRef = useRef<(data: string) => void>(() => {});
@@ -121,9 +122,15 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   const [ready, setReady] = useState(false);
   // images an agent made on the principal's computer (uploaded by the bridge to terminal-media)
   const [images, setImages] = useState<{ path: string; url: string | null }[]>([]);
+  // a question from the agent (Antigravity ask_question), rendered properly (RTL, buttons) above the terminal
+  const [question, setQuestion] = useState<{ question: string; options: string[]; multi: boolean; n: number; of: number } | null>(null);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [writeIn, setWriteIn] = useState('');
+  const answerRef = useRef<(text: string) => void>(() => {});
 
   const promptText = useCallback(() => {
     const mode = state.current.mode;
+    if (state.current.asking) return '\x1b[1;33manswer\x1b[0m \x1b[2m›\x1b[0m ';
     if (mode === 'claude') return '\x1b[1;35mclaude\x1b[0m \x1b[2m›\x1b[0m ';
     if (mode === 'antigravity') return '\x1b[1;34mantigravity\x1b[0m \x1b[2m›\x1b[0m ';
     if (mode === 'shell') return '\x1b[1;33mmac\x1b[0m:\x1b[1;34mproject\x1b[0m$ ';
@@ -354,6 +361,29 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     termRef.current = term;
     // OSC 1337 "ZarwaImage=<storage path>" from the bridge: show the image under the terminal
     term.parser.registerOscHandler(1337, (data) => {
+      const s = state.current;
+      if (data.startsWith('ZarwaAsk=')) {
+        try {
+          const bytes = Uint8Array.from(atob(data.slice(9).replace(/-/g, '+').replace(/_/g, '/')), (ch) => ch.charCodeAt(0));
+          const q = JSON.parse(new TextDecoder().decode(bytes));
+          setQuestion({ question: String(q.question ?? ''), options: (q.options ?? []).map(String), multi: !!q.multi, n: q.n ?? 1, of: q.of ?? 1 });
+          setPicked([]);
+          setWriteIn('');
+        } catch {
+          /* the question is printed in the terminal anyway */
+        }
+        s.asking = true;
+        s.pending = [];
+        window.setTimeout(() => term.write(`\r\n${promptTextRef.current()}${s.line}`), 0);
+        return true;
+      }
+      if (data === 'ZarwaAskDone') {
+        s.asking = false;
+        s.line = '';
+        s.cursor = 0;
+        setQuestion(null);
+        return true;
+      }
       const path = data.startsWith('ZarwaImage=') ? data.slice('ZarwaImage='.length) : null;
       if (!path || !/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/.test(path)) return false;
       setImages((list) => (list.some((i) => i.path === path) ? list : [...list, { path, url: null }]));
@@ -387,10 +417,28 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       redraw();
     };
 
+    // the answer goes to the running job; the bridge hands it to the agent
+    answerRef.current = (text: string) => {
+      const s = state.current;
+      const job = s.job;
+      if (!job || !text.trim()) return;
+      term.write('\r\n');
+      supabase.rpc('bridge_job_reply', { p_job_id: job.id, p_text: text.slice(0, 4000) }).then(({ error }) => {
+        if (error) term.write(`\x1b[31m${/[\u0600-\u06FF]/.test(error.message) ? 'Could not send the answer.' : error.message}\x1b[0m\r\n`);
+      });
+    };
+
     const feed = (data: string) => {
       const s = state.current;
       if (s.ended) return;
-      if (s.busy) {
+      if (s.busy && s.asking && data === '\r') {
+        const line = s.line;
+        s.line = '';
+        s.cursor = 0;
+        answerRef.current(line);
+        return;
+      }
+      if (s.busy && !s.asking) {
         // Ctrl+C stops the running command; anything else is typed ahead and replayed afterwards
         if (data === '\x03') {
           s.pending = [];
@@ -556,8 +604,63 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     };
   }, [session.session_id]);
 
+  const sendAnswer = (text: string) => {
+    if (!text.trim()) return;
+    answerRef.current(text);
+  };
+
   return (
     <>
+      {question && (
+        <div className="space-y-3 border-b border-border bg-warning/5 p-4" dir="rtl">
+          <div className="flex items-start gap-2 text-sm font-bold">
+            <span className="rounded-full bg-warning px-2 text-white">?</span>
+            <span dir="auto" className="whitespace-pre-wrap">
+              {question.of > 1 && `(${question.n}/${question.of}) `}
+              {question.question}
+            </span>
+          </div>
+          {question.options.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {question.options.map((o, i) => {
+                const on = picked.includes(i + 1);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    dir="auto"
+                    onClick={() => (question.multi ? setPicked((p) => (on ? p.filter((x) => x !== i + 1) : [...p, i + 1])) : sendAnswer(String(i + 1)))}
+                    className={`rounded-xl border px-3 py-2 text-start text-sm transition ${on ? 'border-primary bg-primary/10' : 'border-border bg-background hover:border-primary'}`}
+                  >
+                    <span className="ms-0 me-1 font-mono text-xs text-muted-foreground">{i + 1}</span> {o}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <form
+            className="flex flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendAnswer(writeIn.trim() || picked.join(','));
+            }}
+          >
+            <input
+              value={writeIn}
+              onChange={(e) => setWriteIn(e.target.value)}
+              placeholder="أو اكتب إجابتك الخاصة…"
+              dir="auto"
+              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            <button type="submit" disabled={!writeIn.trim() && !picked.length} className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
+              إرسال
+            </button>
+            <button type="button" onClick={() => sendAnswer('skip')} className="rounded-lg border border-border px-3 py-2 text-sm">
+              تخطي
+            </button>
+          </form>
+        </div>
+      )}
       <div
         ref={hostRef}
         dir="ltr"

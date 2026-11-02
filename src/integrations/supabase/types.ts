@@ -1533,6 +1533,7 @@ export type Database = {
       }
       bridge_jobs: {
         Row: {
+          awaiting_input: boolean
           claude_session: string | null
           cost_usd: number | null
           created_at: string
@@ -1546,6 +1547,7 @@ export type Database = {
           issued_at: number
           kind: string
           log_id: number | null
+          pending_input: string | null
           resume_session: string | null
           session_id: string
           signature: string
@@ -1554,6 +1556,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          awaiting_input?: boolean
           claude_session?: string | null
           cost_usd?: number | null
           created_at?: string
@@ -1567,6 +1570,7 @@ export type Database = {
           issued_at: number
           kind: string
           log_id?: number | null
+          pending_input?: string | null
           resume_session?: string | null
           session_id: string
           signature: string
@@ -1575,6 +1579,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          awaiting_input?: boolean
           claude_session?: string | null
           cost_usd?: number | null
           created_at?: string
@@ -1588,6 +1593,7 @@ export type Database = {
           issued_at?: number
           kind?: string
           log_id?: number | null
+          pending_input?: string | null
           resume_session?: string | null
           session_id?: string
           signature?: string
@@ -5451,6 +5457,19 @@ export type Database = {
           p_preview?: string
           p_status: string
         }
+        Returns: undefined
+      }
+      bridge_job_input: {
+        Args: {
+          p_auth_key: string
+          p_device_id: string
+          p_job_id: string
+          p_mode: string
+        }
+        Returns: string
+      }
+      bridge_job_reply: {
+        Args: { p_job_id: string; p_text: string }
         Returns: undefined
       }
       bridge_output: {
