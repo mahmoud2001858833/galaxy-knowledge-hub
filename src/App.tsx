@@ -691,7 +691,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'chat-rooms',
-        element: <AuthGuard><ChatRooms /></AuthGuard>,
+        element: <Navigate to="/school" replace />,
       },
       {
         path: 'community',

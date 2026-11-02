@@ -3,17 +3,113 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Home, Recycle, Droplets, Container, Shirt, Zap, Wrench, ShoppingBag, FileText, Trash2 } from 'lucide-react';
+import { Card, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  Home, 
+  Recycle, 
+  Sprout, 
+  Droplets, 
+  Zap, 
+  ShoppingBag, 
+  Layers, 
+  Sparkles, 
+  Sun, 
+  Car,
+  ChevronLeft
+} from 'lucide-react';
 import ProjectDetailModal from '@/components/projects/ProjectDetailModal';
+import { PageShell, PageHeader } from '@/components/layout/PageShell';
+import { SEO } from '@/components/SEO';
+import { Badge } from '@/components/ui/badge';
 
-const HomeProjects = () => {
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  examples: string;
+}
+
+const HomeProjects: React.FC = () => {
   const navigate = useNavigate();
-  const { t, dir } = useLanguage();
+  const { t } = useLanguage();
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleProjectClick = (project: any) => {
+  const rawProjects = [
+    {
+      id: "waste-sorting",
+      title: t.homeProjects.wasteSorting,
+      description: t.homeProjects.wasteSortingDesc,
+      icon: Recycle,
+      examples: t.homeProjects.wasteSortingExamples
+    },
+    {
+      id: "home-composting",
+      title: t.homeProjects.homeComposting,
+      description: t.homeProjects.homeCompostingDesc,
+      icon: Sprout,
+      examples: t.homeProjects.homeCompostingExamples
+    },
+    {
+      id: "home-garden",
+      title: t.homeProjects.homeGarden,
+      description: t.homeProjects.homeGardenDesc,
+      icon: Sprout,
+      examples: t.homeProjects.homeGardenExamples
+    },
+    {
+      id: "water-conservation",
+      title: t.homeProjects.waterConservation,
+      description: t.homeProjects.waterConservationDesc,
+      icon: Droplets,
+      examples: t.homeProjects.waterConservationExamples
+    },
+    {
+      id: "energy-efficiency",
+      title: t.homeProjects.energyEfficiency,
+      description: t.homeProjects.energyEfficiencyDesc,
+      icon: Zap,
+      examples: t.homeProjects.energyEfficiencyExamples
+    },
+    {
+      id: "plastic-free",
+      title: t.homeProjects.plasticFree,
+      description: t.homeProjects.plasticFreeDesc,
+      icon: ShoppingBag,
+      examples: t.homeProjects.plasticFreeExamples
+    },
+    {
+      id: "diy-cleaning",
+      title: t.homeProjects.diyCleaning,
+      description: t.homeProjects.diyCleaningDesc,
+      icon: Sparkles,
+      examples: t.homeProjects.diyCleaningExamples
+    },
+    {
+      id: "smart-shopping",
+      title: t.homeProjects.smartShopping,
+      description: t.homeProjects.smartShoppingDesc,
+      icon: Layers,
+      examples: t.homeProjects.smartShoppingExamples
+    },
+    {
+      id: "solar-energy",
+      title: t.homeProjects.solarEnergy,
+      description: t.homeProjects.solarEnergyDesc,
+      icon: Sun,
+      examples: t.homeProjects.solarEnergyExamples
+    },
+    {
+      id: "green-transport",
+      title: t.homeProjects.greenTransport,
+      description: t.homeProjects.greenTransportDesc,
+      icon: Car,
+      examples: t.homeProjects.greenTransportExamples
+    }
+  ];
+
+  const handleProjectClick = (project: Project) => {
     setSelectedProject({
       ...project,
       type: 'home' as const
@@ -21,167 +117,122 @@ const HomeProjects = () => {
     setIsModalOpen(true);
   };
 
-  const projectIcons = [
-    Trash2, Droplets, Container, Shirt, Droplets, Zap, Recycle, Wrench, ShoppingBag, FileText
-  ];
-
-  const projects = Object.entries(t.homeProjects.projects).map(([key, project], index) => ({
-    id: key,
-    title: project.title,
-    description: project.description,
-    examples: project.examples,
-    icon: projectIcons[index],
-    color: [
-      "from-blue-600/20 to-cyan-600/20",
-      "from-green-600/20 to-emerald-600/20", 
-      "from-purple-600/20 to-pink-600/20",
-      "from-orange-600/20 to-red-600/20",
-      "from-teal-600/20 to-blue-600/20",
-      "from-indigo-600/20 to-purple-600/20",
-      "from-rose-600/20 to-pink-600/20",
-      "from-yellow-600/20 to-orange-600/20",
-      "from-gray-600/20 to-slate-600/20",
-      "from-lime-600/20 to-green-600/20"
-    ][index],
-    borderColor: [
-      "border-blue-500/30",
-      "border-green-500/30",
-      "border-purple-500/30", 
-      "border-orange-500/30",
-      "border-teal-500/30",
-      "border-indigo-500/30",
-      "border-rose-500/30",
-      "border-yellow-500/30",
-      "border-gray-500/30",
-      "border-lime-500/30"
-    ][index]
-  }));
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-950 via-blue-950 to-indigo-950 p-4" dir={dir}>
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Button
-            variant="outline"
-            onClick={() => {
-              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
-              navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
-            }}
-            className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.environmental.backToMain}
-          </Button>
-        </motion.div>
+    <PageShell>
+      <SEO 
+        title={`${t.homeProjects.title} | ذروة العلم`}
+        description={t.homeProjects.subtitle}
+      />
 
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-12"
-        >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Home className="w-12 h-12 text-purple-400" />
-            <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-white to-indigo-400">
-              {t.homeProjects.title}
-            </h1>
-          </div>
-          <div className="w-20 h-1 bg-purple-500/50 mx-auto mb-4"></div>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            {t.homeProjects.subtitle}
+      <PageHeader
+        title={t.homeProjects.title}
+        description={t.homeProjects.subtitle}
+        icon={Home}
+        crumbs={[
+          { label: 'الرئيسية', to: '/' },
+          { label: 'المجتمع المدرسي', to: '/school' },
+          { label: 'الاستدامة البيئية', to: '/environmental-sustainability' },
+          { label: t.homeProjects.title }
+        ]}
+      />
+
+      {/* Intro info box */}
+      <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-card-foreground">دليل المبادرات البيئية المنزلية</h2>
+          <p className="text-sm text-muted-foreground">
+            10 مشاريع منزلية بسيطة ذات أثر كبير لتخفيض فواتير الطاقة والماء وتقليل النفايات في بيتك. اضغط على أي مشروع لعرض التفاصيل.
           </p>
-        </motion.div>
+        </div>
+        <Badge variant="secondary" className="text-xs px-3 py-1.5 shrink-0">
+          10 مشاريع منزلية
+        </Badge>
+      </div>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {projects.map((project, index) => (
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {rawProjects.map((project, index) => {
+          const Icon = project.icon;
+          return (
             <motion.div
               key={project.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 + index * 0.05 }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04 }}
             >
               <Card 
-                className={`group h-full cursor-pointer ${project.borderColor} border-2 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 hover:scale-105 bg-gradient-to-br ${project.color} backdrop-blur-sm`}
+                className="group h-full cursor-pointer rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg flex flex-col justify-between"
                 onClick={() => handleProjectClick(project)}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-3 p-3 rounded-full bg-white/10 backdrop-blur-sm w-fit">
-                    <project.icon className="w-6 h-6 text-white" />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <Badge variant="outline" className="text-xs font-semibold">
+                      مشروع #{index + 1}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors leading-tight">
-                    {project.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <CardDescription className="text-white/80 text-sm leading-relaxed">
-                    {project.description}
-                  </CardDescription>
-                  
-                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                    <h4 className="text-white font-semibold text-sm mb-2">الأمثلة:</h4>
-                    <p className="text-white/70 text-xs leading-relaxed">
+
+                  <div className="space-y-2">
+                    <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors leading-tight">
+                      {project.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+                      {project.description}
+                    </CardDescription>
+                  </div>
+
+                  <div className="rounded-2xl bg-muted/40 p-3.5 border border-border">
+                    <h4 className="text-card-foreground font-semibold text-xs mb-1">نماذج وتطبيقات:</h4>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
                       {project.examples}
                     </p>
                   </div>
-                </CardContent>
-                
-                {/* Hover Glow Effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/0 via-purple-400/10 to-purple-500/0 rounded-lg"></div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-purple-400/20 to-transparent rounded-b-lg"></div>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-border flex items-center justify-between text-sm font-semibold text-primary">
+                  <span>عرض تفاصيل المشروع</span>
+                  <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 </div>
               </Card>
             </motion.div>
-          ))}
-        </div>
-
-        {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="text-center mt-12"
-        >
-          <div className="bg-white/10 rounded-xl p-6 border border-white/20 backdrop-blur-sm max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-3">ابدأ مشروعك البيئي في المنزل!</h3>
-            <p className="text-white/70 mb-4">
-              اختر مشروعاً واحداً من هذه المشاريع وابدأ في تطبيقه في منزلك. كل خطوة صغيرة تحدث فرقاً كبيراً.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button 
-                onClick={() => navigate('/environmental/school-projects')}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                المشاريع المدرسية
-              </Button>
-              <Button 
-                onClick={() => navigate('/environmental/carbon-calculator')}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                حاسبة البصمة الكربونية
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Project Detail Modal */}
-        {selectedProject && (
-          <ProjectDetailModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            project={selectedProject}
-          />
-        )}
+          );
+        })}
       </div>
-    </div>
+
+      {/* Bottom Cross-links Banner */}
+      <div className="mt-12 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm text-center max-w-3xl mx-auto space-y-4">
+        <h3 className="text-xl font-bold text-card-foreground">تطبيق الأفكار في البيئة المدرسية</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          شارك هذه الحلول مع زملائك ومعلميك في المدرسة أو بادر بإنشاء نادٍ بيئي لمتابعة الأثر الجماعي.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Button 
+            onClick={() => navigate('/environmental/school-projects')}
+            className="rounded-2xl font-bold"
+          >
+            استعراض المشاريع المدرسية
+          </Button>
+          <Button 
+            onClick={() => navigate('/environmental/carbon-calculator')}
+            variant="outline"
+            className="rounded-2xl"
+          >
+            حاسبة البصمة الكربونية
+          </Button>
+        </div>
+      </div>
+
+      {/* Project Detail Modal */}
+      {selectedProject && (
+        <ProjectDetailModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          project={selectedProject}
+        />
+      )}
+    </PageShell>
   );
 };
 

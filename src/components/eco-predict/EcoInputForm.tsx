@@ -50,68 +50,70 @@ const EcoInputForm: React.FC<EcoInputFormProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-3xl p-6 border border-emerald-500/20 shadow-2xl"
+      className="bg-card rounded-3xl p-6 border border-border shadow-sm space-y-5"
     >
-      <h2 className="text-2xl font-bold text-emerald-400 mb-2 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-          <Zap className="w-5 h-5" />
-        </div>
-        إدخال بيانات الاستهلاك المتقدمة
-      </h2>
-      <p className="text-xs text-gray-400 mb-6">12+ مدخلاً للحصول على تحليل دقيق · 🎤 يدعم الإدخال الصوتي</p>
+      <div>
+        <h2 className="text-xl font-bold text-card-foreground mb-1 flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center">
+            <Zap className="w-5 h-5 text-primary" />
+          </div>
+          بيانات الاستهلاك المتقدمة
+        </h2>
+        <p className="text-xs text-muted-foreground mt-1">12+ مدخلاً دقيقاً لحساب وتحليل أثرك البيئي والتنبؤ به</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Energy & Water */}
-        <VoiceNumberInput label="استهلاك الكهرباء" value={consumptionData.electricity} onChange={update('electricity')} icon={Zap} iconColor="text-yellow-400" unit="ك.و.س/شهر" placeholder="500" />
-        <VoiceNumberInput label="استهلاك المياه" value={consumptionData.water} onChange={update('water')} icon={Droplets} iconColor="text-blue-400" unit="لتر/شهر" placeholder="15000" />
+        <VoiceNumberInput label="استهلاك الكهرباء" value={consumptionData.electricity} onChange={update('electricity')} icon={Zap} iconColor="text-primary" unit="ك.و.س/شهر" placeholder="500" />
+        <VoiceNumberInput label="استهلاك المياه" value={consumptionData.water} onChange={update('water')} icon={Droplets} iconColor="text-primary" unit="لتر/شهر" placeholder="15000" />
 
         {/* Transport */}
-        <VoiceNumberInput label="المسافة بالسيارة" value={consumptionData.transport} onChange={update('transport')} icon={Car} iconColor="text-purple-400" unit="كم/شهر" placeholder="1000" />
-        <VoiceNumberInput label="رحلات الطيران سنوياً" value={consumptionData.flightsPerYear} onChange={update('flightsPerYear')} icon={Plane} iconColor="text-cyan-400" unit="رحلة" placeholder="2" />
+        <VoiceNumberInput label="المسافة بالسيارة" value={consumptionData.transport} onChange={update('transport')} icon={Car} iconColor="text-primary" unit="كم/شهر" placeholder="1000" />
+        <VoiceNumberInput label="رحلات الطيران سنوياً" value={consumptionData.flightsPerYear} onChange={update('flightsPerYear')} icon={Plane} iconColor="text-primary" unit="رحلة" placeholder="2" />
 
         {/* Waste & Lifestyle */}
-        <VoiceNumberInput label="النفايات" value={consumptionData.waste} onChange={update('waste')} icon={Trash2} iconColor="text-orange-400" unit="كج/شهر" placeholder="50" />
-        <VoiceNumberInput label="نسبة إعادة التدوير" value={consumptionData.recyclingRate} onChange={update('recyclingRate')} icon={Trash2} iconColor="text-emerald-400" unit="0-100%" placeholder="30" />
+        <VoiceNumberInput label="النفايات" value={consumptionData.waste} onChange={update('waste')} icon={Trash2} iconColor="text-primary" unit="كج/شهر" placeholder="50" />
+        <VoiceNumberInput label="نسبة إعادة التدوير" value={consumptionData.recyclingRate} onChange={update('recyclingRate')} icon={Trash2} iconColor="text-primary" unit="0-100%" placeholder="30" />
 
         {/* Household */}
-        <VoiceNumberInput label="عدد أفراد المنزل" value={consumptionData.householdSize} onChange={update('householdSize')} icon={Users} iconColor="text-pink-400" unit="فرد" placeholder="4" />
-        <VoiceNumberInput label="مساحة المنزل" value={consumptionData.homeArea} onChange={update('homeArea')} icon={HomeIcon} iconColor="text-indigo-400" unit="م²" placeholder="150" />
+        <VoiceNumberInput label="عدد أفراد المنزل" value={consumptionData.householdSize} onChange={update('householdSize')} icon={Users} iconColor="text-primary" unit="فرد" placeholder="4" />
+        <VoiceNumberInput label="مساحة المنزل" value={consumptionData.homeArea} onChange={update('homeArea')} icon={HomeIcon} iconColor="text-primary" unit="م²" placeholder="150" />
 
         {/* Diet & Shopping */}
-        <VoiceNumberInput label="وجبات اللحم الأحمر أسبوعياً" value={consumptionData.meatMealsPerWeek} onChange={update('meatMealsPerWeek')} icon={Beef} iconColor="text-red-400" unit="وجبة" placeholder="3" />
-        <VoiceNumberInput label="مشتريات شهرية (ملابس/إلكترونيات)" value={consumptionData.shoppingFrequency} onChange={update('shoppingFrequency')} icon={ShoppingBag} iconColor="text-fuchsia-400" unit="عدد" placeholder="5" />
+        <VoiceNumberInput label="وجبات اللحم الأحمر أسبوعياً" value={consumptionData.meatMealsPerWeek} onChange={update('meatMealsPerWeek')} icon={Beef} iconColor="text-primary" unit="وجبة" placeholder="3" />
+        <VoiceNumberInput label="مشتريات شهرية (ملابس/أجهزة)" value={consumptionData.shoppingFrequency} onChange={update('shoppingFrequency')} icon={ShoppingBag} iconColor="text-primary" unit="عدد" placeholder="5" />
 
         {/* AC */}
-        <VoiceNumberInput label="ساعات تشغيل التكييف" value={consumptionData.acHoursPerDay} onChange={update('acHoursPerDay')} icon={Zap} iconColor="text-sky-400" unit="ساعة/يوم" placeholder="6" />
+        <VoiceNumberInput label="ساعات تشغيل التكييف" value={consumptionData.acHoursPerDay} onChange={update('acHoursPerDay')} icon={Zap} iconColor="text-primary" unit="ساعة/يوم" placeholder="6" />
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
-          <Label className="text-gray-300 flex items-center gap-2">
-            <Car className="w-4 h-4 text-purple-400" />
+        <div className="space-y-2">
+          <Label className="text-card-foreground text-sm font-semibold flex items-center gap-2">
+            <Car className="w-4 h-4 text-primary" />
             نوع الوقود
           </Label>
           <Select value={consumptionData.fuelType} onValueChange={(value) => setConsumptionData(prev => ({ ...prev, fuelType: value }))}>
-            <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground rounded-2xl">
               <SelectValue placeholder="اختر نوع الوقود" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-600">
+            <SelectContent className="bg-popover border-border">
               <SelectItem value="gasoline">بنزين</SelectItem>
               <SelectItem value="diesel">ديزل</SelectItem>
               <SelectItem value="electric">كهربائي</SelectItem>
               <SelectItem value="hybrid">هجين</SelectItem>
             </SelectContent>
           </Select>
-        </motion.div>
+        </div>
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
-          <Label className="text-gray-300 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-red-400" />
+        <div className="space-y-2">
+          <Label className="text-card-foreground text-sm font-semibold flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
             الموقع الجغرافي
           </Label>
           <Select value={location} onValueChange={setLocation}>
-            <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground rounded-2xl">
               <SelectValue placeholder="اختر الموقع" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-600">
+            <SelectContent className="bg-popover border-border">
               <SelectItem value="jordan">الأردن</SelectItem>
               <SelectItem value="saudi">السعودية</SelectItem>
               <SelectItem value="uae">الإمارات</SelectItem>
@@ -120,43 +122,43 @@ const EcoInputForm: React.FC<EcoInputFormProps> = ({
               <SelectItem value="qatar">قطر</SelectItem>
             </SelectContent>
           </Select>
-        </motion.div>
+        </div>
 
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2 md:col-span-2">
-          <Label className="text-gray-300 flex items-center gap-2">
-            <Sun className="w-4 h-4 text-yellow-400" />
+        <div className="space-y-2 md:col-span-2">
+          <Label className="text-card-foreground text-sm font-semibold flex items-center gap-2">
+            <Sun className="w-4 h-4 text-primary" />
             مصدر الطاقة الرئيسي
           </Label>
           <Select value={energySource} onValueChange={setEnergySource}>
-            <SelectTrigger className="bg-slate-800/50 border-slate-600 text-white">
+            <SelectTrigger className="bg-background border-border text-foreground rounded-2xl">
               <SelectValue placeholder="اختر مصدر الطاقة" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-600">
+            <SelectContent className="bg-popover border-border">
               <SelectItem value="grid">شبكة الكهرباء العامة</SelectItem>
               <SelectItem value="solar">طاقة شمسية</SelectItem>
               <SelectItem value="hybrid">نظام هجين</SelectItem>
               <SelectItem value="generator">مولد ديزل</SelectItem>
             </SelectContent>
           </Select>
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
+      <div className="pt-2">
         <Button
           onClick={onAnalyze}
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 text-lg rounded-xl shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-emerald-500/40"
+          className="w-full bg-primary text-primary-foreground font-bold h-12 rounded-2xl shadow-sm text-base"
         >
           {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-              جاري التحليل المتقدم...
+              جاري التحليل والتنبؤ الذكي...
             </>
           ) : (
             <>تحليل وتوقع البصمة البيئية</>
           )}
         </Button>
-      </motion.div>
+      </div>
     </motion.div>
   );
 };

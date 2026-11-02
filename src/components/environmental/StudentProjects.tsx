@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,9 +7,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Upload, Image as ImageIcon, ArrowLeft, Loader2, School, FileText, ImagePlus, X } from 'lucide-react';
-import { useLanguage } from '@/i18n/LanguageContext';
+import { 
+  Upload, 
+  Image as ImageIcon, 
+  Loader2, 
+  School, 
+  FileText, 
+  ImagePlus, 
+  X,
+  Users,
+  Sparkles,
+  Calendar
+} from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { PageShell, PageHeader } from '@/components/layout/PageShell';
+import { SEO } from '@/components/SEO';
+import { Badge } from '@/components/ui/badge';
 
 interface Project {
   id: string;
@@ -22,10 +34,8 @@ interface Project {
   user_id: string;
 }
 
-const StudentProjects = () => {
-  const navigate = useNavigate();
+const StudentProjects: React.FC = () => {
   const { toast } = useToast();
-  const { t, dir } = useLanguage();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -89,16 +99,6 @@ const StudentProjects = () => {
         description: 'يرجى تسجيل الدخول لرفع مشروعك',
         variant: 'destructive'
       });
-      navigate('/auth');
-      return;
-    }
-
-    if (!formData.projectName || !formData.projectDescription || !formData.schoolName) {
-      toast({
-        title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
-        variant: 'destructive'
-      });
       return;
     }
 
@@ -110,16 +110,16 @@ const StudentProjects = () => {
       if (formData.image) {
         const fileExt = formData.image.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${session.user.id}/${fileName}`;
+        const filePath = `project-images/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('project-images')
+          .from('student-projects')
           .upload(filePath, formData.image);
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('project-images')
+          .from('student-projects')
           .getPublicUrl(filePath);
 
         imageUrl = publicUrl;
@@ -128,18 +128,18 @@ const StudentProjects = () => {
       const { error: insertError } = await supabase
         .from('student_projects')
         .insert({
-          user_id: session.user.id,
           project_name: formData.projectName,
           project_description: formData.projectDescription,
           school_name: formData.schoolName,
-          image_url: imageUrl
+          image_url: imageUrl,
+          user_id: session.user.id
         });
 
       if (insertError) throw insertError;
 
       toast({
-        title: 'تم بنجاح!',
-        description: 'تم رفع مشروعك بنجاح'
+        title: 'نجاح!',
+        description: 'تم رفع مشروعك بنجاح وسيظهر لجميع الطلاب',
       });
 
       setFormData({
@@ -163,241 +163,250 @@ const StudentProjects = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-green-900 to-teal-950 p-6" dir={dir}>
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Button
-            variant="outline"
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            العودة للصفحة الرئيسية
-          </Button>
+    <PageShell>
+      <SEO 
+        title="مشاريع الطلاب البيئية | ذروة العلم"
+        description="شارك مشاريعك البيئية وتعرّف على مبادرات وإبداعات زملائك في المدارس."
+      />
 
+      <PageHeader
+        title="مشاريع الطلاب البيئية"
+        description="معرض تفاعلي لمشاركة ابتكارات الطلبة البيئية، وتوثيق إنجازاتهم الميدانية لإلهام زملائهم."
+        icon={Users}
+        crumbs={[
+          { label: 'الرئيسية', to: '/' },
+          { label: 'المجتمع المدرسي', to: '/school' },
+          { label: 'الاستدامة البيئية', to: '/environmental-sustainability' },
+          { label: 'مشاريع الطلاب' },
+        ]}
+        actions={
           <Button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="rounded-2xl font-bold flex items-center gap-2"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-4 h-4 ml-1" />
             {showForm ? 'إلغاء' : 'رفع مشروع جديد'}
           </Button>
-        </motion.div>
+        }
+      />
 
-        {/* Title */}
+      {/* Upload Form */}
+      {showForm && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-10 max-w-2xl mx-auto"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-white to-emerald-400 mb-4">
-            مشاريع الطلاب
-          </h1>
-          <p className="text-white/70 text-lg">
-            شارك مشاريعك البيئية وتعرّف على مشاريع زملائك
-          </p>
-        </motion.div>
+          <Card className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <CardHeader className="p-0 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold">رفع مشروع بيئي جديد</CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                    املأ تفاصيل مشروعك أو مبادرتك المدرسية لنشرها في المعرض
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="projectName" className="text-sm font-semibold flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    اسم المشروع
+                  </Label>
+                  <Input
+                    id="projectName"
+                    value={formData.projectName}
+                    onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                    className="rounded-2xl border-border bg-background"
+                    placeholder="مثال: نظام ذكي لري حديقة المدرسة"
+                    required
+                  />
+                </div>
 
-        {/* Upload Form */}
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-12"
-          >
-            <Card className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-500/30 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white text-2xl flex items-center gap-2">
-                  <Upload className="w-6 h-6" />
-                  رفع مشروع جديد
-                </CardTitle>
-                <CardDescription className="text-white/70">
-                  املأ المعلومات التالية لرفع مشروعك البيئي
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="projectName" className="text-white flex items-center gap-2 mb-2">
-                      <FileText className="w-4 h-4" />
-                      اسم المشروع
-                    </Label>
-                    <Input
-                      id="projectName"
-                      value={formData.projectName}
-                      onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                      placeholder="أدخل اسم المشروع"
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schoolName" className="text-sm font-semibold flex items-center gap-2">
+                    <School className="w-4 h-4 text-primary" />
+                    اسم المدرسة
+                  </Label>
+                  <Input
+                    id="schoolName"
+                    value={formData.schoolName}
+                    onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
+                    className="rounded-2xl border-border bg-background"
+                    placeholder="مثال: مدرسة الملك عبد الله الثاني للتميز"
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="schoolName" className="text-white flex items-center gap-2 mb-2">
-                      <School className="w-4 h-4" />
-                      اسم المدرسة
-                    </Label>
-                    <Input
-                      id="schoolName"
-                      value={formData.schoolName}
-                      onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                      placeholder="أدخل اسم المدرسة"
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="projectDescription" className="text-sm font-semibold">
+                    وصف المشروع وأهدافه
+                  </Label>
+                  <Textarea
+                    id="projectDescription"
+                    value={formData.projectDescription}
+                    onChange={(e) => setFormData({ ...formData, projectDescription: e.target.value })}
+                    className="rounded-2xl border-border bg-background min-h-[120px]"
+                    placeholder="اكتب وصفاً مختصراً عن فكرة المشروع والنتائج المحققة..."
+                    required
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="projectDescription" className="text-white mb-2 block">
-                      وصف المشروع
-                    </Label>
-                    <Textarea
-                      id="projectDescription"
-                      value={formData.projectDescription}
-                      onChange={(e) => setFormData({ ...formData, projectDescription: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[120px]"
-                      placeholder="اكتب وصفاً تفصيلياً عن مشروعك البيئي..."
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-sm font-semibold flex items-center gap-2">
+                    <ImagePlus className="w-4 h-4 text-primary" />
+                    صورة توضيحية للمشروع (اختياري)
+                  </Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="rounded-2xl border-border bg-background file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground"
+                  />
+                  {formData.image && (
+                    <p className="text-primary text-xs font-medium">
+                      تم اختيار الملف: {formData.image.name}
+                    </p>
+                  )}
+                </div>
 
-                  <div>
-                    <Label htmlFor="image" className="text-white flex items-center gap-2 mb-2">
-                      <ImagePlus className="w-4 h-4" />
-                      صورة المشروع (اختياري)
-                    </Label>
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="bg-white/10 border-white/20 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
-                    />
-                    {formData.image && (
-                      <p className="text-green-300 text-sm mt-2">
-                        تم اختيار: {formData.image.name}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={uploading}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                  >
-                    {uploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        جاري الرفع...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        رفع المشروع
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-
-        {/* Projects Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-12 h-12 animate-spin text-green-400" />
-          </div>
-        ) : projects.length === 0 ? (
-          <Card className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-500/30 backdrop-blur-sm">
-            <CardContent className="text-center py-12">
-              <ImageIcon className="w-16 h-16 text-white/50 mx-auto mb-4" />
-              <p className="text-white/70 text-lg">لا توجد مشاريع حالياً</p>
-              <p className="text-white/50 text-sm mt-2">كن أول من يشارك مشروعاً بيئياً!</p>
+                <Button
+                  type="submit"
+                  disabled={uploading}
+                  className="w-full h-12 rounded-2xl font-bold mt-2"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      جاري حفظ ورفع المشروع...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 ml-2" />
+                      نشر المشروع في المعرض
+                    </>
+                  )}
+                </Button>
+              </form>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="group h-full bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-500/30 hover:border-green-500/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/20">
-                  {project.image_url && (
+        </motion.div>
+      )}
+
+      {/* Projects Grid */}
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border bg-card/50 p-12 text-center max-w-md mx-auto space-y-3">
+          <div className="h-12 w-12 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center mx-auto">
+            <ImageIcon className="w-6 h-6 text-primary" />
+          </div>
+          <h3 className="font-bold text-card-foreground">لا توجد مشاريع منشورة بعد</h3>
+          <p className="text-sm text-muted-foreground">
+            كن أول من يشارك مشروعاً بيئياً ويلهم طلبة المدارس في المملكة!
+          </p>
+          <Button onClick={() => setShowForm(true)} className="rounded-2xl font-bold">
+            <Upload className="w-4 h-4 ml-2" />
+            رفع أول مشروع
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {projects.map((project, index) => (
+            <motion.div
+              key={project.id}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className="group h-full rounded-3xl border border-border bg-card overflow-hidden shadow-sm hover:border-primary/40 hover:-translate-y-1 transition-all flex flex-col justify-between">
+                <div>
+                  {project.image_url ? (
                     <div 
-                      className="relative h-48 overflow-hidden rounded-t-lg cursor-pointer"
+                      className="relative h-48 overflow-hidden cursor-pointer bg-muted"
                       onClick={() => setSelectedImage(project.image_url)}
                     >
                       <img
                         src={project.image_url}
                         alt={project.project_name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                        <ImageIcon className="w-12 h-12 text-white" />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/50 backdrop-blur-xs">
+                        <Badge variant="secondary" className="gap-1.5 py-1 px-3">
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          تكبير الصورة
+                        </Badge>
                       </div>
                     </div>
+                  ) : (
+                    <div className="h-28 bg-accent/40 border-b border-border flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-primary/40" />
+                    </div>
                   )}
-                  <CardHeader>
-                    <CardTitle className="text-white text-xl group-hover:text-green-300 transition-colors">
+
+                  <div className="p-6 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge variant="secondary" className="text-xs flex items-center gap-1.5 py-1 px-2.5">
+                        <School className="w-3 h-3 text-primary" />
+                        <span className="line-clamp-1">{project.school_name}</span>
+                      </Badge>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1 shrink-0">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(project.created_at).toLocaleDateString('ar-JO')}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors leading-tight">
                       {project.project_name}
-                    </CardTitle>
-                    <CardDescription className="text-green-300 flex items-center gap-2">
-                      <School className="w-4 h-4" />
-                      {project.school_name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-white/80 text-sm line-clamp-4">
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
                       {project.project_description}
                     </p>
-                    <p className="text-white/50 text-xs mt-4">
-                      {new Date(project.created_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+                  </div>
+                </div>
 
-      {/* Image Modal */}
+                <div className="px-6 pb-5 pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                  <span>مشروع طلابي معتمد</span>
+                  <span className="text-primary font-semibold">ذروة العلم</span>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-5xl p-0 bg-black/90 border-green-500/30">
+        <DialogContent className="max-w-4xl p-2 bg-card border-border rounded-3xl overflow-hidden">
           <div className="relative">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="absolute top-2 left-2 z-10 bg-black/50 hover:bg-black/70 text-white"
+              className="absolute top-3 left-3 z-10 rounded-full bg-background/80 backdrop-blur-sm"
               onClick={() => setSelectedImage(null)}
             >
-              <X className="w-6 h-6" />
+              <X className="w-4 h-4" />
             </Button>
             {selectedImage && (
               <img
                 src={selectedImage}
-                alt="Project"
-                className="w-full h-auto max-h-[90vh] object-contain"
+                alt="معاينة صورة المشروع"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-2xl"
               />
             )}
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 };
 

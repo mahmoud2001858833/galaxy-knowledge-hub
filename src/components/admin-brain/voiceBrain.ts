@@ -221,33 +221,53 @@ export class VoiceBrain {
     }
   }
 
+  /**
+   * Natural voice from the server, sentence by sentence: the first sentence plays after ~1 s while
+   * the next ones are being made. If the server voice fails, the browser's female Arabic voice takes over.
+   */
   private async speakOut(text: string) {
+    const parts = splitSentences(text);
+    let started = false;
     try {
       if (Date.now() < this.serverVoiceOffUntil) throw new Error('server voice unavailable');
-      const r = await fetch(FN_URL, {
-        method: 'POST',
-        signal: AbortSignal.timeout(25_000),
-        headers: { ...(await this.auth()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'speak', text }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(`الصوت: ${j?.error ?? r.status}`);
+      const fetches: Promise<string>[] = [];
+      const get = (i: number) => (fetches[i] ??= this.fetchVoice(parts[i]));
+      get(0);
+      for (let i = 0; i < parts.length; i++) {
+        if (!this.alive || this.status !== 'speaking') return;
+        const url = await get(i);
+        if (i + 1 < parts.length) void get(i + 1).catch(() => '');
+        started = true;
+        const finished = await this.play(url);
+        URL.revokeObjectURL(url);
+        if (!finished) return; // interrupted
       }
-      const url = URL.createObjectURL(await r.blob());
-      if (!this.alive) return;
-      await this.play(url);
-      URL.revokeObjectURL(url);
     } catch (e) {
       console.warn('admin brain voice', e);
-      if (!String(e).includes('server voice unavailable')) this.serverVoiceOffUntil = Date.now() + 3 * 60_000;
-      await this.browserVoice(text);
+      if (!String(e).includes('server voice unavailable')) this.serverVoiceOffUntil = Date.now() + 2 * 60_000;
+      if (!started && this.alive && this.status === 'speaking') await this.browserVoice(text);
     }
   }
+
+  private async fetchVoice(part: string) {
+    const r = await fetch(FN_URL, {
+      method: 'POST',
+      signal: AbortSignal.timeout(25_000),
+      headers: { ...(await this.auth()), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'speak', text: part }),
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      throw new Error(`الصوت: ${j?.error ?? r.status}`);
+    }
+    return URL.createObjectURL(await r.blob());
+  }
+
   private serverVoiceOffUntil = 0;
 
+  /** Plays one clip; resolves true when it ended by itself, false when she was interrupted. */
   private play(url: string) {
-    return new Promise<void>((resolve) => {
+    return new Promise<boolean>((resolve) => {
       const a = new Audio(url);
       this.audio = a;
       try {
@@ -260,34 +280,51 @@ export class VoiceBrain {
           void this.ctx.resume();
         }
       } catch { /* level meter optional */ }
-      const done = () => { this.stopSpeech = null; this.audio = null; resolve(); };
-      this.stopSpeech = () => { a.pause(); done(); };
-      a.onended = done;
-      a.onerror = done;
-      a.play().catch(done);
+      let settled = false;
+      const done = (natural: boolean) => {
+        if (settled) return;
+        settled = true;
+        this.stopSpeech = null;
+        this.audio = null;
+        resolve(natural);
+      };
+      this.stopSpeech = () => { a.pause(); done(false); };
+      a.onended = () => done(true);
+      a.onerror = () => done(true);
+      a.play().catch(() => done(true));
     });
   }
 
-  private browserVoice(text: string) {
-    return new Promise<void>((resolve) => {
-      const synth = window.speechSynthesis;
-      if (!synth) return resolve();
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ar-SA';
-      const { voice, isFemale } = pickFemaleArabic(synth.getVoices());
-      if (voice) u.voice = voice;
-      // only a male Arabic voice installed (e.g. macOS "Majed"): raise the pitch so it sounds softer
-      u.pitch = isFemale ? 1.05 : 1.6;
-      u.rate = 1.0;
-      const done = () => { this.stopSpeech = null; resolve(); };
-      this.stopSpeech = () => { synth.cancel(); done(); };
-      u.onend = done;
-      u.onerror = done;
-      synth.cancel();
-      synth.speak(u);
-      // Chrome sometimes never fires onend (e.g. no Arabic voice): don't hang the conversation
-      window.setTimeout(() => { if (this.stopSpeech) done(); }, 1500 + text.length * 90);
-    });
+  private async browserVoice(text: string) {
+    const synth = window.speechSynthesis;
+    if (!synth) return;
+    // voices load asynchronously the first time
+    if (!synth.getVoices().length) {
+      await new Promise<void>((r) => { synth.onvoiceschanged = () => r(); window.setTimeout(r, 800); });
+    }
+    synth.cancel();
+    await new Promise((r) => setTimeout(r, 80)); // Chrome drops speak() issued right after cancel()
+    const { voice, isFemale } = pickFemaleArabic(synth.getVoices());
+    for (const part of splitSentences(text)) {
+      if (!this.alive || this.status !== 'speaking') return;
+      const finished = await new Promise<boolean>((resolve) => {
+        const u = new SpeechSynthesisUtterance(part);
+        u.lang = voice?.lang || 'ar-SA';
+        if (voice) u.voice = voice;
+        // only a male Arabic voice installed (e.g. macOS "Majed"): raise the pitch so it sounds softer
+        u.pitch = isFemale ? 1.05 : 1.6;
+        let settled = false;
+        const done = (natural: boolean) => { if (settled) return; settled = true; window.clearTimeout(guard); this.stopSpeech = null; resolve(natural); };
+        this.stopSpeech = () => { synth.cancel(); done(false); };
+        u.onend = () => done(true);
+        u.onerror = () => done(true);
+        synth.speak(u);
+        if (synth.paused) synth.resume();
+        // Chrome sometimes never fires onend: don't hang the conversation
+        const guard = window.setTimeout(() => done(true), 2000 + part.length * 110);
+      });
+      if (!finished) return;
+    }
   }
 
   /** Stop talking now (the admin tapped the orb or started a new request). */
@@ -337,4 +374,20 @@ function pickFemaleArabic(voices: SpeechSynthesisVoice[]) {
   const ar = voices.filter((v) => v.lang?.toLowerCase().startsWith('ar'));
   const female = ar.find((v) => FEMALE.test(v.name) && !/\bmale\b/i.test(v.name)) ?? ar.find((v) => !MALE.test(v.name));
   return female ? { voice: female, isFemale: true } : { voice: ar[0] ?? null, isFemale: false };
+}
+
+/** Short pieces for speaking: by sentence, long sentences cut at commas (≤ ~170 chars each). */
+function splitSentences(text: string): string[] {
+  const out: string[] = [];
+  for (const sentence of text.replace(/\s+/g, ' ').split(/(?<=[.!؟?\n])\s+/)) {
+    let rest = sentence.trim();
+    while (rest.length > 170) {
+      const cut = Math.max(rest.lastIndexOf('،', 170), rest.lastIndexOf(',', 170), rest.lastIndexOf(' ', 170));
+      const at = cut > 40 ? cut + 1 : 170;
+      out.push(rest.slice(0, at).trim());
+      rest = rest.slice(at).trim();
+    }
+    if (rest) out.push(rest);
+  }
+  return out.length ? out : [text];
 }

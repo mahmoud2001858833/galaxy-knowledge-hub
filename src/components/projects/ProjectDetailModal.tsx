@@ -217,51 +217,51 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-white to-green-400">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-card border-border text-card-foreground rounded-3xl p-6 sm:p-8">
+        <DialogHeader className="text-center sm:text-right pb-4 border-b border-border">
+          <DialogTitle className="text-2xl font-bold text-card-foreground">
             {project.title}
           </DialogTitle>
-          <p className="text-white/70 mt-2">{details.summary}</p>
+          <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{details.summary}</p>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* Project Info Cards */}
           <div className="lg:col-span-1 space-y-4">
-            <Card className="bg-white/10 border-white/20">
+            <Card className="bg-muted/40 border-border rounded-2xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  <h4 className="font-semibold text-white">معلومات المشروع</h4>
+                  <Clock className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-card-foreground">معلومات المشروع</h4>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-white/70">المدة:</span>
-                    <span className="text-white">{details.duration}</span>
+                    <span className="text-muted-foreground">المدة:</span>
+                    <span className="font-medium text-card-foreground">{details.duration}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-white/70">التكلفة:</span>
-                    <span className="text-white">{details.cost}</span>
+                    <span className="text-muted-foreground">التكلفة:</span>
+                    <span className="font-medium text-card-foreground">{details.cost}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-white/70">العمر المناسب:</span>
-                    <span className="text-white">{details.ageGroup}</span>
+                    <span className="text-muted-foreground">العمر المناسب:</span>
+                    <span className="font-medium text-card-foreground">{details.ageGroup}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/10 border-white/20">
+            <Card className="bg-muted/40 border-border rounded-2xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Target className="w-5 h-5 text-green-400" />
-                  <h4 className="font-semibold text-white">الفوائد المتوقعة</h4>
+                  <Target className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-card-foreground">الفوائد المتوقعة</h4>
                 </div>
                 <ul className="space-y-2 text-sm">
                   {details.benefits.map((benefit, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white/80">{benefit}</span>
+                      <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground leading-relaxed">{benefit}</span>
                     </li>
                   ))}
                 </ul>
@@ -272,17 +272,17 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Objectives */}
-            <Card className="bg-white/10 border-white/20">
+            <Card className="bg-muted/40 border-border rounded-2xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <BookOpen className="w-5 h-5 text-purple-400" />
-                  <h4 className="font-semibold text-white">الأهداف التعليمية</h4>
+                  <BookOpen className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-card-foreground">الأهداف التعليمية</h4>
                 </div>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                   {details.objectives.map((objective, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <Star className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-white/80">{objective}</span>
+                      <Star className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <span className="text-muted-foreground leading-relaxed">{objective}</span>
                     </li>
                   ))}
                 </ul>
@@ -290,15 +290,15 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose
             </Card>
 
             {/* Materials */}
-            <Card className="bg-white/10 border-white/20">
+            <Card className="bg-muted/40 border-border rounded-2xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Package className="w-5 h-5 text-orange-400" />
-                  <h4 className="font-semibold text-white">المواد المطلوبة</h4>
+                  <Package className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-card-foreground">المواد المطلوبة</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {details.materials.map((material, index) => (
-                    <Badge key={index} variant="outline" className="border-white/30 text-white/80">
+                    <Badge key={index} variant="secondary" className="justify-start py-1.5 px-3 rounded-xl text-xs font-normal">
                       {material}
                     </Badge>
                   ))}
@@ -307,19 +307,19 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose
             </Card>
 
             {/* Steps */}
-            <Card className="bg-white/10 border-white/20">
+            <Card className="bg-muted/40 border-border rounded-2xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-cyan-400" />
-                  <h4 className="font-semibold text-white">خطوات التنفيذ</h4>
+                  <Users className="w-5 h-5 text-primary" />
+                  <h4 className="font-semibold text-card-foreground">خطوات التنفيذ</h4>
                 </div>
                 <ol className="space-y-3">
                   {details.steps.map((step, index) => (
-                    <li key={index} className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                    <li key={index} className="flex gap-3 items-start">
+                      <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold mt-0.5">
                         {index + 1}
                       </div>
-                      <span className="text-white/80 text-sm">{step}</span>
+                      <span className="text-muted-foreground text-sm leading-relaxed">{step}</span>
                     </li>
                   ))}
                 </ol>
@@ -328,51 +328,39 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({ isOpen, onClose
 
             {/* Safety & Variations */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="bg-white/10 border-white/20">
+              <Card className="bg-muted/40 border-border rounded-2xl">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <AlertTriangle className="w-5 h-5 text-red-400" />
-                    <h4 className="font-semibold text-white">احتياطات الأمان</h4>
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    <h4 className="font-semibold text-card-foreground">احتياطات الأمان</h4>
                   </div>
                   <ul className="space-y-2 text-sm">
                     {details.safety.map((safety, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-white/80">{safety}</span>
+                        <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+                        <span className="text-muted-foreground leading-relaxed">{safety}</span>
                       </li>
                     ))}
                   </ul>
                 </CardContent>
               </Card>
 
-              <Card className="bg-white/10 border-white/20">
+              <Card className="bg-muted/40 border-border rounded-2xl">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="w-5 h-5 text-yellow-400" />
-                    <h4 className="font-semibold text-white">أفكار إضافية</h4>
+                    <Lightbulb className="w-5 h-5 text-primary" />
+                    <h4 className="font-semibold text-card-foreground">أفكار إضافية</h4>
                   </div>
                   <ul className="space-y-2 text-sm">
                     {details.variations.map((variation, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <Lightbulb className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-white/80">{variation}</span>
+                        <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span className="text-muted-foreground leading-relaxed">{variation}</span>
                       </li>
                     ))}
                   </ul>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-center gap-4 pt-4">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Download className="w-4 h-4 mr-2" />
-                تحميل دليل المشروع
-              </Button>
-              <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                <Star className="w-4 h-4 mr-2" />
-                إضافة للمفضلة
-              </Button>
             </div>
           </div>
         </div>

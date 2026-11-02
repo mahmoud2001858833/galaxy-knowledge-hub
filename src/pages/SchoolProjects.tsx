@@ -3,17 +3,112 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, School, Recycle, Droplets, Palette, BookOpen, Sun, Hammer, Utensils, FileText, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { 
+  School, 
+  Recycle, 
+  Sprout, 
+  Droplets, 
+  Zap, 
+  TreePine, 
+  ArrowLeft,
+  Sparkles,
+  Layers,
+  ChevronLeft
+} from 'lucide-react';
 import ProjectDetailModal from '@/components/projects/ProjectDetailModal';
+import { PageShell, PageHeader } from '@/components/layout/PageShell';
+import { SEO } from '@/components/SEO';
+import { Badge } from '@/components/ui/badge';
 
-const SchoolProjects = () => {
+interface Project {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  examples: string;
+}
+
+const SchoolProjects: React.FC = () => {
   const navigate = useNavigate();
-  const { t, dir } = useLanguage();
+  const { t } = useLanguage();
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleProjectClick = (project: any) => {
+  const rawProjects = [
+    {
+      id: "paper-recycling",
+      title: t.schoolProjects.paperRecycling,
+      description: t.schoolProjects.paperRecyclingDesc,
+      icon: Recycle,
+      examples: t.schoolProjects.paperRecyclingExamples
+    },
+    {
+      id: "plastic-recycling",
+      title: t.schoolProjects.plasticRecycling,
+      description: t.schoolProjects.plasticRecyclingDesc,
+      icon: Recycle,
+      examples: t.schoolProjects.plasticRecyclingExamples
+    },
+    {
+      id: "school-garden",
+      title: t.schoolProjects.schoolGarden,
+      description: t.schoolProjects.schoolGardenDesc,
+      icon: Sprout,
+      examples: t.schoolProjects.schoolGardenExamples
+    },
+    {
+      id: "water-saving",
+      title: t.schoolProjects.waterSaving,
+      description: t.schoolProjects.waterSavingDesc,
+      icon: Droplets,
+      examples: t.schoolProjects.waterSavingExamples
+    },
+    {
+      id: "energy-saving",
+      title: t.schoolProjects.energySaving,
+      description: t.schoolProjects.energySavingDesc,
+      icon: Zap,
+      examples: t.schoolProjects.energySavingExamples
+    },
+    {
+      id: "tree-planting",
+      title: t.schoolProjects.treePlanting,
+      description: t.schoolProjects.treePlantingDesc,
+      icon: TreePine,
+      examples: t.schoolProjects.treePlantingExamples
+    },
+    {
+      id: "composting",
+      title: t.schoolProjects.composting,
+      description: t.schoolProjects.compostingDesc,
+      icon: Sprout,
+      examples: t.schoolProjects.compostingExamples
+    },
+    {
+      id: "clean-school",
+      title: t.schoolProjects.cleanSchool,
+      description: t.schoolProjects.cleanSchoolDesc,
+      icon: Sparkles,
+      examples: t.schoolProjects.cleanSchoolExamples
+    },
+    {
+      id: "awareness-club",
+      title: t.schoolProjects.awarenessClub,
+      description: t.schoolProjects.awarenessClubDesc,
+      icon: School,
+      examples: t.schoolProjects.awarenessClubExamples
+    },
+    {
+      id: "green-library",
+      title: t.schoolProjects.greenLibrary,
+      description: t.schoolProjects.greenLibraryDesc,
+      icon: Layers,
+      examples: t.schoolProjects.greenLibraryExamples
+    }
+  ];
+
+  const handleProjectClick = (project: Project) => {
     setSelectedProject({
       ...project,
       type: 'school' as const
@@ -21,167 +116,122 @@ const SchoolProjects = () => {
     setIsModalOpen(true);
   };
 
-  const projectIcons = [
-    FileText, Recycle, Droplets, Trash2, Droplets, Palette, BookOpen, Sun, Hammer, Utensils
-  ];
-
-  const projects = Object.entries(t.schoolProjects.projects).map(([key, project], index) => ({
-    id: key,
-    title: project.title,
-    description: project.description,
-    examples: project.examples,
-    icon: projectIcons[index],
-    color: [
-      "from-blue-600/20 to-cyan-600/20",
-      "from-green-600/20 to-emerald-600/20", 
-      "from-purple-600/20 to-pink-600/20",
-      "from-orange-600/20 to-red-600/20",
-      "from-teal-600/20 to-blue-600/20",
-      "from-indigo-600/20 to-purple-600/20",
-      "from-rose-600/20 to-pink-600/20",
-      "from-yellow-600/20 to-orange-600/20",
-      "from-gray-600/20 to-slate-600/20",
-      "from-lime-600/20 to-green-600/20"
-    ][index],
-    borderColor: [
-      "border-blue-500/30",
-      "border-green-500/30",
-      "border-purple-500/30", 
-      "border-orange-500/30",
-      "border-teal-500/30",
-      "border-indigo-500/30",
-      "border-rose-500/30",
-      "border-yellow-500/30",
-      "border-gray-500/30",
-      "border-lime-500/30"
-    ][index]
-  }));
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-950 via-blue-950 to-emerald-950 p-4" dir={dir}>
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <Button
-            variant="outline"
-            onClick={() => {
-              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
-              navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
-            }}
-            className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {t.environmental.backToMain}
-          </Button>
-        </motion.div>
+    <PageShell>
+      <SEO 
+        title={`${t.schoolProjects.title} | ذروة العلم`}
+        description={t.schoolProjects.subtitle}
+      />
 
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-center mb-12"
-        >
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <School className="w-12 h-12 text-green-400" />
-            <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-white to-emerald-400">
-              {t.schoolProjects.title}
-            </h1>
-          </div>
-          <div className="w-20 h-1 bg-green-500/50 mx-auto mb-4"></div>
-          <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            {t.schoolProjects.subtitle}
+      <PageHeader
+        title={t.schoolProjects.title}
+        description={t.schoolProjects.subtitle}
+        icon={School}
+        crumbs={[
+          { label: 'الرئيسية', to: '/' },
+          { label: 'المجتمع المدرسي', to: '/school' },
+          { label: 'الاستدامة البيئية', to: '/environmental-sustainability' },
+          { label: t.schoolProjects.title }
+        ]}
+      />
+
+      {/* Intro info box */}
+      <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-card-foreground">دليل المبادرات البيئية للمدارس</h2>
+          <p className="text-sm text-muted-foreground">
+            10 مشاريع تعليمية وتطبيقية تعزز ثقافة الترشيد والعمل الجماعي بين الطلبة والمعلمين. اضغط على أي مشروع لعرض خطة تنفيذه.
           </p>
-        </motion.div>
+        </div>
+        <Badge variant="secondary" className="text-xs px-3 py-1.5 shrink-0">
+          10 مشاريع معتمدة
+        </Badge>
+      </div>
 
-        {/* Projects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {projects.map((project, index) => (
+      {/* Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {rawProjects.map((project, index) => {
+          const Icon = project.icon;
+          return (
             <motion.div
               key={project.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3 + index * 0.05 }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.04 }}
             >
               <Card 
-                className={`group h-full cursor-pointer ${project.borderColor} border-2 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10 hover:scale-105 bg-gradient-to-br ${project.color} backdrop-blur-sm`}
+                className="group h-full cursor-pointer rounded-3xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg flex flex-col justify-between"
                 onClick={() => handleProjectClick(project)}
               >
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-3 p-3 rounded-full bg-white/10 backdrop-blur-sm w-fit">
-                    <project.icon className="w-6 h-6 text-white" />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-12 w-12 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center transition-colors group-hover:bg-primary group-hover:text-primary-foreground shadow-sm">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <Badge variant="outline" className="text-xs font-semibold">
+                      مشروع #{index + 1}
+                    </Badge>
                   </div>
-                  <CardTitle className="text-lg font-bold text-white group-hover:text-green-300 transition-colors leading-tight">
-                    {project.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <CardDescription className="text-white/80 text-sm leading-relaxed">
-                    {project.description}
-                  </CardDescription>
-                  
-                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                    <h4 className="text-white font-semibold text-sm mb-2">الأمثلة:</h4>
-                    <p className="text-white/70 text-xs leading-relaxed">
+
+                  <div className="space-y-2">
+                    <CardTitle className="text-lg font-bold text-card-foreground group-hover:text-primary transition-colors leading-tight">
+                      {project.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+                      {project.description}
+                    </CardDescription>
+                  </div>
+
+                  <div className="rounded-2xl bg-muted/40 p-3.5 border border-border">
+                    <h4 className="text-card-foreground font-semibold text-xs mb-1">نماذج وتطبيقات:</h4>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
                       {project.examples}
                     </p>
                   </div>
-                </CardContent>
-                
-                {/* Hover Glow Effect */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-green-500/0 via-green-400/10 to-green-500/0 rounded-lg"></div>
-                  <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-green-400/20 to-transparent rounded-b-lg"></div>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-border flex items-center justify-between text-sm font-semibold text-primary">
+                  <span>عرض تفاصيل المشروع</span>
+                  <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 </div>
               </Card>
             </motion.div>
-          ))}
-        </div>
-
-        {/* Call to Action */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="text-center mt-12"
-        >
-          <div className="bg-white/10 rounded-xl p-6 border border-white/20 backdrop-blur-sm max-w-2xl mx-auto">
-            <h3 className="text-xl font-bold text-white mb-3">ابدأ مشروعك البيئي اليوم!</h3>
-            <p className="text-white/70 mb-4">
-              اختر مشروعاً واحداً من هذه المشاريع وابدأ في تطبيقه في مدرستك. كل مشروع صغير يساهم في حماية البيئة.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button 
-                onClick={() => navigate('/environmental/home-projects')}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                المشاريع المنزلية
-              </Button>
-              <Button 
-                onClick={() => navigate('/environmental/carbon-calculator')}
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                حاسبة البصمة الكربونية
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Project Detail Modal */}
-        {selectedProject && (
-          <ProjectDetailModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            project={selectedProject}
-          />
-        )}
+          );
+        })}
       </div>
-    </div>
+
+      {/* Bottom Cross-links Banner */}
+      <div className="mt-12 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm text-center max-w-3xl mx-auto space-y-4">
+        <h3 className="text-xl font-bold text-card-foreground">توسيع نطاق المبادرة إلى المنزل</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          يمكن للطلبة وأولياء الأمور نقل الخبرات المكتسبة في المدرسة إلى المنزل عبر تطبيق مشاريع الاستدامة المنزلية أو حساب البصمة الكربونية للأسرة.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
+          <Button 
+            onClick={() => navigate('/environmental/home-projects')}
+            className="rounded-2xl font-bold"
+          >
+            استعراض المشاريع المنزلية
+          </Button>
+          <Button 
+            onClick={() => navigate('/environmental/carbon-calculator')}
+            variant="outline"
+            className="rounded-2xl"
+          >
+            حاسبة البصمة الكربونية
+          </Button>
+        </div>
+      </div>
+
+      {/* Project Detail Modal */}
+      {selectedProject && (
+        <ProjectDetailModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          project={selectedProject}
+        />
+      )}
+    </PageShell>
   );
 };
 

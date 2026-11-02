@@ -16,8 +16,6 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const MODEL = "google/gemini-2.5-flash-lite"; // the fastest gateway model that handles tools well
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const service = createClient(SB_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -270,7 +268,6 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
 //       ADMIN_BRAIN_LLM_KEY   the API key / token
 //       ADMIN_BRAIN_LLM_MODEL e.g. openai/gpt-oss-120b (Groq) or @cf/meta/llama-4-scout-17b-16e-instruct (Cloudflare)
 //  2. Google Gemini directly (ADMIN_BRAIN_GEMINI_KEY, needs billing on that Google project)
-//  3. the Lovable AI gateway (LOVABLE_API_KEY)
 type Provider = { name: string; url: string; key: string; model: string };
 const skipUntil = new Map<string, number>();
 
@@ -284,8 +281,6 @@ function providers(): Provider[] {
   if (u && k) for (const m of models) list.push({ name: m.split("/").pop()!, url: u, key: k, model: m });
   const g = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
   if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash" });
-  const l = Deno.env.get("LOVABLE_API_KEY");
-  if (l) list.push({ name: "lovable", url: `${GATEWAY}/chat/completions`, key: l, model: MODEL });
   return list;
 }
 
@@ -420,25 +415,6 @@ function wav(pcm: Uint8Array, rate = 24000): Uint8Array {
   return out;
 }
 
-async function speakGateway(text: string): Promise<Uint8Array> {
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
-  let last = "";
-  for (let i = 0; i < 4; i++) {
-    const r = await fetch(`${GATEWAY}/audio/speech`, {
-      signal: AbortSignal.timeout(20_000),
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "openai/gpt-4o-mini-tts", voice: VOICE, input: text, instructions: VOICE_STYLE, response_format: "wav" }),
-    });
-    if (r.ok) return new Uint8Array(await r.arrayBuffer());
-    last = `${r.status}: ${(await r.text()).slice(0, 160)}`;
-    if (r.status !== 429) break;
-    await new Promise((s) => setTimeout(s, 400 * (i + 1) + Math.random() * 300));
-  }
-  throw new Error(`tts ${last}`);
-}
-
 async function speakGemini(text: string): Promise<Uint8Array> {
   const key = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
   if (!key) throw new Error("no gemini key");
@@ -463,7 +439,7 @@ async function speakGemini(text: string): Promise<Uint8Array> {
 async function speakGroq(text: string): Promise<Uint8Array> {
   const key = Deno.env.get("ADMIN_BRAIN_LLM_KEY");
   if (!key || !Deno.env.get("ADMIN_BRAIN_LLM_URL")?.includes("groq.com")) throw new Error("no groq");
-  let voice = Deno.env.get("ADMIN_BRAIN_TTS_VOICE") || "lulwa";
+  let voice = Deno.env.get("ADMIN_BRAIN_TTS_VOICE") || "noura"; // women: noura, lulwa, aisha
   for (let i = 0; i < 2; i++) {
     const r = await fetch("https://api.groq.com/openai/v1/audio/speech", {
       signal: AbortSignal.timeout(20_000),
@@ -499,7 +475,7 @@ async function speakOpenAI(text: string): Promise<Uint8Array> {
 const ttsSkip = new Map<string, number>();
 async function speak(text: string) {
   const errors: string[] = [];
-  for (const [name, fn] of [["openai", speakOpenAI], ["lovable", speakGateway], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
+  for (const [name, fn] of [["openai", speakOpenAI], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
     if ((ttsSkip.get(name) ?? 0) > Date.now()) continue;
     try { return await fn(text); } catch (e) {
       errors.push(`${name}: ${String(e).slice(0, 120)}`);
@@ -522,7 +498,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     if (body?.action === "speak") {
-      const text = typeof body.text === "string" ? body.text.trim().slice(0, 900) : "";
+      const text = typeof body.text === "string" ? body.text.trim().slice(0, 400) : "";
       if (!text) return json({ error: "no text" }, 400);
       const audio = await speak(text);
       return new Response(audio, { headers: { ...cors, "Content-Type": "audio/wav" } });

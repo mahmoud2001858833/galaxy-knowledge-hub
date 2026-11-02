@@ -18,6 +18,9 @@ import ProjectDetails from '@/components/recycling/ProjectDetails';
 import { calculateProjectImpact, projectKey, readLocal, type RecyclingProject, type Completion, type ImpactInput } from '@/components/recycling/model';
 import workshopImage from '@/assets/recycling-workshop.jpg';
 import '@/components/recycling/recycling.css';
+import { PageShell } from '@/components/layout/PageShell';
+import { SEO } from '@/components/SEO';
+import { Link } from 'react-router-dom';
 
 const COMMON_MATERIALS = ['زجاجات بلاستيكية', 'علب معدنية', 'كرتون', 'ورق', 'قماش قديم', 'خشب', 'زجاج', 'أغطية زجاجات', 'علب ألمنيوم', 'أقمشة جينز', 'صناديق كرتون'];
 const FAVORITES_KEY = 'recycling-favorites-v2';
@@ -102,14 +105,167 @@ export default function RecyclingProjectAdvisor() {
     {!visible.length && <div className="sm:col-span-2 border border-dashed border-border rounded-lg overflow-hidden"><img src={workshopImage} width={1280} height={768} alt="أمثلة لمشاريع إعادة استخدام الزجاجات والكرتون والعلب" className="w-full h-56 object-cover" /><p className="text-muted-foreground text-center p-8">{search || filter !== 'all' ? 'لا توجد مشاريع مطابقة.' : tab === 'saved' ? 'لا توجد مشاريع محفوظة بعد.' : 'المشاريع المقترحة ستظهر هنا.'}</p></div>}
     </div>}{questions.length > 0 && tab === 'generator' && <section className="mt-6 border-t border-border pt-5"><h3 className="font-bold mb-3">لتخصيص المشاريع</h3>{questions.map(q => <Button variant="ghost" key={q} className="h-auto whitespace-normal text-right justify-start w-full py-2 text-muted-foreground" onClick={() => { setTab('chat'); setChatInput(q); }}>{q}<ArrowLeft /></Button>)}</section>}</>;
 
-  return <div dir="rtl" data-preserve-dark className="recycling-theme min-h-screen p-4 md:p-8 pb-24"><div className="max-w-7xl mx-auto">
-    <header className="mb-8"><div className="flex flex-wrap justify-between gap-3 items-center mb-8"><Button variant="outline" onClick={() => navigate(sessionStorage.getItem('gju_mode') === 'true' ? '/gju-competition' : '/environmental-sustainability')}><ArrowLeft />رجوع</Button><div className="flex flex-wrap gap-3 text-sm"><Badge variant="outline" className="py-2 px-3"><CheckCircle className="h-4 w-4 ml-2 text-primary" />{completed.length} مشروع منجز</Badge><Badge variant="outline" className="py-2 px-3"><Leaf className="h-4 w-4 ml-2 text-primary" />{totals.co2.toFixed(2)} كغ CO₂e متجنّبة تقديرياً</Badge></div></div><div className="text-center"><div className="flex items-center justify-center gap-4"><div className="p-3 bg-primary rounded-lg shrink-0"><Recycle className="h-7 w-7 text-primary-foreground" /></div><h1 className="text-3xl md:text-4xl font-bold leading-relaxed">خبير إعادة التدوير الذكي</h1></div></div>{completed.length > 0 && <div className="mt-5 text-center text-sm text-muted-foreground">{totals.mass.toFixed(2)} كغ مواد أُعيد استخدامها • إنجازات بإقرار المستخدم، محفوظة على هذا الجهاز</div>}</header>
-    <Tabs value={tab} onValueChange={setTab}><TabsList className="flex mx-auto w-full max-w-md mb-8 bg-muted h-12"><TabsTrigger value="generator" className="flex-1 gap-2"><Lightbulb className="h-4 w-4" />إنشاء</TabsTrigger><TabsTrigger value="saved" className="flex-1 gap-2"><Star className="h-4 w-4" />المحفوظة ({saved.length})</TabsTrigger><TabsTrigger value="chat" className="flex-1 gap-2"><Send className="h-4 w-4" />اسأل الخبير</TabsTrigger></TabsList>
-    <TabsContent value="generator"><div className="grid lg:grid-cols-12 gap-8 items-start"><aside className="lg:col-span-4 min-w-0 bg-card border border-border rounded-lg p-6"><div className="flex items-center justify-between gap-2"><h2 className="text-xl font-bold flex gap-2 items-center"><BookOpen className="w-5 h-5 text-primary" />المواد المتوفرة</h2><Button variant="ghost" size="icon" aria-label={sidebarOpen ? 'طي المواد' : 'عرض المواد'} title={sidebarOpen ? 'طي المواد' : 'عرض المواد'} onClick={() => setSidebarOpen(s => !s)}><SlidersHorizontal /></Button></div>{sidebarOpen && <div className="space-y-6 mt-6"><div className="flex flex-wrap gap-2">{COMMON_MATERIALS.map(m => <Button key={m} size="sm" variant={selectedMaterials.includes(m) ? 'default' : 'outline'} className="text-xs h-8 px-3" aria-pressed={selectedMaterials.includes(m)} onClick={() => setSelectedMaterials(s => s.includes(m) ? s.filter(v => v !== m) : [...s,m])}>{m}</Button>)}</div><div><Label htmlFor="materials">مواد أخرى وكمياتها</Label><Textarea id="materials" value={materials} onChange={e => setMaterials(e.target.value)} placeholder="مثلاً: 3 زجاجات، صندوق كرتون، نصف متر قماش…" rows={4} className="mt-2" /></div><div className="grid grid-cols-2 gap-3"><div><Label>المستوى</Label><Select value={userLevel} onValueChange={setUserLevel}><SelectTrigger aria-label="المستوى" className="mt-2"><SelectValue /></SelectTrigger><SelectContent className="recycling-theme"><SelectItem value="child">طفل (6–12)</SelectItem><SelectItem value="teen">مراهق (13–17)</SelectItem><SelectItem value="adult">بالغ</SelectItem></SelectContent></Select></div><div><Label>نوع المشروع</Label><Select value={projectType} onValueChange={setProjectType}><SelectTrigger aria-label="نوع المشروع" className="mt-2"><SelectValue /></SelectTrigger><SelectContent className="recycling-theme"><SelectItem value="practical">عملي</SelectItem><SelectItem value="scientific">علمي</SelectItem><SelectItem value="artistic">فني</SelectItem><SelectItem value="group">جماعي</SelectItem></SelectContent></Select></div></div><input type="file" accept="image/jpeg,image/png,image/webp" ref={fileInput} onChange={upload} className="hidden" /><Button variant="outline" className="w-full border-dashed" disabled={busy} onClick={() => fileInput.current?.click()}><Camera />ارفع صورة للمواد</Button><Button className="w-full h-12 whitespace-normal" disabled={busy} onClick={() => generate()}>{busy ? <Loader2 className="animate-spin" /> : <Lightbulb />}{busy ? 'جاري التحليل…' : 'اقترح مشاريع إبداعية'}</Button>{error && <p role="alert" className="text-destructive text-sm leading-6">{error}</p>}{detectedMaterials.length > 0 && <div className="border-t border-border pt-3 text-sm"><h3 className="font-bold mb-2">المواد التي تعرّف عليها الخبير</h3><p className="text-muted-foreground">{detectedMaterials.join('، ')}</p></div>}</div>}</aside><section className="lg:col-span-8 min-w-0">{grid}</section></div></TabsContent>
-    <TabsContent value="saved">{grid}</TabsContent>
-    <TabsContent value="chat"><section className="max-w-3xl mx-auto"><h2 className="font-bold text-xl mb-5">اسأل خبير إعادة التدوير</h2>{contextProject && <div className="flex gap-3 items-center justify-between border-b border-border pb-4 mb-4"><p className="text-sm">المشروع: {contextProject.name}</p><Button variant="ghost" size="sm" onClick={() => setContextProject(null)}>إلغاء التحديد</Button></div>}<div aria-live="polite" className="h-96 overflow-y-auto space-y-4 py-4">{!chat.length && <div className="text-center text-muted-foreground py-14"><Recycle className="w-12 h-12 mx-auto mb-3" /><p>ما الذي ترغب بإعادة استخدامه؟</p></div>}{chat.map((m,i) => <div key={i} className={`rounded-lg p-4 text-sm leading-7 whitespace-pre-line max-w-[90%] ${m.role === 'user' ? 'bg-primary text-primary-foreground mr-auto' : 'bg-muted text-foreground'}`}>{m.content}</div>)}{chatBusy && <Loader2 role="status" aria-label="الخبير يجيب" className="animate-spin text-primary" />}<div ref={chatEnd} /></div><form className="flex gap-2 mt-5" onSubmit={e => { e.preventDefault(); send(); }}><GlobalVoiceInput onTranscript={text => setChatInput(p => `${p} ${text}`.trim())} disabled={chatBusy} size="md" /><Input aria-label="سؤال للخبير" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="اكتب سؤالك…" /><Button type="submit" size="icon" title="إرسال" aria-label="إرسال" disabled={chatBusy || !chatInput.trim()}><Send /></Button></form></section></TabsContent>
-    </Tabs>
-    <footer className="mt-10 border-t border-border pt-5 text-center text-xs text-muted-foreground">تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين</footer>
-    {active && <ProjectDetails key={projectKey(active)} project={active} onClose={() => setActive(null)} completed={completed.some(c => c.key === projectKey(active))} onSave={() => save(active)} onShare={() => share(active)} onAsk={() => ask(active)} onComplete={complete} onImage={generateImage} imageLoading={imageBusy} />}
-  </div></div>;
+  return (
+    <PageShell>
+      <SEO 
+        title="خبير إعادة التدوير الذكي | ذروة العلم"
+        description="حوّل نفاياتك وموادك المستعملة إلى مشاريع إبداعية وعملية بالذكاء الاصطناعي مع حساب الأثر البيئي."
+      />
+      <div dir="rtl" data-preserve-dark className="recycling-theme p-4 md:p-8 pb-16 rounded-3xl border border-border shadow-sm">
+        <header className="mb-8">
+          <div className="flex flex-wrap justify-between gap-3 items-center mb-6">
+            <nav aria-label="مسار الصفحة" className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <Link to="/" className="hover:text-foreground transition-colors">الرئيسية</Link>
+              <span>/</span>
+              <Link to="/school" className="hover:text-foreground transition-colors">المجتمع المدرسي</Link>
+              <span>/</span>
+              <Link to="/environmental-sustainability" className="hover:text-foreground transition-colors">الاستدامة البيئية</Link>
+              <span>/</span>
+              <span className="text-foreground font-semibold">خبير إعادة التدوير</span>
+            </nav>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Badge variant="outline" className="py-1.5 px-3">
+                <CheckCircle className="h-4 w-4 ml-1.5 text-primary" />
+                {completed.length} مشروع منجز
+              </Badge>
+              <Badge variant="outline" className="py-1.5 px-3">
+                <Leaf className="h-4 w-4 ml-1.5 text-primary" />
+                {totals.co2.toFixed(2)} كغ CO₂e متجنّبة تقديرياً
+              </Badge>
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-3">
+              <div className="p-3 bg-primary rounded-2xl shrink-0 text-primary-foreground shadow-sm">
+                <Recycle className="h-7 w-7" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold leading-relaxed text-foreground">خبير إعادة التدوير الذكي</h1>
+            </div>
+            {completed.length > 0 && (
+              <div className="mt-3 text-center text-xs text-muted-foreground">
+                {totals.mass.toFixed(2)} كغ مواد أُعيد استخدامها • إنجازات بإقرار المستخدم، محفوظة على هذا الجهاز
+              </div>
+            )}
+          </div>
+        </header>
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="flex mx-auto w-full max-w-md mb-8 bg-muted h-12">
+            <TabsTrigger value="generator" className="flex-1 gap-2"><Lightbulb className="h-4 w-4" />إنشاء</TabsTrigger>
+            <TabsTrigger value="saved" className="flex-1 gap-2"><Star className="h-4 w-4" />المحفوظة ({saved.length})</TabsTrigger>
+            <TabsTrigger value="chat" className="flex-1 gap-2"><Send className="h-4 w-4" />اسأل الخبير</TabsTrigger>
+          </TabsList>
+          <TabsContent value="generator">
+            <div className="grid lg:grid-cols-12 gap-8 items-start">
+              <aside className="lg:col-span-4 min-w-0 bg-card border border-border rounded-2xl p-6">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-xl font-bold flex gap-2 items-center"><BookOpen className="w-5 h-5 text-primary" />المواد المتوفرة</h2>
+                  <Button variant="ghost" size="icon" aria-label={sidebarOpen ? 'طي المواد' : 'عرض المواد'} title={sidebarOpen ? 'طي المواد' : 'عرض المواد'} onClick={() => setSidebarOpen(s => !s)}><SlidersHorizontal /></Button>
+                </div>
+                {sidebarOpen && (
+                  <div className="space-y-6 mt-6">
+                    <div className="flex flex-wrap gap-2">
+                      {COMMON_MATERIALS.map(m => (
+                        <Button key={m} size="sm" variant={selectedMaterials.includes(m) ? 'default' : 'outline'} className="text-xs h-8 px-3" aria-pressed={selectedMaterials.includes(m)} onClick={() => setSelectedMaterials(s => s.includes(m) ? s.filter(v => v !== m) : [...s,m])}>{m}</Button>
+                      ))}
+                    </div>
+                    <div>
+                      <Label htmlFor="materials">مواد أخرى وكمياتها</Label>
+                      <Textarea id="materials" value={materials} onChange={e => setMaterials(e.target.value)} placeholder="مثلاً: 3 زجاجات، صندوق كرتون، نصف متر قماش…" rows={4} className="mt-2" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>المستوى</Label>
+                        <Select value={userLevel} onValueChange={setUserLevel}>
+                          <SelectTrigger aria-label="المستوى" className="mt-2"><SelectValue /></SelectTrigger>
+                          <SelectContent className="recycling-theme">
+                            <SelectItem value="child">طفل (6–12)</SelectItem>
+                            <SelectItem value="teen">مراهق (13–17)</SelectItem>
+                            <SelectItem value="adult">بالغ</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>نوع المشروع</Label>
+                        <Select value={projectType} onValueChange={setProjectType}>
+                          <SelectTrigger aria-label="نوع المشروع" className="mt-2"><SelectValue /></SelectTrigger>
+                          <SelectContent className="recycling-theme">
+                            <SelectItem value="practical">عملي</SelectItem>
+                            <SelectItem value="scientific">علمي</SelectItem>
+                            <SelectItem value="artistic">فني</SelectItem>
+                            <SelectItem value="group">جماعي</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/jpeg,image/png,image/webp" ref={fileInput} onChange={upload} className="hidden" />
+                    <Button variant="outline" className="w-full border-dashed" disabled={busy} onClick={() => fileInput.current?.click()}><Camera className="w-4 h-4 ml-2" />ارفع صورة للمواد</Button>
+                    <Button className="w-full h-12 whitespace-normal" disabled={busy} onClick={() => generate()}>{busy ? <Loader2 className="animate-spin" /> : <Lightbulb className="w-4 h-4 ml-2" />}{busy ? 'جاري التحليل…' : 'اقترح مشاريع إبداعية'}</Button>
+                    {error && <p role="alert" className="text-destructive text-sm leading-6">{error}</p>}
+                    {detectedMaterials.length > 0 && (
+                      <div className="border-t border-border pt-3 text-sm">
+                        <h3 className="font-bold mb-2">المواد التي تعرّف عليها الخبير</h3>
+                        <p className="text-muted-foreground">{detectedMaterials.join('، ')}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </aside>
+              <section className="lg:col-span-8 min-w-0">{grid}</section>
+            </div>
+          </TabsContent>
+          <TabsContent value="saved">{grid}</TabsContent>
+          <TabsContent value="chat">
+            <section className="max-w-3xl mx-auto">
+              <h2 className="font-bold text-xl mb-5">اسأل خبير إعادة التدوير</h2>
+              {contextProject && (
+                <div className="flex gap-3 items-center justify-between border-b border-border pb-4 mb-4">
+                  <p className="text-sm">المشروع: {contextProject.name}</p>
+                  <Button variant="ghost" size="sm" onClick={() => setContextProject(null)}>إلغاء التحديد</Button>
+                </div>
+              )}
+              <div aria-live="polite" className="h-96 overflow-y-auto space-y-4 py-4">
+                {!chat.length && (
+                  <div className="text-center text-muted-foreground py-14">
+                    <Recycle className="w-12 h-12 mx-auto mb-3 text-primary" />
+                    <p>ما الذي ترغب بإعادة استخدامه؟</p>
+                  </div>
+                )}
+                {chat.map((m,i) => (
+                  <div key={i} className={`rounded-2xl p-4 text-sm leading-7 whitespace-pre-line max-w-[90%] ${m.role === 'user' ? 'bg-primary text-primary-foreground mr-auto' : 'bg-muted text-foreground'}`}>
+                    {m.content}
+                  </div>
+                ))}
+                {chatBusy && <Loader2 role="status" aria-label="الخبير يجيب" className="animate-spin text-primary" />}
+                <div ref={chatEnd} />
+              </div>
+              <form className="flex gap-2 mt-5" onSubmit={e => { e.preventDefault(); send(); }}>
+                <GlobalVoiceInput onTranscript={text => setChatInput(p => `${p} ${text}`.trim())} disabled={chatBusy} size="md" />
+                <Input aria-label="سؤال للخبير" value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="اكتب سؤالك…" className="rounded-2xl" />
+                <Button type="submit" size="icon" title="إرسال" aria-label="إرسال" disabled={chatBusy || !chatInput.trim()} className="rounded-2xl shrink-0">
+                  <Send className="w-4 h-4" />
+                </Button>
+              </form>
+            </section>
+          </TabsContent>
+        </Tabs>
+        <footer className="mt-10 border-t border-border pt-5 text-center text-xs text-muted-foreground">
+          تم إنشاء المنصة بواسطة مدرسة عنبه الثانية الشاملة للبنين
+        </footer>
+        {active && (
+          <ProjectDetails 
+            key={projectKey(active)} 
+            project={active} 
+            onClose={() => setActive(null)} 
+            completed={completed.some(c => c.key === projectKey(active))} 
+            onSave={() => save(active)} 
+            onShare={() => share(active)} 
+            onAsk={() => ask(active)} 
+            onComplete={complete} 
+            onImage={generateImage} 
+            imageLoading={imageBusy} 
+          />
+        )}
+      </div>
+    </PageShell>
+  );
 }

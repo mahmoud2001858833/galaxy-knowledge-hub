@@ -5,7 +5,17 @@ import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, BarChart as BarChartIcon, CheckCircle, Target, TrendingUp, Download } from 'lucide-react';
+import { 
+  BarChart as BarChartIcon, 
+  CheckCircle2, 
+  Target, 
+  TrendingUp, 
+  Download, 
+  RefreshCcw,
+  Sparkles,
+  ArrowRight,
+  ChevronLeft
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import VoiceNumberInput from '@/components/eco/VoiceNumberInput';
 import GlobalComparisonChart from '@/components/eco/GlobalComparisonChart';
@@ -13,7 +23,24 @@ import MultiViewChart from '@/components/eco/MultiViewChart';
 import WhatIfScenarios from '@/components/eco/WhatIfScenarios';
 import AIRecommendationsPanel from '@/components/eco/AIRecommendationsPanel';
 import { generateSustainabilityPdf } from '@/lib/sustainabilityPdf';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { PageShell, PageHeader } from '@/components/layout/PageShell';
+import { SEO } from '@/components/SEO';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Radar, 
+  RadarChart, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Cell 
+} from 'recharts';
 
 interface Question {
   id: number;
@@ -24,7 +51,7 @@ interface Question {
   unit?: string;
 }
 
-const PersonalSustainabilityIndex = () => {
+const PersonalSustainabilityIndex: React.FC = () => {
   const navigate = useNavigate();
   const { dir } = useLanguage();
   const { toast } = useToast();
@@ -92,86 +119,97 @@ const PersonalSustainabilityIndex = () => {
   };
 
   const goBack = () => {
-    if (currentQuestion > 0) setCurrentQuestion(prev => prev - 1);
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+    }
   };
 
-  const calculateResults = (allAnswers: Record<number, any>) => {
-    const categoryScores: Record<string, number> = {
-      Transportation: 0, Energy: 0, Food: 0, Waste: 0, Water: 0, Consumption: 0, Habits: 0,
+  const calculateResults = (finalAnswers: Record<number, any>) => {
+    let score = 0;
+    const categoryTotals: Record<string, { earned: number; possible: number }> = {
+      Transportation: { earned: 0, possible: 25 },
+      Energy: { earned: 0, possible: 30 },
+      Food: { earned: 0, possible: 25 },
+      Waste: { earned: 0, possible: 20 },
+      Water: { earned: 0, possible: 20 },
+      Consumption: { earned: 0, possible: 15 },
+      Habits: { earned: 0, possible: 15 },
     };
-    const categoryWeights = {
-      Transportation: 22, Energy: 22, Food: 18, Waste: 13, Water: 12, Consumption: 8, Habits: 5,
-    };
-
-    const positiveKeywords = ['تطفئ', 'تفصل', 'تحاول', 'تستخدم المواصلات', 'تغطي', 'تصلح', 'تتبرع', 'تفضل', 'تعيد ملء', 'تشارك', 'تختار', 'تشتري منتجات', 'تشتري سلعاً', 'تنشر', 'تغلق', 'تجمع'];
-    const isPositive = (text: string) => positiveKeywords.some(k => text.includes(k));
-
-    const positiveYesno = ['تحمل', 'تحويل', 'نباتات', 'منظم', 'توفير', 'تجمع'];
 
     questions.forEach((q) => {
-      const answer = allAnswers[q.id];
-      if (answer === undefined || answer === null) return;
-      let score = 0;
+      const ans = finalAnswers[q.id];
+      let pts = 0;
 
       if (q.type === 'frequency') {
-        const fwd = { 'أبداً': 0, 'نادراً': 25, 'أحياناً': 50, 'غالباً': 75, 'دائماً': 100 };
-        const inv = { 'أبداً': 100, 'نادراً': 75, 'أحياناً': 50, 'غالباً': 25, 'دائماً': 0 };
-        score = isPositive(q.text) ? (fwd as any)[answer] ?? 0 : (inv as any)[answer] ?? 0;
+        const map: Record<string, number> = { 'أبداً': 1, 'نادراً': 2, 'أحياناً': 3, 'غالباً': 4, 'دائماً': 5 };
+        pts = map[ans] || 3;
+        if (q.id === 27) pts = 6 - pts;
       } else if (q.type === 'yesno') {
-        const positive = positiveYesno.some(k => q.text.includes(k));
-        score = positive ? (answer === 'نعم' ? 100 : 0) : (answer === 'لا' ? 100 : 0);
+        pts = ans === 'نعم' ? 5 : 1;
       } else if (q.type === 'choice') {
-        if (q.text.includes('تذهب')) {
-          score = ({ 'المشي': 100, 'الدراجة': 90, 'الحافلة العامة': 70, 'السيارة': 30, 'التاكسي': 20, 'الدراجة النارية': 40 } as any)[answer] ?? 0;
-        } else if (q.text.includes('LED')) {
-          score = parseInt(answer);
-        } else if (q.text.includes('طيران')) {
-          score = ({ '0': 100, '1-2': 70, '3-5': 40, '6+': 0 } as any)[answer] ?? 0;
-        } else if (q.text.includes('متجددة')) {
-          score = ({ 'لا': 0, 'جزئياً': 60, 'كلياً': 100 } as any)[answer] ?? 0;
-        } else if (q.text.includes('ملابس')) {
-          score = ({ '0-5': 100, '6-10': 70, '11-20': 50, '21-30': 25, '30+': 0 } as any)[answer] ?? 0;
+        if (q.id === 0) {
+          const map: Record<string, number> = { 'المشي': 5, 'الدراجة': 5, 'الحافلة العامة': 4, 'السيارة': 1, 'التاكسي': 2, 'الدراجة النارية': 2 };
+          pts = map[ans] || 3;
+        } else if (q.id === 2) {
+          const map: Record<string, number> = { '0': 5, '1-2': 3, '3-5': 2, '6+': 1 };
+          pts = map[ans] || 3;
+        } else if (q.id === 7) {
+          const map: Record<string, number> = { '0%': 1, '25%': 2, '50%': 3, '75%': 4, '100%': 5 };
+          pts = map[ans] || 3;
+        } else if (q.id === 10) {
+          pts = ans === 'كلياً' ? 5 : ans === 'جزئياً' ? 3 : 1;
+        } else if (q.id === 24) {
+          const map: Record<string, number> = { '0-5': 5, '6-10': 4, '11-20': 3, '21-30': 2, '30+': 1 };
+          pts = map[ans] || 3;
         }
       } else if (q.type === 'number') {
-        const n = parseFloat(answer) || 0;
-        if (q.text.includes('لحم أحمر')) score = Math.max(0, 100 - n * 12);
-        else if (q.text.includes('نباتية')) score = Math.min(100, n * 12);
-        else if (q.text.includes('بالسيارة')) score = Math.max(0, 100 - n * 0.4);
-        else if (q.text.includes('التكييف')) score = Math.max(0, 100 - n * 8);
-        else if (q.text.includes('الكهرباء')) score = Math.max(0, 100 - n * 0.1);
-        else if (q.text.includes('بلاستيكي') || q.text.includes('كيس')) score = Math.max(0, 100 - n * 10);
-        else if (q.text.includes('وجبات جاهزة')) score = Math.max(0, 100 - n * 15);
-        else if (q.text.includes('تستحم')) score = n <= 5 ? 100 : Math.max(0, 100 - (n - 5) * 8);
-        else score = 50;
+        const val = Number(ans) || 0;
+        if (q.id === 1) pts = val < 50 ? 5 : val < 150 ? 3 : 1;
+        else if (q.id === 8) pts = val < 2 ? 5 : val < 6 ? 3 : 1;
+        else if (q.id === 9) pts = val < 200 ? 5 : val < 500 ? 3 : 1;
+        else if (q.id === 11) pts = val < 2 ? 5 : val < 5 ? 3 : 1;
+        else if (q.id === 12) pts = val > 5 ? 5 : val > 2 ? 3 : 1;
+        else if (q.id === 15) pts = val < 1 ? 5 : val < 3 ? 3 : 1;
+        else if (q.id === 18) pts = val < 2 ? 5 : val < 5 ? 3 : 1;
+        else if (q.id === 20) pts = val < 5 ? 5 : val < 10 ? 3 : 1;
       }
-      categoryScores[q.category] += score;
+
+      categoryTotals[q.category].earned += pts;
+      score += pts;
     });
 
-    const categoryAverages = Object.entries(categoryScores).map(([cat, sum]) => {
-      const count = questions.filter(q => q.category === cat).length;
-      return { category: cat, score: count ? Math.round(sum / count) : 0 };
+    const totalPossible = Object.values(categoryTotals).reduce((sum, c) => sum + c.possible, 0);
+    const overallPercentage = Math.round((score / totalPossible) * 100);
+
+    const categoryScores = [
+      { category: 'المواصلات', score: Math.round((categoryTotals.Transportation.earned / categoryTotals.Transportation.possible) * 100) },
+      { category: 'الطاقة', score: Math.round((categoryTotals.Energy.earned / categoryTotals.Energy.possible) * 100) },
+      { category: 'الغذاء', score: Math.round((categoryTotals.Food.earned / categoryTotals.Food.possible) * 100) },
+      { category: 'النفايات', score: Math.round((categoryTotals.Waste.earned / categoryTotals.Waste.possible) * 100) },
+      { category: 'المياه', score: Math.round((categoryTotals.Water.earned / categoryTotals.Water.possible) * 100) },
+      { category: 'الاستهلاك', score: Math.round((categoryTotals.Consumption.earned / categoryTotals.Consumption.possible) * 100) },
+      { category: 'العادات', score: Math.round((categoryTotals.Habits.earned / categoryTotals.Habits.possible) * 100) },
+    ];
+
+    const estimatedCO2 = Math.max(0.8, 6.5 - (overallPercentage / 100) * 4.5);
+
+    const recommendations = [];
+    if (categoryScores[0].score < 60) recommendations.push('استخدم النقل العام أو المشي/الدراجة للمسافات القصيرة بدلاً من السيارة.');
+    if (categoryScores[1].score < 60) recommendations.push('استبدل المصابيح المتبقية بـ LED وافصل الشواحن عند عدم الاستخدام.');
+    if (categoryScores[2].score < 60) recommendations.push('قلل من تناول اللحوم الحمراء بمعدل يومين أسبوعياً وركّز على الأغذية المحلية.');
+    if (categoryScores[3].score < 60) recommendations.push('ابدأ بفصل النفايات في المنزل واحمل كيس تسوق قماشي دائم.');
+    if (categoryScores[4].score < 60) recommendations.push('قلل مدة الاستحمام وركّب مرشدات تدفق المياه على الصنابير.');
+    if (categoryScores[5].score < 60) recommendations.push('اشترِ بحكمة وحاول إصلاح الأجهزة والملابس بدلاً من استبدالها فوراً.');
+    if (categoryScores[6].score < 60) recommendations.push('احمل زجاجة ماء معدنية وشارك في المبادرات والأنشطة البيئية التطوعية.');
+    if (recommendations.length === 0) recommendations.push('ممتاز! استمر على هذا النهج وشارك تجربتك كقدوة لزملائك.');
+
+    setResults({
+      overallScore: overallPercentage,
+      categoryScores,
+      estimatedCO2,
+      recommendations,
     });
-
-    let weightedScore = 0;
-    categoryAverages.forEach(({ category, score }) => {
-      weightedScore += (score * (categoryWeights as any)[category]) / 100;
-    });
-    const overallScore = Math.round(weightedScore);
-
-    // Estimate annual CO2 (tons) from inverse of score
-    const estimatedCO2 = Math.max(1.0, ((100 - overallScore) / 100) * 12);
-
-    const recommendations = [
-      'استبدل المصابيح التقليدية بمصابيح LED لتوفير 75% من استهلاك الإنارة',
-      'قلّل وجبات اللحم الأحمر إلى 1-2 أسبوعياً لتوفير ~300 كج CO₂ سنوياً',
-      'استخدم المواصلات العامة أو شارك السيارة لتوفير ~600 كج CO₂ سنوياً',
-      'افصل النفايات وحوّل بقايا الطعام إلى سماد طبيعي',
-      'استبدل الزجاجات البلاستيكية بقارورة قابلة لإعادة الاستخدام',
-    ].slice(0, 5);
-
-    setResults({ overallScore, categoryScores: categoryAverages, recommendations, estimatedCO2 });
     setShowResults(true);
-    toast({ title: 'تم حساب مؤشر الاستدامة', description: `نقاطك: ${overallScore}%` });
   };
 
   const resetQuiz = () => {
@@ -185,225 +223,271 @@ const PersonalSustainabilityIndex = () => {
   const handleDownloadPdf = () => {
     if (!results) return;
     generateSustainabilityPdf({
-      title: 'Personal Sustainability Index Report',
-      subtitle: `Total Questions Answered: ${questions.length}`,
-      headlineMetric: { label: 'Overall Sustainability Score', value: `${results.overallScore} / 100` },
+      title: 'تقرير مؤشر الاستدامة الشخصي',
+      subtitle: `عدد الأسئلة المنجزة: ${questions.length}`,
+      headlineMetric: { label: 'النتيجة الإجمالية', value: `${results.overallScore}%` },
       sections: [
         {
-          title: 'Category Breakdown',
+          title: 'النتائج حسب المجال',
           rows: results.categoryScores.map((c: any) => [c.category, `${c.score}%`]),
         },
         {
-          title: 'Estimated Footprint',
-          rows: [['Annual CO2 (tons)', results.estimatedCO2.toFixed(2)]],
+          title: 'البصمة الكربونية التقديرية',
+          rows: [['الانبعاثات السنوية', `${results.estimatedCO2.toFixed(2)} طن CO₂/سنة`]],
         },
       ],
       comparison: [
-        { label: 'You', value: results.estimatedCO2, unit: 't CO2/yr' },
-        { label: 'Paris Goal 2030', value: 2.0, unit: 't CO2/yr' },
-        { label: 'Jordan Average', value: 3.1, unit: 't CO2/yr' },
-        { label: 'World Average', value: 4.7, unit: 't CO2/yr' },
-        { label: 'EU Average', value: 6.2, unit: 't CO2/yr' },
-        { label: 'USA Average', value: 14.4, unit: 't CO2/yr' },
+        { label: 'نتيجتك', value: results.estimatedCO2, unit: 't CO2/yr' },
+        { label: 'هدف باريس 2030', value: 2.0, unit: 't CO2/yr' },
+        { label: 'متوسط الأردن', value: 3.1, unit: 't CO2/yr' },
+        { label: 'المعدل العالمي', value: 4.7, unit: 't CO2/yr' },
+        { label: 'معدل الاتحاد الأوروبي', value: 6.2, unit: 't CO2/yr' },
+        { label: 'معدل الولايات المتحدة', value: 14.4, unit: 't CO2/yr' },
       ],
       recommendations: results.recommendations,
-      footer: `Personal Sustainability Index · ${new Date().toLocaleString()}`,
+      footer: `مؤشر الاستدامة الشخصي · ذروة العلم · ${new Date().toLocaleString('ar-JO')}`,
     }, `sustainability-index-${Date.now()}.pdf`);
-    toast({ title: 'تم تنزيل التقرير', description: 'تقرير PDF جاهز' });
+    toast({ title: 'تم تنزيل التقرير', description: 'تقرير PDF جاهز بنجاح' });
   };
 
   if (showResults && results) {
     const radarData = results.categoryScores.map((c: any) => ({ category: c.category, score: c.score, fullMark: 100 }));
-    const barColors = ['#10b981', '#3b82f6', '#f59e0b', '#a855f7', '#06b6d4', '#ec4899', '#84cc16'];
+    const barColors = ['#0284c7', '#0d9488', '#16a34a', '#ca8a04', '#9333ea', '#e11d48', '#2563eb'];
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-950 via-green-950 to-blue-950 p-4" dir={dir}>
-        <div className="container mx-auto max-w-6xl">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
-            <Button variant="outline" onClick={() => {
-              const isGJU = sessionStorage.getItem('gju_mode') === 'true';
-              navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
-            }} className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <ArrowLeft className="w-4 h-4" />العودة
-            </Button>
-            <Button onClick={handleDownloadPdf} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-              <Download className="w-4 h-4 ml-2" />تحميل تقرير PDF
-            </Button>
-          </motion.div>
+      <PageShell>
+        <SEO 
+          title="نتائج مؤشر الاستدامة الشخصي | ذروة العلم"
+          description="تحليل شامل لسلوكك البيئي عبر 7 مجالات رئيسية مع توصيات وتقرير PDF."
+        />
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <BarChartIcon className="w-10 h-10 text-teal-400" />
-              <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-white to-green-400">
-                نتائج مؤشر الاستدامة الشخصي
-              </h1>
+        <PageHeader
+          title="نتائج مؤشر الاستدامة الشخصي"
+          description="تحليل شامل لسلوكك البيئي عبر 7 مجالات رئيسية مع مقارنات وتوصيات عملية للتحسين المستمر."
+          icon={BarChartIcon}
+          crumbs={[
+            { label: 'الرئيسية', to: '/' },
+            { label: 'المجتمع المدرسي', to: '/school' },
+            { label: 'الاستدامة البيئية', to: '/environmental-sustainability' },
+            { label: 'نتائج التقييم' },
+          ]}
+          actions={
+            <div className="flex gap-2">
+              <Button onClick={handleDownloadPdf} className="rounded-2xl font-bold">
+                <Download className="w-4 h-4 ml-2" />
+                تحميل تقرير PDF
+              </Button>
+              <Button variant="outline" onClick={resetQuiz} className="rounded-2xl">
+                <RefreshCcw className="w-4 h-4 ml-2" />
+                إعادة التقييم
+              </Button>
             </div>
+          }
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Overall Score */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+            <Card className="rounded-3xl border border-border bg-card shadow-sm h-full flex flex-col justify-between p-6">
+              <CardHeader className="text-center p-0 mb-4">
+                <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+                  <Target className="w-5 h-5 text-primary" />
+                  النتيجة الإجمالية للاستدامة
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center p-0 space-y-4">
+                <div className="text-7xl font-black text-primary tracking-tight">
+                  {results.overallScore}%
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                  {results.overallScore >= 80 ? 'ممتاز! أنت ملتزم بيئياً بدرجة عالية وتعتبر قدوة مجتمعية.' :
+                    results.overallScore >= 60 ? 'جيد جداً! لديك ممارسات بيئية واعية مع فرصة لمزيد من التحسين.' :
+                      results.overallScore >= 40 ? 'متوسط! يمكنك إحداث فارق كبير عبر تطبيق التوصيات المقترحة أدناه.' : 'يحتاج إلى تحسين! ابدأ بخطوات بسيطة لترشيد استهلاكك اليومي.'}
+                </p>
+
+                <div className="rounded-2xl bg-muted/40 border border-border p-4 text-center">
+                  <div className="text-xs text-muted-foreground">البصمة الكربونية السنوية التقديرية</div>
+                  <div className="text-2xl font-black text-card-foreground mt-1">
+                    {results.estimatedCO2.toFixed(2)} طن CO₂/سنة
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-full">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-white flex items-center gap-2 justify-center">
-                    <Target className="w-5 h-5" />النتيجة الإجمالية
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <div className="text-7xl font-bold text-teal-400 mb-4">{results.overallScore}%</div>
-                  <p className="text-white/80 mb-4">
-                    {results.overallScore >= 80 ? 'ممتاز! أنت ملتزم بيئياً بدرجة عالية' :
-                      results.overallScore >= 60 ? 'جيد! لديك التزام بيئي مع مجال للتحسين' :
-                        results.overallScore >= 40 ? 'متوسط! يمكنك تحسين ممارساتك' : 'يحتاج تحسين! ابدأ بالتوصيات'}
-                  </p>
-                  <div className="bg-amber-500/20 border border-amber-500/40 rounded-lg p-3 mb-4">
-                    <p className="text-amber-300 text-sm">بصمة كربونية تقديرية</p>
-                    <p className="text-2xl font-bold text-white">{results.estimatedCO2.toFixed(2)} طن CO₂/سنة</p>
-                  </div>
-                  <Button onClick={resetQuiz} className="bg-teal-600 hover:bg-teal-700">إعادة الاختبار</Button>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* Radar Profile */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+            <Card className="rounded-3xl border border-border bg-card shadow-sm h-full p-6">
+              <CardHeader className="p-0 mb-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  الملف البيئي الشامل (رادار)
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  توزيع نقاطك عبر المجالات السبعة
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ResponsiveContainer width="100%" height={260}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="category" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
+                    <Radar name="نتيجتك" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.35} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, color: 'hsl(var(--card-foreground))' }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-full">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2"><TrendingUp className="w-5 h-5" />الملف البيئي - رادار</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="rgba(255,255,255,0.2)" />
-                      <PolarAngleAxis dataKey="category" tick={{ fill: '#fff', fontSize: 11 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                      <Radar name="نتيجتك" dataKey="score" stroke="#10b981" fill="#10b981" fillOpacity={0.4} />
-                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid #10b981', borderRadius: 12, color: '#fff' }} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* Category Breakdown Bar Chart */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-2">
+            <Card className="rounded-3xl border border-border bg-card shadow-sm p-6">
+              <CardHeader className="p-0 mb-4">
+                <CardTitle className="text-lg font-bold">النتائج التفصيلية بالفئات</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">نسبة التزامك في كل قطاع مقارنة بالمعيار المثالي</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={results.categoryScores} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, color: 'hsl(var(--card-foreground))' }} />
+                    <Bar dataKey="score" radius={[8, 8, 0, 0]}>
+                      {results.categoryScores.map((_: any, i: number) => <Cell key={i} fill={barColors[i % barColors.length]} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
 
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="lg:col-span-2">
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white">النتائج بالفئات</CardTitle>
-                  <CardDescription className="text-white/60">أداؤك في كل مجال بيئي</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={results.categoryScores} margin={{ top: 10, right: 10, bottom: 10, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="category" stroke="#94a3b8" fontSize={11} />
-                      <YAxis stroke="#94a3b8" fontSize={11} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12, color: '#fff' }} />
-                      <Bar dataKey="score" radius={[8, 8, 0, 0]}>
-                        {results.categoryScores.map((_: any, i: number) => <Cell key={i} fill={barColors[i % barColors.length]} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                    {results.categoryScores.map((c: any, i: number) => (
-                      <div key={i} className="bg-white/5 rounded-lg p-3">
-                        <div className="text-white/70 text-xs">{c.category}</div>
-                        <div className="text-white font-bold text-lg">{c.score}%</div>
-                        <Progress value={c.score} className="h-1.5 mt-2" />
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-4">
+                  {results.categoryScores.map((c: any, i: number) => (
+                    <div key={i} className="rounded-2xl bg-muted/40 border border-border p-3 text-center">
+                      <div className="text-muted-foreground text-xs">{c.category}</div>
+                      <div className="text-card-foreground font-bold text-lg mt-0.5">{c.score}%</div>
+                      <Progress value={c.score} className="h-1.5 mt-2" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Interactive Multi-View Chart */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="lg:col-span-2">
+            <MultiViewChart
+              title="رؤية بيانية متعددة لأدائك"
+              description="بدّل بين عرض الأعمدة، الخط، الدائرة، والرادار بسهولة"
+              unit="%"
+              colorScheme="emerald"
+              data={results.categoryScores.map((c: any) => ({ name: c.category, value: c.score }))}
+            />
+          </motion.div>
+
+          {/* Global Comparison */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
+            <GlobalComparisonChart userValue={results.estimatedCO2} unit="طن CO₂/سنة" />
+          </motion.div>
+
+          {/* What-If Scenarios */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }} className="lg:col-span-2">
+            <WhatIfScenarios baselineEmissions={results.estimatedCO2} unit="طن CO₂/سنة" />
+          </motion.div>
+
+          {/* AI Recommendations Panel */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="lg:col-span-2">
+            <AIRecommendationsPanel
+              context="sustainability_index"
+              userData={{ overallScore: results.overallScore, categoryScores: results.categoryScores }}
+              currentEmissions={results.estimatedCO2}
+            />
+          </motion.div>
+
+          {/* Recommendations Card */}
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.45 }} className="lg:col-span-2">
+            <Card className="rounded-3xl border border-border bg-card shadow-sm p-6">
+              <CardHeader className="p-0 mb-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                  خطة التحسين والتوصيات المخصصة
+                </CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  إجراءات فورية مقترحة لرفع نتيجتك وتقليل بصمتك الكربونية
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {results.recommendations.map((rec: string, i: number) => (
+                    <div key={i} className="rounded-2xl bg-muted/40 border border-border p-4 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
+                        {i + 1}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.25 }} className="lg:col-span-2">
-              <MultiViewChart
-                title="رؤية متعددة لأدائك البيئي"
-                description="بدّل بين عرض الأعمدة، الخط، الدائرة، والرادار"
-                unit="%"
-                colorScheme="emerald"
-                data={results.categoryScores.map((c: any) => ({ name: c.category, value: c.score }))}
-              />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
-              <GlobalComparisonChart userValue={results.estimatedCO2} unit="طن CO₂/سنة" />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.35 }} className="lg:col-span-2">
-              <WhatIfScenarios baselineEmissions={results.estimatedCO2} unit="طن CO₂/سنة" />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="lg:col-span-2">
-              <AIRecommendationsPanel
-                context="sustainability_index"
-                userData={{ overallScore: results.overallScore, categoryScores: results.categoryScores }}
-                currentEmissions={results.estimatedCO2}
-              />
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="lg:col-span-2">
-              <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2"><CheckCircle className="w-5 h-5" />التوصيات للتحسين</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {results.recommendations.map((rec: string, i: number) => (
-                      <div key={i} className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold flex-shrink-0">{i + 1}</div>
-                        <p className="text-white/90 text-sm">{rec}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
+                      <p className="text-sm text-card-foreground leading-relaxed">{rec}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
+  // Quiz View
   const q = questions[currentQuestion];
+  const progressPercent = Math.round(((currentQuestion + 1) / questions.length) * 100);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-950 via-green-950 to-blue-950 p-4" dir={dir}>
-      <div className="container mx-auto max-w-4xl">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8">
-          <Button variant="outline" onClick={() => {
-            const isGJU = sessionStorage.getItem('gju_mode') === 'true';
-            navigate(isGJU ? '/gju-competition' : '/environmental-sustainability');
-          }} className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20">
-            <ArrowLeft className="w-4 h-4" />العودة
-          </Button>
-        </motion.div>
+    <PageShell>
+      <SEO 
+        title="مؤشر الاستدامة الشخصي | ذروة العلم"
+        description="تقييم متقدم بـ 29 سؤالاً عبر 7 فئات بيئية مع دعم الإدخال الصوتي."
+      />
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <BarChartIcon className="w-10 h-10 text-teal-400" />
-            <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-white to-green-400">
-              مؤشر الاستدامة الشخصي
-            </h1>
+      <PageHeader
+        title="مؤشر الاستدامة الشخصي"
+        description={`تقييم شامل عبر ${questions.length} سؤالاً في 7 فئات رئيسية، يدعم الإدخال الصوتي ويحلل بصمتك بدقة.`}
+        icon={BarChartIcon}
+        crumbs={[
+          { label: 'الرئيسية', to: '/' },
+          { label: 'المجتمع المدرسي', to: '/school' },
+          { label: 'الاستدامة البيئية', to: '/environmental-sustainability' },
+          { label: 'مؤشر الاستدامة الشخصي' }
+        ]}
+      />
+
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Progress Bar Card */}
+        <div className="rounded-3xl border border-border bg-card p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+            <span>السؤال {currentQuestion + 1} من {questions.length}</span>
+            <span className="text-primary">{progressPercent}%</span>
           </div>
-          <p className="text-white/70 text-lg">
-            تقييم متقدم بـ {questions.length} سؤالاً · 7 فئات · يدعم الإدخال الصوتي 🎤
-          </p>
-        </motion.div>
+          <Progress value={progressPercent} className="h-2 rounded-full" />
+        </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-white text-sm">السؤال {currentQuestion + 1} من {questions.length}</span>
-            <span className="text-white text-sm">{Math.round(((currentQuestion + 1) / questions.length) * 100)}%</span>
-          </div>
-          <Progress value={((currentQuestion + 1) / questions.length) * 100} className="h-2" />
-        </motion.div>
-
-        <motion.div key={currentQuestion} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-white text-xl">{q.text}</CardTitle>
-              <CardDescription className="text-teal-300">الفئة: {q.category}</CardDescription>
+        {/* Question Card */}
+        <motion.div 
+          key={currentQuestion} 
+          initial={{ opacity: 0, x: 20 }} 
+          animate={{ opacity: 1, x: 0 }} 
+          transition={{ duration: 0.25 }}
+        >
+          <Card className="rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm">
+            <CardHeader className="p-0 mb-6">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <Badge variant="secondary" className="text-xs">
+                  الفئة: {q.category}
+                </Badge>
+                <span className="text-xs text-muted-foreground">سؤال تفاعلي</span>
+              </div>
+              <CardTitle className="text-xl sm:text-2xl font-bold text-card-foreground leading-snug">
+                {q.text}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-0 space-y-5">
               {q.type === 'number' ? (
                 <div className="space-y-4">
                   <VoiceNumberInput
@@ -412,18 +496,21 @@ const PersonalSustainabilityIndex = () => {
                     onChange={setNumericValue}
                     placeholder="0"
                   />
-                  <Button onClick={() => handleAnswer(numericValue)} className="w-full bg-teal-600 hover:bg-teal-700">
-                    التالي
+                  <Button 
+                    onClick={() => handleAnswer(numericValue)} 
+                    className="w-full h-12 rounded-2xl font-bold"
+                  >
+                    تأكيد والانتقال للتالي
                   </Button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2.5">
                   {q.options?.map((option, index) => (
                     <Button
                       key={index}
                       variant="outline"
                       onClick={() => handleAnswer(option)}
-                      className="p-4 text-right justify-start bg-white/5 border-white/20 text-white hover:bg-white/10"
+                      className="p-4 h-auto text-right justify-start rounded-2xl border-border bg-background hover:border-primary/40 hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-all"
                     >
                       {option}
                     </Button>
@@ -432,15 +519,21 @@ const PersonalSustainabilityIndex = () => {
               )}
 
               {currentQuestion > 0 && (
-                <Button onClick={goBack} variant="ghost" className="text-white/60 hover:text-white">
-                  ← السؤال السابق
-                </Button>
+                <div className="pt-2">
+                  <Button 
+                    onClick={goBack} 
+                    variant="ghost" 
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    ← السؤال السابق
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
         </motion.div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

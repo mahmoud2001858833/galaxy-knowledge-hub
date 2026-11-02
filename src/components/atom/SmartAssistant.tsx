@@ -86,9 +86,9 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
       return true;
     }
     
-    // تنقل فوري للمحادثة
+    // تنقل فوري للمجتمع الطلابي
     if (lowerQuery.includes('محادثة') || lowerQuery.includes('chat') || lowerQuery === 'محادثة') {
-      navigate('/chat-rooms');
+      navigate('/community');
       setQuery('');
       return true;
     }
