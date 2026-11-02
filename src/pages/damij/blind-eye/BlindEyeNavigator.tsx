@@ -1,1609 +1,1098 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Power, Volume2, Mic, Activity, ArrowUp, ArrowLeft as ArrowL, ArrowRight as ArrowR, Zap, Eye, EyeOff, Scan, Languages, Footprints, Camera, FileText, Sparkles, RefreshCw, Compass, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Volume2, Mic, Activity, Languages, Camera, FileText, RefreshCw, Power, Eye, EyeOff, Radar, X, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { LocalVision, type LocalFrameStats } from './localVision';
 import HudOverlay, { type DetectedPoint } from './HudOverlay';
-import {
-  refreshVoices, setActiveLang, enqueueSpeech, speakDedup, cancelAllSpeech,
-  earcons, vibrate, isSpeaking, timeSinceLastSpeech,
-} from './speechQueue';
+import { refreshVoices, setActiveLang, enqueueSpeech, cancelAllSpeech, vibrate, isEcho, isSpeaking } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
-import { BE_STRINGS, BE_BCP47, BE_COMMANDS, BE_SPIN, defaultSuggestions, type BELang } from './i18n';
+import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
-import { parseDestinationLoose, LANDMARK_AR, type LocalLandmark } from './navigation/destinationParser';
+import { extractGoToText, parseDestinationLoose } from './navigation/destinationParser';
 import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr, type LatLng } from './navigation/geo';
-import { findTarget, buildStepAr, type LandmarkPoint } from './navigation/localGuidance';
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
 import { recognizeImage } from './navigation/ocr';
-import { startCompass, requestCompassPermission } from './navigation/compass';
-import { startFallDetection, requestMotionPermission } from './navigation/fallDetection';
+import { startFallDetection } from './navigation/fallDetection';
 import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
-import { startSpinScan, type SpinHandle } from './navigation/spinScan';
-import { ensureDetector, detectFromVideo, detectImmediateHazard, labelToArabic, summarizeSceneArabic } from './localDetector';
+import { ensureDetector, detectFromVideo, labelToArabic, summarizeSceneArabic } from './localDetector';
 import { isOnline, onConnectivityChange } from './offlineMode';
 import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
+import { HeadingTracker, StepDetector, requestSensorPermissions, angleDiff } from './spatial/sensors';
+import {
+  WorldMap, cameraFov, guidanceTo, summaryText, describeObject, kindFromText, kindWord, stepsText, directionText,
+  type Instruction, type Kind, type MapObject, type CapturePose,
+} from './spatial/worldMap';
+import { aiToObservations, cocoDistance, cocoToObservations } from './spatial/perception';
+import { Beacon, chirp, unlockAudio } from './spatial/beacon';
+import MiniMap from './spatial/MiniMap';
 
-export type NavMode = 'walk' | 'describe' | 'read' | 'target';
+/*
+ * عين الأعمى — how it works
+ * 1. Scan: the user turns in a circle; a frame is taken every ~40° of compass heading and the AI
+ *    lists the objects in it with distances. Each object is placed on a virtual map (metres, north-up).
+ * 2. Walk: steps (accelerometer) and heading (compass) move the user on the map; the on-device
+ *    detector (~4 fps) and a slower AI pass keep refining it, so guidance is computed instantly from
+ *    the map instead of waiting seconds for the cloud.
+ * 3. Guide: "خذني إلى الباب" picks the object on the map; the user hears turn/forward instructions with
+ *    step counts, warnings for obstacles on the way, and an audio beacon panned toward the target.
+ */
 
-type Phase = 'starting' | 'calibrating' | 'spin' | 'guiding' | 'stopped';
+type Phase = 'idle' | 'scanning' | 'guiding' | 'stopped';
 
-type AIObject = {
-  x: number; y: number; w: number; h: number;
-  label: string; hazard: 'low'|'medium'|'high'; proximity: number;
+type ScanState = {
+  accumulated: number;
+  lastHeading: number | null;
+  lastShotHeading: number | null;
+  shots: number;
+  quarters: number;
+  manual: boolean;
+  startedAt: number;
+  timer: number | null;
 };
 
-type Guide = {
-  objects?: AIObject[];
-  best_path: 'left'|'center'|'right';
-  global_proximity: number;
-  spoken: string;
-  obstacles_summary: string;
-};
-
-type Calib = {
-  position_ok: boolean;
-  issue?: string | null;
-  adjustment?: string | null;
-  spoken: string;
-};
+const SCAN_DEG = 340;
 
 const BlindEyeNavigatorInner: React.FC = () => {
   const { lang, setLang, toggle } = useBlindEyeLang();
   const langRef = useRef<BELang>(lang);
   useEffect(() => { langRef.current = lang; setActiveLang(lang); }, [lang]);
   const t = BE_STRINGS[lang];
+  const ar = lang === 'ar';
+  const L = (arText: string, enText: string) => (langRef.current === 'ar' ? arText : enText);
+  const say = (text: string, priority: 'critical' | 'directional' | 'descriptive' = 'directional', onEnd?: () => void) =>
+    enqueueSpeech({ text, priority, lang: langRef.current, onEnd });
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recRef = useRef<any>(null);
-  const rafRef = useRef<number | null>(null);
-  const localVisionRef = useRef<LocalVision | null>(null);
-  const phaseRef = useRef<Phase>('starting');
-  const inflightRef = useRef(0);
-  const cooldownUntilRef = useRef(0);
-  const calibAttemptsRef = useRef<number>(0);
-  const lastAITickRef = useRef<number>(0);
-  const lastLocalTickRef = useRef<number>(0);
-  const lastGuideRef = useRef<Guide | null>(null);
-  const lastStatsRef = useRef<LocalFrameStats | null>(null);
-  const chatHistoryRef = useRef<Array<{ role: 'user'|'assistant'; text: string }>>([]);
-  const userSpeakingRef = useRef<boolean>(false);
-  const lastHazardSoundRef = useRef<number>(0);
-  const lastApproachSoundRef = useRef<number>(0);
-  const lastDirSoundRef = useRef<number>(0);
-  const prevProximityRef = useRef<number>(0);
-  const sceneChangePendingRef = useRef<boolean>(false);
-  const lastSceneChangeAt = useRef<number>(0);
-  const lastSpokenPathRef = useRef<{ path: string; t: number }>({ path: '', t: 0 });
-  const MAX_CALIB_ATTEMPTS = 1; // reduced for sub-3s startup
-  // Navigation state
-  const targetLocalRef = useRef<LocalLandmark | null>(null);
+
+  // ---- spatial engine ----
+  const mapRef = useRef(new WorldMap());
+  const trackerRef = useRef<HeadingTracker | null>(null);
+  const stepsRef = useRef<StepDetector | null>(null);
+  const beaconRef = useRef(new Beacon());
+  const targetIdRef = useRef<number | null>(null);
+  const targetMetaRef = useRef<{ label: string; kind: Kind } | null>(null);
+  const pendingRef = useRef<{ query: string; kind: Kind | null; name: string } | null>(null);
+  const cloudInflightRef = useRef(0);
+  const cloudCooldownRef = useRef(0);
+  const lastCloudRef = useRef<{ t: number; x: number; y: number; heading: number }>({ t: 0, x: 0, y: 0, heading: 0 });
+  const detectBusyRef = useRef(false);
+  const lastInstrRef = useRef<{ key: string; t: number; text: string }>({ key: '', t: 0, text: '' });
+  const warnedRef = useRef<Map<string, number>>(new Map());
+  const scanRef = useRef<ScanState | null>(null);
+  const awaitingDestinationRef = useRef(false);
+  const lastSpokenRef = useRef('');
+  const placeChangeRef = useRef<{ place: string; count: number }>({ place: '', count: 0 });
+  const lastStepAtRef = useRef(0);
+  const walking = () => Date.now() - lastStepAtRef.current < 3000;
+
+  // geo navigation (outdoors)
   const targetGeoRef = useRef<{ name: string; dest: LatLng } | null>(null);
   const geoWatchRef = useRef<number | null>(null);
   const userPosRef = useRef<LatLng | null>(null);
   const userHeadingRef = useRef<number | null>(null);
-  const lastNavSpeakRef = useRef<number>(0);
-  const targetStableRef = useRef<{ seen: number; missed: number }>({ seen: 0, missed: 0 });
-  const lastNavTextRef = useRef<string>('');
+  const lastNavSpeakRef = useRef(0);
   const turnByTurnRef = useRef<TurnByTurnState | null>(null);
 
-  // Local detector + offline state
-  const lastDetTickRef = useRef<number>(0);
-  const lastLocalHazardSpeakRef = useRef<number>(0);
+  const chatHistoryRef = useRef<Array<{ role: 'user' | 'assistant'; text: string }>>([]);
   const onlineRef = useRef<boolean>(isOnline());
+
+  const [phase, setPhase] = useState<Phase>('idle');
+  const phaseRef = useRef<Phase>('idle');
+  const setPhaseBoth = (p: Phase) => { phaseRef.current = p; setPhase(p); };
   const [online, setOnline] = useState<boolean>(isOnline());
-
-  // Spin-scan state
-  const spinHandleRef = useRef<SpinHandle | null>(null);
-  const spinShotsRef = useRef<string[]>([]);
-  const spinShotAnglesRef = useRef<Set<number>>(new Set());
-  const spinSummaryRef = useRef<string | null>(null);
-  const [spinPct, setSpinPct] = useState(0);
-  const awaitingDestinationRef = useRef<boolean>(false);
-  // Hazard description cooldown
-  const lastHazardDescribeRef = useRef<number>(0);
-  // Auto-scan when the user crosses into a new environment (e.g. exits a room)
-  const lastEnvScanAt = useRef<number>(0);
-  const envScanInflightRef = useRef<boolean>(false);
-  const bigSceneAccumRef = useRef<{ count: number; firstAt: number }>({ count: 0, firstAt: 0 });
-
-
-
-
-
-
-  const [phase, setPhase] = useState<Phase>('starting');
-  const [activeMode, setActiveMode] = useState<NavMode>('walk');
-  const activeModeRef = useRef<NavMode>('walk');
-  const [isAnalyzingScene, setIsAnalyzingScene] = useState<boolean>(false);
-  const [isReadingText, setIsReadingText] = useState<boolean>(false);
-  const [lastAnnouncedText, setLastAnnouncedText] = useState<string>('');
-  const [lastGuide, setLastGuide] = useState<Guide | null>(null);
-  const [lastCalib, setLastCalib] = useState<Calib | null>(null);
+  const [mapVersion, setMapVersion] = useState(0);
+  const [bigMap, setBigMap] = useState(false);
+  const [targetId, setTargetId] = useState<number | null>(null);
+  const [searching, setSearching] = useState<string | null>(null);
+  const [instr, setInstr] = useState<Instruction | null>(null);
+  const [scanPct, setScanPct] = useState(0);
+  const [busy, setBusy] = useState<null | 'describe' | 'read' | 'identify'>(null);
+  const [lastAnnounced, setLastAnnounced] = useState('');
   const [listening, setListening] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [latencyMs, setLatencyMs] = useState<number>(0);
-  const [aiFps, setAiFps] = useState<number>(0);
   const [points, setPoints] = useState<DetectedPoint[]>([]);
-  const [companionMode, setCompanionMode] = useState<boolean>(true);
-  const [eyesOff, setEyesOff] = useState<boolean>(false);
+  const [eyesOff, setEyesOff] = useState(false);
+  const [sensorNote, setSensorNote] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>(defaultSuggestions[lang]);
 
-  const setPhaseBoth = (p: Phase) => { phaseRef.current = p; setPhase(p); };
-
-  // Default suggestions follow the language
   useEffect(() => { setSuggestions(defaultSuggestions[lang]); }, [lang]);
 
-  // ---- Camera ----
-  const startCamera = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      calibAttemptsRef.current = 0;
-      setPhaseBoth('calibrating');
-      enqueueSpeech({ text: BE_STRINGS[langRef.current].greet, priority: 'critical', lang: langRef.current });
-      // auto-promote into the spin-scan phase quickly
-      setTimeout(() => {
-        if (phaseRef.current === 'calibrating') setPhaseBoth('spin');
-      }, 800);
+  const speakTracked = (text: string, priority: 'critical' | 'directional' | 'descriptive' = 'directional') => {
+    lastSpokenRef.current = text;
+    say(text, priority);
+  };
 
-    } catch (e) {
-      console.error(e);
-      toast.error(BE_STRINGS[langRef.current].cameraFailed);
-      enqueueSpeech({ text: BE_STRINGS[langRef.current].cameraDenied, priority: 'critical', lang: langRef.current });
+  // ------------------------------------------------------------------ camera & frames
+  const captureFrame = useCallback((width: number, quality: number): string | null => {
+    const v = videoRef.current;
+    const c = captureCanvasRef.current;
+    if (!v || !c || v.readyState < 2 || !v.videoWidth) return null;
+    const h = Math.round((v.videoHeight / v.videoWidth) * width);
+    c.width = width; c.height = h;
+    const ctx = c.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(v, 0, 0, width, h);
+    return c.toDataURL('image/jpeg', quality);
+  }, []);
+
+  const currentPose = useCallback((): CapturePose => {
+    const v = videoRef.current;
+    const fov = cameraFov(v?.videoWidth ?? 0, v?.videoHeight ?? 0);
+    return mapRef.current.pose(fov.hfov, fov.vfov, trackerRef.current?.pitchDown ?? null);
+  }, []);
+
+  const bump = () => setMapVersion((n) => (n + 1) % 1_000_000);
+
+  // ------------------------------------------------------------------ targets
+  const clearTarget = useCallback(() => {
+    targetIdRef.current = null;
+    pendingRef.current = null;
+    setTargetId(null);
+    setSearching(null);
+    setInstr(null);
+    beaconRef.current.stop();
+    lastInstrRef.current = { key: '', t: 0, text: '' };
+  }, []);
+
+  const lockTarget = useCallback((m: MapObject, announce: boolean) => {
+    targetIdRef.current = m.id;
+    targetMetaRef.current = { label: m.label, kind: m.kind };
+    pendingRef.current = null;
+    setTargetId(m.id);
+    setSearching(null);
+    lastInstrRef.current = { key: '', t: 0, text: '' };
+    if (announce) {
+      chirp.found();
+      vibrate([60, 40, 60]);
+      speakTracked(L(`سأرشدك إلى ${m.label}. ${describeObject(mapRef.current, m, 'ar')}.`, `Guiding you to ${m.label}. ${describeObject(mapRef.current, m, 'en')}.`), 'critical');
     }
   }, []);
 
+  /** "الباب" / "الكرسي الأحمر" -> object on the map, or search for it while the user turns. */
+  const goToLocal = useCallback((query: string): boolean => {
+    const map = mapRef.current;
+    const kind = kindFromText(query);
+    const found = map.find(query, kind);
+    if (found) { lockTarget(found, true); return true; }
+    if (!kind) return false;
+    targetIdRef.current = null;
+    setTargetId(null);
+    const name = kindWord(kind, langRef.current);
+    pendingRef.current = { query, kind, name };
+    setSearching(name);
+    lastCloudRef.current.t = 0; // look right away
+    speakTracked(L(`لم أجد ${name} بعد. استدر ببطء وسأخبرك فور أن أراه.`, `I haven't found ${name} yet. Turn slowly and I'll tell you as soon as I see it.`), 'critical');
+    return true;
+  }, [lockTarget]);
+
+  // ------------------------------------------------------------------ cloud mapping
+  const cloudMap = useCallback(async (reason: 'scan' | 'walk' | 'search') => {
+    if (!onlineRef.current || Date.now() < cloudCooldownRef.current) return;
+    if (cloudInflightRef.current >= (reason === 'scan' ? 4 : 1)) return;
+    const img = captureFrame(512, 0.62);
+    if (!img) return;
+    const pose = currentPose();
+    const map = mapRef.current;
+    lastCloudRef.current = { t: Date.now(), x: pose.x, y: pose.y, heading: pose.heading };
+    cloudInflightRef.current += 1;
+    try {
+      const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
+        body: { image: img, mode: 'map', lang: langRef.current },
+      });
+      if (error) {
+        const status = (error as any)?.context?.status ?? (error as any)?.context?.response?.status;
+        if (status === 429 || status === 402) {
+          cloudCooldownRef.current = Date.now() + 6000;
+          setErrMsg(status === 402 ? BE_STRINGS[langRef.current].outOfCredits : BE_STRINGS[langRef.current].rateLimit);
+        }
+        return;
+      }
+      setErrMsg(null);
+      const { obs, place } = aiToObservations(data, pose, langRef.current);
+      const added = map.observe(pose, obs, true);
+      if (place) {
+        if (!map.place) map.place = place;
+        else if (place !== map.place && reason === 'walk') {
+          // a different room reported twice in a row while walking = the user went somewhere new
+          const pc = placeChangeRef.current;
+          pc.count = pc.place === place ? pc.count + 1 : 1;
+          pc.place = place;
+          if (pc.count >= 2) {
+            pc.count = 0;
+            map.place = place;
+            say(L(`يبدو أنك دخلت إلى ${place}. قل امسح لأتعرف على المكان الجديد.`, `Looks like you entered ${place}. Say scan to map it.`), 'directional');
+          }
+        }
+      }
+      bump();
+      // announce doors/stairs discovered while walking (not during the scan: the summary covers them)
+      if (reason !== 'scan' && phaseRef.current === 'guiding' && !targetIdRef.current) {
+        const key = added.find((m) => ['door', 'doorway', 'stairs', 'step', 'elevator'].includes(m.kind));
+        if (key) say(L(`لاحظت ${key.label} ${directionText(map.rel(key).rel, 'ar')}`, `I see ${key.label} ${directionText(map.rel(key).rel, 'en')}`), 'descriptive');
+      }
+      // the thing we were looking for showed up
+      const p = pendingRef.current;
+      if (p) {
+        const m = map.find(p.query, p.kind);
+        if (m) lockTarget(m, true);
+      }
+    } catch (e) {
+      console.warn('map tick failed', e);
+    } finally {
+      cloudInflightRef.current = Math.max(0, cloudInflightRef.current - 1);
+    }
+  }, [captureFrame, currentPose, lockTarget]);
+
+  // ------------------------------------------------------------------ scan (learn the room)
+  const finishScan = useCallback(async () => {
+    const s = scanRef.current;
+    if (!s) return;
+    if (s.timer) window.clearInterval(s.timer);
+    scanRef.current = null;
+    setScanPct(1);
+    if (s.manual) mapRef.current.heading = 0; // full circle: facing the start again
+    // give the last frames a moment to come back
+    const until = Date.now() + 6000;
+    while (cloudInflightRef.current > 0 && Date.now() < until) await new Promise((r) => setTimeout(r, 250));
+    if (phaseRef.current !== 'scanning') return;
+    setPhaseBoth('guiding');
+    bump();
+    const map = mapRef.current;
+    const lg = langRef.current;
+    const top = map.highlights(3).map((m) => m.label);
+    awaitingDestinationRef.current = true;
+    if (top.length) {
+      setSuggestions(top.map((n) => (lg === 'ar' ? `خذني إلى ${n}` : `Take me to ${n}`)));
+      speakTracked(`${L('انتهى المسح.', 'Scan complete.')} ${summaryText(map, lg)} ${L(`إلى أين تريد أن تذهب؟ مثلاً: ${top.slice(0, 2).join(' أو ')}.`, `Where would you like to go? For example: ${top.slice(0, 2).join(' or ')}.`)}`, 'critical');
+    } else {
+      speakTracked(L('انتهى المسح لكن لم أتعرف على أشياء واضحة. تأكد من الإضاءة وأن الكاميرا غير مغطاة، ثم قل امسح مرة أخرى.', "Scan done but I couldn't recognise anything. Check the light and that the camera isn't covered, then say scan again."), 'critical');
+    }
+  }, []);
+
+  const startScan = useCallback(() => {
+    if (!streamRef.current) return;
+    const old = scanRef.current;
+    if (old?.timer) window.clearInterval(old.timer);
+    clearTarget();
+    mapRef.current.reset();
+    bump();
+    setScanPct(0);
+    setPhaseBoth('scanning');
+    awaitingDestinationRef.current = false;
+    const tracker = trackerRef.current;
+    const manual = !tracker || tracker.source === 'none';
+    const s: ScanState = { accumulated: 0, lastHeading: null, lastShotHeading: null, shots: 0, quarters: 0, manual, startedAt: Date.now(), timer: null };
+    scanRef.current = s;
+    cancelAllSpeech();
+    if (!manual) {
+      setSensorNote(null);
+      say(L('سأتعرف على المكان من حولك. أمسك الهاتف أمام صدرك والكاميرا للأمام، واستدر حول نفسك ببطء دورة كاملة. ستسمع نقرة مع كل لقطة.',
+        "Let me learn the room. Hold the phone at chest height, camera forward, and turn slowly in a full circle. You'll hear a click with each picture."), 'critical');
+      cloudMap('scan');
+      chirp.shot();
+      s.lastShotHeading = mapRef.current.heading;
+      s.shots = 1;
+      // safety: finish even if the user stops turning
+      s.timer = window.setInterval(() => {
+        if (scanRef.current !== s) return;
+        if (Date.now() - s.startedAt > 45000) finishScan();
+      }, 1000);
+    } else {
+      // no compass/gyro (desktop, permission denied): 8 timed pictures, 45° apart
+      setSensorNote(L('لا تتوفر بوصلة على هذا الجهاز: المسح بالتوقيت، والاتجاهات تقريبية.', 'No compass on this device: timed scan, directions are approximate.'));
+      say(L('سأتعرف على المكان. سألتقط ثماني صور. بعد كل نقرة استدر قليلاً إلى اليمين، ثُمن دورة.',
+        "Let me learn the room. I'll take eight pictures. After each click, turn a little to the right, an eighth of a circle."), 'critical');
+      const shoot = () => {
+        if (scanRef.current !== s) return;
+        mapRef.current.heading = s.shots * 45;
+        chirp.shot();
+        cloudMap('scan');
+        s.shots += 1;
+        setScanPct(s.shots / 8);
+        if (s.shots >= 8) { finishScan(); return; }
+        say(L('استدر قليلاً إلى اليمين', 'Turn a little to the right'), 'descriptive');
+      };
+      window.setTimeout(() => {
+        if (scanRef.current !== s) return;
+        shoot();
+        s.timer = window.setInterval(shoot, 2600);
+      }, 3500);
+    }
+  }, [cloudMap, finishScan, clearTarget]);
+
+  // ------------------------------------------------------------------ start / stop
   const stopAll = useCallback(() => {
-    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    const s = scanRef.current;
+    if (s?.timer) window.clearInterval(s.timer);
+    scanRef.current = null;
     streamRef.current?.getTracks().forEach((tr) => tr.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
-    setPhaseBoth('stopped');
-    cancelAllSpeech();
-    try { recRef.current?.stop(); } catch {}
-    setListening(false);
-    targetLocalRef.current = null;
-    targetGeoRef.current = null;
-    turnByTurnRef.current = null;
-    spinHandleRef.current?.stop();
-    spinHandleRef.current = null;
-    spinShotsRef.current = [];
-    spinShotAnglesRef.current = new Set();
-    spinSummaryRef.current = null;
-    awaitingDestinationRef.current = false;
-    setSpinPct(0);
-
+    trackerRef.current?.stop();
+    trackerRef.current = null;
+    stepsRef.current?.stop();
+    stepsRef.current = null;
+    beaconRef.current.stop();
+    targetIdRef.current = null;
+    pendingRef.current = null;
+    setTargetId(null);
+    setSearching(null);
+    setInstr(null);
     if (geoWatchRef.current != null) {
-
-      try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
+      try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch { /* ignore */ }
       geoWatchRef.current = null;
     }
-    enqueueSpeech({ text: BE_STRINGS[langRef.current].stopping, priority: 'critical', lang: langRef.current });
+    targetGeoRef.current = null;
+    turnByTurnRef.current = null;
+    cancelAllSpeech();
+    try { recRef.current?.stop(); } catch { /* ignore */ }
+    setListening(false);
+    if (phaseRef.current !== 'idle') say(BE_STRINGS[langRef.current].stopping, 'critical');
+    setPhaseBoth('stopped');
   }, []);
 
-  // ---- Frame capture for AI (Low latency payload optimization) ----
-  const captureFrame = useCallback((mode: 'calibration'|'fast'|'detailed'|'points'): string | null => {
-    const v = videoRef.current;
-    const c = captureCanvasRef.current;
-    if (!v || !c || v.readyState < 2) return null;
-    const w = mode === 'calibration' ? 240 : mode === 'detailed' ? 840 : mode === 'points' ? 380 : 420;
-    const h = Math.round((v.videoHeight / v.videoWidth) * w) || Math.round(w * 0.75);
-    c.width = w; c.height = h;
-    const ctx = c.getContext('2d');
-    if (!ctx) return null;
-    ctx.drawImage(v, 0, 0, w, h);
-    const q = mode === 'calibration' ? 0.45 : mode === 'detailed' ? 0.85 : mode === 'points' ? 0.52 : 0.60;
-    return c.toDataURL('image/jpeg', q);
-  }, []);
-
-  // ---- AI tick ----
-  const runAI = useCallback(async (mode: 'calibration'|'fast'|'detailed'|'points') => {
-    if (Date.now() < cooldownUntilRef.current) return;
-    if (inflightRef.current >= 4) return;
-    // Offline: skip remote vision entirely; local detector handles safety.
-    if (!onlineRef.current) return;
-    const img = captureFrame(mode);
-
-
-    if (!img) return;
-    inflightRef.current += 1;
-    const t0 = performance.now();
+  /** Must run inside a tap: iOS only grants motion/compass, sound and speech from a user gesture. */
+  const begin = useCallback(() => {
+    unlockAudio();
     try {
-      const g = lastGuideRef.current;
-      const ctx = g ? `top: ${g.obstacles_summary?.slice(0, 50)}. path: ${g.best_path}.` : undefined;
-      const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
-        body: { image: img, mode, context: ctx, lang: langRef.current },
-      });
-      const dt = Math.round(performance.now() - t0);
-      setLatencyMs(dt);
-      setAiFps(Math.round(1000 / Math.max(dt, 200)));
-
-      if (error) {
-        const status = (error as any)?.context?.response?.status ?? (error as any)?.status;
-        if (status === 429 || status === 402) {
-          cooldownUntilRef.current = Date.now() + 2500;
-          setErrMsg(status === 402 ? BE_STRINGS[langRef.current].outOfCredits : BE_STRINGS[langRef.current].rateLimit);
-          return;
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch { /* no speech */ }
+    const perm = requestSensorPermissions();
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
         }
-        throw error;
-      }
-
-      setErrMsg(null);
-      if (!data?.spoken) return;
-
-      if (mode === 'calibration') {
-        const c = data as Calib;
-        setLastCalib(c);
-        calibAttemptsRef.current += 1;
-        // skip speaking calibration message — we promote to guiding fast
-        if (c.position_ok || calibAttemptsRef.current >= MAX_CALIB_ATTEMPTS) {
-          setTimeout(() => {
-            enqueueSpeech({ text: BE_STRINGS[langRef.current].startNow, priority: 'critical', lang: langRef.current });
-            setPhaseBoth('guiding');
-          }, 200);
-        }
-      } else {
-        const g = data as Guide;
-        lastGuideRef.current = g;
-        setLastGuide(g);
-        if (Array.isArray(g.objects)) {
-          setPoints(g.objects.map(o => ({
-            x: Math.max(0, Math.min(1, o.x)),
-            y: Math.max(0, Math.min(1, o.y)),
-            w: o.w, h: o.h,
-            label: o.label,
-            hazard: o.hazard,
-            proximity: o.proximity,
-            source: 'ai' as const,
-          })));
-        }
-        // ---- Continuous Active Obstacle Avoidance & Corridor Guidance ----
-        // Works 24/7 whenever guiding is active (with or without a destination)
-        const score = g.global_proximity ?? 0;
-        const bucket = score >= 75 ? 'H' : score >= 40 ? 'M' : 'L';
-        const key = `${g.best_path}|${bucket}|${g.spoken}`;
-        const pri = score >= 75 ? 'critical' : score >= 40 ? 'directional' : 'descriptive';
-        const now = Date.now();
-        const samePath = lastSpokenPathRef.current.path === `${g.best_path}|${bucket}`;
-        const tooRecent = samePath && now - lastSpokenPathRef.current.t < (score >= 75 ? 1400 : 1200);
-
-        // If user is speaking AND scene is safe, defer; otherwise (urgent), interrupt immediately.
-        if (!(userSpeakingRef.current && score < 60) && !tooRecent) {
-          const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
-          if (score >= 75) {
-            // Unified urgent hazard sentence (single utterance, zero stutter)
-            const obstacleLabel = (g.objects?.[0]?.label || g.obstacles_summary || '').toString().split(/[,،.]/)[0].trim().slice(0, 24);
-            const escapeWord = g.best_path === 'left'
-              ? (langRef.current === 'ar' ? 'نحو اليسار' : cmds.left)
-              : g.best_path === 'right'
-              ? (langRef.current === 'ar' ? 'نحو اليمين' : cmds.right)
-              : (langRef.current === 'ar' ? 'خطوة للخلف' : cmds.back);
-            const warningPhrase = langRef.current === 'ar'
-              ? `توقف! ${obstacleLabel ? obstacleLabel + ' قريب، ' : ''}اتجه ${escapeWord}`
-              : `Stop! ${obstacleLabel ? obstacleLabel + ' ahead, ' : ''}move ${escapeWord}`;
-            enqueueSpeech({ text: warningPhrase, priority: 'critical', lang: langRef.current });
-            haptics.stop();
-          } else if (score >= 40) {
-            // Approaching obstacle -> give clear directional escape cue
-            speakDedup(g.spoken, key, pri, 1200, { lang: langRef.current });
-            hapticForDirection(g.best_path);
-          } else {
-            // Safe corridor: give periodic reassurance if moving
-            const timeSinceLastSpoken = now - lastSpokenPathRef.current.t;
-            if (timeSinceLastSpoken > 4500) {
-              const safeMsg = g.best_path === 'left'
-                ? (langRef.current === 'ar' ? 'انعطف يساراً' : cmds.left)
-                : g.best_path === 'right'
-                ? (langRef.current === 'ar' ? 'انعطف يميناً' : cmds.right)
-                : (langRef.current === 'ar' ? 'المسار سالك أمامك' : cmds.continue_);
-              enqueueSpeech({ text: safeMsg, priority: 'directional', lang: langRef.current });
-              earcons.pointAhead();
-            }
-          }
-          lastSpokenPathRef.current = { path: `${g.best_path}|${bucket}`, t: now };
-          if (score >= 40) hapticForDirection(g.best_path);
-        }
-
-        const prev = prevProximityRef.current;
-        if (score >= 75 && Date.now() - lastHazardSoundRef.current > 650) {
-          lastHazardSoundRef.current = Date.now();
-          const pan = g.best_path === 'left' ? 0.9 : g.best_path === 'right' ? -0.9 : 0;
-          earcons.hazard(pan);
-          vibrate([200, 80, 200]);
-        } else if (score - prev > 12 && Date.now() - lastApproachSoundRef.current > 800) {
-          lastApproachSoundRef.current = Date.now();
-          earcons.approach();
-          if (score >= 40) vibrate(60);
-        } else if (prev - score > 15 && Date.now() - lastApproachSoundRef.current > 1100) {
-          lastApproachSoundRef.current = Date.now();
-          earcons.away();
-        }
-        prevProximityRef.current = score;
-        if (Date.now() - lastDirSoundRef.current > 2200) {
-          lastDirSoundRef.current = Date.now();
-          if (g.best_path === 'left') earcons.pointLeft();
-          else if (g.best_path === 'right') earcons.pointRight();
-          else earcons.pointAhead();
-        }
-
-
-        // ---- Target-oriented local navigation (with stability filter) ----
-        if (targetLocalRef.current && Array.isArray(g.objects)) {
-          const lps: LandmarkPoint[] = g.objects.map((o: AIObject) => ({
-            x: o.x, y: o.y, w: o.w, h: o.h, label: o.label, proximity: o.proximity,
-          }));
-          const found = findTarget(lps, targetLocalRef.current);
-          if (found) { targetStableRef.current.seen += 1; targetStableRef.current.missed = 0; }
-          else { targetStableRef.current.missed += 1; targetStableRef.current.seen = 0; }
-          const confident = found && targetStableRef.current.seen >= 2;
-          const reallyLost = !found && targetStableRef.current.missed >= 4;
-          const step = buildStepAr(targetLocalRef.current, confident ? found : (reallyLost ? null : null));
-          const nowN = Date.now();
-          if ((confident || reallyLost) && nowN - lastNavSpeakRef.current > 1800 && step.text !== lastNavTextRef.current) {
-            lastNavSpeakRef.current = nowN;
-            lastNavTextRef.current = step.text;
-            const pri = step.arrived ? 'critical' : 'directional';
-            enqueueSpeech({ text: step.text, priority: pri as any, lang: langRef.current });
-            if (step.arrived) {
-              targetLocalRef.current = null;
-              targetStableRef.current = { seen: 0, missed: 0 };
-              earcons.approach();
-              vibrate([120, 60, 120]);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('AI tick error', e);
-    } finally {
-      inflightRef.current = Math.max(0, inflightRef.current - 1);
-    }
-  }, [captureFrame]);
-
-  // Gyro-based motion trigger (very sensitive — small rotations count as scene change)
-  useEffect(() => {
-    if (phase === 'stopped') return;
-    const handler = (e: DeviceMotionEvent) => {
-      const r = e.rotationRate;
-      if (!r) return;
-      const mag = Math.abs(r.alpha || 0) + Math.abs(r.beta || 0) + Math.abs(r.gamma || 0);
-      if (mag > 18) sceneChangePendingRef.current = true;
-    };
-    window.addEventListener('devicemotion', handler);
-    return () => window.removeEventListener('devicemotion', handler);
-  }, [phase]);
-
-  // ---- Main loop ----
-  useEffect(() => {
-    if (phase === 'stopped' || phase === 'starting' || phase === 'spin') return;
-    if (!localVisionRef.current) localVisionRef.current = new LocalVision();
-
-    let cancelled = false;
-    const loop = () => {
-      if (cancelled) return;
-      const now = Date.now();
-      const v = videoRef.current;
-
-      if (v && now - lastLocalTickRef.current >= 70) {
-        lastLocalTickRef.current = now;
-        const stats = localVisionRef.current!.analyze(v);
-        if (stats) {
-          lastStatsRef.current = stats;
-          const bottomDanger = stats.bottomMotion > 0.18 && (stats.cells[7].edge > 0.35 || stats.cells[6].edge > 0.35 || stats.cells[8].edge > 0.35);
-          if (bottomDanger && now - lastHazardSoundRef.current > 600) {
-            lastHazardSoundRef.current = now;
-            earcons.hazard(0);
-            vibrate(50);
-          }
-        if (stats.sceneChange > 0.18) sceneChangePendingRef.current = true;
-
-          // ---- Detect crossing into a NEW environment (e.g. exiting a room) ----
-          // A real environment change shows sustained large scene-diff over a short window
-          // — not a single jolt. Require 3 big changes within 1.5s, then auto-scan & re-ask.
-          if (
-            phaseRef.current === 'guiding' &&
-            !envScanInflightRef.current &&
-            now - lastEnvScanAt.current > 12000 &&
-            stats.sceneChange > 0.36
-          ) {
-            const acc = bigSceneAccumRef.current;
-            if (now - acc.firstAt > 1500) { acc.count = 0; acc.firstAt = now; }
-            acc.count += 1;
-            if (acc.count >= 3) {
-              acc.count = 0; acc.firstAt = 0;
-              lastEnvScanAt.current = now;
-              envScanInflightRef.current = true;
-              const lg = langRef.current;
-              // Cancel current local target — user is now in a different place.
-              targetLocalRef.current = null;
-              targetStableRef.current = { seen: 0, missed: 0 };
-              const announce = lg === 'ar'
-                ? 'لاحظت أنك دخلت إلى مكان جديد، أمسح المنطقة...'
-                : 'New environment detected, scanning the area...';
-              enqueueSpeech({ text: announce, priority: 'critical', lang: lg });
-              const img = captureFrame('detailed');
-              if (img && onlineRef.current) {
-                supabase.functions.invoke('blind-eye-vision', {
-                  body: { image: img, mode: 'detailed', lang: lg },
-                }).then(({ data }) => {
-                  const summary = (data?.obstacles_summary as string | undefined) || '';
-                  if (summary) {
-                    enqueueSpeech({
-                      text: lg === 'ar' ? `أمامك: ${summary}` : `In front of you: ${summary}`,
-                      priority: 'directional', lang: lg,
-                    });
-                  }
-                }).catch(() => {}).finally(() => {
-                  awaitingDestinationRef.current = true;
-                  enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
-                  envScanInflightRef.current = false;
-                });
-              } else {
-                awaitingDestinationRef.current = true;
-                enqueueSpeech({ text: BE_SPIN[lg].askDestination, priority: 'critical', lang: lg });
-                envScanInflightRef.current = false;
-              }
-            }
-          }
-
-          if (companionMode) {
-            const localPts: DetectedPoint[] = [];
-            stats.cells.forEach((cell, idx) => {
-              const cx = (idx % 3 + 0.5) / 3;
-              const cy = (Math.floor(idx / 3) + 0.5) / 3;
-              const activity = Math.max(cell.motion, cell.edge * 0.7);
-              if (activity > 0.2) {
-                localPts.push({
-                  x: cx, y: cy,
-                  label: '',
-                  hazard: activity > 0.5 && cy > 0.5 ? 'high' : activity > 0.4 ? 'medium' : 'low',
-                  proximity: Math.round(activity * 100),
-                  source: 'local',
-                });
-              }
-            });
-            setPoints(prev => {
-              const aiOnly = prev.filter(p => p.source === 'ai');
-              return [...aiOnly, ...localPts.slice(0, 9)];
-            });
-          }
-
-          // Offline / real-time corridor guidance fallback
-          if (phase === 'guiding' && stats?.corridor?.isCenterBlocked && !onlineRef.current && now - lastSpokenPathRef.current.t > 2400) {
-            const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
-            const dir = stats.corridor.bestCorridor;
-            const msg = dir === 'left'
-              ? (langRef.current === 'ar' ? 'عائق بالمنتصف، تحرك يساراً' : `${cmds.stop}, move ${cmds.left}`)
-              : (langRef.current === 'ar' ? 'عائق بالمنتصف، تحرك يميناً' : `${cmds.stop}, move ${cmds.right}`);
-            enqueueSpeech({ text: msg, priority: 'directional', lang: langRef.current });
-            hapticForDirection(dir);
-            lastSpokenPathRef.current = { path: dir, t: now };
-          }
-        }
-      }
-
-      // ---- On-device COCO-SSD object detection (runs ~6 fps, parallel to AI) ----
-      if (v && v.videoWidth && now - lastDetTickRef.current >= 120) {
-        lastDetTickRef.current = now;
-        detectFromVideo(v, 6).then((objs) => {
-          const hazard = detectImmediateHazard(objs);
-          if (hazard && now - lastLocalHazardSpeakRef.current > 1100) {
-            lastLocalHazardSpeakRef.current = now;
-            const cmds = BE_COMMANDS[langRef.current] || BE_COMMANDS.en;
-            const label = langRef.current === 'ar' ? labelToArabic(hazard.label) : hazard.label;
-            const cx = hazard.x + hazard.w / 2;
-            const escape = cx < 0.5
-              ? (langRef.current === 'ar' ? 'نحو اليمين' : cmds.right)
-              : (langRef.current === 'ar' ? 'نحو اليسار' : cmds.left);
-            const warningText = langRef.current === 'ar'
-              ? `انتبه! ${label} أمامك، تحرك ${escape}`
-              : `Caution! ${label} ahead, move ${escape}`;
-            enqueueSpeech({ text: warningText, priority: 'critical', lang: langRef.current });
-            haptics.stop();
-            // Followup: short cloud sentence explaining what it is (throttled)
-            if (now - lastHazardDescribeRef.current > 3500 && onlineRef.current) {
-              lastHazardDescribeRef.current = now;
-              const img = captureFrame('fast');
-              if (img) {
-                supabase.functions.invoke('blind-eye-vision', {
-                  body: { image: img, mode: 'describe_hazard', lang: langRef.current },
-                }).then(({ data }) => {
-                  if (data?.spoken) {
-                    enqueueSpeech({ text: data.spoken, priority: 'critical', lang: langRef.current });
-                  }
-                }).catch(() => {});
-              }
-            }
-          }
-
-          // Surface detected objects as HUD points (lightweight)
-          if (objs.length && companionMode) {
-            setPoints(prev => {
-              const keep = prev.filter(p => p.source === 'ai').slice(0, 4);
-              const ds: DetectedPoint[] = objs.slice(0, 6).map(o => ({
-                x: o.x + o.w / 2,
-                y: o.y + o.h / 2,
-                w: o.w, h: o.h,
-                label: labelToArabic(o.label),
-                hazard: (o.w * o.h > 0.18 && (o.y + o.h / 2) > 0.5) ? 'high' : 'medium',
-                proximity: Math.round(Math.min(100, (o.w * o.h) * 200)),
-                source: 'local' as const,
-              }));
-              return [...keep, ...ds];
-            });
-          }
-        }).catch(() => {});
-      }
-
-
-      const score = lastGuideRef.current?.global_proximity ?? 0;
-      const stats = lastStatsRef.current;
-      const sceneChanged = sceneChangePendingRef.current;
-      const stagnant = stats && stats.globalMotion < 0.012;
-      // Higher concurrency right after a scene change so the user gets fresh frames fast.
-      const inflightCap = sceneChanged ? 6 : 5;
-      if (inflightRef.current >= inflightCap) {
-        rafRef.current = requestAnimationFrame(loop);
+      } catch (e) {
+        console.error(e);
+        toast.error(BE_STRINGS[langRef.current].cameraFailed);
+        say(BE_STRINGS[langRef.current].cameraDenied, 'critical');
+        setPhaseBoth('stopped');
         return;
       }
-      let minGap = phase === 'calibrating' ? 600 : score >= 70 ? 140 : score >= 40 ? 220 : 400;
-      if (sceneChanged) minGap = 0;
-      if (stagnant && phase === 'guiding') minGap = Math.max(minGap, 1500);
+      await perm;
+      const tracker = new HeadingTracker();
+      tracker.onChange((h) => {
+        // during a timed (no-compass) scan the heading is set by the scan itself
+        if (scanRef.current?.manual) return;
+        mapRef.current.heading = h;
+        userHeadingRef.current = h;
+        onHeadingRef.current(h);
+      });
+      tracker.start();
+      trackerRef.current = tracker;
+      const steps = new StepDetector(() => { lastStepAtRef.current = Date.now(); mapRef.current.step(); bump(); });
+      steps.start();
+      stepsRef.current = steps;
+      ensureDetector().catch(() => {});
+      try { recRef.current?.start(); setListening(true); } catch { /* already running */ }
+      setPhaseBoth('guiding');
+      say(L('مرحباً، أنا عين الأعمى.', 'Hello, this is Blind Eye.'), 'critical');
+      // wait (up to 3 s) for the first compass/gyro reading, then learn the room
+      const t0 = Date.now();
+      const waitSensors = window.setInterval(() => {
+        if (tracker.source !== 'none' || Date.now() - t0 > 3000) {
+          window.clearInterval(waitSensors);
+          if (trackerRef.current === tracker) startScan();
+        }
+      }, 150);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startScan]);
 
+  // heading changes drive the scan: one picture every ~40° of turning
+  const onHeadingRef = useRef<(h: number) => void>(() => {});
+  onHeadingRef.current = (h: number) => {
+    const s = scanRef.current;
+    if (!s || s.manual) return;
+    if (s.lastHeading != null) s.accumulated += Math.abs(angleDiff(h, s.lastHeading));
+    s.lastHeading = h;
+    const pct = Math.min(1, s.accumulated / SCAN_DEG);
+    setScanPct(pct);
+    if (s.lastShotHeading == null || Math.abs(angleDiff(h, s.lastShotHeading)) >= 40) {
+      s.lastShotHeading = h;
+      s.shots += 1;
+      chirp.shot();
+      cloudMap('scan');
+    }
+    const q = Math.floor(pct * 4);
+    if (q > s.quarters && q < 4) {
+      s.quarters = q;
+      say(q === 2 ? L('نصف الدورة، استمر', 'Halfway, keep turning') : L('استمر بالدوران', 'Keep turning'), 'descriptive');
+    }
+    if (s.accumulated >= SCAN_DEG) finishScan();
+  };
 
-
-      if (now - lastAITickRef.current >= minGap) {
-        lastAITickRef.current = now;
-        if (sceneChanged) {
-          sceneChangePendingRef.current = false;
-          // Wipe stale boxes immediately so the HUD reflects the new view.
-          setPoints(prev => prev.filter(p => p.source === 'local'));
-          lastGuideRef.current = null;
-          if (now - lastSceneChangeAt.current > 1500) {
-            lastSceneChangeAt.current = now;
+  // ------------------------------------------------------------------ on-device detector (fast layer)
+  useEffect(() => {
+    if (phase !== 'guiding' && phase !== 'scanning') return;
+    const id = window.setInterval(async () => {
+      const v = videoRef.current;
+      if (!v || !v.videoWidth || detectBusyRef.current) return;
+      detectBusyRef.current = true;
+      try {
+        const pose = currentPose();
+        const objs = await detectFromVideo(v, 8);
+        const map = mapRef.current;
+        map.observe(pose, cocoToObservations(objs, pose, langRef.current), false);
+        setPoints(objs.slice(0, 6).map((o) => ({
+          x: o.x + o.w / 2, y: o.y + o.h / 2, w: o.w, h: o.h,
+          label: langRef.current === 'ar' ? labelToArabic(o.label) : o.label,
+          hazard: o.w * o.h > 0.18 && o.y + o.h / 2 > 0.5 ? 'high' : 'medium',
+          proximity: Math.round(Math.min(100, o.w * o.h * 200)),
+          source: 'local' as const,
+        })));
+        // something close right in front: warn now, don't wait for the map
+        // (within ~1.3 m while walking, ~0.7 m when standing)
+        let hz: (typeof objs)[number] | null = null;
+        let hzDist = Infinity;
+        for (const o of objs) {
+          const cx = o.x + o.w / 2;
+          if (o.score < 0.5 || cx < 0.25 || cx > 0.75 || o.label === 'tv' || o.label === 'laptop') continue;
+          const d = cocoDistance(o, pose);
+          if (d != null && d < hzDist) { hz = o; hzDist = d; }
+        }
+        if (hz && hzDist < (walking() ? 1.3 : 0.7) && phaseRef.current === 'guiding') {
+          const k = `hz:${hz.label}`;
+          const last = warnedRef.current.get(k) ?? 0;
+          if (Date.now() - last > 3500) {
+            warnedRef.current.set(k, Date.now());
+            const name = langRef.current === 'ar' ? labelToArabic(hz.label) : hz.label;
+            const right = hz.x + hz.w / 2 < 0.5;
+            chirp.warn(right ? -0.6 : 0.6);
+            haptics.stop();
+            say(L(`قف! ${name} أمامك مباشرة. تحرك إلى ${right ? 'اليمين' : 'اليسار'}.`, `Stop! ${name} right in front. Move ${right ? 'right' : 'left'}.`), 'critical');
           }
-          const mode = phase === 'calibrating' ? 'calibration' : 'points';
-          runAI(mode);
-        } else {
-          const mode = phase === 'calibrating' ? 'calibration' : 'points';
-          runAI(mode);
+        }
+      } catch { /* detector not ready */ } finally {
+        detectBusyRef.current = false;
+      }
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [phase, currentPose]);
+
+  // ------------------------------------------------------------------ AI map refresh while walking
+  useEffect(() => {
+    if (phase !== 'guiding') return;
+    const id = window.setInterval(() => {
+      const map = mapRef.current;
+      const last = lastCloudRef.current;
+      const since = Date.now() - last.t;
+      const moved = Math.hypot(map.x - last.x, map.y - last.y);
+      const turned = Math.abs(angleDiff(map.heading, last.heading));
+      if (pendingRef.current) {
+        if (since > 1500 && (turned > 20 || moved > 0.6 || since > 4000)) cloudMap('search');
+      } else if (since > 2200 && (moved > 0.6 || turned > 25 || since > 9000)) {
+        cloudMap('walk');
+      }
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [phase, cloudMap]);
+
+  // ------------------------------------------------------------------ guidance (instant, from the map)
+  useEffect(() => {
+    if (phase !== 'guiding') return;
+    const id = window.setInterval(() => {
+      const map = mapRef.current;
+      const lg = langRef.current;
+      const tid = targetIdRef.current;
+      bump();
+      if (tid != null) {
+        const target = map.objects.find((o) => o.id === tid);
+        if (!target) {
+          // the map dropped it (it moved, or the sighting was wrong): look for it again
+          const meta = targetMetaRef.current;
+          clearTarget();
+          if (meta) {
+            pendingRef.current = { query: meta.label, kind: meta.kind, name: meta.label };
+            setSearching(meta.label);
+            lastCloudRef.current.t = 0;
+            say(L(`فقدت ${meta.label}. استدر ببطء لأجده من جديد.`, `I lost ${meta.label}. Turn slowly so I can find it again.`), 'critical');
+          }
+          return;
+        }
+        const ins = guidanceTo(map, target, lg);
+        setInstr(ins);
+        beaconRef.current.update(ins.rel, ins.dist);
+        const prev = lastInstrRef.current;
+        const age = Date.now() - prev.t;
+        const changed = ins.key !== prev.key;
+        const repeatAfter = ins.key === 'forward' ? 6000 : ins.key === 'blocked' ? 3500 : 3200;
+        if ((changed && age > 1200) || age > repeatAfter) {
+          lastInstrRef.current = { key: ins.key, t: Date.now(), text: ins.text };
+          if (ins.key === 'arrived') {
+            chirp.arrived();
+            vibrate([120, 60, 120, 60, 200]);
+            speakTracked(ins.text, 'critical');
+            clearTarget();
+            setInstr(ins);
+            return;
+          }
+          if (ins.key.includes('left')) hapticForDirection('left');
+          else if (ins.key.includes('right')) hapticForDirection('right');
+          else if (ins.key === 'blocked') haptics.stop();
+          speakTracked(ins.text, ins.key === 'blocked' || ins.key === 'behind' ? 'critical' : 'directional');
+        }
+        return;
+      }
+      if (pendingRef.current || scanRef.current) return;
+      // free walking: warn about mapped obstacles straight ahead
+      const b = walking() ? map.blockers(null, 1.6)[0] : undefined;
+      if (b) {
+        const k = `blk:${b.m.id}`;
+        const last = warnedRef.current.get(k) ?? 0;
+        if (Date.now() - last > 7000) {
+          warnedRef.current.set(k, Date.now());
+          const go = b.side >= 0 ? L('اليسار', 'left') : L('اليمين', 'right');
+          haptics.alert();
+          say(L(`انتبه، ${b.m.label} أمامك بعد ${stepsText(b.along, 'ar')}. مُرّ من ${go}.`, `Careful, ${b.m.label} ahead in ${stepsText(b.along, 'en')}. Pass on the ${go}.`), 'directional');
         }
       }
+    }, 450);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, clearTarget]);
 
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => {
-      cancelled = true;
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [phase, companionMode, runAI]);
+  // keep the map drawing smooth while scanning too
+  useEffect(() => {
+    if (phase !== 'scanning') return;
+    const id = window.setInterval(bump, 300);
+    return () => window.clearInterval(id);
+  }, [phase]);
 
-  // Warm up local detector + watch connectivity
+  // connectivity
   useEffect(() => {
     ensureDetector().catch(() => {});
     const off = onConnectivityChange((o) => {
       onlineRef.current = o;
       setOnline(o);
-      if (!o) {
-        enqueueSpeech({ text: 'وضع عدم الاتصال. التوجيه الأساسي يعمل.', priority: 'critical', lang: langRef.current });
-      } else {
-        enqueueSpeech({ text: 'عاد الاتصال.', priority: 'directional', lang: langRef.current });
-      }
+      say(o ? L('عاد الاتصال.', 'Back online.') : L('لا يوجد إنترنت. التحذير من العوائق القريبة ما زال يعمل.', 'Offline. Close-obstacle warnings still work.'), o ? 'directional' : 'critical');
     });
     return () => { off(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Speak greeting once when guiding begins (after spin asked destination already)
-  useEffect(() => {
-    if (phase === 'guiding') {
-      const timer = setTimeout(() => {
-        // Don't re-ask destination here — spin completion already prompted.
-        runAI('points');
-      }, 100);
-      return () => clearTimeout(timer);
+  // ------------------------------------------------------------------ describe / read / identify (cloud)
+  const askVision = useCallback(async (mode: 'describe_scene' | 'ocr' | 'identify') => {
+    const lg = langRef.current;
+    const kind = mode === 'describe_scene' ? 'describe' : mode === 'ocr' ? 'read' : 'identify';
+    setBusy(kind);
+    vibrate([80, 50, 80]);
+    say(mode === 'describe_scene' ? L('لحظة، أصف ما أمامك...', 'One moment, describing...')
+      : mode === 'ocr' ? L('لحظة، أقرأ النص...', 'One moment, reading...')
+      : L('لحظة، أتعرف على ما أمامك...', 'One moment, identifying...'), 'critical');
+    try {
+      const img = captureFrame(mode === 'describe_scene' ? 840 : 1024, 0.85);
+      if (!img) { say(L('تعذر التقاط الصورة.', 'Could not capture a picture.'), 'critical'); return; }
+      let text = '';
+      if (onlineRef.current) {
+        const { data } = await supabase.functions.invoke('blind-eye-vision', { body: { image: img, mode, lang: lg } });
+        text = (data?.spoken || data?.full_text || '').toString();
+      }
+      if (!text && mode === 'ocr') text = ((await recognizeImage(img)) || '').replace(/\s+/g, ' ').trim();
+      if (!text && mode !== 'ocr' && videoRef.current) text = summarizeSceneArabic(await detectFromVideo(videoRef.current, 10));
+      if (!text) text = mode === 'ocr' ? L('لا أرى نصاً واضحاً. قرّب الهاتف من النص وثبّت يدك.', 'No clear text. Move closer and hold steady.') : L('تعذر التعرف حالياً.', 'Could not recognise it right now.');
+      setLastAnnounced(text.slice(0, 500));
+      speakTracked(text.slice(0, 600), 'critical');
+    } catch (e) {
+      console.warn(mode, e);
+      say(L('حدث خطأ، حاول مرة أخرى.', 'Something went wrong, try again.'), 'critical');
+    } finally {
+      setBusy(null);
     }
-  }, [phase, runAI]);
+  }, [captureFrame]);
 
-  // ---- Spin-scan onboarding ----
-  useEffect(() => {
-    if (phase !== 'spin') return;
-    spinShotsRef.current = [];
-    spinShotAnglesRef.current = new Set();
-    setSpinPct(0);
-
-    const lang = langRef.current;
-    enqueueSpeech({ text: BE_SPIN[lang].ask, priority: 'critical', lang });
-
-    // Capture a snapshot when we cross each 90° quadrant.
-    const captureSpinShot = () => {
-      const img = captureFrame('fast');
-      if (img && spinShotsRef.current.length < 4) {
-        spinShotsRef.current.push(img);
-      }
-    };
-    // Initial snapshot.
-    setTimeout(captureSpinShot, 250);
-
-    const handle = startSpinScan({
-      onProgress: (_deg, pct) => { setSpinPct(pct); },
-      onQuarter: (q) => {
-        captureSpinShot();
-        if (q < 4) {
-          haptics.stop();
-          enqueueSpeech({ text: BE_SPIN[lang].quarter, priority: 'directional', lang });
-        }
-      },
-      onComplete: async () => {
-        spinHandleRef.current?.stop();
-        spinHandleRef.current = null;
-        enqueueSpeech({ text: BE_SPIN[lang].done, priority: 'critical', lang });
-        // Send snapshots to vision spin_scan mode for summary
-        try {
-          const { data } = await supabase.functions.invoke('blind-eye-vision', {
-            body: { images: spinShotsRef.current.slice(0, 4), mode: 'spin_scan', lang },
-          });
-          const sum = data?.summary_spoken as string | undefined;
-          if (sum) {
-            spinSummaryRef.current = sum;
-            enqueueSpeech({ text: sum, priority: 'critical', lang });
-          }
-        } catch (e) { console.warn('spin scan err', e); }
-        // Ask destination & enter guiding
-        awaitingDestinationRef.current = true;
-        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
-        setPhaseBoth('guiding');
-      },
-    });
-    spinHandleRef.current = handle;
-
-    // Safety: if compass never produces movement after 18s, auto-skip to guiding.
-    const safety = window.setTimeout(() => {
-      if (phaseRef.current === 'spin') {
-        spinHandleRef.current?.stop();
-        spinHandleRef.current = null;
-        enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
-        awaitingDestinationRef.current = true;
-        enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
-        setPhaseBoth('guiding');
-      }
-    }, 18000);
-
-    return () => {
-      window.clearTimeout(safety);
-      spinHandleRef.current?.stop();
-      spinHandleRef.current = null;
-    };
-  }, [phase, captureFrame]);
-
-
-  // ---- Voice chat dispatcher ----
+  // ------------------------------------------------------------------ free conversation
   const sendChat = useCallback(async (text: string, intent?: string) => {
-    userSpeakingRef.current = true;
-    const g = lastGuideRef.current;
-    const parts: string[] = [];
-    if (g) parts.push(`top obstacle: ${g.obstacles_summary}. best direction: ${g.best_path}. proximity: ${g.global_proximity}/100.`);
-    if (spinSummaryRef.current) parts.push(`spin scan: ${spinSummaryRef.current}`);
-    const visualContext = parts.length ? parts.join(' | ') : undefined;
-    const wasAwaitingDest = awaitingDestinationRef.current;
-    if (wasAwaitingDest) awaitingDestinationRef.current = false;
-    const liveImg = captureFrame('detailed');
+    const map = mapRef.current;
+    const ctx: string[] = [];
+    if (map.objects.length) ctx.push(`room map: ${summaryText(map, 'en', 6)}`);
+    const tid = targetIdRef.current;
+    const tgt = tid != null ? map.objects.find((o) => o.id === tid) : null;
+    if (tgt) ctx.push(`guiding to: ${tgt.label}`);
+    chatHistoryRef.current = [...chatHistoryRef.current, { role: 'user' as const, text }].slice(-6);
     try {
       const { data, error } = await supabase.functions.invoke('blind-eye-chat', {
         body: {
           text,
-          image: liveImg,
+          image: captureFrame(640, 0.75),
           history: chatHistoryRef.current.slice(0, -1),
-          visualContext,
+          visualContext: ctx.join(' | ') || undefined,
           lang: langRef.current,
-          intent: intent || (wasAwaitingDest ? 'destination' : undefined),
+          intent,
         },
       });
       if (error) throw error;
-
       if (data?.spoken) {
-        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-4);
-        if (Array.isArray(data.suggestions) && data.suggestions.length) {
-          setSuggestions(data.suggestions.slice(0, 3));
-        }
-        enqueueSpeech({
-          text: data.spoken,
-          priority: 'critical',
-          rate: langRef.current === 'ar' ? 1.0 : 1.1,
-          lang: langRef.current,
-          onEnd: () => { userSpeakingRef.current = false; },
-        });
-      } else {
-        userSpeakingRef.current = false;
+        chatHistoryRef.current = [...chatHistoryRef.current, { role: 'assistant' as const, text: data.spoken }].slice(-6);
+        if (Array.isArray(data.suggestions) && data.suggestions.length) setSuggestions(data.suggestions.slice(0, 3));
+        speakTracked(data.spoken, 'critical');
       }
     } catch (e) {
       console.warn('chat err', e);
-      userSpeakingRef.current = false;
-    }
-  }, []);
-
-  // ---- Instant Full Scene Description (صف ما أمامي) ----
-  const triggerDescribeScene = useCallback(async () => {
-    setActiveMode('describe');
-    activeModeRef.current = 'describe';
-    setIsAnalyzingScene(true);
-    earcons.pointAhead();
-    vibrate([80, 50, 80]);
-    const lg = langRef.current;
-    enqueueSpeech({
-      text: lg === 'ar' ? 'أفحص المشهد أمامك بتفصيل...' : 'Analyzing the scene in detail...',
-      priority: 'critical',
-      lang: lg,
-    });
-
-    try {
-      const v = videoRef.current;
-      const img = captureFrame('detailed');
-
-      if (onlineRef.current && img) {
-        const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
-          body: {
-            image: img,
-            mode: 'describe_scene',
-            lang: lg,
-          },
-        });
-
-        if (!error && data?.spoken) {
-          enqueueSpeech({
-            text: data.spoken,
-            priority: 'critical',
-            lang: lg,
-            rate: 0.95,
-          });
-          setLastAnnouncedText(data.spoken);
-          vibrate([120, 60, 120]);
-          return;
-        }
-      }
-
-      // Offline or cloud fallback: use local COCO-SSD + local vision stats
-      if (v) {
-        const objs = await detectFromVideo(v, 10);
-        const localSummary = summarizeSceneArabic(objs);
-        const stats = lastStatsRef.current;
-        let brightnessText = '';
-        if (stats) {
-          if (stats.avgLum < 0.15) brightnessText = ' المكان مظلم نسبياً.';
-          else if (stats.avgLum > 0.8) brightnessText = ' الإضاءة ساطعة جداً.';
-        }
-        const fullDesc = localSummary + brightnessText;
-        enqueueSpeech({
-          text: fullDesc,
-          priority: 'critical',
-          lang: lg,
-        });
-        setLastAnnouncedText(fullDesc);
-        vibrate([100, 50, 100]);
-      }
-    } catch (e) {
-      console.warn('Describe scene error:', e);
-      enqueueSpeech({
-        text: lg === 'ar' ? 'تعذر وصف المشهد حالياً، سأواصل الإرشاد للمشي.' : 'Could not describe scene, resuming walk guidance.',
-        priority: 'directional',
-        lang: lg,
-      });
-    } finally {
-      setIsAnalyzingScene(false);
-      setTimeout(() => {
-        if (activeModeRef.current === 'describe') {
-          setActiveMode('walk');
-          activeModeRef.current = 'walk';
-        }
-      }, 5000);
+      say(L('لم أستطع الرد الآن.', "I couldn't answer right now."), 'directional');
     }
   }, [captureFrame]);
 
-  // ---- Instant OCR & Sign Reading (اقرأ النص) ----
-  const triggerReadText = useCallback(async () => {
-    setActiveMode('read');
-    activeModeRef.current = 'read';
-    setIsReadingText(true);
-    earcons.approach();
-    vibrate([100, 60, 100]);
-    const lg = langRef.current;
-    enqueueSpeech({
-      text: lg === 'ar' ? 'أقرأ النصوص واللافتات أمامك بدقة...' : 'Reading text & signs ahead...',
-      priority: 'critical',
-      lang: lg,
-    });
-
-    try {
-      const img = captureFrame('detailed');
-      if (!img) {
-        enqueueSpeech({
-          text: lg === 'ar' ? 'تعذر التقاط الصورة، اضبط الكاميرا.' : 'Could not capture frame.',
-          priority: 'directional',
-          lang: lg,
-        });
-        return;
-      }
-
-      let readText = '';
-
-      // Try AI Vision first if online for high accuracy on handwriting, signs, Arabic font
-      if (onlineRef.current) {
-        try {
-          const { data } = await supabase.functions.invoke('blind-eye-vision', {
-            body: {
-              image: img,
-              mode: 'ocr',
-              lang: lg,
-            },
-          });
-          if (data?.spoken || data?.full_text) {
-            readText = data.spoken || data.full_text;
+  // ------------------------------------------------------------------ outdoor navigation (GPS)
+  const startGeoNav = useCallback((query: string) => {
+    clearTarget();
+    const canonical = canonicalizePlaceName(query);
+    const saved = getPlace(canonical);
+    const startGeo = (latlng: LatLng, displayName: string) => {
+      targetGeoRef.current = { name: displayName, dest: latlng };
+      turnByTurnRef.current = null;
+      if (!navigator.geolocation) { say(BE_STRINGS[langRef.current].navGpsDenied, 'critical'); return; }
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const from: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        userPosRef.current = from;
+        const route = await fetchRoute(from, latlng);
+        if (route && route.steps.length > 0) {
+          turnByTurnRef.current = makeNavState(route);
+          const kms = (route.totalDistance / 1000).toFixed(2);
+          const mins = Math.max(1, Math.round(route.totalDuration / 60));
+          say(`سنسير ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً إلى ${displayName}. الخطوة الأولى: ${route.steps[0].instruction}`, 'critical');
+        } else {
+          say(`لم أجد مساراً تفصيلياً. سأرشدك بالاتجاه نحو ${displayName}.`, 'directional');
+        }
+        if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch { /* ignore */ } }
+        geoWatchRef.current = navigator.geolocation.watchPosition((p) => {
+          userPosRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+          const tg = targetGeoRef.current;
+          if (!tg) return;
+          const tbt = turnByTurnRef.current;
+          if (tbt) {
+            const tick = advanceStep(tbt, userPosRef.current);
+            if (tick.speak) say(tick.speak, 'directional');
+            if (tick.arrived) {
+              say(`${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, 'critical');
+              if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch { /* ignore */ } geoWatchRef.current = null; }
+              targetGeoRef.current = null;
+              turnByTurnRef.current = null;
+            }
+            return;
           }
-        } catch {}
-      }
-
-      // If AI didn't return text or offline, run local Tesseract OCR
-      if (!readText) {
-        const ocrResult = await recognizeImage(img);
-        readText = (ocrResult || '').replace(/\s+/g, ' ').trim();
-      }
-
-      if (!readText) {
-        const msg = lg === 'ar'
-          ? 'لا أرى نصاً واضحاً أمام الكاميرا. قرّب الهاتف من النص وتأكد من ثبات يدك.'
-          : 'No clear text detected. Move closer to the text.';
-        enqueueSpeech({ text: msg, priority: 'critical', lang: lg });
-      } else {
-        const spoken = readText.slice(0, 500);
-        enqueueSpeech({
-          text: spoken,
-          priority: 'critical',
-          lang: lg,
-          rate: 0.95,
-        });
-        setLastAnnouncedText(spoken);
-        vibrate([150, 70, 150]);
-      }
-    } catch (e) {
-      console.warn('OCR error:', e);
-      enqueueSpeech({
-        text: lg === 'ar' ? 'حدث خطأ أثناء قراءة النص.' : 'Error reading text.',
-        priority: 'directional',
-        lang: lg,
-      });
-    } finally {
-      setIsReadingText(false);
-      setTimeout(() => {
-        if (activeModeRef.current === 'read') {
-          setActiveMode('walk');
-          activeModeRef.current = 'walk';
-        }
-      }, 6000);
-    }
-  }, [captureFrame]);
-
-  // ---- Currency & Item Identification (اقرأ العملة / تعرف على الشيء) ----
-  const triggerIdentifyItem = useCallback(async () => {
-    setActiveMode('describe');
-    activeModeRef.current = 'describe';
-    setIsAnalyzingScene(true);
-    earcons.approach();
-    vibrate([100, 60, 100]);
-    const lg = langRef.current;
-    enqueueSpeech({
-      text: lg === 'ar' ? 'أفحص ما تحمله بيدك أو ما هو أمامك...' : 'Identifying item or currency...',
-      priority: 'critical',
-      lang: lg,
-    });
-
-    try {
-      const img = captureFrame('detailed');
-      if (!img) {
-        enqueueSpeech({
-          text: lg === 'ar' ? 'تعذر التقاط الصورة، اضبط الكاميرا.' : 'Could not capture frame.',
-          priority: 'directional',
-          lang: lg,
-        });
-        return;
-      }
-
-      if (onlineRef.current) {
-        const { data, error } = await supabase.functions.invoke('blind-eye-vision', {
-          body: {
-            image: img,
-            mode: 'identify',
-            lang: lg,
-          },
-        });
-        if (!error && data?.spoken) {
-          enqueueSpeech({
-            text: data.spoken,
-            priority: 'critical',
-            lang: lg,
-            rate: 0.95,
-          });
-          setLastAnnouncedText(data.spoken);
-          vibrate([150, 70, 150]);
-          return;
-        }
-      }
-
-      // Offline fallback
-      const v = videoRef.current;
-      if (v) {
-        const objs = await detectFromVideo(v, 6);
-        const sum = summarizeSceneArabic(objs);
-        enqueueSpeech({ text: sum, priority: 'critical', lang: lg });
-        setLastAnnouncedText(sum);
-      }
-    } catch (e) {
-      console.warn('Identify error:', e);
-      enqueueSpeech({
-        text: lg === 'ar' ? 'تعذر التعرف حالياً.' : 'Could not identify item.',
-        priority: 'directional',
-        lang: lg,
-      });
-    } finally {
-      setIsAnalyzingScene(false);
-      setTimeout(() => {
-        if (activeModeRef.current === 'describe') {
-          setActiveMode('walk');
-          activeModeRef.current = 'walk';
-        }
-      }, 5000);
-    }
-  }, [captureFrame]);
-
-  // ---- Tactile Status Announcement & Gestures ----
-  const lastTapTimeRef = useRef<number>(0);
-  const singleTapTimeoutRef = useRef<number | null>(null);
-  const longPressTimerRef = useRef<number | null>(null);
-
-  const announceCurrentStatus = useCallback(() => {
-    vibrate(60);
-    const lg = langRef.current;
-    const g = lastGuideRef.current;
-    const dest = targetLocalRef.current ? LANDMARK_AR[targetLocalRef.current] : targetGeoRef.current?.name;
-
-    let statusMsg = '';
-    if (activeModeRef.current === 'describe') {
-      statusMsg = lg === 'ar' ? 'أنت في نمط وصف المشهد. ' : 'Scene description mode. ';
-    } else if (activeModeRef.current === 'read') {
-      statusMsg = lg === 'ar' ? 'أنت في نمط قراءة النصوص. ' : 'Text reading mode. ';
-    } else if (dest) {
-      statusMsg = lg === 'ar' ? `التوجيه نشط نحو ${dest}. ` : `Navigating to ${dest}. `;
+          const dist = haversine(userPosRef.current, tg.dest);
+          if (Date.now() - lastNavSpeakRef.current < 4000) return;
+          lastNavSpeakRef.current = Date.now();
+          if (dist < 20) {
+            say(`${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, 'critical');
+            if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch { /* ignore */ } geoWatchRef.current = null; }
+            targetGeoRef.current = null;
+            return;
+          }
+          const dir = relativeDirectionAr(bearing(userPosRef.current, tg.dest), userHeadingRef.current);
+          say(`${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, 'directional');
+        }, () => say(BE_STRINGS[langRef.current].navGpsDenied, 'critical'), { enableHighAccuracy: true, maximumAge: 2000, timeout: 12000 });
+      }, () => say(BE_STRINGS[langRef.current].navGpsDenied, 'critical'), { enableHighAccuracy: true, timeout: 10000 });
+    };
+    if (saved?.coords) {
+      say(`${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, 'critical');
+      startGeo(saved.coords, saved.name);
     } else {
-      statusMsg = lg === 'ar' ? 'أنت في نمط المشي الآمن. ' : 'Walking safety mode active. ';
-    }
-
-    if (g?.obstacles_summary) {
-      statusMsg += (lg === 'ar' ? `أمامك: ${g.obstacles_summary}. ` : `Ahead: ${g.obstacles_summary}. `);
-    }
-    if (g?.best_path) {
-      const cmds = BE_COMMANDS[lg] || BE_COMMANDS.en;
-      const dirText = g.best_path === 'center' ? cmds.ahead : g.best_path === 'left' ? cmds.left : cmds.right;
-      statusMsg += (lg === 'ar' ? `المسار الأفضل: ${dirText}.` : `Best path: ${dirText}.`);
-    } else {
-      statusMsg += (lg === 'ar' ? 'الطريق سالك للأمام.' : 'Path is clear ahead.');
-    }
-
-    enqueueSpeech({ text: statusMsg, priority: 'critical', lang: lg });
-  }, []);
-
-  const handleContainerTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      // Two-finger tap -> repeat last spoken instruction
-      if (singleTapTimeoutRef.current) clearTimeout(singleTapTimeoutRef.current);
-      if (lastGuideRef.current?.spoken) {
-        enqueueSpeech({ text: lastGuideRef.current.spoken, priority: 'critical', lang: langRef.current });
-      }
-      return;
-    }
-
-    // Long press detector (850ms) -> Trigger Scene Description
-    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-    longPressTimerRef.current = window.setTimeout(() => {
-      vibrate([120, 80, 120]);
-      triggerDescribeScene();
-      longPressTimerRef.current = null;
-    }, 850);
-  };
-
-  const handleContainerTouchEnd = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapTimeRef.current;
-
-    if (timeSinceLastTap < 360) {
-      // Double tap -> Activate Voice Command / Mic
-      if (singleTapTimeoutRef.current) {
-        clearTimeout(singleTapTimeoutRef.current);
-        singleTapTimeoutRef.current = null;
-      }
-      lastTapTimeRef.current = 0;
-      vibrate([80, 50, 80]);
-      earcons.pointAhead();
-      enqueueSpeech({
-        text: langRef.current === 'ar' ? 'تحدث، أنا أستمع إليك...' : 'Speak, I am listening...',
-        priority: 'critical',
-        lang: langRef.current,
+      const q = saved?.query || query;
+      say(`${BE_STRINGS[langRef.current].navStartGeo} ${saved?.name || query}`, 'critical');
+      geocodePlace(q).then((latlng) => {
+        if (!latlng) { say(BE_STRINGS[langRef.current].navNotFound, 'critical'); return; }
+        if (saved) savePlace(saved.name, { query: q, coords: latlng });
+        startGeo(latlng, saved?.name || query);
       });
-      try { recRef.current?.start(); setListening(true); } catch {}
-    } else {
-      lastTapTimeRef.current = now;
-      if (singleTapTimeoutRef.current) clearTimeout(singleTapTimeoutRef.current);
-      singleTapTimeoutRef.current = window.setTimeout(() => {
-        announceCurrentStatus();
-        singleTapTimeoutRef.current = null;
-      }, 380);
     }
-  };
+  }, [clearTarget]);
 
+  /** Destination from speech: the room map first, then a known object kind to search for, then GPS. */
+  const goTo = useCallback((raw: string) => {
+    const q = (extractGoToText(raw) ?? raw).replace(/[.!؟?،,]+$/, '').trim();
+    if (!q) return;
+    if (goToLocal(q)) return;
+    const loose = parseDestinationLoose(q);
+    if (loose?.kind === 'local' && goToLocal(loose.arabic)) return;
+    startGeoNav(loose?.kind === 'geo' ? loose.query : q);
+  }, [goToLocal, startGeoNav]);
+
+  // ------------------------------------------------------------------ voice commands
   const switchLang = useCallback((next: BELang) => {
     if (next === langRef.current) return;
     setLang(next);
     setActiveLang(next);
     cancelAllSpeech();
-    // Re-bind recognition language on next loop tick
-    try { recRef.current?.stop(); } catch {}
+    try { recRef.current?.stop(); } catch { /* ignore */ }
     enqueueSpeech({ text: BE_STRINGS[next].switchedLang, priority: 'critical', lang: next });
   }, [setLang]);
 
+  const announceStatus = useCallback(() => {
+    vibrate(60);
+    const map = mapRef.current;
+    const lg = langRef.current;
+    const tid = targetIdRef.current;
+    const tgt = tid != null ? map.objects.find((o) => o.id === tid) : null;
+    if (tgt) { speakTracked(guidanceTo(map, tgt, lg).text, 'critical'); return; }
+    if (pendingRef.current) { say(L(`أبحث عن ${pendingRef.current.name}. استدر ببطء.`, `Looking for ${pendingRef.current.name}. Turn slowly.`), 'critical'); return; }
+    if (scanRef.current) { say(L('أمسح المكان، استمر بالدوران ببطء.', 'Scanning, keep turning slowly.'), 'critical'); return; }
+    speakTracked(summaryText(map, lg, 3), 'critical');
+  }, []);
+
   const handleVoiceInput = useCallback((txt: string) => {
-    let text = txt.trim();
+    const text = txt.trim();
     if (!text) return;
-    // 1) Generic "switch to <any language>" detector — fires before parseCommand
-    //    so the user can change to any of the 15 supported languages instantly.
     const targetLang = detectSwitchLang(text);
-    if (targetLang && targetLang !== langRef.current) {
-      switchLang(targetLang);
-      return;
-    }
-    // 1.5) If we just asked the user "where do you want to go?", treat ANY
-    //      reasonable answer (even one word like "الباب" or "kitchen") as a destination.
+    if (targetLang && targetLang !== langRef.current) { switchLang(targetLang); return; }
+    const map = mapRef.current;
+    // right after "where do you want to go?", a bare answer ("الباب") is the destination
     if (awaitingDestinationRef.current) {
-      const loose = parseDestinationLoose(text);
-      if (loose) {
-        // Re-formulate so the command parser sees it as GO_TO and the GO_TO
-        // case can run its full local/geo logic uniformly.
-        text = langRef.current === 'ar'
-          ? `بدي أروح على ${loose.kind === 'local' ? loose.arabic : loose.query}`
-          : `take me to ${loose.kind === 'local' ? loose.arabic : loose.query}`;
+      const cmd0 = parseCommand(text, langRef.current);
+      if (cmd0 === 'CHAT' || cmd0 === 'GO_TO') {
         awaitingDestinationRef.current = false;
+        if (map.find(text, kindFromText(text)) || kindFromText(text) || cmd0 === 'GO_TO') { goTo(text); return; }
       }
     }
     const cmd = parseCommand(text, langRef.current);
-    // Shorter cooldown for interactive commands so replies feel instant.
     if (cmd !== 'CHAT' && !commandAllowed(cmd, 500)) return;
     switch (cmd) {
       case 'STOP': stopAll(); return;
-      case 'START':
-        if (phaseRef.current === 'stopped') startCamera();
+      case 'START': if (phaseRef.current === 'stopped') begin(); return;
+      case 'REPEAT': if (lastSpokenRef.current) say(lastSpokenRef.current, 'critical'); return;
+      case 'SCAN_AREA': startScan(); return;
+      case 'AROUND':
+        if (map.objects.length) speakTracked(summaryText(map, langRef.current), 'critical');
+        else startScan();
         return;
-      case 'REPEAT':
-        if (lastGuideRef.current?.spoken) {
-          enqueueSpeech({ text: lastGuideRef.current.spoken, priority: 'critical', lang: langRef.current });
-        }
-        return;
-      case 'SCAN_AREA':
-      case 'WHATS_AROUND':
-        triggerDescribeScene();
-        return;
+      case 'WHATS_AROUND': askVision('describe_scene'); return;
+      case 'READ_TEXT': askVision('ocr'); return;
+      case 'IDENTIFY': askVision('identify'); return;
       case 'SWITCH_LANG_AR': switchLang('ar'); return;
       case 'SWITCH_LANG_EN': switchLang('en'); return;
-      case 'CANCEL_NAV': {
-        targetLocalRef.current = null;
+      case 'WHERE_IS': {
+        const q = text.replace(/^(وين|أين|اين|فين|وينه|وينها|دور على|دوّر على|ابحث عن|إبحث عن|where'?s|where is|where are|find|help me find)\s+/i, '');
+        const m = map.find(q, kindFromText(q));
+        if (m) speakTracked(`${describeObject(map, m, langRef.current)}. ${L('قل خذني إليه لأرشدك.', 'Say take me there to be guided.')}`, 'critical');
+        else say(L(`لم أجد ${q} في خريطة المكان بعد. قل خذني إلى ${q} وسأبحث عنه.`, `${q} isn't on the map yet. Say take me to ${q} and I'll look for it.`), 'critical');
+        return;
+      }
+      case 'GO_TO': goTo(text); return;
+      case 'CANCEL_NAV':
+        clearTarget();
         targetGeoRef.current = null;
         turnByTurnRef.current = null;
-
-        if (geoWatchRef.current != null) {
-          try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {}
-          geoWatchRef.current = null;
-        }
-        // Disarm any pending fall-detection emergency call
+        if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch { /* ignore */ } geoWatchRef.current = null; }
         (window as any).__beFallArmedAt = 0;
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].navCancelled, priority: 'critical', lang: langRef.current });
+        say(BE_STRINGS[langRef.current].navCancelled, 'critical');
         return;
-      }
-
-      case 'WHERE_AM_I': {
-        enqueueSpeech({ text: BE_STRINGS[langRef.current].navHere, priority: 'directional', lang: langRef.current });
+      case 'WHERE_AM_I':
+        speakTracked(map.objects.length ? summaryText(map, langRef.current, 3) : BE_STRINGS[langRef.current].navHere, 'critical');
         return;
-      }
-      case 'ARRIVED_QUERY': {
-        const g = targetGeoRef.current; const up = userPosRef.current;
-        if (g && up) {
-          const dist = haversine(up, g.dest);
-          enqueueSpeech({ text: `${formatDistanceAr(dist)} ${dist < 20 ? '— وصلت' : 'باقي'}`, priority: 'directional', lang: langRef.current });
-        } else if (targetLocalRef.current) {
-          enqueueSpeech({ text: `أبحث عن ${LANDMARK_AR[targetLocalRef.current]}`, priority: 'directional', lang: langRef.current });
-        } else {
-          enqueueSpeech({ text: 'لا يوجد توجيه نشط حالياً', priority: 'directional', lang: langRef.current });
-        }
-        return;
-      }
-      case 'GO_TO': {
-        const dest = parseDestinationLoose(text);
-        if (!dest) { sendChat(text); return; }
-        if (dest.kind === 'local') {
-          targetGeoRef.current = null;
-          if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
-          targetLocalRef.current = dest.landmark;
-          targetStableRef.current = { seen: 0, missed: 0 };
-          lastNavTextRef.current = '';
-          enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartLocal} ${dest.arabic}`, priority: 'critical', lang: langRef.current });
-          runAI('points');
-        } else {
-          // Check saved places first (e.g. "البيت" / "المدرسة") to skip geocoding.
-          const canonical = canonicalizePlaceName(dest.query);
-          const saved = getPlace(canonical);
-          const startGeo = (latlng: LatLng, displayName: string) => {
-            targetGeoRef.current = { name: displayName, dest: latlng };
-            turnByTurnRef.current = null;
-            if (!navigator.geolocation) {
-              enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current });
-              return;
-            }
-            // First fix → fetch real walking route via OSRM, then start tracking.
-            navigator.geolocation.getCurrentPosition(
-              async (pos) => {
-                const from: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                userPosRef.current = from;
-                const route = await fetchRoute(from, latlng);
-                if (route && route.steps.length > 0) {
-                  turnByTurnRef.current = makeNavState(route);
-                  const kms = (route.totalDistance / 1000).toFixed(2);
-                  const mins = Math.max(1, Math.round(route.totalDuration / 60));
-                  enqueueSpeech({
-                    text: `سنسير ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً إلى ${displayName}. الخطوة الأولى: ${route.steps[0].instruction}`,
-                    priority: 'critical', lang: langRef.current,
-                  });
-                } else {
-                  enqueueSpeech({
-                    text: `لم أجد مساراً تفصيلياً. سأرشدك بالاتجاه نحو ${displayName}.`,
-                    priority: 'directional', lang: langRef.current,
-                  });
-                }
-                if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} }
-                geoWatchRef.current = navigator.geolocation.watchPosition(
-                  (p) => {
-                    userPosRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
-                    if (p.coords.heading != null && !Number.isNaN(p.coords.heading)) userHeadingRef.current = p.coords.heading;
-                    const tg = targetGeoRef.current; if (!tg) return;
-                    const now = Date.now();
-
-                    // Turn-by-turn path if available
-                    const tbt = turnByTurnRef.current;
-                    if (tbt) {
-                      const tick = advanceStep(tbt, userPosRef.current!);
-                      if (tick.speak) {
-                        enqueueSpeech({ text: tick.speak, priority: 'directional', lang: langRef.current });
-                      }
-                      if (tick.arrived) {
-                        enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
-                        if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
-                        targetGeoRef.current = null;
-                        turnByTurnRef.current = null;
-                      }
-                      return;
-                    }
-
-                    // Fallback bearing-based guidance
-                    const dist = haversine(userPosRef.current!, tg.dest);
-                    if (now - lastNavSpeakRef.current < 4000) return;
-                    lastNavSpeakRef.current = now;
-                    if (dist < 20) {
-                      enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, priority: 'critical', lang: langRef.current });
-                      if (geoWatchRef.current != null) { try { navigator.geolocation.clearWatch(geoWatchRef.current); } catch {} geoWatchRef.current = null; }
-                      targetGeoRef.current = null;
-                      return;
-                    }
-                    const b = bearing(userPosRef.current!, tg.dest);
-                    const dir = relativeDirectionAr(b, userHeadingRef.current);
-                    enqueueSpeech({ text: `${dir} — ${formatDistanceAr(dist)} باتجاه ${tg.name}`, priority: 'directional', lang: langRef.current });
-                  },
-                  () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
-                  { enableHighAccuracy: true, maximumAge: 2000, timeout: 12000 }
-                );
-              },
-              () => enqueueSpeech({ text: BE_STRINGS[langRef.current].navGpsDenied, priority: 'critical', lang: langRef.current }),
-              { enableHighAccuracy: true, timeout: 10000 }
-            );
-          };
-
-          if (saved?.coords) {
-            enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, priority: 'critical', lang: langRef.current });
-            startGeo(saved.coords, saved.name);
-          } else {
-            const queryForGeo = saved?.query || dest.query;
-            enqueueSpeech({ text: `${BE_STRINGS[langRef.current].navStartGeo} ${saved?.name || dest.query}`, priority: 'critical', lang: langRef.current });
-            geocodePlace(queryForGeo).then((latlng) => {
-              if (!latlng) { enqueueSpeech({ text: BE_STRINGS[langRef.current].navNotFound, priority: 'critical', lang: langRef.current }); return; }
-              if (saved) savePlace(saved.name, { query: queryForGeo, coords: latlng });
-              startGeo(latlng, saved?.name || dest.query);
-            });
-          }
-        }
-        return;
-      }
+      case 'ARRIVED_QUERY': announceStatus(); return;
       case 'SAVE_PLACE': {
         const name = extractSaveAsName(text);
-        if (!name) { enqueueSpeech({ text: 'قل: احفظ هذا المكان كالبيت', priority: 'directional', lang: langRef.current }); return; }
-        if (userPosRef.current) {
-          savePlace(name, { coords: userPosRef.current });
-          enqueueSpeech({ text: `تم حفظ موقعك الحالي باسم ${name}`, priority: 'critical', lang: langRef.current });
-        } else if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              userPosRef.current = c;
-              savePlace(name, { coords: c });
-              enqueueSpeech({ text: `تم حفظ موقعك الحالي باسم ${name}`, priority: 'critical', lang: langRef.current });
-            },
-            () => {
-              savePlace(name, { query: name });
-              enqueueSpeech({ text: `تم حفظ ${name} كاسم. لم أحصل على الموقع الحالي.`, priority: 'critical', lang: langRef.current });
-            },
-            { enableHighAccuracy: true, timeout: 8000 }
-          );
-        } else {
-          savePlace(name, { query: name });
-          enqueueSpeech({ text: `تم حفظ ${name}`, priority: 'critical', lang: langRef.current });
-        }
+        if (!name) { say('قل: احفظ هذا المكان كالبيت', 'directional'); return; }
+        navigator.geolocation?.getCurrentPosition(
+          (pos) => {
+            savePlace(name, { coords: { lat: pos.coords.latitude, lng: pos.coords.longitude } });
+            say(`تم حفظ موقعك الحالي باسم ${name}`, 'critical');
+          },
+          () => { savePlace(name, { query: name }); say(`تم حفظ ${name} كاسم. لم أحصل على الموقع الحالي.`, 'critical'); },
+          { enableHighAccuracy: true, timeout: 8000 },
+        );
         return;
       }
       case 'LIST_PLACES': {
         const places = listPlaces();
-        if (places.length === 0) { enqueueSpeech({ text: 'لا توجد أماكن محفوظة بعد', priority: 'directional', lang: langRef.current }); return; }
-        enqueueSpeech({ text: `أماكنك المحفوظة: ${places.map(p => p.name).join('، ')}`, priority: 'directional', lang: langRef.current });
+        say(places.length ? `أماكنك المحفوظة: ${places.map((p) => p.name).join('، ')}` : 'لا توجد أماكن محفوظة بعد', 'directional');
         return;
       }
       case 'EMERGENCY': {
         const phone = getEmergencyPhone();
-        enqueueSpeech({ text: phone ? 'أتصل بجهة الطوارئ الآن' : 'لم يتم تعيين رقم طوارئ، اتصال بالإسعاف', priority: 'critical', lang: langRef.current });
-        const tel = phone || '911';
-        try { window.location.href = `tel:${tel}`; } catch {}
+        say(phone ? 'أتصل بجهة الطوارئ الآن' : 'لم يتم تعيين رقم طوارئ، اتصال بالإسعاف', 'critical');
+        try { window.location.href = `tel:${phone || '911'}`; } catch { /* ignore */ }
         return;
       }
-      case 'READ_TEXT':
-        triggerReadText();
-        return;
-      case 'IDENTIFY':
-        triggerIdentifyItem();
-        return;
       case 'HELP':
-        sendChat(langRef.current === 'ar' ? 'ماذا تستطيع أن تفعل؟ اقترح ٣ أوامر مفيدة.' : 'What can you do? Suggest 3 useful commands.');
+        say(L('قل: امسح، لأتعرف على المكان. شو حولي، لأخبرك بما حولك. وين الباب، لأقول لك مكانه. خذني إلى الباب، لأرشدك خطوة بخطوة. صف، اقرأ، أو شو هاد، للوصف والقراءة. والغِ التوجيه للإيقاف.',
+          "Say: scan, to learn the room. What's around me. Where is the door. Take me to the door, for step-by-step guidance. Describe, read, or what is this. And cancel navigation to stop."), 'critical');
         return;
       case 'CHAT':
       default:
         sendChat(text);
-        return;
     }
-  }, [startCamera, stopAll, runAI, switchLang, sendChat, triggerDescribeScene, triggerReadText, triggerIdentifyItem]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopAll, begin, startScan, askVision, switchLang, goTo, clearTarget, announceStatus, sendChat]);
 
-  // Voice recognition (re-binds when language changes)
+  // voice recognition (re-binds when the language changes)
+  const handleVoiceRef = useRef(handleVoiceInput);
+  useEffect(() => { handleVoiceRef.current = handleVoiceInput; }, [handleVoiceInput]);
   useEffect(() => {
     refreshVoices();
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => { refreshVoices(); };
-    }
+    if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = () => refreshVoices();
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
-      toast.warning(lang === 'ar' ? 'متصفحك لا يدعم الأوامر الصوتية الدائمة' : 'Your browser does not support continuous voice commands');
+      toast.warning(lang === 'ar' ? 'متصفحك لا يدعم الأوامر الصوتية، استخدم الأزرار' : 'Voice commands are not supported in this browser, use the buttons');
       return;
     }
     const rec = new SR();
     rec.lang = BE_BCP47[lang];
     rec.continuous = true;
     rec.interimResults = true;
-    let interruptedFor = -1;
+    let lastBargeIn = -1;
     rec.onresult = (e: any) => {
       const last = e.results[e.results.length - 1];
       const txt = (last[0]?.transcript || '').trim();
-      // As soon as the user starts speaking (≥2 chars), cut off any ongoing TTS
-      // so the assistant responds instantly and never talks over them.
       if (!last.isFinal) {
-        if (txt.length >= 2 && interruptedFor !== e.results.length - 1) {
-          interruptedFor = e.results.length - 1;
+        // the user starts talking over us: stop speaking so they are heard (but not for our own echo)
+        if (txt.length >= 4 && isSpeaking() && lastBargeIn !== e.results.length - 1 && !isEcho(txt)) {
+          lastBargeIn = e.results.length - 1;
           cancelAllSpeech();
-          userSpeakingRef.current = true;
-          // Audible "I'm listening" cue so the user knows they were heard.
-          try { earcons.pointAhead(); } catch {}
         }
-
         return;
       }
-      userSpeakingRef.current = false;
-      interruptedFor = -1;
-      handleVoiceInput(txt);
+      lastBargeIn = -1;
+      if (isEcho(txt)) return; // the microphone heard the phone itself
+      handleVoiceRef.current(txt);
     };
-    rec.onerror = (e: any) => { console.warn('rec err', e?.error); };
+    rec.onerror = (e: any) => { if (e?.error !== 'no-speech') console.warn('rec err', e?.error); };
     rec.onend = () => {
-      if (phaseRef.current !== 'stopped') {
-        try { rec.start(); } catch {}
-      } else {
-        setListening(false);
-      }
+      if (phaseRef.current === 'guiding' || phaseRef.current === 'scanning') {
+        try { rec.start(); } catch { /* restarting */ }
+      } else setListening(false);
     };
     recRef.current = rec;
-    try { rec.start(); setListening(true); } catch {}
-    return () => { try { rec.stop(); } catch {} };
-  }, [lang, handleVoiceInput]);
+    if (phaseRef.current === 'guiding' || phaseRef.current === 'scanning') {
+      try { rec.start(); setListening(true); } catch { /* running */ }
+    }
+    return () => { try { rec.onend = null; rec.stop(); } catch { /* ignore */ } };
+  }, [lang]);
 
-  useEffect(() => {
-    startCamera();
-    return () => { stopAll(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => () => { stopAll(); }, [stopAll]);
 
-  // ---- Compass: keep userHeadingRef fresh even when standing still ----
+  // fall detection: warn, then call the emergency number unless cancelled
   useEffect(() => {
-    if (phase === 'stopped') return;
-    let stop: (() => void) | null = null;
-    (async () => {
-      await requestCompassPermission();
-      stop = startCompass((h) => { userHeadingRef.current = h; });
-    })();
-    return () => { stop?.(); };
-  }, [phase]);
-
-  // ---- Fall detection: warn + auto-call emergency after countdown ----
-  useEffect(() => {
-    if (phase === 'stopped') return;
+    if (phase !== 'guiding' && phase !== 'scanning') return;
     let enabled = true;
-    try { enabled = localStorage.getItem('damij.blindEye.fallDetection.v1') !== '0'; } catch {}
+    try { enabled = localStorage.getItem('damij.blindEye.fallDetection.v1') !== '0'; } catch { /* default on */ }
     if (!enabled) return;
     let cancelTimer: number | null = null;
-    let stop: (() => void) | null = null;
-    (async () => {
-      await requestMotionPermission();
-      stop = startFallDetection(() => {
-        enqueueSpeech({
-          text: 'تم اكتشاف سقوط محتمل. سأتصل بجهة الطوارئ بعد عشر ثوانٍ. قل "ألغِ" لإيقاف الاتصال.',
-          priority: 'critical', lang: langRef.current,
-        });
-        vibrate([300, 120, 300, 120, 300]);
-        if (cancelTimer) window.clearTimeout(cancelTimer);
-        const armedAt = Date.now();
-        (window as any).__beFallArmedAt = armedAt;
-        cancelTimer = window.setTimeout(() => {
-          if ((window as any).__beFallArmedAt !== armedAt) return;
-          const phone = getEmergencyPhone() || '911';
-          enqueueSpeech({ text: 'الاتصال بجهة الطوارئ الآن', priority: 'critical', lang: langRef.current });
-          try { window.location.href = `tel:${phone}`; } catch {}
-        }, 10000);
-      });
-    })();
-    return () => { stop?.(); if (cancelTimer) window.clearTimeout(cancelTimer); };
-  }, [phase]);
+    const stop = startFallDetection(() => {
+      say('تم اكتشاف سقوط محتمل. سأتصل بجهة الطوارئ بعد عشر ثوانٍ. قل "ألغِ التوجيه" لإيقاف الاتصال.', 'critical');
+      vibrate([300, 120, 300, 120, 300]);
+      if (cancelTimer) window.clearTimeout(cancelTimer);
+      const armedAt = Date.now();
+      (window as any).__beFallArmedAt = armedAt;
+      cancelTimer = window.setTimeout(() => {
+        if ((window as any).__beFallArmedAt !== armedAt) return;
+        say('الاتصال بجهة الطوارئ الآن', 'critical');
+        try { window.location.href = `tel:${getEmergencyPhone() || '911'}`; } catch { /* ignore */ }
+      }, 10000);
+    });
+    return () => { stop(); if (cancelTimer) window.clearTimeout(cancelTimer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase === 'stopped' || phase === 'idle']);
 
+  // ------------------------------------------------------------------ touch gestures
+  const lastTapRef = useRef(0);
+  const singleTapRef = useRef<number | null>(null);
+  const longPressRef = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (phaseRef.current === 'idle' || phaseRef.current === 'stopped') return;
+    if (e.touches.length === 2) {
+      if (singleTapRef.current) window.clearTimeout(singleTapRef.current);
+      if (lastSpokenRef.current) say(lastSpokenRef.current, 'critical');
+      return;
+    }
+    if (longPressRef.current) window.clearTimeout(longPressRef.current);
+    longPressRef.current = window.setTimeout(() => { longPressRef.current = null; askVision('describe_scene'); }, 850);
+  };
+  const onTouchEnd = () => {
+    if (phaseRef.current === 'idle' || phaseRef.current === 'stopped') return;
+    if (longPressRef.current) { window.clearTimeout(longPressRef.current); longPressRef.current = null; }
+    const now = Date.now();
+    if (now - lastTapRef.current < 360) {
+      if (singleTapRef.current) { window.clearTimeout(singleTapRef.current); singleTapRef.current = null; }
+      lastTapRef.current = 0;
+      vibrate([80, 50, 80]);
+      say(L('تحدث، أنا أستمع...', 'Speak, I am listening...'), 'critical');
+      try { recRef.current?.start(); setListening(true); } catch { /* already listening */ }
+    } else {
+      lastTapRef.current = now;
+      if (singleTapRef.current) window.clearTimeout(singleTapRef.current);
+      singleTapRef.current = window.setTimeout(() => { singleTapRef.current = null; announceStatus(); }, 380);
+    }
+  };
 
-
-  const score = lastGuide?.global_proximity ?? 0;
-  const urgencyColor =
-    phase === 'calibrating' ? 'bg-indigo-600' :
-    score >= 75 ? 'bg-red-600' :
-    score >= 40 ? 'bg-amber-500' : 'bg-emerald-600';
-
-  const PathArrow = lastGuide?.best_path === 'left' ? ArrowL : lastGuide?.best_path === 'right' ? ArrowR : ArrowUp;
+  // ------------------------------------------------------------------ render
+  const map = mapRef.current;
+  const target = targetId != null ? map.objects.find((o) => o.id === targetId) ?? null : null;
+  const destinations = phase === 'guiding' ? map.highlights(6) : [];
+  const instrColor = !instr ? 'bg-black/70' : instr.key === 'arrived' ? 'bg-emerald-600' : instr.key === 'blocked' || instr.key === 'behind' ? 'bg-red-600' : instr.key === 'forward' ? 'bg-sky-700' : 'bg-amber-600';
+  void mapVersion;
 
   return (
     <div
       className="fixed inset-0 bg-black text-white select-none overflow-hidden touch-none"
-      dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      onTouchStart={handleContainerTouchStart}
-      onTouchEnd={handleContainerTouchEnd}
+      dir={ar ? 'rtl' : 'ltr'}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
     >
-      {!eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />}
-      {eyesOff && <video ref={videoRef} playsInline muted className="absolute inset-0 w-0 h-0 opacity-0" />}
+      <video ref={videoRef} playsInline muted className={eyesOff ? 'absolute w-0 h-0 opacity-0' : 'absolute inset-0 w-full h-full object-cover'} />
       <canvas ref={captureCanvasRef} className="hidden" />
 
-      {/* Floating emergency button (long-press to send SMS) */}
+      {/* start: one tap anywhere (needed for camera, compass, sound and speech on phones) */}
+      {(phase === 'idle' || phase === 'stopped') && (
+        <button
+          type="button"
+          onClick={begin}
+          className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-black/90 p-8 text-center"
+          aria-label={ar ? 'اضغط في أي مكان للبدء' : 'Tap anywhere to start'}
+        >
+          <Radar className="h-20 w-20 text-sky-400" />
+          <span className="text-3xl font-black">{ar ? 'اضغط في أي مكان للبدء' : 'Tap anywhere to start'}</span>
+          <span className="max-w-sm text-base text-white/75">
+            {ar
+              ? 'سأطلب الكاميرا والبوصلة والميكروفون، ثم أمسح المكان وأنت تستدير ببطء، وأبني خريطة لما حولك لأرشدك إلى أي شيء فيها.'
+              : "I'll ask for the camera, compass and microphone, then map the room while you turn slowly, and guide you to anything on the map."}
+          </span>
+        </button>
+      )}
+
       <BlindEyeEmergencyButton />
 
-      {/* Offline indicator */}
       {!online && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-rose-600/90 text-white text-sm font-bold shadow-2xl">
-          ⚠ بدون إنترنت — التوجيه الأساسي يعمل
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-rose-600/90 text-sm font-bold shadow-2xl">
+          {ar ? '⚠ بدون إنترنت — التحذير من العوائق القريبة يعمل' : '⚠ Offline — close-obstacle warnings still work'}
         </div>
       )}
 
-      {/* Active Scene Analysis Overlay */}
-      {isAnalyzingScene && (
-        <div className="absolute top-20 inset-x-4 p-4 rounded-2xl bg-fuchsia-700/95 backdrop-blur shadow-2xl z-30 flex items-center gap-3 animate-pulse">
-          <RefreshCw className="w-7 h-7 animate-spin shrink-0 text-white" />
-          <div>
-            <div className="text-lg font-black">{lang === 'ar' ? 'جاري فحص ووصف المشهد...' : 'Analyzing & describing scene...'}</div>
-            <div className="text-xs text-white/80">{lang === 'ar' ? 'أفحص العوائق، الممر الآمن، والإضاءة' : 'Detecting obstacles, safe path & lighting'}</div>
-          </div>
-        </div>
-      )}
+      {!eyesOff && phase !== 'idle' && <HudOverlay points={points} showLabels showGrid={false} />}
 
-      {/* Active Text Reading Overlay */}
-      {isReadingText && (
-        <div className="absolute top-20 inset-x-4 p-4 rounded-2xl bg-sky-700/95 backdrop-blur shadow-2xl z-30 flex items-center gap-3 animate-pulse">
-          <RefreshCw className="w-7 h-7 animate-spin shrink-0 text-white" />
-          <div>
-            <div className="text-lg font-black">{lang === 'ar' ? 'جاري استخراج وقراءة النصوص...' : 'Reading text & signs...'}</div>
-            <div className="text-xs text-white/80">{lang === 'ar' ? 'أبحث عن لافتات أو كتابات أمام الكاميرا' : 'Scanning for signs or labels'}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Last announced text display */}
-      {lastAnnouncedText && !eyesOff && !isAnalyzingScene && !isReadingText && (
-        <div className="absolute top-20 inset-x-4 p-3 rounded-xl bg-black/80 backdrop-blur border border-white/20 shadow-2xl z-20 flex items-start justify-between gap-3 text-xs sm:text-sm">
-          <div className="text-white/95 leading-snug flex-1 line-clamp-3">
-            <span className="font-bold text-emerald-400">"{lastAnnouncedText}"</span>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); setLastAnnouncedText(''); }}
-            className="text-[11px] px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-white shrink-0"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-
-      {!eyesOff && phase === 'guiding' && (
-        <HudOverlay
-          points={points}
-          bestPath={lastGuide?.best_path}
-          showLabels={companionMode}
-          showGrid={companionMode}
-        />
-      )}
-
-      <div className="absolute top-0 inset-x-0 p-3 flex items-center justify-between bg-gradient-to-b from-black/85 to-transparent z-10">
-        <Link
-          to="/damij/blind-eye"
-          onClick={stopAll}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/15 backdrop-blur text-sm"
-        >
+      {/* top bar */}
+      <div className="absolute top-0 inset-x-0 p-3 flex items-center justify-between bg-gradient-to-b from-black/85 to-transparent z-20">
+        <Link to="/damij/blind-eye" onClick={stopAll} className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-white/15 backdrop-blur text-sm">
           <ArrowLeft className="w-4 h-4" /> {t.back}
         </Link>
-
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <button
-            onClick={toggle}
-            aria-label={t.ariaSwitchLang}
-            title={t.langToggleTitle}
-            className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur flex items-center gap-1 font-bold"
-          >
+          <button onClick={toggle} aria-label={t.ariaSwitchLang} className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur flex items-center gap-1 font-bold">
             <Languages className="w-3 h-3" /> {lang.toUpperCase()}
           </button>
-          {phase === 'guiding' && (
-            <>
-              <div className="text-[11px] bg-white/15 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1 font-mono">
-                <Zap className="w-3 h-3" /> {latencyMs}ms
-              </div>
-              <div className="text-[11px] bg-white/15 backdrop-blur px-2 py-1 rounded-full font-mono">
-                {aiFps}fps
-              </div>
-              <button
-                onClick={() => setCompanionMode(m => !m)}
-                aria-label={t.ariaToggleCompanion}
-                className={`text-[11px] px-2 py-1 rounded-full backdrop-blur ${companionMode ? 'bg-emerald-600/80' : 'bg-white/15'}`}
-              >
-                {companionMode ? t.companion : t.blind}
-              </button>
-              <button
-                onClick={() => setEyesOff(o => !o)}
-                aria-label={t.ariaEyesOff}
-                className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur flex items-center gap-1"
-              >
-                {eyesOff ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-              </button>
-            </>
-          )}
+          <button onClick={() => setEyesOff((o) => !o)} aria-label={t.ariaEyesOff} className="text-[11px] px-2 py-1 rounded-full bg-white/15 backdrop-blur">
+            {eyesOff ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </button>
           <div className={`text-xs px-2 py-1 rounded-full backdrop-blur flex items-center gap-1 ${listening ? 'bg-blue-600/80' : 'bg-white/15'}`}>
-            <Mic className="w-3 h-3" />
-            {listening ? t.listening : t.silent}
+            <Mic className="w-3 h-3" /> {listening ? t.listening : t.silent}
           </div>
           <div className="text-xs bg-white/15 backdrop-blur px-2 py-1 rounded-full flex items-center gap-1">
             <Activity className="w-3 h-3" />
-            {phase === 'calibrating' ? t.calibrating : phase === 'spin' ? (lang === 'ar' ? 'مسح المنطقة' : 'Scanning') : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
+            {phase === 'scanning' ? (ar ? 'مسح المكان' : 'Scanning') : phase === 'guiding' ? t.guiding : phase === 'stopped' ? t.stopped : t.starting}
           </div>
         </div>
       </div>
 
-      {phase === 'guiding' && lastGuide && !eyesOff && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-10">
-          <div className="bg-black/60 backdrop-blur rounded-full p-3 border-2 border-white/40 shadow-2xl">
-            <PathArrow className="w-10 h-10" />
-          </div>
+      {/* the virtual map */}
+      {phase !== 'idle' && phase !== 'stopped' && (
+        <div className={`absolute z-20 ${bigMap ? 'top-16 inset-x-0 flex justify-center' : 'top-16 start-3'}`}>
+          <MiniMap map={map} targetId={targetId} version={mapVersion} big={bigMap} onToggle={() => setBigMap((b) => !b)} lang={lang} />
         </div>
       )}
 
-      {phase === 'calibrating' && lastCalib && (
-        <div className="absolute top-20 inset-x-4 p-5 rounded-2xl bg-indigo-700/90 backdrop-blur shadow-2xl z-10">
-          <div className="text-2xl font-extrabold leading-tight">{lastCalib.spoken}</div>
-          {lastCalib.adjustment && (
-            <div className="mt-2 text-white/90 text-sm">{lastCalib.adjustment}</div>
-          )}
-        </div>
-      )}
-
-      {phase === 'spin' && (
-        <div className="absolute top-20 inset-x-4 p-5 rounded-2xl bg-fuchsia-700/90 backdrop-blur shadow-2xl z-10 text-center">
-          <div className="text-2xl font-extrabold leading-tight mb-3">
-            {BE_SPIN[lang].ask}
+      {/* scan progress */}
+      {phase === 'scanning' && (
+        <div className="absolute bottom-44 inset-x-4 z-20 rounded-2xl bg-fuchsia-700/90 p-4 text-center shadow-2xl backdrop-blur">
+          <div className="text-lg font-extrabold">{ar ? 'استدر ببطء دورة كاملة' : 'Turn slowly in a full circle'}</div>
+          <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/25">
+            <div className="h-full bg-white transition-all" style={{ width: `${Math.round(scanPct * 100)}%` }} />
           </div>
-          <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
-            <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90">
-              <circle cx="50" cy="50" r="44" stroke="rgba(255,255,255,0.25)" strokeWidth="8" fill="none" />
-              <circle
-                cx="50" cy="50" r="44" stroke="white" strokeWidth="8" fill="none"
-                strokeDasharray={`${Math.round(spinPct * 276)} 276`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="text-3xl font-black">{Math.round(spinPct * 100)}%</div>
+          <div className="mt-2 text-sm text-white/85">
+            {ar ? `${Math.round(scanPct * 100)}٪ · ${map.objects.length} عنصر على الخريطة` : `${Math.round(scanPct * 100)}% · ${map.objects.length} objects mapped`}
           </div>
+          {sensorNote && <div className="mt-1 text-xs text-white/75">{sensorNote}</div>}
           <button
-            onClick={() => {
-              spinHandleRef.current?.stop();
-              spinHandleRef.current = null;
-              enqueueSpeech({ text: BE_SPIN[lang].skip, priority: 'directional', lang });
-              awaitingDestinationRef.current = true;
-              enqueueSpeech({ text: BE_SPIN[lang].askDestination, priority: 'critical', lang });
-              setPhaseBoth('guiding');
-            }}
-            className="mt-4 text-xs px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30"
+            onClick={(e) => { e.stopPropagation(); finishScan(); }}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+            className="mt-3 rounded-full bg-white/20 px-4 py-1.5 text-xs font-bold"
           >
-            {lang === 'ar' ? 'تخطّي المسح' : 'Skip scan'}
+            {ar ? 'إنهاء المسح الآن' : 'Finish scan now'}
           </button>
         </div>
       )}
 
-
-      {errMsg && (
-        <div className="absolute top-20 inset-x-4 p-3 rounded-xl bg-red-600/90 backdrop-blur z-10 text-center font-bold">
-          {errMsg}
+      {/* busy overlay for describe / read / identify */}
+      {busy && (
+        <div className="absolute top-1/3 inset-x-6 z-30 flex items-center gap-3 rounded-2xl bg-fuchsia-700/95 p-4 shadow-2xl">
+          <RefreshCw className="h-7 w-7 shrink-0 animate-spin" />
+          <div className="text-lg font-black">
+            {busy === 'describe' ? (ar ? 'أصف المشهد...' : 'Describing...') : busy === 'read' ? (ar ? 'أقرأ النص...' : 'Reading...') : (ar ? 'أتعرف على الشيء...' : 'Identifying...')}
+          </div>
         </div>
       )}
 
-      {phase === 'guiding' && lastGuide && !eyesOff && (
-        <div className={`absolute bottom-36 inset-x-4 p-4 rounded-2xl ${urgencyColor} shadow-2xl z-10`}>
+      {lastAnnounced && !busy && !eyesOff && phase === 'guiding' && !instr && (
+        <div className="absolute bottom-60 inset-x-4 z-20 flex items-start gap-3 rounded-xl border border-white/20 bg-black/80 p-3 text-sm shadow-2xl">
+          <div className="flex-1 line-clamp-4 font-bold text-emerald-300">{lastAnnounced}</div>
+          <button onClick={(e) => { e.stopPropagation(); setLastAnnounced(''); }} className="rounded bg-white/20 px-2 text-xs" aria-label="close">✕</button>
+        </div>
+      )}
+
+      {errMsg && <div className="absolute top-1/2 inset-x-4 z-20 rounded-xl bg-red-600/90 p-3 text-center font-bold">{errMsg}</div>}
+
+      {/* current instruction */}
+      {phase === 'guiding' && (instr || searching) && (
+        <div className={`absolute bottom-44 inset-x-4 z-20 rounded-2xl p-4 shadow-2xl ${searching ? 'bg-indigo-700/95' : instrColor}`}>
           <div className="flex items-center gap-3">
-            <Volume2 className="w-6 h-6 shrink-0" />
-            <div className="text-xl font-extrabold leading-tight">{lastGuide.spoken}</div>
+            {searching ? <Radar className="h-7 w-7 shrink-0 animate-pulse" /> : <Volume2 className="h-6 w-6 shrink-0" />}
+            <div className="flex-1 text-xl font-extrabold leading-tight">
+              {searching ? (ar ? `أبحث عن ${searching}... استدر ببطء` : `Looking for ${searching}... turn slowly`) : instr?.text}
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); clearTarget(); say(BE_STRINGS[langRef.current].navCancelled, 'critical'); }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+              className="rounded-full bg-black/30 p-2"
+              aria-label={ar ? 'إلغاء التوجيه' : 'Cancel guidance'}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          {lastGuide.obstacles_summary && (
-            <div className="mt-2 text-white/90 text-sm">{lastGuide.obstacles_summary}</div>
+          {target && instr && !instr.arrived && (
+            <div className="mt-2 text-sm text-white/85">
+              {target.label} · {stepsText(instr.dist, lang)} · {ar ? `الساعة ${map.rel(target).clock}` : `${map.rel(target).clock} o'clock`}
+            </div>
           )}
-          <div className="mt-2 h-2 rounded-full bg-white/20 overflow-hidden">
-            <div className="h-full bg-white" style={{ width: `${Math.min(100, score)}%` }} />
-          </div>
         </div>
       )}
 
-      {/* Suggestions chips */}
-      {phase === 'guiding' && !eyesOff && suggestions.length > 0 && (
-        <div className="absolute bottom-60 inset-x-3 z-10 flex flex-wrap gap-2 justify-center">
-          {suggestions.slice(0, 3).map((s, i) => (
+      {/* where to: objects on the map (for a companion, or a user with some sight) */}
+      {phase === 'guiding' && !targetId && !searching && destinations.length > 0 && !eyesOff && (
+        <div
+          className="absolute bottom-44 inset-x-3 z-20 flex flex-wrap justify-center gap-2"
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          {destinations.map((m) => (
             <button
-              key={`${s}-${i}`}
-              onClick={() => sendChat(s)}
-              className="px-3 py-1.5 rounded-full bg-white/15 backdrop-blur text-xs font-semibold hover:bg-white/25 active:scale-95 transition"
+              key={m.id}
+              onClick={(e) => { e.stopPropagation(); lockTarget(m, true); }}
+              className="flex items-center gap-1 rounded-full bg-sky-600/85 px-3 py-1.5 text-xs font-bold backdrop-blur active:scale-95"
             >
+              <Navigation className="h-3 w-3" /> {m.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {phase === 'guiding' && !targetId && !searching && destinations.length === 0 && !eyesOff && suggestions.length > 0 && (
+        <div className="absolute bottom-44 inset-x-3 z-20 flex flex-wrap justify-center gap-2" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+          {suggestions.slice(0, 3).map((s, i) => (
+            <button key={`${s}-${i}`} onClick={(e) => { e.stopPropagation(); handleVoiceInput(s); }} className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold backdrop-blur">
               {s}
             </button>
           ))}
@@ -1611,137 +1100,66 @@ const BlindEyeNavigatorInner: React.FC = () => {
       )}
 
       {eyesOff && phase === 'guiding' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-          <div className="text-6xl font-extrabold mb-4">👁</div>
-          <div className="text-xl opacity-80">{lang === 'ar' ? 'الشاشة مطفأة لتوفير البطارية' : 'Screen off to save battery'}</div>
-          <div className="text-sm opacity-60 mt-2">{lang === 'ar' ? 'الإرشاد الصوتي يعمل' : 'Voice guidance is running'}</div>
-          {lastGuide && (
-            <div className="mt-6 text-2xl font-bold">{lastGuide.spoken}</div>
-          )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+          <div className="text-xl opacity-80">{ar ? 'الشاشة مطفأة لتوفير البطارية' : 'Screen off to save battery'}</div>
+          <div className="mt-2 text-sm opacity-60">{ar ? 'الإرشاد الصوتي يعمل' : 'Voice guidance is running'}</div>
+          {instr && <div className="mt-6 text-2xl font-bold">{instr.text}</div>}
         </div>
       )}
 
-      {/* Bottom Accessible Mode Dock */}
-      <div
-        className="absolute bottom-0 inset-x-0 p-3 sm:p-4 bg-gradient-to-t from-black/95 via-black/90 to-transparent z-30 flex flex-col gap-2"
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Top hint bar with quick currency button */}
-        <div className="flex items-center justify-between gap-2 max-w-md mx-auto w-full">
-          <div className="text-[11px] text-white/70 font-medium py-1 px-3 bg-white/10 rounded-full backdrop-blur truncate flex-1 text-center">
-            {lang === 'ar'
-              ? '💡 نقرة: الحالة • نقرتان: تحدث • ضغطة مطولة: صف المشهد'
-              : '💡 Tap: Status • Double-tap: Speak • Long-press: Describe'}
+      {/* bottom dock */}
+      {phase !== 'idle' && (
+        <div
+          className="absolute bottom-0 inset-x-0 z-30 flex flex-col gap-2 bg-gradient-to-t from-black/95 via-black/90 to-transparent p-3 sm:p-4"
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2">
+            <div className="flex-1 truncate rounded-full bg-white/10 px-3 py-1 text-center text-[11px] text-white/70">
+              {ar ? 'نقرة: أين أنا من الهدف • نقرتان: تحدث • ضغطة مطولة: صف' : 'Tap: status • Double-tap: speak • Long-press: describe'}
+            </div>
+            <button
+              onClick={() => askVision('identify')}
+              aria-label={ar ? 'فحص العملة والأغراض' : 'Identify currency & objects'}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-amber-400/50 bg-amber-500/25 px-3 py-1 text-[11px] font-bold text-amber-200"
+            >
+              💵 {ar ? 'عملة/غرض' : 'Item'}
+            </button>
           </div>
-          <button
-            onClick={() => triggerIdentifyItem()}
-            aria-label={lang === 'ar' ? 'فحص العملة والأغراض' : 'Identify currency & objects'}
-            className="text-[11px] font-bold py-1 px-3 rounded-full bg-amber-500/25 border border-amber-400/50 text-amber-200 hover:bg-amber-500/35 active:scale-95 flex items-center gap-1 shrink-0 backdrop-blur"
-          >
-            <span>💵</span>
-            <span>{lang === 'ar' ? 'فحص عملة/غرض' : 'Currency/Item'}</span>
-          </button>
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2">
+            {[
+              { key: 'scan', icon: Radar, label: ar ? 'امسح المكان' : 'Scan', on: () => startScan(), active: phase === 'scanning' },
+              { key: 'around', icon: Navigation, label: ar ? 'شو حولي' : 'Around', on: () => handleVoiceInput(ar ? 'شو حولي' : "what's around me"), active: false },
+              { key: 'describe', icon: Camera, label: ar ? 'صف أمامي' : 'Describe', on: () => askVision('describe_scene'), active: busy === 'describe' },
+              { key: 'read', icon: FileText, label: ar ? 'اقرأ النص' : 'Read', on: () => askVision('ocr'), active: busy === 'read' },
+              {
+                key: 'speak', icon: Mic, label: listening ? (ar ? 'أسمعك' : 'Listening') : (ar ? 'تحدث' : 'Speak'),
+                on: () => { say(L('تحدث، أنا أستمع...', 'Speak, I am listening...'), 'critical'); try { recRef.current?.start(); setListening(true); } catch { /* listening */ } },
+                active: listening,
+              },
+            ].map((b) => (
+              <button
+                key={b.key}
+                onClick={b.on}
+                disabled={phase === 'stopped'}
+                aria-label={b.label}
+                className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-3 transition-all active:scale-95 disabled:opacity-40 ${b.active ? 'bg-sky-600 font-black ring-2 ring-sky-300/70' : 'bg-white/15 text-white/85'}`}
+              >
+                <b.icon className="h-5 w-5" />
+                <span className="text-[11px] font-bold">{b.label}</span>
+              </button>
+            ))}
+            <button
+              onClick={phase === 'stopped' ? begin : stopAll}
+              aria-label={phase === 'stopped' ? t.start : t.stop}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-2xl ${phase === 'stopped' ? 'bg-emerald-600' : 'bg-rose-600'}`}
+            >
+              <Power className="h-6 w-6" />
+            </button>
+          </div>
         </div>
-
-        {/* Action Controls Bar */}
-        <div className="flex items-center justify-between gap-2 max-w-md mx-auto w-full">
-          {/* 1. Walk Mode Button */}
-          <button
-            onClick={() => {
-              setActiveMode('walk');
-              activeModeRef.current = 'walk';
-              vibrate(60);
-              earcons.pointAhead();
-              enqueueSpeech({
-                text: lang === 'ar' ? 'نمط المشي الآمن نشط، أراقب المسار.' : 'Walk guidance active.',
-                priority: 'critical',
-                lang,
-              });
-            }}
-            aria-label={lang === 'ar' ? 'نمط المشي الآمن' : 'Safe walk mode'}
-            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-              activeMode === 'walk'
-                ? 'bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-300/70 font-black'
-                : 'bg-white/15 text-white/80 hover:bg-white/25'
-            }`}
-          >
-            <Footprints className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-[11px] font-bold">{lang === 'ar' ? 'مشي آمن' : 'Walk'}</span>
-          </button>
-
-          {/* 2. Describe Scene Button */}
-          <button
-            onClick={() => triggerDescribeScene()}
-            disabled={isAnalyzingScene}
-            aria-label={lang === 'ar' ? 'صف ما أمامي' : 'Describe scene'}
-            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-              isAnalyzingScene
-                ? 'bg-fuchsia-600 text-white animate-pulse shadow-lg'
-                : activeMode === 'describe'
-                ? 'bg-fuchsia-600 text-white shadow-lg ring-2 ring-fuchsia-300/70 font-black'
-                : 'bg-white/15 text-white/80 hover:bg-white/25'
-            }`}
-          >
-            <Camera className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-[11px] font-bold">{lang === 'ar' ? 'صف أمامي' : 'Describe'}</span>
-          </button>
-
-          {/* 3. Read Text Button */}
-          <button
-            onClick={() => triggerReadText()}
-            disabled={isReadingText}
-            aria-label={lang === 'ar' ? 'اقرأ النص واللافتات' : 'Read text and signs'}
-            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-              isReadingText
-                ? 'bg-sky-600 text-white animate-pulse shadow-lg'
-                : activeMode === 'read'
-                ? 'bg-sky-600 text-white shadow-lg ring-2 ring-sky-300/70 font-black'
-                : 'bg-white/15 text-white/80 hover:bg-white/25'
-            }`}
-          >
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-[11px] font-bold">{lang === 'ar' ? 'اقرأ النص' : 'Read'}</span>
-          </button>
-
-          {/* 4. Speak / Listen Button */}
-          <button
-            onClick={() => {
-              vibrate([80, 50, 80]);
-              earcons.pointAhead();
-              enqueueSpeech({
-                text: lang === 'ar' ? 'تحدث، أنا أستمع إليك...' : 'Speak, I am listening...',
-                priority: 'critical',
-                lang,
-              });
-              try { recRef.current?.start(); setListening(true); } catch {}
-            }}
-            aria-label={lang === 'ar' ? 'تحدث مع المرشد' : 'Speak to navigator'}
-            className={`flex-1 py-3 px-1.5 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${
-              listening
-                ? 'bg-amber-500 text-black shadow-lg animate-pulse ring-2 ring-amber-300 font-black'
-                : 'bg-white/15 text-white/80 hover:bg-white/25'
-            }`}
-          >
-            <Mic className="w-5 h-5 sm:w-6 sm:h-6" />
-            <span className="text-[11px] font-bold">
-              {listening ? (lang === 'ar' ? 'أسمعك...' : 'Listening') : (lang === 'ar' ? 'تحدث' : 'Speak')}
-            </span>
-          </button>
-
-          {/* 5. Power On / Off Button */}
-          <button
-            onClick={phase === 'stopped' ? startCamera : stopAll}
-            aria-label={phase === 'stopped' ? t.start : t.stop}
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-2xl active:scale-95 transition-all shrink-0 ${
-              phase === 'stopped' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'
-            }`}
-          >
-            <Power className="w-6 h-6 text-white" />
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

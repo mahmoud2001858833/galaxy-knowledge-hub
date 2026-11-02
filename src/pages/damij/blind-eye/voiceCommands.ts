@@ -6,7 +6,7 @@ export type CommandId =
   | 'READ_TEXT' | 'IDENTIFY' | 'SWITCH_LANG_AR' | 'SWITCH_LANG_EN'
   | 'SLOWER' | 'FASTER' | 'QUIETER' | 'LOUDER' | 'HELP' | 'CHAT'
   | 'GO_TO' | 'CANCEL_NAV' | 'WHERE_AM_I' | 'ARRIVED_QUERY'
-  | 'SAVE_PLACE' | 'EMERGENCY' | 'LIST_PLACES';
+  | 'SAVE_PLACE' | 'EMERGENCY' | 'LIST_PLACES' | 'WHERE_IS' | 'AROUND';
 
 const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
   { id: 'STOP',
@@ -19,11 +19,17 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
     en: [/\b(repeat|again|say again)\b/i],
     ar: [/(أعد|اعد|كرر|قل مرة أخرى)/] },
   { id: 'SCAN_AREA',
-    en: [/\b(scan|scan area|scan the area|look around)\b/i],
-    ar: [/(امسح|إمسح|مسح المنطقه|مسح المنطقة|إفحص)/] },
+    en: [/\b(scan|scan area|scan the area|look around|map the room)\b/i],
+    ar: [/(امسح|إمسح|مسح|افحص|إفحص|تعرف على المكان|تعرّف على المكان|اعمل خريطة)/] },
+  { id: 'AROUND',
+    en: [/\b(what'?s|what is|what) around( me)?\b/i, /\bsurroundings\b/i],
+    ar: [/(ماذا حولي|ما حولي|شو حولي|شو حواليّ|شو حوالي|ايش حولي|ايش حوالي|شو في حولي|وين الأشياء)/] },
+  { id: 'WHERE_IS',
+    en: [/^where('?s| is| are)\s+(?!am i)(the\s+)?.+/i, /\bfind\s+(the\s+|my\s+)?\w+/i],
+    ar: [/^(وين|أين|اين|فين|وينه|وينها)\s+(?!أنا|انا).+/, /^(دور|دوّر|ابحث|إبحث)\s+(على|عن)\s+.+/] },
   { id: 'WHATS_AROUND',
     en: [/\b(what'?s? (around|in front|ahead|there)|describe|what do you see|describe scene)\b/i],
-    ar: [/(ماذا حولي|ماذا أمامي|ماذا امامي|صف|صف لي|وصف ما|شو قدامي|شو شايف|صف المشهد|اوصف لي|اوصف المشهد|ايش شايف)/i] },
+    ar: [/(ماذا أمامي|ماذا امامي|صف|صف لي|وصف ما|شو قدامي|شو شايف|صف المشهد|اوصف لي|اوصف المشهد|ايش شايف)/i] },
   { id: 'READ_TEXT',
     en: [/\b(read (the )?(text|sign)?|read it|read words|read sign)\b/i, /^read\b/i],
     ar: [/(اقرأ|إقرأ|اقرا|قراءة|شو مكتوب|ايش مكتوب|قراءة النص|اقرأ النص)/i] },
@@ -53,7 +59,7 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
     ar: [/(ساعدني|مساعدة|ماذا تستطيع|الأوامر)/] },
   { id: 'CANCEL_NAV',
     en: [/\b(cancel|stop) (navigation|guidance|guiding)\b/i, /\bnever ?mind\b/i],
-    ar: [/(ألغِ|الغ|الغي|أوقف|اوقف|توقف عن).{0,8}(التوجيه|الإرشاد|الارشاد)/, /^خلص$/] },
+    ar: [/(ألغِ|ألغ|الغ|الغي|ألغي|إلغاء|الغاء|أوقف|اوقف|وقف|توقف عن).{0,8}(التوجيه|الإرشاد|الارشاد|الملاحة)/, /^خلص$/] },
   { id: 'WHERE_AM_I',
     en: [/\bwhere am i\b/i, /\bmy location\b/i],
     ar: [/(وين أنا|أين أنا|اين انا|موقعي|أين موقعي)/] },
@@ -68,7 +74,7 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
     en: [/^save (?:this )?(?:place|location)?\s*as\s+.+/i],
     ar: [/^(احفظ|إحفظ|سجل|سجّل)\s+(هذا|هاد|هذه|هاي)?\s*(المكان|الموقع)?/] },
   { id: 'EMERGENCY',
-    en: [/\b(emergency|sos|help me)\b/i],
+    en: [/\b(emergency|sos)\b/i, /^help me!?$/i],
     ar: [/(نجده|نجدة|طوارئ|انقذني|أنقذني|ساعدني الآن)/] },
   { id: 'LIST_PLACES',
     en: [/\b(list|show)\s+(saved\s+)?places\b/i],
@@ -77,13 +83,25 @@ const PATTERNS: { id: CommandId; en: RegExp[]; ar: RegExp[] }[] = [
 
 
 
+// Specific commands win over the short generic ones ("go to the door" is GO_TO, not START;
+// "cancel guidance" is CANCEL_NAV, not STOP).
+const FIRST: CommandId[] = [
+  'SWITCH_LANG_AR', 'SWITCH_LANG_EN', 'EMERGENCY', 'CANCEL_NAV', 'WHERE_AM_I', 'GO_TO', 'WHERE_IS',
+  'SAVE_PLACE', 'LIST_PLACES', 'ARRIVED_QUERY', 'AROUND', 'SCAN_AREA',
+];
+const ORDERED = [...PATTERNS].sort((a, b) => {
+  const ia = FIRST.indexOf(a.id);
+  const ib = FIRST.indexOf(b.id);
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+});
+
 export function parseCommand(rawText: string, lang: BELang): CommandId {
   const t = (rawText || '').trim();
   if (!t) return 'CHAT';
   // Try BOTH language patterns so the user can switch language mid-sentence.
   const order: BELang[] = lang === 'ar' ? ['ar', 'en'] : ['en', 'ar'];
   for (const l of order) {
-    for (const p of PATTERNS) {
+    for (const p of ORDERED) {
       const list = l === 'en' ? p.en : p.ar;
       if (list.some(rx => rx.test(t))) return p.id;
     }

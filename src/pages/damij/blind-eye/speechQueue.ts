@@ -23,6 +23,7 @@ let queue: SpeechItem[] = [];
 let speakingItem: SpeechItem | null = null;
 let lastSpokenHash: { key: string; t: number } = { key: '', t: 0 };
 let lastAnySpeechAt = 0;
+let lastText = '';
 let volume = 1;
 
 export function cleanSpokenText(raw: string, lang: BELang = 'ar'): string {
@@ -151,6 +152,7 @@ function drainQueue() {
   const lang = item.lang ?? activeLang;
   const cleanedText = cleanSpokenText(item.text, lang);
   if (!cleanedText) { speakingItem = null; return; }
+  lastText = cleanedText;
 
   const u = new SpeechSynthesisUtterance(cleanedText);
   const voice = voicesCache[lang];
@@ -209,6 +211,20 @@ export function speakDedup(
   if (hashKey === lastSpokenHash.key && now - lastSpokenHash.t < windowMs && priority !== 'critical') return;
   lastSpokenHash = { key: hashKey, t: now };
   enqueueSpeech({ text, priority, ...opts });
+}
+
+/**
+ * True when a recognised phrase is most likely the phone hearing its own voice (the microphone
+ * stays open while we speak): most of its words were in what we said in the last few seconds.
+ */
+export function isEcho(heard: string): boolean {
+  if (!lastText) return false;
+  if (!speakingItem && Date.now() - lastAnySpeechAt > 6000) return false;
+  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((w) => w.length > 1);
+  const said = new Set(norm(lastText));
+  const words = norm(heard);
+  if (!words.length) return false;
+  return words.filter((w) => said.has(w)).length / words.length >= 0.6;
 }
 
 export function timeSinceLastSpeech() {

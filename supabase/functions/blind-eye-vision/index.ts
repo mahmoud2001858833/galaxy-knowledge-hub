@@ -1,5 +1,5 @@
 // Blind Eye - Advanced Vision Navigation Engine for the Visually Impaired
-// Powered by Lovable AI Gateway (Gemini 2.5 Flash / Pro, GPT-4o)
+// Gemini direct (fast, no thinking) with the AI gateway as fallback
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +13,6 @@ const MODELS = [
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
   "google/gemini-3-flash-preview",
-  "openai/gpt-4o",
 ];
 
 type Lang =
@@ -175,7 +174,49 @@ const describeHazardTool = {
   },
 };
 
-type Mode = "points" | "describe_scene" | "ocr" | "identify" | "spin_scan" | "describe_hazard" | "calibration" | "detailed" | "fast";
+// Room mapping: every object with its horizontal extent in the frame and a metric distance, so the
+// client can place it on a virtual map using the phone's compass heading.
+const MAP_KINDS = [
+  "door", "doorway", "window", "stairs", "wall", "chair", "table", "desk", "sofa", "bed", "closet",
+  "shelf", "fridge", "stove", "counter", "sink", "toilet", "shower", "tv", "computer", "plant", "lamp",
+  "person", "pet", "bag", "box", "bin", "rug", "step", "pillar", "car", "elevator", "other",
+] as const;
+
+const mapTool = {
+  type: "function",
+  function: {
+    name: "map_objects",
+    description: "Objects in view with position and distance, for building a room map",
+    parameters: {
+      type: "object",
+      properties: {
+        place: { type: "string", description: "Room or place type in the user's language (e.g. kitchen, corridor)" },
+        objects: {
+          type: "array",
+          maxItems: 12,
+          items: {
+            type: "object",
+            properties: {
+              kind: { type: "string", enum: [...MAP_KINDS] },
+              label: { type: "string", description: "Short name in the user's language, with color if useful (e.g. red chair)" },
+              x0: { type: "number", description: "Left edge, 0..1 of image width" },
+              x1: { type: "number", description: "Right edge, 0..1 of image width" },
+              y1: { type: "number", description: "Bottom edge, 0..1 of image height" },
+              distance_m: { type: "number", description: "Estimated distance from the camera in meters" },
+              obstacle: { type: "boolean", description: "True if it stands on the floor and could block walking" },
+            },
+            required: ["kind", "label", "x0", "x1", "y1", "distance_m", "obstacle"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["place", "objects"],
+      additionalProperties: false,
+    },
+  },
+};
+
+type Mode = "map" | "points" | "describe_scene" | "ocr" | "identify" | "spin_scan" | "describe_hazard" | "calibration" | "detailed" | "fast";
 
 const SYSTEM_PROMPTS = {
   points: (lang: Lang, target?: string) => `You are "Blind Eye" (عين الأعمى), an elite, caring visual navigator guiding a blind or visually impaired person in real time. Reply strictly in language "${lang}".
@@ -213,8 +254,78 @@ In "spoken", speak directly and clearly to the user.`,
 
   describe_hazard: (lang: Lang) => `You are "Blind Eye". Describe ONLY the immediate obstacle directly blocking the blind user in <= 10 words in "${lang}", giving an immediate safe evasion direction (e.g. "انتبه! عتبة أمامك، توقف وخطُ للأعلى").`,
 
+  map: (lang: Lang) => `You map rooms for a blind person's navigation app. The image is from a phone held at chest height, camera facing forward.
+List every meaningful object and structural element (doors, doorways/openings, windows, stairs, furniture, appliances, people, and floor obstacles). Skip tiny items on tables.
+- label: short name in language "${lang}" (add color/material when it helps tell objects apart).
+- x0/x1: horizontal extent in the image (0 = left edge, 1 = right edge). y1: bottom edge (0 = top, 1 = bottom).
+- distance_m: realistic distance in meters from the camera to the object's nearest point. Use room scale cues (doors ~2 m tall, chairs ~0.9 m). Be accurate, never 0.
+- obstacle: true for things standing on the floor in a walking area.
+Return at most 12 objects, most important first. Return an empty list if the image is dark or blurred.`,
+
   calibration: (lang: Lang) => `Quick phone calibration. Confirm if phone camera angle covers walking path ahead. position_ok=true if walkable floor/path is visible. spoken: Short ready phrase in "${lang}".`,
 };
+
+// Direct Gemini (no thinking, JSON schema): much faster than the gateway; the gateway stays as fallback.
+function toGeminiSchema(s: any): any {
+  if (Array.isArray(s)) return s.map(toGeminiSchema);
+  if (!s || typeof s !== "object") return s;
+  const out: any = {};
+  for (const [k, v] of Object.entries(s)) {
+    if (k === "additionalProperties" || k === "description") continue;
+    out[k] = toGeminiSchema(v);
+  }
+  return out;
+}
+
+const DIRECT_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+
+async function callDirect(model: string, sysPrompt: string, userText: string, images: string[], tool: any, maxTokens: number) {
+  const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
+  if (!key) throw new Error("no gemini key");
+  const parts: any[] = [{ text: userText }];
+  for (const url of images) {
+    const m = url.match(/^data:([^;]+);base64,(.+)$/);
+    if (m) parts.push({ inlineData: { mimeType: m[1], data: m[2] } });
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: sysPrompt }] },
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: Math.max(maxTokens, 900),
+          responseMimeType: "application/json",
+          responseSchema: toGeminiSchema(tool.function.parameters),
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    });
+    if (!r.ok) throw new Error(`direct ${model} ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    const j = await r.json();
+    const txt = j?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") ?? "";
+    if (!txt) throw new Error(`direct ${model}: empty`);
+    return JSON.parse(txt);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function buildPrompt(mode: Mode, lang: Lang, target?: string) {
+  if (mode === "map") return { sysPrompt: SYSTEM_PROMPTS.map(lang), tool: mapTool, maxTokens: 900 };
+  if (mode === "describe_scene" || mode === "detailed") return { sysPrompt: SYSTEM_PROMPTS.describe_scene(lang), tool: describeSceneTool, maxTokens: 650 };
+  if (mode === "ocr") return { sysPrompt: SYSTEM_PROMPTS.ocr(lang), tool: ocrTool, maxTokens: 650 };
+  if (mode === "identify") return { sysPrompt: SYSTEM_PROMPTS.identify(lang), tool: identifyItemTool, maxTokens: 450 };
+  if (mode === "spin_scan") return { sysPrompt: SYSTEM_PROMPTS.spin_scan(lang), tool: spinScanTool, maxTokens: 300 };
+  if (mode === "describe_hazard") return { sysPrompt: SYSTEM_PROMPTS.describe_hazard(lang), tool: describeHazardTool, maxTokens: 120 };
+  if (mode === "calibration") return { sysPrompt: SYSTEM_PROMPTS.calibration(lang), tool: pointsTool, maxTokens: 150 };
+  return { sysPrompt: SYSTEM_PROMPTS.points(lang, target), tool: pointsTool, maxTokens: 400 };
+}
 
 async function callGateway(
   model: string,
@@ -227,40 +338,7 @@ async function callGateway(
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
-  let sysPrompt = "";
-  let tool: any = pointsTool;
-  let maxTokens = 350;
-
-  if (mode === "describe_scene" || mode === "detailed") {
-    sysPrompt = SYSTEM_PROMPTS.describe_scene(lang);
-    tool = describeSceneTool;
-    maxTokens = 650;
-  } else if (mode === "ocr") {
-    sysPrompt = SYSTEM_PROMPTS.ocr(lang);
-    tool = ocrTool;
-    maxTokens = 650;
-  } else if (mode === "identify") {
-    sysPrompt = SYSTEM_PROMPTS.identify(lang);
-    tool = identifyItemTool;
-    maxTokens = 450;
-  } else if (mode === "spin_scan") {
-    sysPrompt = SYSTEM_PROMPTS.spin_scan(lang);
-    tool = spinScanTool;
-    maxTokens = 300;
-  } else if (mode === "describe_hazard") {
-    sysPrompt = SYSTEM_PROMPTS.describe_hazard(lang);
-    tool = describeHazardTool;
-    maxTokens = 120;
-  } else if (mode === "calibration") {
-    sysPrompt = SYSTEM_PROMPTS.calibration(lang);
-    tool = pointsTool;
-    maxTokens = 150;
-  } else {
-    // points / fast / live guidance
-    sysPrompt = SYSTEM_PROMPTS.points(lang, target);
-    tool = pointsTool;
-    maxTokens = 400;
-  }
+  const { sysPrompt, tool, maxTokens } = buildPrompt(mode, lang, target);
 
   const userText = extraContext
     ? `Context: ${extraContext}\nAnalyze the scene for the blind user in language "${lang}".`
@@ -316,7 +394,8 @@ Deno.serve(async (req) => {
     }
 
     let useMode: Mode = "points";
-    if (mode === "describe_scene" || mode === "detailed") useMode = "describe_scene";
+    if (mode === "map") useMode = "map";
+    else if (mode === "describe_scene" || mode === "detailed") useMode = "describe_scene";
     else if (mode === "ocr" || mode === "read_text") useMode = "ocr";
     else if (mode === "identify" || mode === "currency") useMode = "identify";
     else if (mode === "spin_scan") useMode = "spin_scan";
@@ -329,6 +408,23 @@ Deno.serve(async (req) => {
       : "ar";
 
     let lastErr = "";
+    const images = Array.isArray(imgInput) ? imgInput : [imgInput];
+    const { sysPrompt, tool, maxTokens } = buildPrompt(useMode, useLang, typeof target === "string" ? target : undefined);
+    const userText = context
+      ? `Context: ${context}\nAnalyze the scene for the blind user in language "${useLang}".`
+      : `Analyze the scene for the blind user in language "${useLang}".`;
+    for (const model of DIRECT_MODELS) {
+      try {
+        const result = await callDirect(model, sysPrompt, userText, images, tool, maxTokens);
+        return new Response(
+          JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      } catch (e) {
+        lastErr = e instanceof Error ? e.message : String(e);
+        console.warn("blind-eye-vision direct failed:", lastErr);
+      }
+    }
     for (const model of MODELS) {
       try {
         const result = await callGateway(
