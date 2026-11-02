@@ -408,14 +408,14 @@ Deno.serve(async (req) => {
       : "ar";
 
     let lastErr = "";
-    const images = Array.isArray(imgInput) ? imgInput : [imgInput];
+    const frames = Array.isArray(imgInput) ? imgInput : [imgInput];
     const { sysPrompt, tool, maxTokens } = buildPrompt(useMode, useLang, typeof target === "string" ? target : undefined);
     const userText = context
       ? `Context: ${context}\nAnalyze the scene for the blind user in language "${useLang}".`
       : `Analyze the scene for the blind user in language "${useLang}".`;
     for (const model of DIRECT_MODELS) {
       try {
-        const result = await callDirect(model, sysPrompt, userText, images, tool, maxTokens);
+        const result = await callDirect(model, sysPrompt, userText, frames, tool, maxTokens);
         return new Response(
           JSON.stringify({ ok: true, mode: useMode, model, lang: useLang, ...result }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
