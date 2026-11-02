@@ -9,6 +9,20 @@ export function unlockAudio() {
   if (!C) return;
   if (!ctx) ctx = new C();
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  // iOS: a silent buffer played inside the tap really unlocks output
+  try {
+    const b = ctx.createBuffer(1, 1, 22050);
+    const s = ctx.createBufferSource();
+    s.buffer = b;
+    s.connect(ctx.destination);
+    s.start(0);
+  } catch { /* ignore */ }
+}
+
+/** The shared audio context once unlocked (null before the first tap). */
+export function audioContext(): AudioContext | null {
+  if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  return ctx && ctx.state !== 'closed' ? ctx : null;
 }
 
 function ping(freq: number, pan: number, gain = 0.16) {
@@ -66,5 +80,6 @@ export const chirp = {
   found: () => { ping(784, 0, 0.14); window.setTimeout(() => ping(1175, 0, 0.14), 110); },
   shot: () => ping(1400, 0, 0.06),
   arrived: () => { ping(784, 0); window.setTimeout(() => ping(988, 0), 120); window.setTimeout(() => ping(1318, 0), 240); },
+  listen: () => { ping(880, 0, 0.12); window.setTimeout(() => ping(1320, 0, 0.12), 90); },
   warn: (pan = 0) => { ping(330, pan, 0.22); window.setTimeout(() => ping(330, pan, 0.22), 140); },
 };

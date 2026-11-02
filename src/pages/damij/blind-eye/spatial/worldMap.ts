@@ -344,14 +344,50 @@ export function describeObject(map: WorldMap, m: MapObject, lang: string) {
     : `${name} ${directionText(r.rel, lang)}, ${stepsText(r.dist, lang)} away, at ${r.clock} o'clock`;
 }
 
-export function summaryText(map: WorldMap, lang: string, max = 5) {
-  // most important first, then spoken clockwise: ahead, right, behind, left
-  const items = map.highlights(max).sort((a, b) => norm360(map.rel(a).rel + 15) - norm360(map.rel(b).rel + 15));
+/** What lies in a given direction (relative degrees), nearest first. */
+export function objectsToward(map: WorldMap, rel: number, halfWidth = 20, maxDist = 8): MapObject[] {
+  return map.objects
+    .filter((m) => !DYNAMIC.includes(m.kind))
+    .map((m) => ({ m, r: map.rel(m) }))
+    .filter(({ r }) => Math.abs(angleDiff(r.rel, rel)) <= halfWidth && r.dist <= maxDist)
+    .sort((a, b) => a.r.dist - b.r.dist)
+    .map(({ m }) => m);
+}
+
+/**
+ * Spoken overview grouped by side, e.g. "أمامك: الكنبة على بعد 3 خطوات، والطاولة. على يمينك: الباب…".
+ */
+export function summaryText(map: WorldMap, lang: string, max = 7) {
+  const ar = lang === 'ar';
+  const items = map.highlights(max);
   if (!items.length) {
-    return lang === 'ar' ? 'لم أتعرف على أشياء حولك بعد. قل امسح ثم استدر ببطء.' : "I haven't mapped anything yet. Say scan and turn slowly.";
+    return ar ? 'لم أتعرف على أشياء حولك بعد. قل امسح ثم استدر ببطء.' : "I haven't mapped anything yet. Say scan and turn slowly.";
   }
-  const head = map.place ? (lang === 'ar' ? `يبدو أنك في ${map.place}. ` : `This looks like ${map.place}. `) : '';
-  return head + items.map((m) => describeObject(map, m, lang)).join(lang === 'ar' ? '. ' : '. ') + '.';
+  const sides: { name: string; test: (r: number) => boolean }[] = ar
+    ? [
+        { name: 'أمامك', test: (r) => Math.abs(r) <= 45 },
+        { name: 'على يمينك', test: (r) => r > 45 && r < 135 },
+        { name: 'خلفك', test: (r) => Math.abs(r) >= 135 },
+        { name: 'على يسارك', test: (r) => r < -45 && r > -135 },
+      ]
+    : [
+        { name: 'Ahead', test: (r) => Math.abs(r) <= 45 },
+        { name: 'On your right', test: (r) => r > 45 && r < 135 },
+        { name: 'Behind you', test: (r) => Math.abs(r) >= 135 },
+        { name: 'On your left', test: (r) => r < -45 && r > -135 },
+      ];
+  const parts: string[] = [];
+  for (const side of sides) {
+    const here = items.filter((m) => side.test(map.rel(m).rel)).sort((a, b) => map.rel(a).dist - map.rel(b).dist);
+    if (!here.length) continue;
+    const list = here.map((m, i) => {
+      const steps = stepsText(map.rel(m).dist, lang);
+      return i === 0 ? (ar ? `${m.label} على بعد ${steps}` : `${m.label}, ${steps} away`) : (ar ? `و${m.label} على بعد ${steps}` : `and ${m.label}, ${steps}`);
+    });
+    parts.push(`${side.name}: ${list.join(ar ? '، ' : ', ')}.`);
+  }
+  const head = map.place ? (ar ? `أنت في ${map.place}. ` : `You are in ${map.place}. `) : '';
+  return head + parts.join(' ');
 }
 
 export type Instruction = {

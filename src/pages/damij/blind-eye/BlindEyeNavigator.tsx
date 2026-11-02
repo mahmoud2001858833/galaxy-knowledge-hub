@@ -4,7 +4,7 @@ import { ArrowLeft, Volume2, Mic, Activity, Languages, Camera, FileText, Refresh
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HudOverlay, { type DetectedPoint } from './HudOverlay';
-import { refreshVoices, setActiveLang, enqueueSpeech, cancelAllSpeech, vibrate, isEcho, isSpeaking } from './speechQueue';
+import { refreshVoices, setActiveLang, enqueueSpeech, cancelAllSpeech, vibrate, isEcho, isSpeaking, enableNaturalVoice, prefetchSpeech } from './speechQueue';
 import { BlindEyeLangProvider, useBlindEyeLang } from './BlindEyeLangContext';
 import { BE_STRINGS, BE_BCP47, defaultSuggestions, type BELang } from './i18n';
 import { parseCommand, commandAllowed, detectSwitchLang } from './voiceCommands';
@@ -20,7 +20,7 @@ import { hapticForDirection, haptics } from './haptics';
 import BlindEyeEmergencyButton from './BlindEyeEmergencyButton';
 import { HeadingTracker, StepDetector, requestSensorPermissions, angleDiff } from './spatial/sensors';
 import {
-  WorldMap, cameraFov, guidanceTo, summaryText, describeObject, kindFromText, kindWord, stepsText, directionText,
+  WorldMap, cameraFov, guidanceTo, summaryText, describeObject, kindFromText, kindWord, stepsText, directionText, objectsToward,
   type Instruction, type Kind, type MapObject, type CapturePose,
 } from './spatial/worldMap';
 import { aiToObservations, cocoDistance, cocoToObservations } from './spatial/perception';
@@ -52,6 +52,34 @@ type ScanState = {
 };
 
 const SCAN_DEG = 340;
+
+const IS_IOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+// natural voice (Gemini TTS); the queue falls back to the phone's voice when it is slow or down
+const FN_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://esifpjjehdnpkhyilctv.supabase.co'}/functions/v1/blind-eye-voice`;
+const FN_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+const fetchVoice = async (text: string, lang: string): Promise<ArrayBuffer | null> => {
+  const r = await fetch(FN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: FN_KEY, Authorization: `Bearer ${FN_KEY}` },
+    body: JSON.stringify({ text, lang }),
+  });
+  if (!r.ok || !(r.headers.get('content-type') || '').startsWith('audio/')) return null;
+  return r.arrayBuffer();
+};
+
+// said often: fetched in the natural voice before they are needed
+const COMMON_PHRASES: Record<'ar' | 'en', string[]> = {
+  ar: [
+    'مرحباً، أنا عين الأعمى.',
+    'سأتعرف على المكان من حولك. أمسك الهاتف أمام صدرك والكاميرا للأمام، واستدر حول نفسك ببطء دورة كاملة. ستسمع نقرة مع كل لقطة.',
+    'استمر بالدوران', 'نصف الدورة، استمر', 'انتهى المسح.', 'تحدث، أنا أستمع...',
+    'لحظة، أصف ما أمامك...', 'لحظة، أقرأ النص...', 'لحظة، أتعرف على ما أمامك...', 'تم إلغاء التوجيه',
+  ],
+  en: [
+    'Hello, this is Blind Eye.', 'Keep turning', 'Halfway, keep turning', 'Scan complete.', 'Speak, I am listening...',
+  ],
+};
 
 /** Resolve with `fallback` if the promise takes longer than `ms` (phone prompts can stay unanswered). */
 const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
@@ -93,6 +121,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lastSpokenRef = useRef('');
   const placeChangeRef = useRef<{ place: string; count: number }>({ place: '', count: 0 });
   const lastStepAtRef = useRef(0);
+  // live narration state
+  const pointRef = useRef<{ h: number; since: number; saidAt: number; saidHeading: number | null }>({ h: 0, since: 0, saidAt: 0, saidHeading: null });
+  const sideSaidRef = useRef<Map<number, number>>(new Map());
+  const lastUserActRef = useRef(Date.now());
+  const idleHintRef = useRef(false);
+  const scanSaidRef = useRef<{ t: number; names: Set<string> }>({ t: 0, names: new Set() });
   const walking = () => Date.now() - lastStepAtRef.current < 3000;
 
   // geo navigation (outdoors)
@@ -127,6 +161,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>(defaultSuggestions[lang]);
 
   useEffect(() => { setSuggestions(defaultSuggestions[lang]); }, [lang]);
+
+  /** Open the microphone for one phrase (a short tone instead of speech, so it doesn't hear itself). */
+  const listenOnce = () => {
+    vibrate(40);
+    chirp.listen();
+    try { recRef.current?.start(); setListening(true); } catch { /* already listening */ }
+  };
 
   const speakTracked = (text: string, priority: 'critical' | 'directional' | 'descriptive' = 'directional') => {
     lastSpokenRef.current = text;
@@ -168,6 +209,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const lockTarget = useCallback((m: MapObject, announce: boolean) => {
     targetIdRef.current = m.id;
     targetMetaRef.current = { label: m.label, kind: m.kind };
+    lastUserActRef.current = Date.now();
     pendingRef.current = null;
     setTargetId(m.id);
     setSearching(null);
@@ -236,10 +278,23 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
       }
       bump();
-      // announce doors/stairs discovered while walking (not during the scan: the summary covers them)
-      if (reason !== 'scan' && phaseRef.current === 'guiding' && !targetIdRef.current) {
-        const key = added.find((m) => ['door', 'doorway', 'stairs', 'step', 'elevator'].includes(m.kind));
-        if (key) say(L(`لاحظت ${key.label} ${directionText(map.rel(key).rel, 'ar')}`, `I see ${key.label} ${directionText(map.rel(key).rel, 'en')}`), 'descriptive');
+      if (reason === 'scan' && scanRef.current) {
+        // live feedback while turning: name what was just recognised
+        const ss = scanSaidRef.current;
+        const fresh = added
+          .filter((m) => !['other', 'wall', 'rug'].includes(m.kind) && !ss.names.has(m.label))
+          .map((m) => m.label)
+          .slice(0, 2);
+        if (fresh.length && Date.now() - ss.t > 1800) {
+          fresh.forEach((n) => ss.names.add(n));
+          ss.t = Date.now();
+          say(L(`أرى ${fresh.join(' و')}`, `I see ${fresh.join(' and ')}`), 'descriptive');
+        }
+      } else if (phaseRef.current === 'guiding' && !targetIdRef.current) {
+        // something new appeared while walking: doors/stairs anywhere, anything else when it is ahead
+        const key = added.find((m) => ['door', 'doorway', 'stairs', 'step', 'elevator'].includes(m.kind))
+          ?? added.find((m) => m.kind !== 'other' && Math.abs(map.rel(m).rel) < 35 && map.rel(m).dist < 3.5);
+        if (key) say(L(`${key.label} ${directionText(map.rel(key).rel, 'ar')}، على بعد ${stepsText(map.rel(key).dist, 'ar')}`, `${key.label} ${directionText(map.rel(key).rel, 'en')}, ${stepsText(map.rel(key).dist, 'en')} away`), 'descriptive');
       }
       // the thing we were looking for showed up
       const p = pendingRef.current;
@@ -274,7 +329,12 @@ const BlindEyeNavigatorInner: React.FC = () => {
     awaitingDestinationRef.current = true;
     if (top.length) {
       setSuggestions(top.map((n) => (lg === 'ar' ? `خذني إلى ${n}` : `Take me to ${n}`)));
-      speakTracked(`${L('انتهى المسح.', 'Scan complete.')} ${summaryText(map, lg)} ${L(`إلى أين تريد أن تذهب؟ مثلاً: ${top.slice(0, 2).join(' أو ')}.`, `Where would you like to go? For example: ${top.slice(0, 2).join(' or ')}.`)}`, 'critical');
+      const text = `${L('انتهى المسح.', 'Scan complete.')} ${summaryText(map, lg)} ${L(`إلى أين تريد أن تذهب؟ مثلاً: ${top.slice(0, 2).join(' أو ')}.`, `Where would you like to go? For example: ${top.slice(0, 2).join(' or ')}.`)}`;
+      lastSpokenRef.current = text;
+      lastUserActRef.current = Date.now();
+      idleHintRef.current = false;
+      pointRef.current.saidHeading = mapRef.current.heading; // don't narrate the direction we already described
+      enqueueSpeech({ text, priority: 'critical', lang: lg, onEnd: () => listenOnce() });
     } else {
       speakTracked(L('انتهى المسح لكن لم أتعرف على أشياء واضحة. تأكد من الإضاءة وأن الكاميرا غير مغطاة، ثم قل امسح مرة أخرى.', "Scan done but I couldn't recognise anything. Check the light and that the camera isn't covered, then say scan again."), 'critical');
     }
@@ -423,7 +483,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const steps = new StepDetector(() => { lastStepAtRef.current = Date.now(); mapRef.current.step(); bump(); });
       steps.start();
       stepsRef.current = steps;
-      try { recRef.current?.start(); setListening(true); } catch { /* already running */ }
+      if (!IS_IOS) { try { recRef.current?.start(); setListening(true); } catch { /* already running */ } }
       setPhaseBoth('guiding');
       say(L('مرحباً، أنا عين الأعمى.', 'Hello, this is Blind Eye.'), 'critical');
       // the on-device detector is heavy to load: start it only once everything else runs
@@ -591,7 +651,45 @@ const BlindEyeNavigatorInner: React.FC = () => {
           const go = b.side >= 0 ? L('اليسار', 'left') : L('اليمين', 'right');
           haptics.alert();
           say(L(`انتبه، ${b.m.label} أمامك بعد ${stepsText(b.along, 'ar')}. مُرّ من ${go}.`, `Careful, ${b.m.label} ahead in ${stepsText(b.along, 'en')}. Pass on the ${go}.`), 'directional');
+          return;
         }
+      }
+      const now = Date.now();
+      // pointing: the user turned the phone to a new direction and holds it there -> say what is there
+      const pt = pointRef.current;
+      if (Math.abs(angleDiff(map.heading, pt.h)) > 6) { pt.h = map.heading; pt.since = now; }
+      const settled = now - pt.since > 600;
+      const turnedEnough = pt.saidHeading == null || Math.abs(angleDiff(map.heading, pt.saidHeading)) >= 25;
+      if (settled && turnedEnough && !isSpeaking() && now - pt.saidAt > 1500 && map.objects.length) {
+        pt.saidAt = now;
+        pt.saidHeading = map.heading;
+        const ahead = objectsToward(map, 0, 20, 8);
+        if (ahead.length) {
+          const first = ahead[0];
+          const more = ahead[1] ? L(`، ثم ${ahead[1].label}`, `, then ${ahead[1].label}`) : '';
+          say(L(`أمامك ${first.label}، ${stepsText(map.rel(first).dist, 'ar')}${more}`, `Ahead: ${first.label}, ${stepsText(map.rel(first).dist, 'en')}${more}`), 'descriptive');
+        } else if (!objectsToward(map, 0, 30, 4).length) {
+          say(L('لا شيء أمامك في هذا الاتجاه', 'Nothing ahead in this direction'), 'descriptive');
+        }
+        return;
+      }
+      // walking past things: "الطاولة على يسارك الآن"
+      if (walking()) {
+        for (const m of map.objects) {
+          const r = map.rel(m);
+          if (r.dist > 1.6 || Math.abs(r.rel) < 60 || Math.abs(r.rel) > 120 || ['other', 'wall', 'rug', 'person'].includes(m.kind)) continue;
+          if (now - (sideSaidRef.current.get(m.id) ?? 0) < 15000) continue;
+          sideSaidRef.current.set(m.id, now);
+          say(L(`${m.label} ${r.rel > 0 ? 'على يمينك' : 'على يسارك'} الآن`, `${m.label} on your ${r.rel > 0 ? 'right' : 'left'} now`), 'descriptive');
+          return;
+        }
+      }
+      // after the scan, if the user says nothing, explain once what they can do
+      if (!idleHintRef.current && now - lastUserActRef.current > 15000 && !isSpeaking() && map.objects.length) {
+        idleHintRef.current = true;
+        const ex = map.highlights(1)[0]?.label ?? L('الباب', 'the door');
+        say(L(`وجّه الهاتف إلى أي اتجاه وسأخبرك بما فيه. أو قل: خذني إلى ${ex}. أو اضغط مرتين على الشاشة لتتحدث.`,
+          `Point the phone in any direction and I'll tell you what's there. Or say: take me to ${ex}. Or double-tap the screen to talk.`), 'descriptive');
       }
     }, 450);
     return () => window.clearInterval(id);
@@ -602,6 +700,48 @@ const BlindEyeNavigatorInner: React.FC = () => {
   useEffect(() => {
     if (phase !== 'scanning') return;
     const id = window.setInterval(bump, 300);
+    return () => window.clearInterval(id);
+  }, [phase]);
+
+  // natural voice: on, and the usual phrases fetched ahead
+  useEffect(() => {
+    enableNaturalVoice((text, lg) => fetchVoice(text, lg));
+    prefetchSpeech(COMMON_PHRASES[lang === 'ar' ? 'ar' : 'en'], lang);
+    return () => enableNaturalVoice(null);
+  }, [lang]);
+
+  // camera watchdog: if the picture stops (iPhone audio interruptions, a backgrounded tab, a
+  // dropped track), play it again, and if that doesn't help, reopen the camera
+  useEffect(() => {
+    if (phase !== 'guiding' && phase !== 'scanning') return;
+    let lastT = -1;
+    let stuck = 0;
+    let reopening = false;
+    const id = window.setInterval(async () => {
+      const v = videoRef.current;
+      const track = streamRef.current?.getVideoTracks()[0];
+      if (!v || reopening || document.hidden) return;
+      const ended = !track || track.readyState === 'ended';
+      const frozen = v.currentTime === lastT;
+      lastT = v.currentTime;
+      if (!ended && !frozen) { stuck = 0; return; }
+      stuck += 1;
+      if (!ended && stuck < 2) { v.play().catch(() => {}); return; }
+      if (stuck < 3 && !ended) return;
+      reopening = true;
+      try {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        const fresh = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        streamRef.current = fresh;
+        v.srcObject = fresh;
+        await withTimeout(v.play().then(() => true).catch(() => false), 3000, false);
+        stuck = 0;
+      } catch (e) {
+        console.warn('camera reopen failed', e);
+      } finally {
+        reopening = false;
+      }
+    }, 1000);
     return () => window.clearInterval(id);
   }, [phase]);
 
@@ -779,6 +919,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const handleVoiceInput = useCallback((txt: string) => {
     const text = txt.trim();
     if (!text) return;
+    lastUserActRef.current = Date.now();
     const targetLang = detectSwitchLang(text);
     if (targetLang && targetLang !== langRef.current) { switchLang(targetLang); return; }
     const map = mapRef.current;
@@ -893,13 +1034,18 @@ const BlindEyeNavigatorInner: React.FC = () => {
       handleVoiceRef.current(txt);
     };
     rec.onerror = (e: any) => { if (e?.error !== 'no-speech') console.warn('rec err', e?.error); };
+    // iPhone: an always-open microphone sends our speech to the quiet earpiece and can freeze the
+    // camera, so listen on demand there (double tap, the Speak button, or after a question).
+    rec.continuous = !IS_IOS;
     rec.onend = () => {
-      if (phaseRef.current === 'guiding' || phaseRef.current === 'scanning') {
-        try { rec.start(); } catch { /* restarting */ }
+      const active = phaseRef.current === 'guiding' || phaseRef.current === 'scanning';
+      if (active && !IS_IOS) {
+        // restart calmly (and not while we talk) instead of a tight loop
+        window.setTimeout(() => { try { rec.start(); } catch { /* running */ } }, isSpeaking() ? 1200 : 350);
       } else setListening(false);
     };
     recRef.current = rec;
-    if (phaseRef.current === 'guiding' || phaseRef.current === 'scanning') {
+    if (!IS_IOS && (phaseRef.current === 'guiding' || phaseRef.current === 'scanning')) {
       try { rec.start(); setListening(true); } catch { /* running */ }
     }
     return () => { try { rec.onend = null; rec.stop(); } catch { /* ignore */ } };
@@ -951,9 +1097,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
     if (now - lastTapRef.current < 360) {
       if (singleTapRef.current) { window.clearTimeout(singleTapRef.current); singleTapRef.current = null; }
       lastTapRef.current = 0;
-      vibrate([80, 50, 80]);
-      say(L('تحدث، أنا أستمع...', 'Speak, I am listening...'), 'critical');
-      try { recRef.current?.start(); setListening(true); } catch { /* already listening */ }
+      cancelAllSpeech();
+      listenOnce();
     } else {
       lastTapRef.current = now;
       if (singleTapRef.current) window.clearTimeout(singleTapRef.current);
@@ -975,7 +1120,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <video ref={videoRef} playsInline muted className={eyesOff ? 'absolute w-0 h-0 opacity-0' : 'absolute inset-0 w-full h-full object-cover'} />
+      <video ref={videoRef} playsInline muted autoPlay className="absolute inset-0 w-full h-full object-cover" />
       <canvas ref={captureCanvasRef} className="hidden" />
 
       {/* start: one tap anywhere (needed for camera, compass, sound and speech on phones) */}
@@ -1145,7 +1290,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
       )}
 
       {eyesOff && phase === 'guiding' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black p-6 text-center">
           <div className="text-xl opacity-80">{ar ? 'الشاشة مطفأة لتوفير البطارية' : 'Screen off to save battery'}</div>
           <div className="mt-2 text-sm opacity-60">{ar ? 'الإرشاد الصوتي يعمل' : 'Voice guidance is running'}</div>
           {instr && <div className="mt-6 text-2xl font-bold">{instr.text}</div>}
@@ -1180,7 +1325,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
               { key: 'read', icon: FileText, label: ar ? 'اقرأ النص' : 'Read', on: () => askVision('ocr'), active: busy === 'read' },
               {
                 key: 'speak', icon: Mic, label: listening ? (ar ? 'أسمعك' : 'Listening') : (ar ? 'تحدث' : 'Speak'),
-                on: () => { say(L('تحدث، أنا أستمع...', 'Speak, I am listening...'), 'critical'); try { recRef.current?.start(); setListening(true); } catch { /* listening */ } },
+                on: () => { cancelAllSpeech(); listenOnce(); },
                 active: listening,
               },
             ].map((b) => (

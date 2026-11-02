@@ -26,6 +26,9 @@ const HudOverlay: React.FC<Props> = ({ points, bestPath, showLabels = true, show
   const rafRef = useRef<number | null>(null);
   const phaseRef = useRef(0);
 
+  const propsRef = useRef({ points, bestPath, showLabels, showGrid });
+  propsRef.current = { points, bestPath, showLabels, showGrid };
+
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
@@ -40,6 +43,7 @@ const HudOverlay: React.FC<Props> = ({ points, bestPath, showLabels = true, show
     window.addEventListener('resize', resize);
 
     const draw = () => {
+      const { points, bestPath, showLabels, showGrid } = propsRef.current;
       const ctx = c.getContext('2d');
       if (!ctx) return;
       const W = c.width, H = c.height;
@@ -134,7 +138,7 @@ const HudOverlay: React.FC<Props> = ({ points, bestPath, showLabels = true, show
       window.removeEventListener('resize', resize);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [points, bestPath, showLabels, showGrid]);
+  }, []);
 
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />;
 };
