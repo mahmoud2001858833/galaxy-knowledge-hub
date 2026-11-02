@@ -134,7 +134,7 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('user_accessibility_settings').upsert({
+        const { error } = await supabase.from('user_accessibility_settings').upsert({
           user_id: user.id,
           accessibility_mode: newSettings.accessibilityMode,
           font_size: newSettings.fontSize,
@@ -146,7 +146,10 @@ export const AccessibilityProvider: React.FC<{ children: ReactNode }> = ({ child
           text_to_speech: newSettings.textToSpeech,
           reading_speed: newSettings.readingSpeed,
           preferred_voice: newSettings.preferredVoice,
-        });
+          // the row is unique per user_id (not per id): without this every save after the first one
+          // failed silently, so an old "read on hover" choice came back on every reload
+        }, { onConflict: 'user_id' });
+        if (error) console.warn('Error saving accessibility settings:', error.message);
       }
     } catch (error) {
       console.warn('Error saving accessibility settings:', error);

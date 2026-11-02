@@ -12,20 +12,30 @@ import { VoiceBrain, type BrainStatus } from './voiceBrain';
 import { runExperiment, type ExperimentResult } from './experiments';
 import ExperimentPanel from './ExperimentPanel';
 import BrainVisual from './BrainVisual';
-import { RISKY, click, findClickable, isNo, isYes, readScreen, scrollPage, typeInto } from './screenControl';
+import { RISKY, click, findClickable, isNo, isYes, readControls, readPageText, readScreen, scrollPage, setControl, typeInto } from './screenControl';
+import { SIMULATION_PAGES } from './simulationPages';
 
 type Mode = 'corner' | 'center' | 'docked';
 
 const ADMIN_PAGES = [
   { title: 'لوحة الإدارة', path: '/admin' },
   { title: 'مركز التحكم الأعلى', path: '/super-admin-control-hub' },
-  { title: 'الطرفية (Terminal)', path: '/admin?tab=terminal' },
+  { title: 'الطرفية التفاعلية (اكتب الأوامر هنا)', path: '/terminal' },
+  { title: 'صلاحيات الطرفية وطلبات الموافقة', path: '/admin?tab=terminal' },
 ];
+
+// commands that change accounts or delete things wait for the admin's yes
+const TERMINAL_RISKY = /(^|\s)(kill|revoke|ban|unban|grant|limit|rm|sudo|drop|delete|truncate|reset|shutdown|reboot|mv|chmod|chown)(\s|$)/i;
+
+type BrainTerminal = { type: (l: string) => void; busy: () => boolean; mode: () => string; read: (n?: number) => string };
+const term = () => (window as unknown as { __brainTerminal?: BrainTerminal }).__brainTerminal;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const allPages = () => [
   { title: 'الصفحة الرئيسية', path: '/' },
   ...CORE_SECTIONS.flatMap((s) => [{ title: s.title, path: s.path }, ...s.pages.map((p) => ({ title: p.title, path: p.path }))]),
   ...ADMIN_PAGES,
+  ...SIMULATION_PAGES,
 ];
 
 const STATUS_AR: Record<BrainStatus, string> = {
@@ -78,7 +88,7 @@ function Orb() {
   const [aiLine, setAiLine] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<{ label: string } | null>(null);
-  const pendingRef = useRef<{ label: string; run: () => void } | null>(null);
+  const pendingRef = useRef<{ label: string; run: () => unknown } | null>(null);
   const brainRef = useRef<VoiceBrain | null>(null);
   const [experiment, setExperiment] = useState<ExperimentResult | null>(null);
   const [typed, setTyped] = useState('');
@@ -101,7 +111,7 @@ function Orb() {
 
   useEffect(() => { if (mode === 'center') setArrivals((n) => n + 1); }, [mode]);
 
-  const setPendingAction = (p: { label: string; run: () => void } | null) => {
+  const setPendingAction = (p: { label: string; run: () => unknown } | null) => {
     pendingRef.current = p;
     setPending(p ? { label: p.label } : null);
   };
@@ -111,8 +121,12 @@ function Orb() {
     if (!p) return;
     setPendingAction(null);
     setMode('docked');
-    p.run();
-    void brainRef.current?.ask(`[النظام] المدير أكّد${viaVoice ? ' بصوته' : ''}، وتم تنفيذ: ${p.label}. أخبريه باختصار.`);
+    void (async () => {
+      let result: unknown;
+      try { result = await p.run(); } catch (e) { result = { ok: false, error: String(e) }; }
+      const extra = result === undefined ? '' : ` النتيجة: ${JSON.stringify(result).slice(0, 1500)}`;
+      void brainRef.current?.ask(`[النظام] المدير أكّد${viaVoice ? ' بصوته' : ''}، ونُفّذ: ${p.label}.${extra} أخبريه باختصار.`);
+    })();
   }, []);
 
   const cancelPending = useCallback((viaVoice: boolean) => {
@@ -156,6 +170,77 @@ function Orb() {
       case 'type_into':
         setMode('docked');
         return typeInto(String(args.field ?? ''), String(args.text ?? ''), Boolean(args.submit));
+      case 'read_controls':
+        return readControls();
+      case 'set_control': {
+        setMode('docked');
+        return setControl(args.control as string, args.value as string);
+      }
+      case 'read_page_text':
+        return readPageText();
+      case 'send_team_message': {
+        const text = String(args.text ?? '').trim();
+        if (!text) return { ok: false, error: 'empty message' };
+        const to = String(args.to ?? '').trim();
+        let recipient: { user_id: string; name: string } | null = null;
+        if (to && !/^(الكل|الجميع|المجموعه|المجموعة|الفريق|all|group)$/i.test(to)) {
+          const { data: members, error } = await supabase.from('team_members').select('user_id, display_name, email');
+          if (error) return { ok: false, error: error.message };
+          const w = to.toLowerCase();
+          const m = (members ?? []).find((x) => (x.display_name ?? '').toLowerCase().includes(w) || x.email.toLowerCase().includes(w));
+          if (!m) return { ok: false, error: `ما في عضو بالفريق اسمه ${to}`, members: (members ?? []).map((x) => x.display_name || x.email) };
+          recipient = { user_id: m.user_id, name: m.display_name || m.email };
+        }
+        const label = recipient ? `إرسال رسالة خاصة إلى ${recipient.name}: «${text.slice(0, 80)}»` : `إرسال رسالة لمجموعة الفريق: «${text.slice(0, 80)}»`;
+        setMode('center');
+        setPendingAction({
+          label,
+          run: async () => {
+            const { error } = await supabase.from('team_messages').insert({ body: text, recipient_id: recipient?.user_id ?? null });
+            return error ? { ok: false, error: error.message } : { ok: true, sent: true };
+          },
+        });
+        return { needs_confirmation: true, action: label };
+      }
+      case 'terminal_run': {
+        const command = String(args.command ?? '').trim();
+        if (!command) return { ok: false, error: 'empty command' };
+        if (!term()) {
+          setMode('docked');
+          navigate('/terminal');
+          for (let i = 0; i < 40 && !term(); i++) await sleep(250);
+          if (!term()) return { ok: false, error: 'الطرفية ما فتحت', screen: readPageText(1200) };
+          await sleep(800);
+        }
+        const exec = async () => {
+          const t = term();
+          if (!t) return { ok: false, error: 'terminal closed' };
+          for (let i = 0; i < 40 && t.busy(); i++) await sleep(250);
+          t.type(command);
+          // wait for the output to settle (agents keep streaming; report what is there after ~25 s)
+          let last = '', still = 0;
+          for (let i = 0; i < 100; i++) {
+            await sleep(250);
+            const now = t.read(40);
+            still = now === last ? still + 1 : 0;
+            last = now;
+            if (!t.busy() && still >= 3) break;
+          }
+          return { ok: true, busy: t.busy(), mode: t.mode(), output: t.read(40).slice(-3000) };
+        };
+        if (TERMINAL_RISKY.test(command)) {
+          const label = `تنفيذ أمر بالطرفية: ${command.slice(0, 80)}`;
+          setMode('center');
+          setPendingAction({ label, run: exec });
+          return { needs_confirmation: true, action: label };
+        }
+        setMode('docked');
+        return exec();
+      }
+      case 'terminal_read': {
+        const t = term();
+        return t ? { ok: true, busy: t.busy(), mode: t.mode(), output: t.read(Number(args.lines) || 40).slice(-3500) } : { ok: false, error: 'الطرفية مش مفتوحة؛ استعملي terminal_run' };
+      }
       case 'run_experiment': {
         const res = runExperiment(String(args.experiment ?? ''), (args.params ?? {}) as Record<string, unknown>);
         if (!res) return { ok: false, error: 'unknown experiment' };

@@ -122,7 +122,7 @@ export class VoiceBrain {
     if (!text.startsWith('[النظام]')) this.o.onTurn?.('user', text);
     this.o.onError(null);
     try {
-      for (let round = 0; round < 6 && this.alive; round++) {
+      for (let round = 0; round < 10 && this.alive; round++) {
         const res = await this.call({ messages: this.history, pages: this.o.pages(), current: location.pathname + location.search });
         if (Array.isArray(res.added)) this.history.push(...res.added);
         if (res.took) console.info('[admin-brain] round', round, res.took);

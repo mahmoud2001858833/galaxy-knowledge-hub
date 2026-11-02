@@ -27,7 +27,7 @@ function Chart({ res }: { res: ExperimentResult }) {
   const X = (v: number) => L + ((v - x0) / (x1 - x0 || 1)) * (W - L - R);
   const Y = (v: number) => H - B - ((v - y0) / (y1 - y0)) * (H - T - B);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" dir="ltr" role="img" aria-label={res.title}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ direction: "ltr" }} role="img" aria-label={res.title}>
       {niceTicks(y0, y1).map((t) => (
         <g key={`y${t}`}>
           <line x1={L} x2={W - R} y1={Y(t)} y2={Y(t)} stroke="hsl(var(--border))" strokeWidth={1} />

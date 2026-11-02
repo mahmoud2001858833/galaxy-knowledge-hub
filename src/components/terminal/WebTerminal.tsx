@@ -510,6 +510,21 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     feedRef.current = feed;
     const sub = term.onData(feed);
 
+    // The admin's central AI (العقل المركزي) types here exactly like a person would: the line shows in
+    // this terminal and runs with the signed-in user's own terminal permissions (checked server side).
+    const brainHook = {
+      type: (line: string) => { feed(line); feed('\r'); },
+      busy: () => state.current.busy,
+      mode: () => state.current.mode,
+      read: (n = 40) => {
+        const b = term.buffer.active;
+        const lines: string[] = [];
+        for (let i = Math.max(0, b.length - n); i < b.length; i++) lines.push(b.getLine(i)?.translateToString(true) ?? '');
+        return lines.join('\n').trim();
+      },
+    };
+    (window as unknown as { __brainTerminal?: typeof brainHook }).__brainTerminal = brainHook;
+
     const ro = new ResizeObserver(() => {
       try {
         fit.fit();
@@ -524,6 +539,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
 
     return () => {
+      const w = window as unknown as { __brainTerminal?: typeof brainHook };
+      if (w.__brainTerminal === brainHook) delete w.__brainTerminal;
       sub.dispose();
       ro.disconnect();
       mo.disconnect();

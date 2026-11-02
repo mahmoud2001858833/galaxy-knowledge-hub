@@ -198,26 +198,49 @@ const TOOLS = [
   fn("read_screen", "See the title, headings, buttons, links and inputs on the admin's screen right now."),
   fn("click_element", "Click a button/link/tab by its visible text. Deleting, publishing, sending or paying waits for the admin's confirmation.", { text: { type: "string" } }, ["text"]),
   fn("type_into", "Type into an input identified by its label or placeholder.", { field: { type: "string" }, text: { type: "string" }, submit: { type: "boolean" } }, ["field", "text"]),
+  fn("read_controls", "List the sliders, number boxes, selects, switches and tabs on the current page (an experiment's variables) with their current values and ids.")
+  ,fn("set_control", "Change one control on the current page: a slider/number to a value, a select to an option, a switch on/off, or open a tab. Use the id or name from read_controls.", {
+    control: { type: "string", description: "id (number) or name from read_controls" },
+    value: { type: "string", description: "number, option text, or on/off (ignored for tabs)" },
+  }, ["control"]),
+  fn("read_page_text", "Read the visible text of the current page: results, readouts, explanations. Use it after changing an experiment to explain what happened."),
+  fn("send_team_message", "Send a message in the team chat (team_messages), to the whole group or privately to one member. Waits for the admin's confirmation.", {
+    text: { type: "string" }, to: { type: "string", description: "member name or email; empty = the whole team group" },
+  }, ["text"]),
+  fn("terminal_run", "Type a command into the platform's real terminal (/terminal, opened automatically) as the admin and return its output. Examples: 'help', 'stats', 'users', 'db tables', 'antigravity <task>', 'claude <task>', 'sh <shell command>'. Account-changing or deleting commands wait for confirmation.", {
+    command: { type: "string" },
+  }, ["command"]),
+  fn("terminal_read", "Read the latest lines of the terminal (e.g. while an agent is still working).", { lines: { type: "number" } }),
   fn("run_experiment", "Run a real scientific simulation (computed with physics/chemistry/biology equations) and show the admin its chart and results.", {
     experiment: { type: "string", enum: ["projectile", "pendulum", "free_fall_drag", "ohms_law", "radioactive_decay", "ideal_gas", "spring_oscillator", "titration", "population_growth", "galvanic_cell"] },
     params: { type: "object", description: "Optional numeric parameters, e.g. {v0:20, angle:45} for projectile; {length:1} pendulum; {mass:70, drag:0.25} free_fall_drag; {voltage:12, resistance:10} ohms_law; {half_life:5, n0:1000} radioactive_decay; {moles:1, volume:0.0224} ideal_gas; {k:50, mass:2, amplitude:0.1, damping:0.3} spring_oscillator; {acid_conc:0.1, acid_volume:25, base_conc:0.1} titration; {r:0.4, K:1000, n0:10} population_growth; {anode:'Zn', cathode:'Cu', anode_conc:1, cathode_conc:1, temperature:298} galvanic_cell (electrochemical/chemical cell; metals: Li,K,Mg,Al,Zn,Fe,Ni,Sn,Pb,Cu,Ag,Au)" },
   }, ["experiment"]),
 ];
-const CLIENT_TOOLS = new Set(["navigate_to", "go_back", "scroll_page", "read_screen", "click_element", "type_into", "run_experiment"]);
+const CLIENT_TOOLS = new Set([
+  "navigate_to", "go_back", "scroll_page", "read_screen", "click_element", "type_into", "run_experiment",
+  "read_controls", "set_control", "read_page_text", "send_team_message", "terminal_run", "terminal_read",
+]);
 
 function systemPrompt(pages: { title: string; path: string }[], current: string) {
-  const list = pages.slice(0, 160).map((p) => `- ${p.title}: ${p.path}`).join("\n");
+  const list = pages.slice(0, 260).map((p) => `- ${p.title}: ${p.path}`).join("\n");
   const tables = Object.entries(CATALOG).map(([t, d]) => `- ${t}: ${d}`).join("\n");
   return `أنتِ "العقل المركزي" لمنصة ذروة العلم. تتحدثين فقط مع مدير المنصة، وكلامك سيُقرأ بصوت عالٍ.
 المدير رجل: خاطبيه دائماً بصيغة المذكّر (مثل: تفضّل، شو بدّك، جرّب).
 الشخصية: ذكية، دافئة، واثقة، سريعة البديهة. لهجة عربية طبيعية قريبة من الأردنية، جمل قصيرة كإنسان حقيقي، بلا مقدمات ولا تعداد طويل ولا رموز Markdown. أرقام قليلة ومهمة فقط. إذا تكلم بالإنجليزية فردّي بالإنجليزية.
 
-ما تستطيعين فعله:
-- معرفة كل ما يحدث في المنصة: platform_activity (ماذا حدث اليوم/هذا الأسبوع)، latest_conversations (آخر المحادثات)، read_table و count_rows (أي جدول)، find_user (أي مستخدم). استعمليها دائماً قبل الإجابة عن أي سؤال عن البيانات، ولا تخترعي أي رقم.
-- التحكم بشاشة المدير: "وديني على X" → navigate_to فوراً ثم جملة قصيرة. لتعرفي ما على الشاشة read_screen ثم click_element أو type_into.
-- التجارب العلمية: "اعمل تجربة/جرّب/احسب..." → run_experiment بقيم معقولة (أو قيم المدير)، ثم اشرحي النتيجة بجملتين من الأرقام التي رجعت.
-- إذا أرجعت أداة needs_confirmation فاسألي المدير عن التأكيد وانتظري ولا تعيدي المحاولة؛ النظام ينفذ عندما يؤكد.
-- لا تكشفي كلمات مرور أو مفاتيح. إذا لم تستطيعي فعل شيء قولي ذلك بصراحة.
+ما تستطيعين فعله (نفّذي بنفسك، لا تطلبي من المدير أن يفعل شيئاً تقدرين عليه):
+- معرفة كل ما يحدث في المنصة: platform_activity، latest_conversations، read_table و count_rows (أي جدول)، find_user. استعمليها قبل أي جواب عن البيانات ولا تخترعي أرقاماً.
+- التنقل والتحكم: navigate_to ثم read_screen، click_element، type_into، scroll_page.
+- التجارب على صفحات المنصة (صفحات "تجربة:" في القائمة): افتحي الصفحة بـ navigate_to، ثم read_controls لتري المتغيرات، ثم set_control لتغييرها (مثلاً الحرارة أو التركيز أو الزاوية)، ثم read_page_text لتقرئي النتيجة، واشرحي للمدير ماذا تغيّر ولماذا علمياً. إذا قال "غيّر/زيد/نقّص X" فغيّريه فوراً.
+- تجارب محسوبة بسرعة مع رسم: run_experiment.
+- رسائل الفريق: send_team_message (للمجموعة كلها أو لعضو). لا تحاولي الكتابة في صفحات أخرى لإرسال رسائل.
+- الطرفية: terminal_run يكتب الأمر في الطرفية الحقيقية بصلاحيات المدير. أوامرها: help، stats، users، sessions، db health|tables|migrations، logs، quota؛ و "antigravity <المهمة بالتفصيل>" لتكليف Antigravity، و "claude <المهمة>" لتكليف Claude، و "sh <أمر>" لأوامر الجهاز. بعد تكليف وكيل استعملي terminal_read لمتابعة رده. أي تعديل كود يحتاج موافقة المدير من /admin?tab=terminal قبل أن يُرفع.
+
+قواعد مهمة:
+- لا تقولي "تم" أو "ضغطت" إلا إذا أرجعت الأداة ok. إذا فشلت أداة جربي طريقة ثانية (read_screen، read_controls، أداة أخرى) قبل أن تسألي المدير، وقولي له بصدق ما الذي لم ينجح.
+- إذا أرجعت أداة needs_confirmation فاسألي المدير عن التأكيد بجملة واحدة وانتظري؛ النظام ينفذ عندما يؤكد.
+- لا ترفضي طلبات المدير العادية (صور، نصوص، مواضيع عامة)؛ أنت مساعدته الكاملة. الرفض فقط لما يضر أحداً.
+- لا تكشفي كلمات مرور أو مفاتيح.
 
 الصفحة الحالية: ${current}
 صفحات المنصة:
@@ -266,7 +289,7 @@ async function gateway(messages: unknown[]) {
           method: "POST",
           headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 800, temperature: 0.6,
+            model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 1000, temperature: 0.6,
             // gpt-oss on Groq: little hidden reasoning = answers in well under a second
             ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
           }),
@@ -313,7 +336,7 @@ async function chat(body: any) {
   timing.ms = [];
   timing.provider = undefined;
   const took = () => ({ provider: timing.provider, model_ms: timing.ms, total_ms: Date.now() - t0 });
-  for (let round = 0; round < 6 && Date.now() - t0 < 90_000; round++) {
+  for (let round = 0; round < 8 && Date.now() - t0 < 90_000; round++) {
     const msg = await gateway([{ role: "system", content: systemPrompt(pages, current) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
