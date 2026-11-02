@@ -38,6 +38,7 @@ export class VoiceBrain {
   private audio: HTMLAudioElement | null = null;
   private stopSpeech: (() => void) | null = null;
   private busy = false;
+  private gen = 0;
 
   constructor(private o: Opts) {}
 
@@ -69,81 +70,74 @@ export class VoiceBrain {
   }
 
   // ---------- ears ----------
-  // Continuous recognition: she keeps listening while you pause to think, and only answers after
-  // ~1.6 s of silence once you have said something (Chrome alone would cut you off at the first pause).
-  private bargeText = '';
+  // ONE speech recogniser stays on for the whole conversation (Chrome allows only one at a time):
+  //  - while she talks, what it hears is compared with her own sentence: her echo from the speakers
+  //    is ignored, real words from the admin stop her at once;
+  //  - it keeps collecting while the admin pauses to think, and sends only after ~1.6 s of silence.
+  private consumed = 0;      // results of the current recognition session already used/ignored
+  private collected = '';    // what the admin said that hasn't been sent yet
+  private silence = 0;
+  private spoken = new Set<string>(); // words of the sentence she is saying now
+  private echoUntil = 0;             // her words can still arrive late for a moment after she stops
 
   private listen() {
-    if (!this.alive || this.busy) return;
-    this.set('listening');
+    if (!this.alive) return;
+    if (!this.busy) this.set('listening');
+    this.ensureRecognition();
+  }
+
+  private ensureRecognition() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return; // typing only
-    if (this.recActive) return;
+    if (!SR || this.recActive || !this.alive) return;
     const rec = new SR();
     rec.lang = 'ar-JO';
     rec.interimResults = true;
     rec.continuous = true;
     rec.maxAlternatives = 1;
-    let finalText = this.bargeText ? this.bargeText + ' ' : '';
-    this.bargeText = '';
-    let interim = '';
-    let silence = 0;
-    const finish = () => { window.clearTimeout(silence); try { rec.stop(); } catch { /* ended */ } };
-    if (finalText) silence = window.setTimeout(finish, 2500);
+    this.consumed = 0;
     rec.onresult = (e: any) => {
-      interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      let fin = '', inter = '', lastFinal = this.consumed;
+      for (let i = this.consumed; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += t + ' '; else interim += t;
+        if (e.results[i].isFinal) { fin += t + ' '; lastFinal = i + 1; } else inter += t;
       }
-      this.o.onCaption('user', (finalText + interim).trim());
-      window.clearTimeout(silence);
-      silence = window.setTimeout(finish, interim ? 2000 : 1600);
+      const text = (fin + inter).trim();
+      if (!text) return;
+      if (this.status === 'speaking' || Date.now() < this.echoUntil) {
+        const words = normWords(text);
+        const foreign = words.filter((w) => !this.spoken.has(w));
+        const isEcho = foreign.length < 2 || foreign.length / Math.max(1, words.length) < 0.5;
+        if (isEcho) { this.consumed = lastFinal; return; } // her own voice: drop it
+        this.stopSpeech?.(); // the admin is talking: stop at once and listen
+      }
+      this.consumed = lastFinal;
+      if (fin) this.collected += fin;
+      const now = (this.collected + inter).trim();
+      this.o.onCaption('user', now);
+      if (this.status !== 'speaking' && this.status !== 'thinking') this.set('listening');
+      window.clearTimeout(this.silence);
+      this.silence = window.setTimeout(() => this.flush(inter), inter ? 2000 : 1600);
     };
-    rec.onerror = () => { /* no-speech / aborted: onend restarts */ };
+    rec.onerror = (ev: any) => { if (ev?.error === 'not-allowed') this.o.onError('المتصفح منع الميكروفون. اسمح له من أيقونة القفل جنب الرابط.'); };
     rec.onend = () => {
-      window.clearTimeout(silence);
       this.recActive = false;
       this.rec = null;
-      const text = (finalText + interim).trim();
-      if (text) this.heard(text);
-      else if (this.alive && !this.busy && this.status === 'listening') window.setTimeout(() => this.listen(), 250);
+      // Chrome ends sessions on its own after a while: start again right away
+      if (this.alive) window.setTimeout(() => this.ensureRecognition(), 150);
     };
-    try { rec.start(); this.rec = rec; this.recActive = true; } catch { /* already started */ }
+    try { rec.start(); this.rec = rec; this.recActive = true; } catch { /* busy: onend retries */ }
   }
 
-  /**
-   * While she talks, a second recogniser listens for the admin. Words that are just her own voice
-   * coming back through the speakers are ignored; real words from the admin stop her at once and
-   * are kept as the start of what he is saying.
-   */
-  private watchForBargeIn(spoken: string, stop: () => void) {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return () => {};
-    const mine = new Set(normWords(spoken));
-    const rec = new SR();
-    rec.lang = 'ar-JO';
-    rec.interimResults = true;
-    rec.continuous = true;
-    let active = true;
-    rec.onresult = (e: any) => {
-      let heard = '';
-      for (let i = 0; i < e.results.length; i++) heard += e.results[i][0].transcript + ' ';
-      const words = normWords(heard);
-      const foreign = words.filter((w) => !mine.has(w));
-      if (foreign.length >= 2 && foreign.length / words.length >= 0.5) {
-        this.bargeText = heard.trim();
-        active = false;
-        try { rec.abort(); } catch { /* ignore */ }
-        stop();
-      }
-    };
-    rec.onend = () => { if (active && this.alive && this.status === 'speaking') { try { rec.start(); } catch { /* ignore */ } } };
-    try { rec.start(); } catch { /* mic busy */ }
-    return () => { active = false; try { rec.abort(); } catch { /* ignore */ } };
+  private flush(pendingInterim: string) {
+    const text = (this.collected + pendingInterim).trim();
+    this.collected = '';
+    if (pendingInterim) this.consumed += 1; // that interim result is used now
+    if (text) this.heard(text);
   }
 
   private stopListening() {
+    // kept for close(): the recogniser otherwise stays on during the whole conversation
+    window.clearTimeout(this.silence);
     try { this.rec?.abort(); } catch { /* ignore */ }
     this.rec = null;
     this.recActive = false;
@@ -157,7 +151,7 @@ export class VoiceBrain {
   /** Typed input, or a system note from the UI (e.g. "the admin confirmed X"). */
   async ask(text: string) {
     if (!this.alive) return;
-    this.stopListening();
+    const gen = ++this.gen; // a newer request (e.g. he interrupted) cancels this one
     this.interrupt();
     this.busy = true;
     this.set('thinking');
@@ -165,8 +159,9 @@ export class VoiceBrain {
     if (!text.startsWith('[النظام]')) this.o.onTurn?.('user', text);
     this.o.onError(null);
     try {
-      for (let round = 0; round < 10 && this.alive; round++) {
+      for (let round = 0; round < 10 && this.alive && gen === this.gen; round++) {
         const res = await this.call({ messages: this.history, pages: this.o.pages(), current: location.pathname + location.search });
+        if (gen !== this.gen) return;
         if (Array.isArray(res.added)) this.history.push(...res.added);
         if (res.took) console.info('[admin-brain] round', round, res.took);
         if (res.client_calls?.length) {
@@ -181,7 +176,7 @@ export class VoiceBrain {
           continue;
         }
         const reply = String(res.reply ?? '').trim();
-        if (reply) await this.say(reply);
+        if (reply && gen === this.gen) await this.say(reply);
         break;
       }
     } catch (e) {
@@ -190,8 +185,10 @@ export class VoiceBrain {
       this.o.onError(`خطأ: ${why}`);
       await this.say('صار عندي خلل بالاتصال، جرّب كمان مرة.');
     } finally {
-      this.busy = false;
-      this.listen();
+      if (gen === this.gen) {
+        this.busy = false;
+        this.listen();
+      }
     }
   }
 
@@ -214,8 +211,17 @@ export class VoiceBrain {
     if (!this.alive || !text) return;
     this.o.onCaption('ai', text);
     this.o.onTurn?.('ai', text);
-    this.stopListening();
+    this.spoken = new Set(normWords(text));
     this.set('speaking');
+    this.ensureRecognition();
+    try {
+      await this.speakOut(text);
+    } finally {
+      this.echoUntil = Date.now() + 1200;
+    }
+  }
+
+  private async speakOut(text: string) {
     try {
       if (Date.now() < this.serverVoiceOffUntil) throw new Error('server voice unavailable');
       const r = await fetch(FN_URL, {
@@ -230,7 +236,7 @@ export class VoiceBrain {
       }
       const url = URL.createObjectURL(await r.blob());
       if (!this.alive) return;
-      await this.play(url, text);
+      await this.play(url);
       URL.revokeObjectURL(url);
     } catch (e) {
       console.warn('admin brain voice', e);
@@ -240,7 +246,7 @@ export class VoiceBrain {
   }
   private serverVoiceOffUntil = 0;
 
-  private play(url: string, text: string) {
+  private play(url: string) {
     return new Promise<void>((resolve) => {
       const a = new Audio(url);
       this.audio = a;
@@ -254,15 +260,7 @@ export class VoiceBrain {
           void this.ctx.resume();
         }
       } catch { /* level meter optional */ }
-      let loud = 0;
-      // barge-in: if the admin starts talking over her, she stops and listens
-      const watch = window.setInterval(() => {
-        const mic = this.micLevel(), out = this.outLevel();
-        loud = mic > 0.32 && mic > out * 0.9 + 0.12 ? loud + 1 : 0;
-        if (loud >= 4) this.stopSpeech?.();
-      }, 70);
-      const unwatch = this.watchForBargeIn(text, () => this.stopSpeech?.());
-      const done = () => { window.clearInterval(watch); unwatch(); this.stopSpeech = null; this.audio = null; resolve(); };
+      const done = () => { this.stopSpeech = null; this.audio = null; resolve(); };
       this.stopSpeech = () => { a.pause(); done(); };
       a.onended = done;
       a.onerror = done;
@@ -281,8 +279,7 @@ export class VoiceBrain {
       // only a male Arabic voice installed (e.g. macOS "Majed"): raise the pitch so it sounds softer
       u.pitch = isFemale ? 1.05 : 1.6;
       u.rate = 1.0;
-      const unwatch = this.watchForBargeIn(text, () => this.stopSpeech?.());
-      const done = () => { unwatch(); this.stopSpeech = null; resolve(); };
+      const done = () => { this.stopSpeech = null; resolve(); };
       this.stopSpeech = () => { synth.cancel(); done(); };
       u.onend = done;
       u.onerror = done;
@@ -306,8 +303,6 @@ export class VoiceBrain {
     for (let i = 0; i < buf.length; i++) s += buf[i];
     return Math.min(1, s / buf.length / 90);
   }
-  private micLevel() { return this.read(this.inAnalyser); }
-  private outLevel() { return this.read(this.outAnalyser); }
 
   /** 0..1 loudness of whoever is talking (for the orb's pulse). */
   level(): number {

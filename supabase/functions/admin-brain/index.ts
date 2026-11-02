@@ -481,10 +481,25 @@ async function speakGroq(text: string): Promise<Uint8Array> {
   throw new Error("groq tts failed");
 }
 
+// The exact Blind Eye girl: OpenAI's own gpt-4o-mini-tts "nova" with the same style, paid by a
+// direct OpenAI key (ADMIN_BRAIN_OPENAI_KEY) instead of Lovable credit. Same model, same voice.
+async function speakOpenAI(text: string): Promise<Uint8Array> {
+  const key = Deno.env.get("ADMIN_BRAIN_OPENAI_KEY");
+  if (!key) throw new Error("no openai key");
+  const r = await fetch("https://api.openai.com/v1/audio/speech", {
+    signal: AbortSignal.timeout(20_000),
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: VOICE, input: text, instructions: VOICE_STYLE, response_format: "wav" }),
+  });
+  if (!r.ok) throw new Error(`openai tts ${r.status}: ${(await r.text()).slice(0, 120)}`);
+  return new Uint8Array(await r.arrayBuffer());
+}
+
 const ttsSkip = new Map<string, number>();
 async function speak(text: string) {
   const errors: string[] = [];
-  for (const [name, fn] of [["lovable", speakGateway], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
+  for (const [name, fn] of [["openai", speakOpenAI], ["lovable", speakGateway], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
     if ((ttsSkip.get(name) ?? 0) > Date.now()) continue;
     try { return await fn(text); } catch (e) {
       errors.push(`${name}: ${String(e).slice(0, 120)}`);
