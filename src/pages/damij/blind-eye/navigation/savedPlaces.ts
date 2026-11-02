@@ -15,18 +15,28 @@ const EMERGENCY_KEY = 'damij.blindEye.emergencyPhone.v1';
 
 // Common synonyms users might say → canonical name.
 const PLACE_SYNONYMS: Array<[RegExp, string]> = [
-  [/\b(البيت|بيتي|المنزل|الدار)\b/, 'البيت'],
-  [/\b(المدرسة|مدرستي)\b/, 'المدرسة'],
-  [/\b(الجامعة|جامعتي)\b/, 'الجامعة'],
-  [/\b(العمل|الشغل|المكتب)\b/, 'العمل'],
-  [/\b(المسجد|الجامع)\b/, 'المسجد'],
-  [/\b(الصيدلية|الصيدليه)\b/, 'الصيدلية'],
-  [/\b(المستشفى|المستشفي|المشفى)\b/, 'المستشفى'],
-  [/\b(السوبر ?ماركت|البقالة|الدكان|السوبرماركت)\b/, 'البقالة'],
+  [/(البيت|بيتي|المنزل|الدار|بيتنا|دارنا)/, 'البيت'],
+  [/(المدرسة|مدرستي)/, 'المدرسة'],
+  [/(الجامعة|جامعتي)/, 'الجامعة'],
+  [/(العمل|الشغل|المكتب)/, 'العمل'],
+  [/(المسجد|الجامع)/, 'المسجد'],
+  [/(الصيدلية|الصيدليه)/, 'الصيدلية'],
+  [/(المستشفى|المستشفي|المشفى)/, 'المستشفى'],
+  [/(السوبر ?ماركت|البقالة|الدكان|السوبرماركت)/, 'البقالة'],
 ];
 
+/** "عالبيت" / "للمدرسة" / "ع البيت" -> "البيت" / "المدرسة" (attached Levantine prepositions). */
+export function stripPlacePrefix(raw: string): string {
+  return (raw || '').trim()
+    .replace(/^(?:إلى|الى|على|عند|لعند)\s+/, '')
+    .replace(/^(?:ع|عَ)\s+/, '')
+    .replace(/^(?:عال|عل|علال)(?=\S{2,})/, 'ال')
+    .replace(/^لل(?=\S{2,})/, 'ال')
+    .trim();
+}
+
 export function canonicalizePlaceName(raw: string): string {
-  const t = (raw || '').trim();
+  const t = stripPlacePrefix(raw);
   for (const [rx, name] of PLACE_SYNONYMS) if (rx.test(t)) return name;
   return t;
 }

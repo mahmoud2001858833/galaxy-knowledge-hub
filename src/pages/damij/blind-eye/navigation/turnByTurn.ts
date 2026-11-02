@@ -29,33 +29,35 @@ const MODIFIER_AR: Record<string, string> = {
   'uturn': 'استدر للخلف',
 };
 
-function maneuverToAr(type: string, modifier: string | undefined, name: string | undefined, distance: number): string {
-  const street = name && name.trim() ? ` في ${name}` : '';
-  const dist = distance >= 1000 ? `${(distance / 1000).toFixed(1)} كم` : `${Math.round(distance)} متر`;
+/** What to do AT the maneuver point (said when the user reaches it, or ahead of it with "بعد X متر"). */
+function maneuverToAr(type: string, modifier: string | undefined, name: string | undefined): string {
+  const street = name && name.trim() ? ` إلى ${name}` : '';
   const mod = modifier ? (MODIFIER_AR[modifier] || modifier) : '';
-
   switch (type) {
-    case 'depart':       return `ابدأ السير${street}، بعد ${dist}`;
+    case 'depart':       return `ابدأ السير${name && name.trim() ? ` في ${name}` : ''}`;
     case 'arrive':       return `وصلت إلى وجهتك`;
-    case 'turn':         return `بعد ${dist} انعطف ${mod}${street}`;
-    case 'new name':     return `استمر${street} لمسافة ${dist}`;
-    case 'continue':     return `استمر ${mod || 'مباشرة'}${street} لمسافة ${dist}`;
+    case 'turn':         return modifier === 'uturn' ? 'استدر للخلف' : `انعطف ${mod}${street}`;
+    case 'new name':     return `استمر${street}`;
+    case 'continue':     return `استمر ${mod || 'مباشرة'}${street}`;
     case 'merge':        return `اندمج ${mod}${street}`;
     case 'on ramp':      return `اسلك المنحدر ${mod}${street}`;
     case 'off ramp':     return `اخرج من المنحدر ${mod}${street}`;
     case 'fork':         return `عند التفرع، خذ ${mod}${street}`;
     case 'roundabout':
-    case 'rotary':       return `ادخل الدوار واخرج ${mod || ''}${street}`;
-    case 'roundabout turn': return `في الدوار، انعطف ${mod}${street}`;
+    case 'rotary':       return `عند الدوار، تابع ${mod || ''}${street}`;
+    case 'roundabout turn': return `عند الدوار، انعطف ${mod}${street}`;
     case 'end of road':  return `في نهاية الطريق انعطف ${mod}${street}`;
-    default:             return `بعد ${dist} ${mod || 'استمر'}${street}`;
+    default:             return `${mod || 'استمر'}${street}`;
   }
 }
+
+const distAr = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(1)} كيلومتر` : `${Math.max(5, Math.round(m / 5) * 5)} متر`);
 
 export async function fetchRoute(from: LatLng, to: LatLng): Promise<Route | null> {
   try {
     const url =
-      `https://router.project-osrm.org/route/v1/foot/` +
+      // the public router.project-osrm.org only serves CAR routes whatever the profile says
+      `https://routing.openstreetmap.de/routed-foot/route/v1/foot/` +
       `${from.lng},${from.lat};${to.lng},${to.lat}` +
       `?steps=true&overview=false&alternatives=false`;
     const r = await fetch(url);
@@ -73,7 +75,7 @@ export async function fetchRoute(from: LatLng, to: LatLng): Promise<Route | null
       return {
         location: loc,
         distance: s.distance ?? 0,
-        instruction: maneuverToAr(s.maneuver?.type ?? 'continue', s.maneuver?.modifier, s.name, s.distance ?? 0),
+        instruction: maneuverToAr(s.maneuver?.type ?? 'continue', s.maneuver?.modifier, s.name),
         type: s.maneuver?.type ?? 'continue',
         modifier: s.maneuver?.modifier,
         name: s.name,
@@ -91,12 +93,23 @@ export async function fetchRoute(from: LatLng, to: LatLng): Promise<Route | null
 
 export type TurnByTurnState = {
   route: Route;
-  currentIdx: number;
-  lastSpokenDistanceMark: number; // meters remaining; we announce every 100m
+  currentIdx: number;              // next maneuver the user has not reached yet
+  lastSpokenDistanceMark: number;  // meters remaining; we announce every 100m
+  preAnnounced: number;            // index of the maneuver already announced ahead of time
 };
 
 export function makeNavState(route: Route): TurnByTurnState {
-  return { route, currentIdx: 0, lastSpokenDistanceMark: Number.POSITIVE_INFINITY };
+  // step 0 is "depart" at the start point: it is spoken when navigation starts
+  return { route, currentIdx: Math.min(1, route.steps.length - 1), lastSpokenDistanceMark: Number.POSITIVE_INFINITY, preAnnounced: -1 };
+}
+
+/** First sentence when navigation starts: how to begin and what comes first. */
+export function firstInstruction(route: Route): string {
+  const s0 = route.steps[0];
+  const s1 = route.steps[1];
+  if (!s0) return '';
+  if (!s1 || s1.type === 'arrive') return `${s0.instruction}، الوجهة بعد ${distAr(s0.distance)}`;
+  return `${s0.instruction}، وبعد ${distAr(s0.distance)} ${s1.instruction}`;
 }
 
 export type NavTick = {
@@ -107,37 +120,49 @@ export type NavTick = {
 
 /**
  * Call on every GPS update. Returns optional speech and remaining distance.
- * - Announces the next maneuver when within ~20m of it.
- * - Announces remaining distance every 100m (not on every update).
+ * - Says "بعد 40 متر انعطف يميناً" ahead of a maneuver, then "انعطف يميناً" on reaching it.
+ * - Phone GPS is often 10-30 m off: the reach radius follows the reported accuracy, and if the user
+ *   is already closer to a later maneuver we skip the ones they passed instead of getting stuck.
  */
-export function advanceStep(state: TurnByTurnState, userPos: LatLng): NavTick {
+export function advanceStep(state: TurnByTurnState, userPos: LatLng, accuracy = 15): NavTick {
   const steps = state.route.steps;
-  if (state.currentIdx >= steps.length) {
-    return { arrived: true, remainingMeters: 0 };
+  if (state.currentIdx >= steps.length) return { arrived: true, remainingMeters: 0 };
+
+  // skip maneuvers that were passed without coming close enough (look up to 3 ahead)
+  let idx = state.currentIdx;
+  let d = haversine(userPos, steps[idx].location);
+  for (let j = idx + 1; j < Math.min(steps.length, idx + 4); j++) {
+    const dj = haversine(userPos, steps[j].location);
+    if (dj < d && dj < 60) { idx = j; d = dj; }
   }
-  const target = steps[state.currentIdx];
-  const distToManeuver = haversine(userPos, target.location);
+  state.currentIdx = idx;
+  const target = steps[idx];
+  const reach = Math.max(15, Math.min(35, accuracy));
 
-  // Total remaining: distance to current maneuver + sum of subsequent step distances.
-  let remaining = distToManeuver;
-  for (let i = state.currentIdx; i < steps.length; i++) remaining += steps[i].distance;
+  // remaining = to the next maneuver + the legs after it (step i's distance is the leg AFTER maneuver i)
+  let remaining = d;
+  for (let i = idx; i < steps.length; i++) remaining += steps[i].distance;
 
-  let speak: string | undefined;
-
-  if (distToManeuver < 18) {
-    speak = target.instruction;
+  if (d < reach) {
     state.currentIdx += 1;
     if (target.type === 'arrive' || state.currentIdx >= steps.length) {
-      return { speak, arrived: true, remainingMeters: 0 };
+      return { speak: target.instruction, arrived: true, remainingMeters: 0 };
     }
-  } else {
-    // Periodic remaining-distance announcement every 100m crossed.
-    const bucket = Math.floor(remaining / 100) * 100;
-    if (bucket < state.lastSpokenDistanceMark && bucket > 0 && remaining < 2000) {
-      state.lastSpokenDistanceMark = bucket;
-      speak = `باقي ${bucket} متر`;
-    }
+    const next = steps[state.currentIdx];
+    const tail = next.type === 'arrive' ? `، الوجهة بعد ${distAr(target.distance)}` : `، ثم بعد ${distAr(target.distance)} ${next.instruction}`;
+    state.preAnnounced = target.distance < 50 ? state.currentIdx : state.preAnnounced;
+    return { speak: target.instruction + tail, remainingMeters: remaining };
   }
 
-  return { speak, remainingMeters: remaining };
+  if (d < 45 && state.preAnnounced !== idx && target.type !== 'arrive') {
+    state.preAnnounced = idx;
+    return { speak: `بعد ${distAr(d)} ${target.instruction}`, remainingMeters: remaining };
+  }
+
+  const bucket = Math.floor(remaining / 100) * 100;
+  if (bucket < state.lastSpokenDistanceMark && bucket > 0 && remaining < 2000) {
+    state.lastSpokenDistanceMark = bucket;
+    return { speak: `باقي ${bucket} متر`, remainingMeters: remaining };
+  }
+  return { remainingMeters: remaining };
 }

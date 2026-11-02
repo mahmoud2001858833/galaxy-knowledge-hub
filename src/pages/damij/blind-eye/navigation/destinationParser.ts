@@ -1,3 +1,4 @@
+import { stripPlacePrefix } from './savedPlaces';
 // Parses user voice text (Arabic-first, with English fallback) into a navigation destination.
 // Returns either a local landmark (in-room object) or an external place name.
 // Designed to be VERY tolerant: short bare answers like "الباب" or "kitchen" still parse.
@@ -63,6 +64,8 @@ const LOCAL_MAP: Array<[RegExp, LocalLandmark, string]> = [
 
 // Trigger phrases for "I want to go to ..."
 const GO_TRIGGERS = [
+  // "وديني عالبيت" / "خذني للمدرسة": preposition glued to the place name
+  /^(?:خذني|خدني|وديني|ودّيني|وصلني|وصّلني|روحني)\s*(.+)$/i,
   // Standard "I want to go to X" / "أريد أن أذهب إلى ..."
   /(?:بدي|بدّي|أبغى|أبغي|أريد|اريد|عاوز|عايز|ودي|نفسي|بحب)\s+(?:أن\s+)?(?:أ?روح|اروح|اذهب|أذهب|أمشي|نروح|نمشي|نوصل|أصل|اصل|أوصل|اوصل)\s+(?:إلى|الى|على|ع|ل|لـ|لعند|عند|الي|لال)?\s*(.+)$/i,
   // "Take/guide/lead me to X"
@@ -79,7 +82,7 @@ export function extractGoToText(raw: string): string | null {
   if (!t) return null;
   for (const rx of GO_TRIGGERS) {
     const m = t.match(rx);
-    if (m && m[1]) return m[1].trim();
+    if (m && m[1]) return stripPlacePrefix(m[1]);
   }
   return null;
 }
@@ -88,7 +91,9 @@ export function extractGoToText(raw: string): string | null {
 const cleanBare = (s: string): string =>
   (s || '')
     .replace(/[.!؟?،,]+/g, ' ')
-    .replace(/\b(يا|من\s+فضلك|لو\s+سمحت|please|the|a|an)\b/gi, ' ')
+    // \b does not work next to Arabic letters in JS: match Arabic fillers by whitespace instead
+    .replace(/(^|\s)(يا|من\s+فضلك|لو\s+سمحت|بليز|الله\s+يخليك)(?=\s|$)/g, ' ')
+    .replace(/\b(please|the|a|an)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -118,7 +123,7 @@ export function parseDestinationLoose(raw: string): ParsedDestination {
   const strict = parseDestination(raw);
   if (strict) return strict;
   // Strip any leading prefix.
-  const stripped = t.replace(/^(?:لـ|ل|إلى|الى|على|ع|عند|لعند|لال|to|the|a|an)\s+/i, '').trim();
+  const stripped = stripPlacePrefix(t.replace(/^(?:لـ|ل|to|the|a|an)\s+/i, '')).trim();
   const local = matchLocal(stripped) || matchLocal(t);
   if (local) return { kind: 'local', ...local };
   // Anything else (e.g. "مدرسة عنبة", "Starbucks") becomes a geo place name.

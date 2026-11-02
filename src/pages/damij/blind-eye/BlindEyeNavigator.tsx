@@ -13,7 +13,7 @@ import { geocodePlace, haversine, bearing, relativeDirectionAr, formatDistanceAr
 import { getPlace, savePlace, listPlaces, extractSaveAsName, canonicalizePlaceName, getEmergencyPhone } from './navigation/savedPlaces';
 import { recognizeImage } from './navigation/ocr';
 import { startFallDetection } from './navigation/fallDetection';
-import { fetchRoute, makeNavState, advanceStep, type TurnByTurnState } from './navigation/turnByTurn';
+import { fetchRoute, makeNavState, advanceStep, firstInstruction, type TurnByTurnState } from './navigation/turnByTurn';
 import { ensureDetector, detectFromVideo, labelToArabic, summarizeSceneArabic } from './localDetector';
 import { isOnline, onConnectivityChange } from './offlineMode';
 import { hapticForDirection, haptics } from './haptics';
@@ -241,7 +241,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const cloudMap = useCallback(async (reason: 'scan' | 'walk' | 'search') => {
     if (!onlineRef.current || Date.now() < cloudCooldownRef.current) return;
     if (cloudInflightRef.current >= (reason === 'scan' ? 4 : 2)) return;
-    const img = captureFrame(reason === 'scan' ? 512 : 448, 0.6);
+    // 448px / q0.6 was too blurry to tell a door from a wardrobe
+    const img = captureFrame(640, 0.72);
     if (!img) return;
     const pose = currentPose();
     const map = mapRef.current;
@@ -772,7 +773,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
         text = (data?.spoken || data?.full_text || '').toString();
       }
       if (!text && mode === 'ocr') text = ((await recognizeImage(img)) || '').replace(/\s+/g, ' ').trim();
-      if (!text && mode !== 'ocr' && videoRef.current) text = summarizeSceneArabic(await detectFromVideo(videoRef.current, 10));
+      if (!text && mode === 'describe_scene' && videoRef.current) text = summarizeSceneArabic(await detectFromVideo(videoRef.current, 10));
       if (!text) text = mode === 'ocr' ? L('لا أرى نصاً واضحاً. قرّب الهاتف من النص وثبّت يدك.', 'No clear text. Move closer and hold steady.') : L('تعذر التعرف حالياً.', 'Could not recognise it right now.');
       setLastAnnounced(text.slice(0, 500));
       speakTracked(text.slice(0, 600), 'critical');
@@ -833,7 +834,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
           turnByTurnRef.current = makeNavState(route);
           const kms = (route.totalDistance / 1000).toFixed(2);
           const mins = Math.max(1, Math.round(route.totalDuration / 60));
-          say(`سنسير ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً إلى ${displayName}. الخطوة الأولى: ${route.steps[0].instruction}`, 'critical');
+          say(`${displayName} على بعد ${kms} كيلومتر، حوالي ${mins} دقيقة مشياً. ${firstInstruction(route)}`, 'critical');
         } else {
           say(`لم أجد مساراً تفصيلياً. سأرشدك بالاتجاه نحو ${displayName}.`, 'directional');
         }
@@ -844,7 +845,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
           if (!tg) return;
           const tbt = turnByTurnRef.current;
           if (tbt) {
-            const tick = advanceStep(tbt, userPosRef.current);
+            const tick = advanceStep(tbt, userPosRef.current, p.coords.accuracy);
             if (tick.speak) say(tick.speak, 'directional');
             if (tick.arrived) {
               say(`${BE_STRINGS[langRef.current].navArrived} ${tg.name}`, 'critical');
@@ -871,15 +872,27 @@ const BlindEyeNavigatorInner: React.FC = () => {
     if (saved?.coords) {
       say(`${BE_STRINGS[langRef.current].navStartGeo} ${saved.name}`, 'critical');
       startGeo(saved.coords, saved.name);
-    } else {
-      const q = saved?.query || query;
-      say(`${BE_STRINGS[langRef.current].navStartGeo} ${saved?.name || query}`, 'critical');
-      geocodePlace(q).then((latlng) => {
-        if (!latlng) { say(BE_STRINGS[langRef.current].navNotFound, 'critical'); return; }
-        if (saved) savePlace(saved.name, { query: q, coords: latlng });
-        startGeo(latlng, saved?.name || query);
-      });
+      return;
     }
+    // "home" / "work" only mean something once saved: searching the map for "البيت" finds a random place
+    if (!saved && (canonical === 'البيت' || canonical === 'العمل')) {
+      say(`لم تحفظ مكان ${canonical} بعد. عندما تكون هناك قل: احفظ هذا المكان ك${canonical}.`, 'critical');
+      return;
+    }
+    const q = saved?.query || query;
+    say(`${BE_STRINGS[langRef.current].navStartGeo} ${saved?.name || query}`, 'critical');
+    // search NEAR the user: without this, "صيدلية" from Amman resolved to a pharmacy in Istanbul
+    const lookup = (near: LatLng | null) => geocodePlace(q, near).then((latlng) => {
+      if (!latlng) { say(near ? `لم أجد ${saved?.name || query} قريباً منك. جرّب اسماً أدق، مثل اسم المكان والحي.` : BE_STRINGS[langRef.current].navNotFound, 'critical'); return; }
+      if (saved) savePlace(saved.name, { query: q, coords: latlng });
+      startGeo(latlng, saved?.name || query);
+    });
+    if (!navigator.geolocation) { lookup(userPosRef.current); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { userPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude }; lookup(userPosRef.current); },
+      () => lookup(userPosRef.current),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+    );
   }, [clearTarget]);
 
   /** Destination from speech: the room map first, then a known object kind to search for, then GPS. */

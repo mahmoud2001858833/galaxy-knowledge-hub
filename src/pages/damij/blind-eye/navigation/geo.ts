@@ -41,14 +41,39 @@ export function formatDistanceAr(meters: number): string {
   return `${(meters / 1000).toFixed(1)} كيلومتر`;
 }
 
-export async function geocodePlace(query: string): Promise<LatLng | null> {
+/**
+ * Find a place by name NEAR the user. Without a location bias, "صيدلية" from Amman resolved to a
+ * pharmacy in Istanbul. Photon (OSM) ranks by distance to `near`; Nominatim is a bounded fallback.
+ * Results farther than `maxKm` are rejected so we never start a walk to another city.
+ */
+export async function geocodePlace(query: string, near?: LatLng | null, maxKm = 30): Promise<LatLng | null> {
+  const ok = (p: LatLng) => !near || haversine(near, p) <= maxKm * 1000;
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+    const bias = near ? `&lat=${near.lat}&lon=${near.lng}&location_bias_scale=0.1&zoom=14` : '';
+    const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5${bias}`);
+    if (r.ok) {
+      const j = await r.json();
+      const pts: LatLng[] = (j?.features ?? [])
+        .map((f: any) => ({ lat: f?.geometry?.coordinates?.[1], lng: f?.geometry?.coordinates?.[0] }))
+        .filter((p: LatLng) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+      const good = near ? pts.filter(ok).sort((a, b) => haversine(near, a) - haversine(near, b)) : pts;
+      if (good.length) return good[0];
+    }
+  } catch { /* fall through */ }
+  try {
+    let box = '';
+    if (near) {
+      const d = 0.15; // ~15 km
+      box = `&viewbox=${near.lng - d},${near.lat + d},${near.lng + d},${near.lat - d}&bounded=1`;
+    }
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}${box}`;
     const r = await fetch(url, { headers: { 'Accept-Language': 'ar' } });
     if (!r.ok) return null;
     const arr = await r.json();
-    if (!Array.isArray(arr) || arr.length === 0) return null;
-    return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon) };
+    if (!Array.isArray(arr)) return null;
+    const pts: LatLng[] = arr.map((a: any) => ({ lat: parseFloat(a.lat), lng: parseFloat(a.lon) })).filter(ok);
+    if (near) pts.sort((a, b) => haversine(near, a) - haversine(near, b));
+    return pts[0] ?? null;
   } catch {
     return null;
   }

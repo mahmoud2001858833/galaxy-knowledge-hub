@@ -279,6 +279,11 @@ function toGeminiSchema(s: any): any {
 }
 
 const DIRECT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+// flash-lite misnames objects too often (window -> TV, cabinet -> door); use full flash where the
+// answer is what the user acts on, keep lite first only for split-second hazard calls.
+const ACCURATE_FIRST = new Set(["map", "identify", "ocr", "describe_scene", "spin_scan"]);
+const orderFor = (mode: string, list: string[]) =>
+  ACCURATE_FIRST.has(mode) ? [...list.filter((m) => !m.endsWith("flash-lite")), ...list.filter((m) => m.endsWith("flash-lite"))] : list;
 // after a quota error the direct key is skipped for a minute (saves a wasted round trip per call)
 let directBlockedUntil = 0;
 
@@ -417,7 +422,7 @@ Deno.serve(async (req) => {
     const userText = context
       ? `Context: ${context}\nAnalyze the scene for the blind user in language "${useLang}".`
       : `Analyze the scene for the blind user in language "${useLang}".`;
-    for (const model of Date.now() < directBlockedUntil ? [] : DIRECT_MODELS) {
+    for (const model of Date.now() < directBlockedUntil ? [] : orderFor(useMode, DIRECT_MODELS)) {
       try {
         const result = await callDirect(model, sysPrompt, userText, frames, tool, maxTokens);
         return new Response(
@@ -430,7 +435,7 @@ Deno.serve(async (req) => {
         if (Date.now() < directBlockedUntil) break;
       }
     }
-    for (const model of MODELS) {
+    for (const model of orderFor(useMode, MODELS)) {
       try {
         const result = await callGateway(
           model,

@@ -27,7 +27,8 @@ export async function ensureDetector(): Promise<cocoSsdNs.ObjectDetection> {
     // Prefer WebGL backend on mobile for speed.
     try { await tf.setBackend('webgl'); } catch {}
     await tf.ready();
-    const m = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+    // full mobilenet_v2: noticeably fewer wrong labels than the 'lite' variant, still real-time on phones
+    const m = await cocoSsd.load({ base: 'mobilenet_v2' });
     loaded = true;
     return m;
   })();
@@ -69,7 +70,7 @@ export async function detectFromVideo(
 ): Promise<DetectedObject[]> {
   if (!video.videoWidth || !video.videoHeight) return [];
   const model = await ensureDetector();
-  const preds = await model.detect(video, maxObjects, 0.45);
+  const preds = await model.detect(video, maxObjects, 0.55);
   const vw = video.videoWidth, vh = video.videoHeight;
   return preds.map((p) => ({
     label: p.class,
