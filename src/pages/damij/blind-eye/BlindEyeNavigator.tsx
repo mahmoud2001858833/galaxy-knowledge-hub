@@ -38,7 +38,7 @@ import MiniMap from './spatial/MiniMap';
  *    step counts, warnings for obstacles on the way, and an audio beacon panned toward the target.
  */
 
-type Phase = 'idle' | 'scanning' | 'guiding' | 'stopped';
+type Phase = 'idle' | 'starting' | 'scanning' | 'guiding' | 'stopped';
 
 type ScanState = {
   accumulated: number;
@@ -52,6 +52,10 @@ type ScanState = {
 };
 
 const SCAN_DEG = 340;
+
+/** Resolve with `fallback` if the promise takes longer than `ms` (phone prompts can stay unanswered). */
+const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T): Promise<T> =>
+  Promise.race([p, new Promise<T>((res) => window.setTimeout(() => res(fallback), ms))]);
 
 const BlindEyeNavigatorInner: React.FC = () => {
   const { lang, setLang, toggle } = useBlindEyeLang();
@@ -80,6 +84,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const cloudCooldownRef = useRef(0);
   const lastCloudRef = useRef<{ t: number; x: number; y: number; heading: number }>({ t: 0, x: 0, y: 0, heading: 0 });
   const detectBusyRef = useRef(false);
+  const detectorReadyRef = useRef(false);
+  const detectNextRef = useRef(0);
   const lastInstrRef = useRef<{ key: string; t: number; text: string }>({ key: '', t: 0, text: '' });
   const warnedRef = useRef<Map<string, number>>(new Map());
   const scanRef = useRef<ScanState | null>(null);
@@ -117,6 +123,7 @@ const BlindEyeNavigatorInner: React.FC = () => {
   const [points, setPoints] = useState<DetectedPoint[]>([]);
   const [eyesOff, setEyesOff] = useState(false);
   const [sensorNote, setSensorNote] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>(defaultSuggestions[lang]);
 
   useEffect(() => { setSuggestions(defaultSuggestions[lang]); }, [lang]);
@@ -357,30 +364,50 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
   /** Must run inside a tap: iOS only grants motion/compass, sound and speech from a user gesture. */
   const begin = useCallback(() => {
-    unlockAudio();
+    if (phaseRef.current === 'starting') return;
+    setStartError(null);
+    setPhaseBoth('starting');
+    try { unlockAudio(); } catch { /* no audio */ }
     try {
+      window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(' ');
       u.volume = 0;
       window.speechSynthesis.speak(u);
     } catch { /* no speech */ }
-    const perm = requestSensorPermissions();
+    // both prompts must be requested now, inside the tap; never wait on them for long
+    const perm = withTimeout(requestSensorPermissions().catch(() => false), 4000, false);
     (async () => {
+      let stream: MediaStream | null = null;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
+        if (!navigator.mediaDevices?.getUserMedia) throw new Error('no-camera-api');
+        const ask = (c: MediaStreamConstraints) => withTimeout(navigator.mediaDevices.getUserMedia(c), 20000, null);
+        try {
+          stream = await ask({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+        } catch (e) {
+          if ((e as Error)?.name === 'NotAllowedError') throw e;
+          stream = await ask({ video: true, audio: false }); // some phones reject the size hints
         }
+        if (!stream) throw new Error('timeout');
       } catch (e) {
         console.error(e);
-        toast.error(BE_STRINGS[langRef.current].cameraFailed);
-        say(BE_STRINGS[langRef.current].cameraDenied, 'critical');
+        const name = (e as Error)?.name;
+        const msg = name === 'NotAllowedError'
+          ? L('لم يُسمح باستخدام الكاميرا. اسمح بها من إعدادات المتصفح ثم اضغط مرة أخرى.', 'Camera permission was denied. Allow it in the browser settings, then tap again.')
+          : (e as Error)?.message === 'no-camera-api'
+            ? L('هذا المتصفح لا يسمح بالكاميرا (غالباً متصفح داخل تطبيق). افتح الرابط في Chrome أو Safari.', "This browser doesn't allow the camera (often an in-app browser). Open the link in Chrome or Safari.")
+          : (e as Error)?.message === 'timeout'
+            ? L('الكاميرا لم تستجب. أغلق التطبيقات التي تستخدم الكاميرا ثم اضغط مرة أخرى.', 'The camera did not respond. Close other apps using it, then tap again.')
+            : L('تعذّر فتح الكاميرا على هذا الجهاز. اضغط للمحاولة مرة أخرى.', 'Could not open the camera. Tap to try again.');
+        setStartError(msg);
+        say(msg, 'critical');
         setPhaseBoth('stopped');
         return;
+      }
+      streamRef.current = stream;
+      const v = videoRef.current;
+      if (v) {
+        v.srcObject = stream;
+        await withTimeout(v.play().then(() => true).catch(() => false), 3000, false);
       }
       await perm;
       const tracker = new HeadingTracker();
@@ -396,10 +423,13 @@ const BlindEyeNavigatorInner: React.FC = () => {
       const steps = new StepDetector(() => { lastStepAtRef.current = Date.now(); mapRef.current.step(); bump(); });
       steps.start();
       stepsRef.current = steps;
-      ensureDetector().catch(() => {});
       try { recRef.current?.start(); setListening(true); } catch { /* already running */ }
       setPhaseBoth('guiding');
       say(L('مرحباً، أنا عين الأعمى.', 'Hello, this is Blind Eye.'), 'critical');
+      // the on-device detector is heavy to load: start it only once everything else runs
+      window.setTimeout(() => {
+        ensureDetector().then(() => { detectorReadyRef.current = true; }).catch(() => {});
+      }, 2500);
       // wait (up to 3 s) for the first compass/gyro reading, then learn the room
       const t0 = Date.now();
       const waitSensors = window.setInterval(() => {
@@ -440,8 +470,9 @@ const BlindEyeNavigatorInner: React.FC = () => {
     if (phase !== 'guiding' && phase !== 'scanning') return;
     const id = window.setInterval(async () => {
       const v = videoRef.current;
-      if (!v || !v.videoWidth || detectBusyRef.current) return;
+      if (!v || !v.videoWidth || detectBusyRef.current || !detectorReadyRef.current || Date.now() < detectNextRef.current) return;
       detectBusyRef.current = true;
+      const tStart = performance.now();
       try {
         const pose = currentPose();
         const objs = await detectFromVideo(v, 8);
@@ -478,6 +509,8 @@ const BlindEyeNavigatorInner: React.FC = () => {
         }
       } catch { /* detector not ready */ } finally {
         detectBusyRef.current = false;
+        // slow phone: leave the main thread free (pause about twice as long as the detection took)
+        detectNextRef.current = Date.now() + Math.min(1500, (performance.now() - tStart) * 2);
       }
     }, 250);
     return () => window.clearInterval(id);
@@ -574,7 +607,6 @@ const BlindEyeNavigatorInner: React.FC = () => {
 
   // connectivity
   useEffect(() => {
-    ensureDetector().catch(() => {});
     const off = onConnectivityChange((o) => {
       onlineRef.current = o;
       setOnline(o);
@@ -956,12 +988,25 @@ const BlindEyeNavigatorInner: React.FC = () => {
         >
           <Radar className="h-20 w-20 text-sky-400" />
           <span className="text-3xl font-black">{ar ? 'اضغط في أي مكان للبدء' : 'Tap anywhere to start'}</span>
-          <span className="max-w-sm text-base text-white/75">
-            {ar
-              ? 'سأطلب الكاميرا والبوصلة والميكروفون، ثم أمسح المكان وأنت تستدير ببطء، وأبني خريطة لما حولك لأرشدك إلى أي شيء فيها.'
-              : "I'll ask for the camera, compass and microphone, then map the room while you turn slowly, and guide you to anything on the map."}
-          </span>
+          {startError ? (
+            <span role="alert" className="max-w-sm rounded-2xl bg-rose-600/90 p-3 text-base font-bold">{startError}</span>
+          ) : (
+            <span className="max-w-sm text-base text-white/75">
+              {ar
+                ? 'سأطلب الكاميرا والبوصلة والميكروفون، ثم أمسح المكان وأنت تستدير ببطء، وأبني خريطة لما حولك لأرشدك إلى أي شيء فيها.'
+                : "I'll ask for the camera, compass and microphone, then map the room while you turn slowly, and guide you to anything on the map."}
+            </span>
+          )}
         </button>
+      )}
+      {phase === 'starting' && (
+        <div role="status" className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/90 p-8 text-center">
+          <RefreshCw className="h-14 w-14 animate-spin text-sky-400" />
+          <span className="text-2xl font-black">{ar ? 'لحظة، أشغّل الكاميرا...' : 'One moment, starting the camera...'}</span>
+          <span className="max-w-sm text-sm text-white/70">
+            {ar ? 'إذا ظهرت رسالة تطلب الإذن بالكاميرا أو الحركة، اضغط «سماح».' : 'If the phone asks for camera or motion access, tap Allow.'}
+          </span>
+        </div>
       )}
 
       <BlindEyeEmergencyButton />
