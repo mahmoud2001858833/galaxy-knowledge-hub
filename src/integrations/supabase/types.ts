@@ -4903,6 +4903,30 @@ export type Database = {
         }
         Relationships: []
       }
+      terminal_agent_settings: {
+        Row: {
+          agent: string
+          model: string | null
+          model_label: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent: string
+          model?: string | null
+          model_label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent?: string
+          model?: string | null
+          model_label?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       terminal_command_logs: {
         Row: {
           command: string
@@ -5345,6 +5369,10 @@ export type Database = {
           page: number
           rank: number
         }[]
+      }
+      bridge_agent_settings: {
+        Args: { p_auth_key: string; p_device_id: string }
+        Returns: Json
       }
       bridge_cancel_job: { Args: { p_job_id: string }; Returns: undefined }
       bridge_deploy_claim: {

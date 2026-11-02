@@ -479,17 +479,34 @@ serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const service = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
-  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const { data: auth, error: authError } = await service.auth.getUser(token);
-  if (authError || !auth?.user) return json({ error: 'unauthorized' }, 401);
-  const user = auth.user;
-
-  let body: { action?: string; session_id?: string; command?: string; resume_session?: string; job_id?: string; name?: string };
+  let body: {
+    action?: string; session_id?: string; command?: string; resume_session?: string; job_id?: string; name?: string;
+    device_id?: string; auth_key?: string; content_type?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return json({ error: 'bad request' }, 400);
   }
+
+  if (body.action === 'bridge-upload') {
+    // The bridge (device key, no user) gets a signed upload URL for an image of a job running on it
+    const { data: ok } = await service.rpc('bridge_device_check', { p_device_id: body.device_id, p_auth_key: body.auth_key });
+    if (ok !== true) return json({ error: 'device not authorized' }, 401);
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(body.content_type ?? '')) return json({ error: 'images only' }, 400);
+    const { data: job } = await service.from('bridge_jobs').select('id').eq('id', body.job_id).eq('device_id', body.device_id).eq('status', 'running').maybeSingle();
+    if (!job) return json({ error: 'no running job' }, 404);
+    const name = (body.name ?? 'image').replace(/[^A-Za-z0-9._-]/g, '_').slice(-80) || 'image';
+    const path = `${job.id}/${crypto.randomUUID().slice(0, 8)}-${name}`;
+    const { data, error } = await service.storage.from('terminal-media').createSignedUploadUrl(path);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, path, signed_url: data.signedUrl });
+  }
+
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const { data: auth, error: authError } = await service.auth.getUser(token);
+  if (authError || !auth?.user) return json({ error: 'unauthorized' }, 401);
+  const user = auth.user;
 
   if (body.action === 'start') {
     const { data, error } = await service.rpc('terminal_start_session', {

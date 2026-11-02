@@ -26,13 +26,13 @@
 
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, platform } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const DIR = process.env.ZARWA_BRIDGE_DIR || join(homedir(), '.zarwa-bridge');
 const CONFIG = join(DIR, 'config.json');
 const PLIST = join(homedir(), 'Library', 'LaunchAgents', 'com.zarwa.bridge.plist');
@@ -131,7 +131,7 @@ const makeApi = (cfg) => {
     }
     return data;
   };
-  return { client, rpc };
+  return { client, rpc, authKey };
 };
 
 const payloadOf = (job, deviceId) =>
@@ -538,10 +538,11 @@ async function runClaude(cfg, job, out) {
   if (!job.is_principal) deny.push('Bash', 'Edit(.claude/**)', 'Edit(.vscode/**)');
   args.push('--disallowedTools', ...deny);
   if (!job.is_principal) args.push('--setting-sources', 'user');
-  if (cfg.claude.model) args.push('--model', cfg.claude.model);
+  const model = job.model ?? cfg.claude.model;
+  if (model && model !== 'default') args.push('--model', model);
   if (job.resume_session) args.push('--resume', job.resume_session);
   const meta = {};
-  out.push('sys', `\x1b[2mClaude Code · ${mode}${job.resume_session ? ' · continuing' : ''}\x1b[0m\n`);
+  out.push('sys', `\x1b[2mClaude Code · ${CLAUDE_MODELS.find((m) => m.id === model)?.label ?? model ?? 'default model'} · ${mode}${job.resume_session ? ' · continuing' : ''}\x1b[0m\n`);
   const r = await runProcess(cfg.claude.bin, args, {
     cwd: cfg.workdir,
     env: guardEnv(),
@@ -655,17 +656,72 @@ async function agConnect(out) {
   throw new Error('Antigravity is not running or not reachable. Open the Antigravity app on the computer and sign in.');
 }
 
-async function agModel(cfg) {
+// Models Claude Code accepts on this account (aliases follow the newest version of each)
+const CLAUDE_MODELS = [
+  { id: 'opus', label: 'Claude Opus (latest)' },
+  { id: 'sonnet', label: 'Claude Sonnet (latest)' },
+  { id: 'haiku', label: 'Claude Haiku (latest)' },
+  { id: 'fable', label: 'Claude Fable (needs usage credits)' },
+];
+
+async function agModelList() {
+  const data = await agCall('GetCascadeModelConfigData', {});
+  return {
+    data,
+    list: (data.clientModelConfigs ?? []).filter((c) => c.modelOrAlias?.model && !c.disabled).map((c) => ({ id: c.modelOrAlias.model, label: c.label })),
+  };
+}
+
+async function agModel(cfg, override) {
   const data = await agCall('GetCascadeModelConfigData', {});
   const list = data.clientModelConfigs ?? [];
-  const want = cfg.antigravity?.model;
+  const want = override ?? cfg.antigravity?.model;
   const pick = (want && list.find((c) => c.label === want || c.modelOrAlias?.model === want)) || null;
   const id = pick?.modelOrAlias?.model ?? data.defaultOverrideModelConfig?.modelOrAlias?.model ?? list[0]?.modelOrAlias?.model;
   if (!id) throw new Error('Antigravity: no model available for this account');
   return { id, label: list.find((c) => c.modelOrAlias?.model === id)?.label ?? id };
 }
 
-const agText = (s) => String(s ?? '').replace(/\]\(file:\/\/[^)]+\)/g, ']').replace(/\n*$/, '\n');
+const IMAGE_EXT = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };
+const agText = (s) =>
+  String(s ?? '')
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, (_, alt) => `[image${alt ? `: ${alt}` : ''}]`)
+    .replace(/\]\((?:file|conversation):\/\/[^)]+\)/g, ']')
+    .replace(/\n*$/, '\n');
+// image files an answer points at (markdown images and file:// links)
+const imagesIn = (text) =>
+  [...String(text ?? '').matchAll(/!\[[^\]]*\]\(([^)\s]+)\)|\]\((file:\/\/[^)\s]+)\)/g)]
+    .map((m) => decodeURIComponent((m[1] ?? m[2]).replace(/^file:\/\//, '')))
+    .filter((p) => p.startsWith('/') && IMAGE_EXT[extname(p).toLowerCase()]);
+
+// Uploads an image the agent made (only from the project or Antigravity's own folders) so the
+// terminal page can show it; the OSC 1337 marker tells the page where it is.
+async function uploadImage(cfg, api, jobId, file, out) {
+  const type = IMAGE_EXT[extname(file).toLowerCase()];
+  let real;
+  try {
+    real = realpathSync(file);
+  } catch {
+    return;
+  }
+  const roots = [realpathSync(cfg.workdir), join(homedir(), '.gemini', 'antigravity')];
+  if (!type || !roots.some((r) => real.startsWith(r + '/')) || statSync(real).size > 10 * 1024 * 1024) return;
+  try {
+    const res = await fetch(`${cfg.supabaseUrl}/functions/v1/web-terminal-exec`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.anonKey}`, apikey: cfg.anonKey },
+      body: JSON.stringify({ action: 'bridge-upload', device_id: cfg.deviceId, auth_key: api.authKey, job_id: jobId, name: basename(real), content_type: type }),
+    });
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error ?? `HTTP ${res.status}`);
+    const token = new URL(d.signed_url).searchParams.get('token');
+    const { error } = await api.client.storage.from('terminal-media').uploadToSignedUrl(d.path, token, readFileSync(real), { contentType: type });
+    if (error) throw error;
+    out.push('sys', `\x1b]1337;ZarwaImage=${d.path}\x07\x1b[35m▣ image: ${basename(real)} (shown below the terminal)\x1b[0m\n`);
+  } catch (e) {
+    out.push('err', `Could not upload ${basename(real)}: ${e.message}\n`);
+  }
+}
 const BLOCKED_COMMAND = new RegExp(`(^|[;&|(\\s])(git\\s+(${BLOCKED_GIT.filter((c) => c !== 'config').join('|')})\\b|(${BLOCKED_TOOLS.join('|')})\\s)`);
 
 // Prints one finished step; returns true for a step that ends the agent's turn.
@@ -716,14 +772,14 @@ function agVersion(cfg) {
   }
 }
 
-async function runAntigravity(cfg, job, out) {
+async function runAntigravity(cfg, job, out, api) {
   const ag = cfg.antigravity ?? {};
   if (ag.app === 'ide') return runAntigravityIde(cfg, job, out);
   if (!job.is_principal && !ag.allowOthers)
     return { code: -1, error: 'Antigravity on this computer is for the principal only: its agent runs commands without limits.' };
   if (!existsSync(AG_APP)) return { code: -1, error: 'Antigravity is not installed on this computer' };
   await agConnect(out);
-  const model = await agModel(cfg);
+  const model = await agModel(cfg, job.model);
 
   let cascadeId = job.resume_session;
   let offset = 0;
@@ -752,6 +808,10 @@ async function runAntigravity(cfg, job, out) {
   let next = offset; // first step not printed yet
   let turnOver = false;
   let waitingShown = false;
+  const children = new Map(); // subagent conversation id → role, until it reports back
+  let childNoticeShown = false;
+  const images = new Set();
+  const uploaded = new Set();
   for (;;) {
     if (!stop && Date.now() > deadline) stop = 'timeout';
     if (stop) {
@@ -782,13 +842,37 @@ async function runAntigravity(cfg, job, out) {
         break;
       }
       turnOver = showAgStep(step, out);
+      const sub = step.invokeSubagent;
+      if (sub) sub.results?.forEach((r, i) => r.conversationId && children.set(r.conversationId, sub.subagents?.[i]?.role ?? 'subagent'));
+      // a follow-up message to a subagent (send_message) means waiting for its answer again
+      const to = step.generic?.args?.Recipient;
+      if (to && /^[0-9a-f-]{36}$/.test(to)) children.set(to, step.generic?.result?.payload?.recipientName ?? 'subagent');
+      const sys = step.systemMessage?.message ?? '';
+      for (const id of [...children.keys()])
+        if (sys.includes(`sender=${id}`)) {
+          out.push('sys', `\x1b[2m✓ ${children.get(id)} finished\x1b[0m\n`);
+          children.delete(id);
+        }
+      for (const f of imagesIn(step.plannerResponse?.modifiedResponse ?? step.plannerResponse?.response)) images.add(f);
       next++;
+    }
+    for (const f of images) {
+      if (uploaded.has(f)) continue;
+      uploaded.add(f);
+      await uploadImage(cfg, api, job.id, f, out);
     }
     if (stop) continue;
     if (turnOver) {
       const all = await agCall('GetAllCascadeTrajectories', { excludeSubtrajectories: true }).catch(() => null);
       const status = all?.trajectorySummaries?.[cascadeId]?.status;
-      if (!status || status === 'CASCADE_RUN_STATUS_IDLE') return { code: 0, session: cascadeId };
+      if (!status || status === 'CASCADE_RUN_STATUS_IDLE') {
+        // background subagents (image generation…) report back later and the agent then continues
+        if (!children.size) return { code: 0, session: cascadeId };
+        if (!childNoticeShown) {
+          out.push('sys', `\x1b[2mwaiting for ${[...children.values()].join(', ')}…\x1b[0m\n`);
+          childNoticeShown = true;
+        }
+      }
     }
   }
 }
@@ -833,6 +917,8 @@ async function handle(cfg, rpc, job, state) {
   const out = new Output(rpc, job.id);
   state.current = { id: job.id, out };
   let r;
+  // the model the principal chose for this agent in /admin?tab=terminal (null = the agent's default)
+  if (job.kind === 'claude' || job.kind === 'antigravity') job.model = (await rpc('bridge_agent_settings', {}).catch(() => null))?.[job.kind] ?? null;
   // files the job changes are sent for approval afterwards
   let before = null;
   if (job.kind === 'claude' || job.kind === 'shell' || (job.kind === 'antigravity' && cfg.antigravity?.app !== 'ide')) {
@@ -845,7 +931,7 @@ async function handle(cfg, rpc, job, state) {
   try {
     if (job.kind === 'submit') r = await runSubmit(cfg, rpc, job, out);
     else if (job.kind === 'claude') r = await runClaude(cfg, job, out);
-    else if (job.kind === 'antigravity') r = await runAntigravity(cfg, job, out);
+    else if (job.kind === 'antigravity') r = await runAntigravity(cfg, job, out, state.api);
     else r = await runShell(cfg, job, out);
   } catch (e) {
     r = { code: -1, error: e.message };
@@ -881,8 +967,9 @@ async function handle(cfg, rpc, job, state) {
 // ---------------------------------------------------------------- main loop
 async function main() {
   const cfg = loadConfig();
-  const { client, rpc } = makeApi(cfg);
-  const state = { seen: new Set(), current: null, wake: null, first: true };
+  const api = makeApi(cfg);
+  const { client, rpc } = api;
+  const state = { seen: new Set(), current: null, wake: null, first: true, api };
   const info = {
     version: VERSION,
     host: hostname(),
@@ -890,7 +977,18 @@ async function main() {
     workdir: cfg.workdir,
     claude: cfg.claude.bin ? (() => { try { return execFileSync(cfg.claude.bin, ['--version'], { encoding: 'utf8' }).trim(); } catch { return 'installed'; } })() : null,
     antigravity: agVersion(cfg),
+    // offered in /admin?tab=terminal ("model per agent")
+    models: { claude: cfg.claude.bin ? CLAUDE_MODELS : [], antigravity: [] },
   };
+  const refreshAgModels = async () => {
+    if (cfg.antigravity?.app === 'ide' || !existsSync(AG_APP)) return;
+    try {
+      await agConnect();
+      info.models.antigravity = (await agModelList()).list;
+    } catch {}
+  };
+  refreshAgModels();
+  setInterval(refreshAgModels, 10 * 60 * 1000).unref();
 
   // Doorbell: new job → poll now; cancelled current job → kill now.
   client

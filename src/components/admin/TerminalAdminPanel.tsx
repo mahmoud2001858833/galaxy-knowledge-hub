@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Activity, Ban, Check, Copy, KeyRound, Laptop, Loader2, Plus, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, Users } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
+import { AgentModelsCard } from '@/components/admin/AgentModelsCard';
 import { callTerminal } from '@/components/terminal/WebTerminal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -343,6 +344,8 @@ export const TerminalAdminPanel: React.FC = () => {
       </div>
 
       <BridgeCard />
+
+      <AgentModelsCard />
 
       {/* active sessions + kill switch */}
       <section className="space-y-3 rounded-3xl border border-border bg-card p-5">

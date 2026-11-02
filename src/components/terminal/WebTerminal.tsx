@@ -119,6 +119,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   // prints a line above the input line without disturbing what the user is typing
   const noticeRef = useRef<(text: string) => void>(() => {});
   const [ready, setReady] = useState(false);
+  // images an agent made on the principal's computer (uploaded by the bridge to terminal-media)
+  const [images, setImages] = useState<{ path: string; url: string | null }[]>([]);
 
   const promptText = useCallback(() => {
     const mode = state.current.mode;
@@ -350,6 +352,17 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     term.open(host);
     fit.fit();
     termRef.current = term;
+    // OSC 1337 "ZarwaImage=<storage path>" from the bridge: show the image under the terminal
+    term.parser.registerOscHandler(1337, (data) => {
+      const path = data.startsWith('ZarwaImage=') ? data.slice('ZarwaImage='.length) : null;
+      if (!path || !/^[0-9a-f-]{36}\/[A-Za-z0-9._-]+$/.test(path)) return false;
+      setImages((list) => (list.some((i) => i.path === path) ? list : [...list, { path, url: null }]));
+      supabase.storage
+        .from('terminal-media')
+        .createSignedUrl(path, 60 * 60)
+        .then(({ data: signed }) => setImages((list) => list.map((i) => (i.path === path ? { ...i, url: signed?.signedUrl ?? null } : i))));
+      return true;
+    });
 
     term.writeln('\x1b[1;36mZarwa web terminal\x1b[0m \x1b[2m— commands run in the cloud, nothing touches your computer\x1b[0m');
     term.writeln(`\x1b[2mSigned in as ${session.email}${session.is_principal ? ' (principal, unlimited)' : ''}. Type \x1b[0m\x1b[36mhelp\x1b[0m\x1b[2m to start.\x1b[0m`);
@@ -544,12 +557,34 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   }, [session.session_id]);
 
   return (
-    <div
-      ref={hostRef}
-      dir="ltr"
-      data-ready={ready}
-      className="h-[60vh] min-h-[360px] w-full overflow-hidden rounded-b-3xl bg-card px-3 py-2 text-left"
-      onClick={() => termRef.current?.focus()}
-    />
+    <>
+      <div
+        ref={hostRef}
+        dir="ltr"
+        data-ready={ready}
+        className={`h-[60vh] min-h-[360px] w-full overflow-hidden bg-card px-3 py-2 text-left ${images.length ? '' : 'rounded-b-3xl'}`}
+        onClick={() => termRef.current?.focus()}
+      />
+      {images.length > 0 && (
+        <div className="flex gap-3 overflow-x-auto rounded-b-3xl border-t border-border bg-muted/30 p-3" dir="ltr">
+          {images.map((img) => (
+            <a
+              key={img.path}
+              href={img.url ?? undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="block h-40 shrink-0 overflow-hidden rounded-xl border border-border bg-background"
+              title={img.path.split('/').pop()}
+            >
+              {img.url ? (
+                <img src={img.url} alt={img.path.split('/').pop()} className="h-full w-auto object-contain" />
+              ) : (
+                <div className="flex h-full w-40 items-center justify-center text-xs text-muted-foreground">…</div>
+              )}
+            </a>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
