@@ -199,8 +199,8 @@ const TOOLS = [
   fn("click_element", "Click a button/link/tab by its visible text. Deleting, publishing, sending or paying waits for the admin's confirmation.", { text: { type: "string" } }, ["text"]),
   fn("type_into", "Type into an input identified by its label or placeholder.", { field: { type: "string" }, text: { type: "string" }, submit: { type: "boolean" } }, ["field", "text"]),
   fn("run_experiment", "Run a real scientific simulation (computed with physics/chemistry/biology equations) and show the admin its chart and results.", {
-    experiment: { type: "string", enum: ["projectile", "pendulum", "free_fall_drag", "ohms_law", "radioactive_decay", "ideal_gas", "spring_oscillator", "titration", "population_growth"] },
-    params: { type: "object", description: "Optional numeric parameters, e.g. {v0:20, angle:45} for projectile; {length:1} pendulum; {mass:70, drag:0.25} free_fall_drag; {voltage:12, resistance:10} ohms_law; {half_life:5, n0:1000} radioactive_decay; {moles:1, volume:0.0224} ideal_gas; {k:50, mass:2, amplitude:0.1, damping:0.3} spring_oscillator; {acid_conc:0.1, acid_volume:25, base_conc:0.1} titration; {r:0.4, K:1000, n0:10} population_growth" },
+    experiment: { type: "string", enum: ["projectile", "pendulum", "free_fall_drag", "ohms_law", "radioactive_decay", "ideal_gas", "spring_oscillator", "titration", "population_growth", "galvanic_cell"] },
+    params: { type: "object", description: "Optional numeric parameters, e.g. {v0:20, angle:45} for projectile; {length:1} pendulum; {mass:70, drag:0.25} free_fall_drag; {voltage:12, resistance:10} ohms_law; {half_life:5, n0:1000} radioactive_decay; {moles:1, volume:0.0224} ideal_gas; {k:50, mass:2, amplitude:0.1, damping:0.3} spring_oscillator; {acid_conc:0.1, acid_volume:25, base_conc:0.1} titration; {r:0.4, K:1000, n0:10} population_growth; {anode:'Zn', cathode:'Cu', anode_conc:1, cathode_conc:1, temperature:298} galvanic_cell (electrochemical/chemical cell; metals: Li,K,Mg,Al,Zn,Fe,Ni,Sn,Pb,Cu,Ag,Au)" },
   }, ["experiment"]),
 ];
 const CLIENT_TOOLS = new Set(["navigate_to", "go_back", "scroll_page", "read_screen", "click_element", "type_into", "run_experiment"]);
@@ -226,16 +226,39 @@ ${list}
 ${tables}`;
 }
 
+/** Google's own Gemini API (OpenAI-compatible endpoint), used first when ADMIN_BRAIN_GEMINI_KEY is set. */
+async function googleDirect(messages: unknown[]) {
+  const key = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
+  if (!key) return null;
+  const model = Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash";
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+    signal: AbortSignal.timeout(30_000),
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages, tools: TOOLS, tool_choice: "auto" }),
+  });
+  if (!r.ok) {
+    console.warn("gemini direct", r.status, (await r.text()).slice(0, 200));
+    return null; // fall back to the gateway
+  }
+  const j = await r.json();
+  return j?.choices?.[0]?.message ?? null;
+}
+
 async function gateway(messages: unknown[]) {
+  const direct = await googleDirect(messages).catch(() => null);
+  if (direct) return direct;
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY missing");
   for (let i = 0; i < 3; i++) {
     const r = await fetch(`${GATEWAY}/chat/completions`, {
+      signal: AbortSignal.timeout(30_000),
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model: MODEL, messages, tools: TOOLS, tool_choice: "auto" }),
     });
     if (r.status === 429 && i < 2) { await new Promise((s) => setTimeout(s, 700 * (i + 1))); continue; }
+    if (r.status === 402) throw new Error("رصيد Lovable AI خلص (402)");
     if (!r.ok) throw new Error(`gateway ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const j = await r.json();
     return j?.choices?.[0]?.message;
@@ -259,7 +282,8 @@ async function chat(body: any) {
   const history: any[] = trim(Array.isArray(body?.messages) ? body.messages : []);
   const added: any[] = [];
 
-  for (let round = 0; round < 6; round++) {
+  const t0 = Date.now();
+  for (let round = 0; round < 6 && Date.now() - t0 < 90_000; round++) {
     const msg = await gateway([{ role: "system", content: systemPrompt(pages, current) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
@@ -274,7 +298,11 @@ async function chat(body: any) {
       try { args = JSON.parse(c.function?.arguments || "{}"); } catch { /* empty */ }
       if (CLIENT_TOOLS.has(name)) { clientCalls.push({ id: c.id, name, args }); continue; }
       let out: unknown;
-      try { out = SERVER_TOOLS[name] ? await SERVER_TOOLS[name](args) : { error: `unknown tool ${name}` }; }
+      try {
+        out = SERVER_TOOLS[name]
+          ? await Promise.race([SERVER_TOOLS[name](args), new Promise((_, rej) => setTimeout(() => rej(new Error("tool timeout")), 20_000))])
+          : { error: `unknown tool ${name}` };
+      }
       catch (e) { out = { error: String(e).slice(0, 200) }; }
       added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12000) });
     }
@@ -293,6 +321,7 @@ async function speak(text: string) {
   for (const voice of ["coral", "nova"]) {
     for (let i = 0; i < 3; i++) {
       const r = await fetch(`${GATEWAY}/audio/speech`, {
+        signal: AbortSignal.timeout(20_000),
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ model: "openai/gpt-4o-mini-tts", voice, input: text, instructions: VOICE_STYLE, response_format: "mp3" }),

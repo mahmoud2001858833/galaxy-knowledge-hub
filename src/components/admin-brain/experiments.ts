@@ -200,7 +200,59 @@ function population(p: P): ExperimentResult {
   };
 }
 
+// standard reduction potentials (V) for M^n+ + n e⁻ → M
+const METALS: Record<string, { e: number; n: number; ar: string }> = {
+  Li: { e: -3.04, n: 1, ar: 'ليثيوم' }, K: { e: -2.93, n: 1, ar: 'بوتاسيوم' }, Mg: { e: -2.37, n: 2, ar: 'مغنيسيوم' },
+  Al: { e: -1.66, n: 3, ar: 'ألمنيوم' }, Zn: { e: -0.76, n: 2, ar: 'خارصين' }, Fe: { e: -0.44, n: 2, ar: 'حديد' },
+  Ni: { e: -0.25, n: 2, ar: 'نيكل' }, Sn: { e: -0.14, n: 2, ar: 'قصدير' }, Pb: { e: -0.13, n: 2, ar: 'رصاص' },
+  Cu: { e: 0.34, n: 2, ar: 'نحاس' }, Ag: { e: 0.8, n: 1, ar: 'فضة' }, Au: { e: 1.5, n: 3, ar: 'ذهب' },
+};
+const metalKey = (v: unknown, def: string) => {
+  const s = String(v ?? '').trim();
+  const hit = Object.keys(METALS).find((k) => k.toLowerCase() === s.toLowerCase() || METALS[k].ar === s);
+  return hit ?? def;
+};
+
+function galvanicCell(p: P): ExperimentResult {
+  let a = metalKey(p.anode, 'Zn'), c = metalKey(p.cathode, 'Cu');
+  if (a === c) c = a === 'Cu' ? 'Zn' : 'Cu';
+  if (METALS[a].e > METALS[c].e) [a, c] = [c, a]; // the anode is always the more active metal
+  const A = METALS[a], C = METALS[c];
+  const ca = num(p, 'anode_conc', 1, 1e-6, 10), cc = num(p, 'cathode_conc', 1, 1e-6, 10), T = num(p, 'temperature', 298.15, 200, 500);
+  const n = A.n * C.n / gcd(A.n, C.n); // electrons transferred in the balanced reaction
+  const E0 = C.e - A.e, R = 8.314, F = 96485;
+  // Q = [anode ion]^(n/nA) / [cathode ion]^(n/nC)
+  const E = (qa: number, qc: number) => E0 - ((R * T) / (n * F)) * Math.log(Math.pow(qa, n / A.n) / Math.pow(qc, n / C.n));
+  const curve = (temp: number): Series => ({
+    name: `${Math.round(temp)} K`,
+    points: Array.from({ length: 61 }, (_, i) => {
+      const lg = -4 + (8 * i) / 60; // log10(Q) from −4 to 4
+      return [r(lg, 3), E0 - ((R * temp) / (n * F)) * Math.log(10 ** lg)] as [number, number];
+    }),
+  });
+  const Ecell = E(ca, cc);
+  return {
+    id: 'galvanic_cell', title: `خلية جلفانية: ${A.ar} | ${C.ar}`, equation: 'E = E° − (RT/nF)·ln Q',
+    params: [
+      { label: `تركيز أيون ${A.ar} (المصعد)`, value: ca, unit: 'مول/لتر' },
+      { label: `تركيز أيون ${C.ar} (المهبط)`, value: cc, unit: 'مول/لتر' },
+      { label: 'الحرارة', value: r(T), unit: 'كلفن' },
+    ],
+    metrics: [
+      { label: 'الجهد القياسي E°', value: r(E0), unit: 'فولت' },
+      { label: 'جهد الخلية الآن', value: r(Ecell), unit: 'فولت' },
+      { label: 'طاقة جبس ΔG', value: r((-n * F * Ecell) / 1000), unit: 'كيلوجول/مول' },
+      { label: 'ثابت الاتزان log K', value: r((n * F * E0) / (R * T * Math.LN10)) },
+      { label: 'الإلكترونات المنتقلة', value: n },
+    ],
+    xLabel: 'log Q (نسبة التراكيز)', yLabel: 'جهد الخلية (فولت)',
+    series: [curve(T), curve(T + 60)],
+  };
+}
+function gcd(x: number, y: number): number { return y ? gcd(y, x % y) : x; }
+
 const RUNNERS: Record<string, (p: P) => ExperimentResult> = {
+  galvanic_cell: galvanicCell,
   projectile, pendulum, free_fall_drag: freeFallDrag, ohms_law: ohmsLaw, radioactive_decay: decay,
   ideal_gas: idealGas, spring_oscillator: spring, titration, population_growth: population,
 };

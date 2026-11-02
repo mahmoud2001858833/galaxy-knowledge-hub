@@ -186,6 +186,7 @@ function Orb() {
         return false;
       },
       onTool: (n, a) => onTool(n, a),
+      onError: setError,
     });
     brainRef.current = brain;
     if (!brain.supported) setError('متصفحك ما بيدعم التعرف على الصوت؛ استعمل Chrome، أو اكتب تحت.');
@@ -228,6 +229,16 @@ function Orb() {
 
   const live = status !== 'closed' && status !== 'error';
   const label = status === 'speaking' ? aiLine : STATUS_AR[status];
+
+  // seconds spent thinking, so a slow answer never looks frozen
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    setSecs(0);
+    if (status !== 'thinking') return;
+    const t0 = Date.now();
+    const id = window.setInterval(() => setSecs(Math.round((Date.now() - t0) / 1000)), 1000);
+    return () => window.clearInterval(id);
+  }, [status]);
 
   return (
     <div data-brain-ui dir="rtl">
@@ -297,7 +308,8 @@ function Orb() {
             style={{ top: pos.top + size + 28 }}
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 12 }}
           >
-            <p className="text-sm text-muted-foreground min-h-5">{error ?? (status === 'speaking' ? '' : label)}</p>
+            <p className="text-sm text-muted-foreground min-h-5">{status === 'speaking' ? '' : status === 'thinking' && secs > 1 ? `${label} ${secs}ث` : label}</p>
+            {error && <p className="mt-1 text-xs text-destructive break-words">{error}</p>}
             {userLine && <p className="mt-2 text-sm text-muted-foreground line-clamp-2">«{userLine}»</p>}
             {aiLine && <p className="mt-2 text-lg font-medium text-foreground leading-relaxed line-clamp-4">{aiLine}</p>}
 

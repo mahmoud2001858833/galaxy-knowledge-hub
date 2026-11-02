@@ -14,6 +14,8 @@ type Opts = {
   /** return true when the UI consumed the utterance itself (e.g. a yes/no confirmation) */
   onUserSaid: (text: string) => boolean;
   onTool: ToolHandler;
+  /** a readable reason when something fails (shown on screen) */
+  onError: (msg: string | null) => void;
 };
 
 const FN_URL = `${import.meta.env.VITE_SUPABASE_URL || 'https://esifpjjehdnpkhyilctv.supabase.co'}/functions/v1/admin-brain`;
@@ -115,6 +117,7 @@ export class VoiceBrain {
     this.busy = true;
     this.set('thinking');
     this.history.push({ role: 'user', content: text });
+    this.o.onError(null);
     try {
       for (let round = 0; round < 6 && this.alive; round++) {
         const res = await this.call({ messages: this.history, pages: this.o.pages(), current: location.pathname + location.search });
@@ -136,6 +139,8 @@ export class VoiceBrain {
       }
     } catch (e) {
       console.warn('admin brain', e);
+      const why = e instanceof DOMException && e.name === 'TimeoutError' ? 'السيرفر ما رد خلال دقيقة' : String((e as Error)?.message ?? e);
+      this.o.onError(`خطأ: ${why}`);
       await this.say('صار عندي خلل بالاتصال، جرّب كمان مرة.');
     } finally {
       this.busy = false;
@@ -151,7 +156,7 @@ export class VoiceBrain {
   }
 
   private async call(body: unknown): Promise<any> {
-    const r = await fetch(FN_URL, { method: 'POST', headers: { ...(await this.auth()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(FN_URL, { method: 'POST', signal: AbortSignal.timeout(100_000), headers: { ...(await this.auth()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j?.error || `brain ${r.status}`);
     return j;
@@ -166,15 +171,20 @@ export class VoiceBrain {
     try {
       const r = await fetch(FN_URL, {
         method: 'POST',
+        signal: AbortSignal.timeout(25_000),
         headers: { ...(await this.auth()), 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'speak', text }),
       });
-      if (!r.ok) throw new Error(`speak ${r.status}`);
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error(`الصوت: ${j?.error ?? r.status}`);
+      }
       const url = URL.createObjectURL(await r.blob());
       if (!this.alive) return;
       await this.play(url);
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (e) {
+      console.warn('admin brain voice', e);
       await this.browserVoice(text);
     }
   }
@@ -213,7 +223,10 @@ export class VoiceBrain {
       this.stopSpeech = () => { synth.cancel(); done(); };
       u.onend = done;
       u.onerror = done;
+      synth.cancel();
       synth.speak(u);
+      // Chrome sometimes never fires onend (e.g. no Arabic voice): don't hang the conversation
+      window.setTimeout(() => { if (this.stopSpeech) done(); }, 1500 + text.length * 90);
     });
   }
 

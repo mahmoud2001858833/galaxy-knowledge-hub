@@ -290,3 +290,6 @@ verify_jwt = false
 
 [functions.agent-chat]
 verify_jwt = true
+
+[functions.admin-brain]
+verify_jwt = false
