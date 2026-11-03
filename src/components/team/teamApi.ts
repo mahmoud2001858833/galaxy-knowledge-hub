@@ -49,6 +49,24 @@ export const STATUS_LABELS: Record<TaskStatus | 'overdue', string> = {
   done: 'مهام منجزة',
 };
 
+/** Sentinel markers used to store a member's daily "no tasks today" notice inside team_tasks. */
+export const DAY_OFF_TAG = '__TEAM_DAY_OFF__' as const;
+export const DAY_OFF_TITLE_PREFIX = '__DAY_OFF__:' as const;
+
+export interface DayOffRecord {
+  taskId: string;
+  userId: string;
+  date: string;
+  note: string | null;
+  createdAt: string;
+}
+
+/** Today's YYYY-MM-DD in Jordan time (Asia/Amman), so a day-off notice expires automatically tomorrow. */
+export const todayAmman = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' });
+
+export const isDayOffTaskRow = (t: Pick<TeamTask, 'title' | 'extra_requirements'>) =>
+  Boolean(t.extra_requirements?.includes(DAY_OFF_TAG) || t.title.startsWith(DAY_OFF_TITLE_PREFIX));
+
 export const isLeadRole = (roles: TeamRole[]) => roles.includes('principal') || roles.includes('supervisor');
 
 export const isOverdue = (t: Pick<TeamTask, 'status' | 'due_at'>) =>
@@ -131,7 +149,7 @@ export function useTeamTasks() {
 
   const reload = useCallback(async () => {
     const { data } = await supabase.from('team_tasks').select('*').order('created_at', { ascending: false });
-    setTasks(data ?? []);
+    setTasks((data ?? []).filter((t) => !isDayOffTaskRow(t)));
     setLoading(false);
   }, []);
 
@@ -148,6 +166,88 @@ export function useTeamTasks() {
 
   return { tasks, loading, reload };
 }
+
+/** Today's active "no tasks today" notices keyed by member user_id (live via realtime). */
+export function useTeamDayOff() {
+  const [dayOffMap, setDayOffMap] = useState<Map<string, DayOffRecord>>(() => new Map());
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    const today = todayAmman();
+    const { data } = await supabase
+      .from('team_tasks')
+      .select('id, title, details, assignee_user_id, extra_requirements, created_at')
+      .contains('extra_requirements', [DAY_OFF_TAG])
+      .order('created_at', { ascending: false });
+
+    const next = new Map<string, DayOffRecord>();
+    for (const row of data ?? []) {
+      if (!row.assignee_user_id) continue;
+      const rowDate = row.title.startsWith(DAY_OFF_TITLE_PREFIX)
+        ? row.title.slice(DAY_OFF_TITLE_PREFIX.length).trim()
+        : '';
+      if (rowDate !== today) continue;
+      if (!next.has(row.assignee_user_id)) {
+        next.set(row.assignee_user_id, {
+          taskId: row.id,
+          userId: row.assignee_user_id,
+          date: rowDate,
+          note: row.details,
+          createdAt: row.created_at,
+        });
+      }
+    }
+    setDayOffMap(next);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+    const channel = supabase
+      .channel(`team-dayoff-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_tasks' }, () => reload())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reload]);
+
+  return { dayOffMap, loading, reload };
+}
+
+/** Lead action: mark a team member as having no tasks for today. */
+export const grantDayOff = async (userId: string, customNote?: string) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('سجّل الدخول أولاً');
+
+  // Remove any previous day-off rows for this member so the table stays clean
+  await supabase
+    .from('team_tasks')
+    .delete()
+    .eq('assignee_user_id', userId)
+    .contains('extra_requirements', [DAY_OFF_TAG]);
+
+  const { error } = await supabase.from('team_tasks').insert({
+    title: `${DAY_OFF_TITLE_PREFIX}${todayAmman()}`,
+    details: customNote?.trim() || null,
+    assignee_role: 'file_manager',
+    assignee_user_id: userId,
+    status: 'done',
+    extra_requirements: [DAY_OFF_TAG],
+    created_by: session.user.id,
+  });
+  if (error) throw error;
+};
+
+/** Lead action: cancel today's day-off notice for a team member. */
+export const revokeDayOff = async (userId: string) => {
+  const { error } = await supabase
+    .from('team_tasks')
+    .delete()
+    .eq('assignee_user_id', userId)
+    .contains('extra_requirements', [DAY_OFF_TAG]);
+  if (error) throw error;
+};
 
 export function useTeamNotifications() {
   const [items, setItems] = useState<TeamNotification[]>([]);

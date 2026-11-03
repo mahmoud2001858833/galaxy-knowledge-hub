@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTeamRoles } from '@/components/team/teamApi';
 import { TeamDashboard, teamTabsFor } from '@/components/team/TeamPortal';
+import { DayOffMemberNotice } from '@/components/team/DayOffControls';
 
 interface UserProfileData {
   id: string;
@@ -608,6 +609,10 @@ export const UserProfile: React.FC = () => {
                 <span>المختبرات والمحاكاة 3D ({completedLabs.length})</span>
               </button>
             </div>
+
+            {!activeTab.startsWith('team:') && team.userId && team.roles.length > 0 && (
+              <DayOffMemberNotice me={team.userId} roles={team.roles} windowKey="profile" />
+            )}
 
             {activeTab.startsWith('team:') && team.userId && (
               <TeamDashboard tab={activeTab.slice(5)} me={team.userId} roles={team.roles} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Crown, Loader2 } from 'lucide-react';
 import { RoleWorkspace } from './RoleWorkspace';
 import { EmployeesControlCenter } from './EmployeesControlCenter';
+import { DayOffMemberNotice } from './DayOffControls';
 import {
   ROLE_LABELS,
   WORKER_ROLES,
@@ -9,6 +10,7 @@ import {
   useTeamMembers,
   useTeamNotifications,
   useTeamTasks,
+  type TeamMember,
   type TeamRole,
   type WorkerRole,
 } from './teamApi';
@@ -19,8 +21,12 @@ export const teamTabsFor = (roles: TeamRole[]) => [
   ...WORKER_ROLES.filter((r) => roles.includes(r)).map((r) => ({ id: r, label: `لوحة ${ROLE_LABELS[r]}` })),
 ];
 
-const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean }> = ({ role, me, isLead }) => {
-  const { members } = useTeamMembers();
+const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean; members: TeamMember[] }> = ({
+  role,
+  me,
+  isLead,
+  members,
+}) => {
   const { tasks, loading, reload } = useTeamTasks();
   const notifications = useTeamNotifications();
   if (loading) {
@@ -36,8 +42,19 @@ const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean }> = (
 };
 
 /** Renders the dashboard for one tab id from teamTabsFor(). */
-export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[] }> = ({ tab, me, roles }) =>
-  tab === 'control' ? <EmployeesControlCenter /> : <Workspace role={tab as WorkerRole} me={me} isLead={isLeadRole(roles)} />;
+export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[] }> = ({ tab, me, roles }) => {
+  const { members } = useTeamMembers();
+  return (
+    <div className="space-y-4" dir="rtl">
+      <DayOffMemberNotice me={me} roles={roles} members={members} windowKey={tab} />
+      {tab === 'control' ? (
+        <EmployeesControlCenter />
+      ) : (
+        <Workspace role={tab as WorkerRole} me={me} isLead={isLeadRole(roles)} members={members} />
+      )}
+    </div>
+  );
+};
 
 /** Role tab bar + the selected dashboard. */
 export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: string }> = ({ me, roles, initialTab }) => {

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Crown, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
+import { Bell, ClipboardList, Coffee, Crown, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TaskBoard } from './TaskBoard';
 import { TeamChat } from './TeamChat';
+import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -20,10 +21,12 @@ import {
   WORKER_ROLES,
   errorMessage,
   formatDate,
+  useTeamDayOff,
   useTeamMembers,
   useTeamNotifications,
   useTeamRoles,
   useTeamTasks,
+  type DayOffRecord,
   type TeamMember,
   type TeamRole,
   type WorkerRole,
@@ -31,8 +34,14 @@ import {
 
 const ASSIGNABLE: TeamRole[] = ['supervisor', ...WORKER_ROLES];
 
-/** Emails assigned to one role, with add/remove. */
-const RoleEmails: React.FC<{ role: TeamRole; members: TeamMember[]; onChanged: () => void }> = ({ role, members, onChanged }) => {
+/** Emails assigned to one role, with add/remove and quick day-off toggle. */
+const RoleEmails: React.FC<{
+  role: TeamRole;
+  members: TeamMember[];
+  dayOffMap: Map<string, DayOffRecord>;
+  onDayOffChanged: () => void;
+  onChanged: () => void;
+}> = ({ role, members, dayOffMap, onDayOffChanged, onChanged }) => {
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const rows = members.filter((m) => m.role === role);
@@ -77,9 +86,17 @@ const RoleEmails: React.FC<{ role: TeamRole; members: TeamMember[]; onChanged: (
                 {m.email}
               </span>
             </span>
-            <button type="button" onClick={() => remove(m)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="إزالة">
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <MemberDayOffQuickToggle
+                userId={m.user_id}
+                memberName={m.display_name || m.email}
+                dayOffMap={dayOffMap}
+                onChanged={onDayOffChanged}
+              />
+              <button type="button" onClick={() => remove(m)} className="shrink-0 text-muted-foreground hover:text-destructive" aria-label="إزالة">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </li>
         ))}
         {rows.length === 0 && <li className="text-xs text-muted-foreground">لا يوجد أحد بعد</li>}
@@ -312,6 +329,7 @@ export const EmployeesControlCenter: React.FC = () => {
   const isLead = roles.includes('principal') || roles.includes('supervisor');
   const { members, reload: reloadMembers } = useTeamMembers();
   const { tasks, reload: reloadTasks } = useTeamTasks();
+  const { dayOffMap, reload: reloadDayOff } = useTeamDayOff();
   const notifications = useTeamNotifications();
   const [roleFilter, setRoleFilter] = useState<'all' | WorkerRole>('all');
   const [chatKey, setChatKey] = useState(0); // remounts the chat after it is cleared
@@ -355,6 +373,9 @@ export const EmployeesControlCenter: React.FC = () => {
           <TabsTrigger value="roles" className="gap-1.5 rounded-xl">
             <UserCog className="h-4 w-4" /> الأدوار والإيميلات
           </TabsTrigger>
+          <TabsTrigger value="dayoff" className="gap-1.5 rounded-xl">
+            <Coffee className="h-4 w-4" /> عدم وجود مهام ({dayOffMap.size})
+          </TabsTrigger>
           <TabsTrigger value="tasks" className="gap-1.5 rounded-xl">
             <ClipboardList className="h-4 w-4" /> المهام ({tasks.length})
           </TabsTrigger>
@@ -372,9 +393,20 @@ export const EmployeesControlCenter: React.FC = () => {
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {ASSIGNABLE.map((r) => (
-              <RoleEmails key={r} role={r} members={members} onChanged={reloadMembers} />
+              <RoleEmails
+                key={r}
+                role={r}
+                members={members}
+                dayOffMap={dayOffMap}
+                onDayOffChanged={reloadDayOff}
+                onChanged={reloadMembers}
+              />
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="dayoff">
+          <DayOffAdminPanel />
         </TabsContent>
 
         <TabsContent value="tasks" className="space-y-6">
