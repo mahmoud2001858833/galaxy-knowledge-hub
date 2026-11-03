@@ -355,7 +355,7 @@ const RootLayout = () => {
 };
 
 // Authentication guard component that redirects to login if not authenticated
-const AuthGuard = ({ children }) => {
+const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
@@ -363,47 +363,62 @@ const AuthGuard = ({ children }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null }; error: null }>((resolve) =>
+            setTimeout(() => resolve({ data: { session: null }, error: null }), 3000)
+          ),
+        ]);
+        if (!isMounted) return;
+
+        const session = result?.data?.session;
         setIsAuthenticated(!!session);
         if (!session) {
-          // If not authenticated, show a toast and redirect to login
           toast({
             title: "تسجيل دخول مطلوب",
             description: "يرجى تسجيل الدخول للوصول إلى هذه الصفحة",
             variant: "destructive",
           });
-          // Redirect to auth page with return URL
           navigate(`/auth?returnUrl=${encodeURIComponent(location.pathname)}`, { replace: true });
         }
       } catch (error) {
         console.error('Auth check error:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
+      if (isMounted) {
+        setIsAuthenticated(!!session);
+        setIsLoading(false);
+      }
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, location.pathname]);
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-blue-950">
-        <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="animate-spin h-10 w-10 border-4 border-primary rounded-full border-t-transparent"></div>
       </div>
     );
   }
 
-  return isAuthenticated ? children : null;
+  return isAuthenticated ? <>{children}</> : null;
 };
 
 // Separate component that doesn't require authentication
@@ -1138,11 +1153,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental-sustainability',
-        element: <AuthGuard><EnvironmentalSustainability /></AuthGuard>,
+        element: <PublicRoute><EnvironmentalSustainability /></PublicRoute>,
       },
       {
         path: 'environmental/carbon-calculator',
-        element: <AuthGuard><CarbonCalculator /></AuthGuard>,
+        element: <PublicRoute><CarbonCalculator /></PublicRoute>,
       },
       {
         path: 'environmental/school-projects',
@@ -1154,11 +1169,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental/home-projects',
-        element: <AuthGuard><HomeProjects /></AuthGuard>,
+        element: <PublicRoute><HomeProjects /></PublicRoute>,
       },
       {
         path: 'environmental/personal-sustainability-index',
-        element: <AuthGuard><PersonalSustainabilityIndex /></AuthGuard>,
+        element: <PublicRoute><PersonalSustainabilityIndex /></PublicRoute>,
       },
       {
         path: 'falak-knowledge-ai',
@@ -1178,7 +1193,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental/student-projects',
-        element: <AuthGuard><StudentProjects /></AuthGuard>,
+        element: <PublicRoute><StudentProjects /></PublicRoute>,
       },
       {
         path: 'environmental/recycling-advisor',
@@ -1194,7 +1209,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'environmental/eco-predict',
-        element: <AuthGuard><EcoPredictDashboard /></AuthGuard>,
+        element: <PublicRoute><EcoPredictDashboard /></PublicRoute>,
       },
       {
         path: 'medical-assistant',
