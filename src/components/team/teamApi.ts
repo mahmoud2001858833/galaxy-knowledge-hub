@@ -79,6 +79,10 @@ export const errorMessage = (e: unknown) => {
   return msg.replace(/^.*?ERROR:\s*/, '');
 };
 
+/** Fired after the team roster changes in this tab, so role-dependent UI refreshes at once. */
+export const TEAM_MEMBERS_CHANGED = 'team-members-changed';
+export const notifyTeamMembersChanged = () => window.dispatchEvent(new Event(TEAM_MEMBERS_CHANGED));
+
 /** Current user's team roles; empty for non-members. */
 export function useTeamRoles() {
   const [state, setState] = useState<{ loading: boolean; userId: string | null; roles: TeamRole[] }>({
@@ -104,9 +108,20 @@ export function useTeamRoles() {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== 'INITIAL_SESSION') setTimeout(load, 0);
     });
+    // A member added by the principal sees the team panel without signing in again:
+    // re-check when the tab regains focus, every 30s while visible, and on local changes.
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    const poll = window.setInterval(onVisible, 30_000);
+    window.addEventListener('focus', onVisible);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener(TEAM_MEMBERS_CHANGED, load);
     return () => {
       active = false;
       sub.subscription.unsubscribe();
+      window.clearInterval(poll);
+      window.removeEventListener('focus', onVisible);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener(TEAM_MEMBERS_CHANGED, load);
     };
   }, []);
 

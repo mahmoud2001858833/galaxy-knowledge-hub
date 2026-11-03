@@ -30,6 +30,7 @@ import {
   type TeamMember,
   type TeamRole,
   type WorkerRole,
+  notifyTeamMembersChanged,
 } from './teamApi';
 
 const ASSIGNABLE: TeamRole[] = ['supervisor', ...WORKER_ROLES];
@@ -61,6 +62,7 @@ const RoleEmails: React.FC<{
       setEmail('');
       toast.success('أضيف العضو');
       onChanged();
+      notifyTeamMembersChanged();
     }
   };
 
@@ -68,7 +70,10 @@ const RoleEmails: React.FC<{
     if (!window.confirm(`إزالة ${m.email} من دور ${ROLE_LABELS[role]}؟`)) return;
     const { error } = await supabase.from('team_members').delete().eq('id', m.id);
     if (error) toast.error(errorMessage(error));
-    else onChanged();
+    else {
+      onChanged();
+      notifyTeamMembersChanged();
+    }
   };
 
   return (

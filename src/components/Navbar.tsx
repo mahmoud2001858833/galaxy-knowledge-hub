@@ -197,6 +197,23 @@ const Navbar = () => {
               </span>
             </div>
           </Link>
+
+          {/* Team panel: shown next to the logo for every team member (speaker, supervisor, employee…) */}
+          {teamRoles.length > 0 && (
+            <Link
+              to="/team"
+              aria-label="لوحة الموظفين"
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-sm transition-all",
+                isNavActive('/team')
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-primary/10 text-primary ring-1 ring-primary/30 hover:bg-primary hover:text-primary-foreground"
+              )}
+            >
+              <Briefcase className="h-4 w-4" />
+              <span className="hidden sm:inline">لوحة الموظفين</span>
+            </Link>
+          )}
         </div>
         
         {/* Desktop Nav Items */}
