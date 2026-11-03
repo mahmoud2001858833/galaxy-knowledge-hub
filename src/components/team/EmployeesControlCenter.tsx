@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Crown, Loader2, MessagesSquare, Plus, UserCog, X } from 'lucide-react';
+import { Bell, ClipboardList, Crown, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TaskBoard } from './TaskBoard';
 import { TeamChat } from './TeamChat';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   PRINCIPAL,
   ROLE_LABELS,
@@ -228,6 +232,80 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
   );
 };
 
+const CONFIRM_WORD = 'امسح';
+
+/**
+ * Principal only: deletes the whole team chat — group and private messages, polls (with their votes)
+ * and the images sent in the chat. Task files in the same bucket are not touched.
+ * The database already lets leads delete these rows (RLS), so this runs with the principal's own account.
+ */
+const ClearTeamChat: React.FC<{ onCleared: () => void }> = ({ onCleared }) => {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const clearAll = async () => {
+    setBusy(true);
+    try {
+      const { data: imgs, error: imgErr } = await supabase.from('team_messages').select('image_path').not('image_path', 'is', null);
+      if (imgErr) throw imgErr;
+      const { error: msgErr, count } = await supabase.from('team_messages').delete({ count: 'exact' }).not('id', 'is', null);
+      if (msgErr) throw msgErr;
+      const { error: pollErr } = await supabase.from('team_polls').delete().not('id', 'is', null);
+      if (pollErr) throw pollErr;
+      const paths = (imgs ?? []).map((m) => m.image_path).filter((x): x is string => Boolean(x));
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await supabase.storage.from('team-files').remove(paths.slice(i, i + 100));
+        if (error) console.warn('team chat images', error.message);
+      }
+      toast.success(`انمسحت كل محادثات الفريق (${count ?? 0} رسالة${paths.length ? ` و${paths.length} صورة` : ''})`);
+      setOpen(false);
+      setTyped('');
+      onCleared();
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+      <div className="text-sm">
+        <div className="font-bold text-destructive">مسح كل محادثات الفريق</div>
+        <div className="text-muted-foreground">يحذف رسائل المجموعة والرسائل الخاصة والاستطلاعات والصور المرسلة. لا يمكن التراجع.</div>
+      </div>
+      <AlertDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setTyped(''); }}>
+        <AlertDialogTrigger asChild>
+          <Button variant="destructive" className="gap-1.5">
+            <Trash2 className="h-4 w-4" /> مسح الكل
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>متأكد إنك بدك تمسح كل محادثات الفريق؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              رح تنحذف كل الرسائل (الجماعية والخاصة) والاستطلاعات والصور عند كل الأعضاء، ولا يمكن استرجاعها.
+              للتأكيد اكتب «{CONFIRM_WORD}».
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={CONFIRM_WORD} autoFocus />
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={busy}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy || typed.trim() !== CONFIRM_WORD}
+              onClick={(e) => { e.preventDefault(); void clearAll(); }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'امسح كل المحادثات'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
 /** لوحة تحكم الموظفين — for the principal and supervisors only (enforced by RLS). */
 export const EmployeesControlCenter: React.FC = () => {
   const { loading: rolesLoading, userId, roles } = useTeamRoles();
@@ -236,6 +314,7 @@ export const EmployeesControlCenter: React.FC = () => {
   const { tasks, reload: reloadTasks } = useTeamTasks();
   const notifications = useTeamNotifications();
   const [roleFilter, setRoleFilter] = useState<'all' | WorkerRole>('all');
+  const [chatKey, setChatKey] = useState(0); // remounts the chat after it is cleared
 
   const shown = useMemo(() => (roleFilter === 'all' ? tasks : tasks.filter((t) => t.assignee_role === roleFilter)), [tasks, roleFilter]);
 
@@ -335,8 +414,9 @@ export const EmployeesControlCenter: React.FC = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="chat">
-          <TeamChat me={userId} members={members} isLead />
+        <TabsContent value="chat" className="space-y-4">
+          {roles.includes('principal') && <ClearTeamChat onCleared={() => setChatKey((k) => k + 1)} />}
+          <TeamChat key={chatKey} me={userId} members={members} isLead />
         </TabsContent>
       </Tabs>
     </div>

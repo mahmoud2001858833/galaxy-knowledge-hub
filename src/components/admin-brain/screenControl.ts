@@ -44,7 +44,7 @@ export function readScreen() {
     .filter((h) => !h.closest(SKIP) && visible(h))
     .map((h) => textOf(h).slice(0, 80))
     .slice(0, 15);
-  const actions = Array.from(new Set(clickables().map((el) => textOf(el).slice(0, 50)))).slice(0, 60);
+  const actions = Array.from(new Set(clickables().map((el) => textOf(el).slice(0, 40)))).slice(0, 40);
   const fields = inputs().map(labelOfInput).filter(Boolean).slice(0, 15);
   return { path: location.pathname, title: document.title, headings, actions, fields };
 }
@@ -257,7 +257,7 @@ export async function setControl(control: string | number, value: string | numbe
 }
 
 /** The visible text of the page (results, readouts, explanations), for the AI to explain. */
-export function readPageText(max = 3500) {
+export function readPageText(max = 1800) {
   const root = (document.querySelector('main') as HTMLElement) || document.body;
   const clone = root.innerText || '';
   const brain = document.querySelector(SKIP) as HTMLElement | null;

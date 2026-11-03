@@ -169,7 +169,7 @@ export class VoiceBrain {
           for (const c of res.client_calls) {
             let out: unknown;
             try { out = await this.o.onTool(c.name, c.args ?? {}); } catch (e) { out = { ok: false, error: String(e) }; }
-            this.history.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out ?? { ok: true }).slice(0, 8000) });
+            this.history.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out ?? { ok: true }).slice(0, 2500) });
           }
           await talking;
           if (this.alive) this.set('thinking');

@@ -279,6 +279,14 @@ function providers(): Provider[] {
   let models = (Deno.env.get("ADMIN_BRAIN_LLM_MODEL") ?? "").split(",").map((m) => m.trim()).filter(Boolean);
   if (u?.includes("groq.com") && !models.includes("openai/gpt-oss-20b")) models = [...models, "openai/gpt-oss-20b"];
   if (u && k) for (const m of models) list.push({ name: m.split("/").pop()!, url: u, key: k, model: m });
+  // Cloudflare Workers AI: a second free pool (its own daily allowance)
+  const cfAcc = Deno.env.get("ADMIN_BRAIN_CF_ACCOUNT_ID"), cfTok = Deno.env.get("ADMIN_BRAIN_CF_TOKEN");
+  if (cfAcc && cfTok) list.push({
+    name: "cloudflare",
+    url: `https://api.cloudflare.com/client/v4/accounts/${cfAcc}/ai/v1/chat/completions`,
+    key: cfTok,
+    model: Deno.env.get("ADMIN_BRAIN_CF_MODEL") || "@cf/meta/llama-4-scout-17b-16e-instruct",
+  });
   const g = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
   if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash" });
   return list;
@@ -293,46 +301,61 @@ async function gateway(messages: unknown[]) {
   const now = Date.now();
   // providers that failed recently go last instead of being skipped entirely
   const ordered = [...list.filter((p) => (skipUntil.get(p.name) ?? 0) <= now), ...list.filter((p) => (skipUntil.get(p.name) ?? 0) > now)];
-  for (const p of ordered) {
-    for (let i = 0; i < 2; i++) {
-      const t = Date.now();
-      try {
-        const r = await fetch(p.url, {
-          signal: AbortSignal.timeout(25_000),
-          method: "POST",
-          headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 1000, temperature: 0.6,
-            // gpt-oss on Groq: little hidden reasoning = answers in well under a second
-            ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
-          }),
-        });
-        if (r.status === 429) {
-          const wait = Number(r.headers.get("retry-after") ?? "0");
-          errors.push(`${p.name}: حد الدقيقة (429)`);
-          if (i === 0 && wait > 0 && wait <= 4) { await new Promise((s) => setTimeout(s, wait * 1000 + 200)); continue; }
-          skipUntil.set(p.name, Date.now() + Math.max(20_000, wait * 1000));
-          break;
-        }
-        if (!r.ok) {
-          const body = (await r.text()).slice(0, 140);
-          errors.push(r.status === 402 ? `${p.name}: الرصيد خلص (402)` : r.status === 413 ? `${p.name}: الطلب كبير (413)` : `${p.name} ${r.status}: ${body}`);
-          skipUntil.set(p.name, Date.now() + (r.status === 402 ? 30 * 60_000 : 60_000));
-          break;
-        }
-        const j = await r.json();
-        const msg = j?.choices?.[0]?.message;
-        if (!msg) { errors.push(`${p.name}: رد فاضي`); break; }
-        timing.provider = p.name;
-        timing.ms.push(Date.now() - t);
-        skipUntil.delete(p.name);
-        return msg;
-      } catch (e) {
-        errors.push(`${p.name}: ${String(e).slice(0, 100)}`);
-        skipUntil.set(p.name, Date.now() + 60_000);
-        break;
-      }
+  // one pass over every provider; if they are all only rate-limited for a few seconds (Groq's
+  // per-minute budget refills continuously), wait for the soonest one and try again instead of failing
+  const call = async (p: Provider) => {
+    const t = Date.now();
+    const r = await fetch(p.url, {
+      signal: AbortSignal.timeout(25_000),
+      method: "POST",
+      headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 500, temperature: 0.6,
+        // gpt-oss on Groq: little hidden reasoning = answers in well under a second
+        ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
+      }),
+    });
+    if (r.status === 429) {
+      const body = await r.text();
+      const secs = Number(r.headers.get("retry-after")) || Number(/try again in ([\d.]+)s/i.exec(body)?.[1]) || 10;
+      return { wait: secs };
     }
+    if (!r.ok) {
+      const body = (await r.text()).slice(0, 140);
+      return { error: r.status === 402 ? `${p.name}: الرصيد خلص (402)` : r.status === 413 ? `${p.name}: الطلب كبير (413)` : `${p.name} ${r.status}: ${body}`, status: r.status };
+    }
+    const j = await r.json();
+    const msg = j?.choices?.[0]?.message;
+    if (!msg) return { error: `${p.name}: رد فاضي` };
+    timing.provider = p.name;
+    timing.ms.push(Date.now() - t);
+    return { msg };
+  };
+
+  let soonest: { p: Provider; wait: number } | null = null;
+  for (const p of ordered) {
+    try {
+      const res: any = await call(p);
+      if (res.msg) { skipUntil.delete(p.name); return res.msg; }
+      if (res.wait) {
+        errors.push(`${p.name}: حد الدقيقة (بعد ${Math.ceil(res.wait)}ث)`);
+        skipUntil.set(p.name, Date.now() + res.wait * 1000);
+        if (!soonest || res.wait < soonest.wait) soonest = { p, wait: res.wait };
+        continue;
+      }
+      errors.push(res.error);
+      skipUntil.set(p.name, Date.now() + (res.status === 402 ? 30 * 60_000 : 60_000));
+    } catch (e) {
+      errors.push(`${p.name}: ${String(e).slice(0, 100)}`);
+      skipUntil.set(p.name, Date.now() + 60_000);
+    }
+  }
+  if (soonest && soonest.wait <= 20) {
+    await new Promise((s) => setTimeout(s, soonest!.wait * 1000 + 300));
+    try {
+      const res: any = await call(soonest.p);
+      if (res.msg) { skipUntil.delete(soonest.p.name); return res.msg; }
+    } catch { /* fall through */ }
   }
   console.warn("admin-brain providers failed", errors);
   throw new Error(errors.join(" · ") || "AI busy");
@@ -388,7 +411,7 @@ async function chat(body: any) {
           : { error: `unknown tool ${name}` };
       }
       catch (e) { out = { error: String(e).slice(0, 200) }; }
-      added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 5000) });
+      added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 2500) });
     }
     // the browser runs screen tools, appends their results and calls us again
     if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added, took: took() };
