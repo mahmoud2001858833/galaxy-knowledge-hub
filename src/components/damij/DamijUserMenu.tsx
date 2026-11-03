@@ -53,7 +53,10 @@ const DamijUserMenu: React.FC = () => {
       setLoading(false);
     };
     load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      // Deferred: awaiting Supabase calls inside this callback deadlocks the auth client
+      setTimeout(() => { void load(); }, 0);
+    });
     return () => { active = false; subscription.unsubscribe(); };
   }, []);
 

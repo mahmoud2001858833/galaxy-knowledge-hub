@@ -55,7 +55,8 @@ import {
   ArrowUpRight,
   Stethoscope,
   Volume2,
-  Bot
+  Bot,
+  Coffee
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,7 @@ import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow'
 import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
 import SchoolContentModeration from '@/components/admin/SchoolContentModeration';
 import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
+import DayOffAdminPanel from '@/components/team/DayOffControls';
 import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
 import { LCMContentManager } from '@/components/admin/lcm/LCMContentManager';
@@ -91,6 +93,7 @@ export type AdminTab =
   | 'exam-library'
   | 'school-content'
   | 'employees'
+  | 'no-tasks'
   | 'terminal'
   | 'lcm'
   | 'faculty'
@@ -213,7 +216,8 @@ export const SuperAdminControlHub: React.FC = () => {
 
     supabase.auth.getSession().then(({ data: { session } }) => verify(session?.user?.id));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      verify(session?.user?.id);
+      const uid = session?.user?.id;
+      setTimeout(() => { void verify(uid); }, 0);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -621,6 +625,7 @@ export const SuperAdminControlHub: React.FC = () => {
       tabs: [
         { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
         { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
+        { id: 'no-tasks', label: 'عدم وجود مهام', icon: Coffee, badge: 'راحة اليوم', description: 'عرض جميع أعضاء الفريق ومسمياتهم وتفعيل نافذة الراحة الخضراء لليوم' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
         { id: 'audit', label: 'سجل النشاط والأمان ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}`, description: 'رصد كل حركة وتعديل بالثانية مع التفاصيل' },
@@ -1735,6 +1740,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'employees' && (
               <SafeBoundary name="EmployeesControlCenter">
                 <EmployeesControlCenter />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'no-tasks' && (
+              <SafeBoundary name="DayOffAdminPanel">
+                <DayOffAdminPanel />
               </SafeBoundary>
             )}
 

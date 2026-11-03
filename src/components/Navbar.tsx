@@ -78,7 +78,8 @@ const Navbar = () => {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_, session) => {
       setUser(session?.user || null);
-      if (session?.user) {
+      // Supabase queries are deferred so they never run inside the auth lock
+      if (session?.user) setTimeout(() => {
         supabase.from('profiles').select('id, username, avatar_url').eq('id', session.user.id).single().then(({ data }) => {
           setProfile(data);
         });
@@ -89,7 +90,8 @@ const Navbar = () => {
                                 localStorage.getItem('galaxy_admin_authenticated') === 'true';
           setIsSuperAdmin((!!data && data.length > 0) || emailFallback || isStoredAdmin);
         });
-      } else {
+      }, 0);
+      else {
         setProfile(null);
         const isStoredAdmin = sessionStorage.getItem('galaxy_admin_authenticated') === 'true' ||
                               localStorage.getItem('galaxy_admin_authenticated') === 'true';

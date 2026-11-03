@@ -57,7 +57,11 @@ function useIsAdmin() {
       if (alive) setOk(!error && data === true);
     };
     supabase.auth.getSession().then(({ data }) => check(data.session?.user?.id));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => check(s?.user?.id));
+    // Deferred + not returned: an awaited Supabase call inside this callback deadlocks the auth client
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      const uid = s?.user?.id;
+      setTimeout(() => { void check(uid); }, 0);
+    });
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
   return ok;
