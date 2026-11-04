@@ -38,7 +38,22 @@ interface Props {
   session: SessionInfo;
   onEnded: (end: SessionEnd) => void;
   onQuota: (q: QuotaInfo | null) => void;
+  /** A dedicated terminal: every line goes straight to this agent (no "claude"/"antigravity" prefix). */
+  fixedMode?: Exclude<Mode, 'cloud'>;
+  /**
+   * Several terminals share one session (one per tab). Only the primary one closes the session when
+   * the page goes away, shows the approval toasts and is the one the admin's central AI types into.
+   */
+  primary?: boolean;
+  /** The tab is visible: refit and focus. */
+  active?: boolean;
 }
+
+const FIXED_INTRO: Record<Exclude<Mode, 'cloud'>, string> = {
+  claude: "\x1b[1;35mClaude Code\x1b[0m \x1b[2m— on the principal's computer. Type your request and press Enter; every line is a message. /new starts a new conversation.\x1b[0m",
+  antigravity: "\x1b[1;34mAntigravity agent\x1b[0m \x1b[2m— on the principal's computer. Type your request and press Enter; every line is a message. /new starts a new conversation.\x1b[0m",
+  shell: "\x1b[1;33mShell\x1b[0m \x1b[2m— on the principal's computer, in the project folder. Non-interactive commands only.\x1b[0m",
+};
 
 const FN = 'web-terminal-exec';
 const pendingClose = new Map<string, number>();
@@ -97,7 +112,7 @@ const modeFor = (word: string): Exclude<Mode, 'cloud'> | null => {
   return null;
 };
 
-export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
+export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true }) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const state = useRef({
@@ -110,7 +125,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     abort: null as AbortController | null,
     pending: [] as string[],
     // 'cloud' = platform commands; 'claude' / 'shell' = every line goes to the principal's computer
-    mode: 'cloud' as Mode,
+    mode: (fixedMode ?? 'cloud') as Mode,
     claudeSession: null as string | null,
     agentSession: null as string | null, // Antigravity conversation id
     asking: false, // the running job's agent asked a question: Enter sends the line as the answer
@@ -120,6 +135,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
   // prints a line above the input line without disturbing what the user is typing
   const noticeRef = useRef<(text: string) => void>(() => {});
   const [ready, setReady] = useState(false);
+  const fitRef = useRef<FitAddon | null>(null);
   // images an agent made on the principal's computer (uploaded by the bridge to terminal-media)
   const [images, setImages] = useState<{ path: string; url: string | null }[]>([]);
   // a question from the agent (Antigravity ask_question), rendered properly (RTL, buttons) above the terminal
@@ -250,6 +266,10 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         return prompt();
       }
       const word = cmd.toLowerCase();
+      if (fixedMode && (word === 'exit' || word === 'quit')) {
+        term.write(`\r\n\x1b[2mThis terminal is only for ${fixedMode === 'claude' ? 'Claude' : fixedMode === 'antigravity' ? 'Antigravity' : 'the shell'}. Use the tabs above to switch.\x1b[0m`);
+        return prompt();
+      }
       if (s.mode !== 'cloud' && (word === 'exit' || word === 'quit')) {
         s.mode = 'cloud';
         term.write('\r\n\x1b[2mBack to platform commands.\x1b[0m');
@@ -357,7 +377,12 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(host);
-    fit.fit();
+    try {
+      fit.fit();
+    } catch {
+      /* host hidden (inactive tab) */
+    }
+    fitRef.current = fit;
     termRef.current = term;
     // OSC 1337 "ZarwaImage=<storage path>" from the bridge: show the image under the terminal
     term.parser.registerOscHandler(1337, (data) => {
@@ -394,10 +419,15 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       return true;
     });
 
-    term.writeln('\x1b[1;36mZarwa web terminal\x1b[0m \x1b[2m— commands run in the cloud, nothing touches your computer\x1b[0m');
-    term.writeln(`\x1b[2mSigned in as ${session.email}${session.is_principal ? ' (principal, unlimited)' : ''}. Type \x1b[0m\x1b[36mhelp\x1b[0m\x1b[2m to start.\x1b[0m`);
+    if (fixedMode) {
+      term.writeln(FIXED_INTRO[fixedMode]);
+      term.writeln(`\x1b[2mSigned in as ${session.email}${session.is_principal ? ' (principal, unlimited)' : ''}. Changes are sent to the admin for approval.\x1b[0m`);
+    } else {
+      term.writeln('\x1b[1;36mZarwa web terminal\x1b[0m \x1b[2m— commands run in the cloud, nothing touches your computer\x1b[0m');
+      term.writeln(`\x1b[2mSigned in as ${session.email}${session.is_principal ? ' (principal, unlimited)' : ''}. Type \x1b[0m\x1b[36mhelp\x1b[0m\x1b[2m to start.\x1b[0m`);
+    }
     prompt();
-    term.focus();
+    if (active) term.focus();
     setReady(true);
 
     const redraw = () => {
@@ -523,7 +553,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         return lines.join('\n').trim();
       },
     };
-    (window as unknown as { __brainTerminal?: typeof brainHook }).__brainTerminal = brainHook;
+    if (primary) (window as unknown as { __brainTerminal?: typeof brainHook }).__brainTerminal = brainHook;
 
     const ro = new ResizeObserver(() => {
       try {
@@ -546,14 +576,29 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       mo.disconnect();
       term.dispose();
       termRef.current = null;
+      fitRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.session_id]);
 
+  // Tab switch: the host was hidden, so fit it to its real size and put the cursor here
+  useEffect(() => {
+    if (!active || !ready) return;
+    const id = window.requestAnimationFrame(() => {
+      try {
+        fitRef.current?.fit();
+      } catch {
+        /* still hidden */
+      }
+      termRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [active, ready]);
+
   // Kill switch: react to the session row changing (terminated / expired) in real time
   useEffect(() => {
     const channel = supabase
-      .channel(`terminal-session-${session.session_id}`)
+      .channel(`terminal-session-${session.session_id}-${fixedMode ?? 'cloud'}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'user_terminal_sessions', filter: `id=eq.${session.session_id}` },
@@ -569,14 +614,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [lockWith, session.session_id]);
+  }, [lockWith, session.session_id, fixedMode]);
 
   // Approval gate: changes are pushed only when the principal approves them in /admin?tab=terminal.
   // RLS limits the rows to the user's own requests (the principal sees all).
   useEffect(() => {
     const seen = new Map<string, string>();
     const channel = supabase
-      .channel(`terminal-deploys-${session.session_id}`)
+      .channel(`terminal-deploys-${session.session_id}-${fixedMode ?? 'cloud'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'terminal_deploy_requests' }, (payload) => {
         if (payload.eventType === 'DELETE') return;
         const r = payload.new as { id: string; status: string; commit_sha: string | null; changed_files: unknown[]; user_email: string | null };
@@ -586,29 +631,30 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
         const who = session.is_principal && r.user_email && r.user_email !== session.email ? ` (${r.user_email})` : '';
         const say = noticeRef.current;
         if (r.status === 'pending' && payload.eventType === 'INSERT') {
-          toast.info('تم تجهيز التعديلات وإرسال طلب موافقة للأدمن. سيتم الرفع فور موافقة الأدمن.');
+          if (primary) toast.info('تم تجهيز التعديلات وإرسال طلب موافقة للأدمن. سيتم الرفع فور موافقة الأدمن.');
         } else if (r.status === 'pushing') {
           say(`\x1b[2m● Approved by the admin${who}; pushing ${n} file(s)…\x1b[0m`);
         } else if (r.status === 'deployed') {
           say(`\x1b[1;32m✓ Approved and pushed${who}: ${r.commit_sha?.slice(0, 7) ?? ''}. The site deploys automatically.\x1b[0m`);
-          toast.success('وافق الأدمن على التعديلات ورُفعت بنجاح. سيُنشر الموقع تلقائياً.');
+          if (primary) toast.success('وافق الأدمن على التعديلات ورُفعت بنجاح. سيُنشر الموقع تلقائياً.');
         } else if (r.status === 'rejected') {
           say(`\x1b[1;31m✗ The admin rejected the changes${who}; they will be reverted on the computer.\x1b[0m`);
-          toast.error('رفض الأدمن التعديلات وأُلغيت.');
+          if (primary) toast.error('رفض الأدمن التعديلات وأُلغيت.');
         } else if (r.status === 'failed') {
           say(`\x1b[1;31m✗ The push failed${who}; the admin can see the details.\x1b[0m`);
-          toast.error('تعذّر رفع التعديلات. التفاصيل في لوحة الأدمن.');
+          if (primary) toast.error('تعذّر رفع التعديلات. التفاصيل في لوحة الأدمن.');
         }
       })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [session.session_id, session.is_principal, session.email]);
+  }, [session.session_id, session.is_principal, session.email, primary, fixedMode]);
 
   // Close the session when the page goes away. The unmount close is deferred so React StrictMode's
   // simulated unmount/remount in development does not end a fresh session.
   useEffect(() => {
+    if (!primary) return;
     const id = session.session_id;
     window.clearTimeout(pendingClose.get(id));
     const end = () => {
@@ -619,7 +665,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota }) => {
       window.removeEventListener('pagehide', end);
       pendingClose.set(id, window.setTimeout(end, 500));
     };
-  }, [session.session_id]);
+  }, [session.session_id, primary]);
 
   const sendAnswer = (text: string) => {
     if (!text.trim()) return;

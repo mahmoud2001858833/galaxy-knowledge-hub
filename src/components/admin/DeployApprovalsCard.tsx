@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, ChevronDown, ChevronUp, FileCode2, GitCommitHorizontal, Loader2, ShieldAlert, X } from 'lucide-react';
+import { AlertTriangle, Bot, Check, ChevronDown, ChevronUp, FileCode2, GitCommitHorizontal, ListTree, Loader2, MessageSquareQuote, ShieldAlert, Sparkles, SquareTerminal, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -37,6 +37,84 @@ const fmt = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('ar-JO', { timeZone: 'Asia/Amman', dateStyle: 'short', timeStyle: 'short' }) : '—';
 const filesOf = (r: DeployRequest) => (Array.isArray(r.changed_files) ? (r.changed_files as unknown as ChangedFile[]) : []);
 
+// ---------------------------------------------------------------- explaining a request
+const AGENT_INFO: Record<string, { label: string; icon: React.ElementType }> = {
+  claude: { label: 'Claude Code', icon: Bot },
+  antigravity: { label: 'Antigravity', icon: Sparkles },
+  shell: { label: 'أوامر Shell', icon: SquareTerminal },
+  manual: { label: 'إرسال يدوي', icon: GitCommitHorizontal },
+};
+
+/** What part of the platform a path belongs to, in words the principal reads at a glance. */
+const AREAS: { test: RegExp; label: string; risk?: string }[] = [
+  { test: /^supabase\/migrations\//, label: 'قاعدة البيانات (migration)', risk: 'يغيّر قاعدة البيانات: الرفع لا يطبّقه، يجب تطبيقه على Supabase بعد مراجعته.' },
+  { test: /^supabase\/functions\//, label: 'دالة سحابية', risk: 'دالة سحابية: الرفع لا ينشرها، تحتاج supabase functions deploy.' },
+  { test: /(^|\/)(package(-lock)?\.json|bun\.lockb?)$/, label: 'الحزم والاعتماديات', risk: 'يغيّر الحزم المثبتة: راجع أسماء الحزم الجديدة جيداً.' },
+  { test: /(^|\/)\.env|secret|credential/i, label: 'إعدادات حساسة', risk: 'ملف قد يحتوي أسراراً أو مفاتيح.' },
+  { test: /^(vite|tailwind|postcss|eslint)\.config|^tsconfig|^vercel\.json|^netlify\.toml|^capacitor/, label: 'إعدادات البناء والنشر', risk: 'يغيّر طريقة بناء الموقع أو نشره.' },
+  { test: /^scripts\//, label: 'سكربتات الجهاز' },
+  { test: /^src\/pages\//, label: 'صفحات' },
+  { test: /^src\/components\//, label: 'مكوّنات الواجهة' },
+  { test: /^src\/(services|lib|hooks|utils|integrations)\//, label: 'منطق وخدمات' },
+  { test: /^src\/(data|config|i18n|locales)\//, label: 'بيانات ومحتوى' },
+  { test: /^public\//, label: 'ملفات عامة (صور وأصول)' },
+  { test: /^docs\/|\.md$/i, label: 'توثيق' },
+  { test: /\.(css|scss)$/, label: 'تنسيقات' },
+];
+const areaOf = (path: string): { label: string; risk?: string } => AREAS.find((a) => a.test.test(path)) ?? { label: 'ملفات أخرى' };
+
+const explain = (r: DeployRequest) => {
+  const files = filesOf(r);
+  const count = (c: ChangedFile['change']) => files.filter((f) => f.change === c).length;
+  const added = files.reduce((n, f) => n + (f.added ?? 0), 0);
+  const removed = files.reduce((n, f) => n + (f.removed ?? 0), 0);
+  const groups = new Map<string, ChangedFile[]>();
+  for (const f of files) {
+    const a = areaOf(f.path).label;
+    groups.set(a, [...(groups.get(a) ?? []), f]);
+  }
+  const risks = [...new Set(files.map((f) => areaOf(f.path).risk).filter(Boolean) as string[])];
+  const parts = [
+    count('added') && `${count('added')} جديد`,
+    count('modified') && `${count('modified')} معدّل`,
+    count('deleted') && `${count('deleted')} محذوف`,
+    count('renamed') && `${count('renamed')} منقول`,
+  ].filter(Boolean);
+  const fallback = `${files.length === 1 ? 'تعديل ملف واحد' : `تعديل ${files.length} ملفات`} في ${[...groups.keys()].slice(0, 3).join('، ')}`;
+  return { files, added, removed, groups, risks, parts, summary: r.summary?.trim() || fallback, generated: !r.summary?.trim() };
+};
+
+/** The agent's DETAILS: bullet lines "- path: explanation" become a file chip plus text. */
+const DetailsText: React.FC<{ text: string }> = ({ text }) => (
+  <div className="space-y-1.5 text-sm leading-7">
+    {text.split('\n').map((raw, i) => {
+      const line = raw.trimEnd();
+      if (!line.trim()) return <div key={i} className="h-1" />;
+      if (/^-{3,}$/.test(line.trim())) return <hr key={i} className="border-border" />;
+      const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+      const body = bullet ? bullet[1] : line;
+      const file = body.match(/^`?([\w./@[\]()-]+\.[\w]+)`?\s*[:：—-]\s*(.*)$/);
+      return (
+        <div key={i} className={`flex gap-2 ${bullet ? 'items-baseline' : ''}`}>
+          {bullet && <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+          <span dir="auto" className="min-w-0 flex-1">
+            {file ? (
+              <>
+                <code dir="ltr" className="me-1.5 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                  {file[1]}
+                </code>
+                {file[2].replace(/\*\*/g, '')}
+              </>
+            ) : (
+              body.replace(/\*\*/g, '')
+            )}
+          </span>
+        </div>
+      );
+    })}
+  </div>
+);
+
 const DiffView: React.FC<{ diff: string }> = ({ diff }) => {
   const lines = useMemo(() => diff.split('\n'), [diff]);
   return (
@@ -67,6 +145,9 @@ const DiffView: React.FC<{ diff: string }> = ({ diff }) => {
 
 const PendingRequest: React.FC<{ r: DeployRequest; online: boolean }> = ({ r, online }) => {
   const [open, setOpen] = useState(false);
+  const [view, setView] = useState<'short' | 'detailed'>('short');
+  const ex = useMemo(() => explain(r), [r]);
+  const agent = AGENT_INFO[r.agent ?? ''] ?? null;
   const [message, setMessage] = useState(r.commit_message);
   const [busy, setBusy] = useState<'approve' | 'reject' | null>(null);
   useEffect(() => setMessage(r.commit_message), [r.commit_message]);
@@ -99,35 +180,121 @@ const PendingRequest: React.FC<{ r: DeployRequest; online: boolean }> = ({ r, on
             <GitCommitHorizontal className="h-3.5 w-3.5" /> {r.branch}
           </span>
         )}
+        {agent && (
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <agent.icon className="h-3.5 w-3.5" /> {agent.label}
+          </span>
+        )}
         <span className={`rounded-full px-2 py-0.5 font-bold ${STATUS.pending.cls}`}>{STATUS.pending.text}</span>
       </div>
 
-      {r.prompt && (
-        <p dir="auto" className="line-clamp-4 whitespace-pre-wrap rounded-xl bg-background/60 p-3 text-sm">
-          {r.prompt}
-        </p>
+      <div className="space-y-2">
+        <h4 dir="auto" className="text-base font-black leading-7">
+          {ex.summary}
+        </h4>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full bg-background px-2.5 py-1 font-semibold">{ex.files.length} ملف</span>
+          {ex.parts.map((p) => (
+            <span key={p as string} className="rounded-full bg-background px-2.5 py-1 text-muted-foreground">
+              {p}
+            </span>
+          ))}
+          <span dir="ltr" className="rounded-full bg-background px-2.5 py-1 font-mono">
+            <span className="text-success">+{ex.added}</span> <span className="text-destructive">−{ex.removed}</span>
+          </span>
+          {ex.generated && <span className="text-muted-foreground">(ملخص تلقائي من قائمة الملفات)</span>}
+        </div>
+      </div>
+
+      {ex.risks.length > 0 && (
+        <ul className="space-y-1 rounded-xl border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+          {ex.risks.map((risk) => (
+            <li key={risk} className="flex gap-1.5">
+              <AlertTriangle className="h-4 w-4 shrink-0" /> {risk}
+            </li>
+          ))}
+        </ul>
       )}
+
+      <div className="rounded-2xl border border-border bg-background/70">
+        <div role="tablist" className="flex gap-1 border-b border-border p-1">
+          {(
+            [
+              ['short', 'الشرح المختصر', ListTree],
+              ['detailed', 'الشرح المفصّل', MessageSquareQuote],
+            ] as const
+          ).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              role="tab"
+              type="button"
+              aria-selected={view === id}
+              onClick={() => setView(id)}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition ${view === id ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Icon className="h-3.5 w-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-3 p-3">
+          {view === 'short' ? (
+            <div className="space-y-2">
+              {[...ex.groups.entries()].map(([area, list]) => (
+                <div key={area} className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs">
+                  <span className="w-36 shrink-0 font-bold">{area}</span>
+                  <span className="flex flex-1 flex-wrap gap-1.5">
+                    {list.map((f) => (
+                      <span key={f.path} className="flex items-center gap-1 rounded-lg border border-border px-1.5 py-0.5">
+                        <span className={`rounded px-1 text-[10px] font-bold ${CHANGE_LABEL[f.change]?.cls ?? ''}`}>{CHANGE_LABEL[f.change]?.text ?? f.change}</span>
+                        <span dir="ltr" className="font-mono">
+                          {f.path.split('/').pop()}
+                        </span>
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {r.details ? (
+                <DetailsText text={r.details} />
+              ) : (
+                <p className="text-xs text-muted-foreground">لم يكتب الوكيل شرحاً لهذا التعديل. هذه تفاصيل كل ملف من الفرق نفسه:</p>
+              )}
+              <ul className="space-y-1.5">
+                {ex.files.map((f) => (
+                  <li key={f.path} className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/40 px-2 py-1.5 text-xs">
+                    <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${CHANGE_LABEL[f.change]?.cls ?? ''}`}>{CHANGE_LABEL[f.change]?.text ?? f.change}</span>
+                    <span dir="ltr" className="font-mono">
+                      {f.path}
+                    </span>
+                    <span className="text-muted-foreground">· {areaOf(f.path).label}</span>
+                    {(f.added != null || f.removed != null) && (
+                      <span dir="ltr" className="mr-auto font-mono">
+                        <span className="text-success">+{f.added ?? 0}</span> <span className="text-destructive">−{f.removed ?? 0}</span>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {r.prompt && (
+            <details className="text-xs">
+              <summary className="cursor-pointer font-semibold text-muted-foreground">الطلب الأصلي</summary>
+              <p dir="auto" className="mt-2 whitespace-pre-wrap rounded-xl bg-muted/40 p-3 text-sm">
+                {r.prompt}
+              </p>
+            </details>
+          )}
+        </div>
+      </div>
 
       <label className="block space-y-1 text-xs font-semibold text-muted-foreground">
         وصف التعديل (رسالة الـ commit)
         <Input value={message} onChange={(e) => setMessage(e.target.value)} dir="auto" maxLength={300} className="text-sm font-normal text-foreground" />
       </label>
-
-      <ul className="flex flex-wrap gap-2">
-        {files.map((f) => (
-          <li key={f.path} className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1 text-xs">
-            <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${CHANGE_LABEL[f.change]?.cls ?? ''}`}>{CHANGE_LABEL[f.change]?.text ?? f.change}</span>
-            <span dir="ltr" className="font-mono">
-              {f.path}
-            </span>
-            {(f.added != null || f.removed != null) && (
-              <span dir="ltr" className="font-mono">
-                <span className="text-success">+{f.added ?? 0}</span> <span className="text-destructive">−{f.removed ?? 0}</span>
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -141,7 +308,7 @@ const PendingRequest: React.FC<{ r: DeployRequest; online: boolean }> = ({ r, on
           {busy === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />} رفض وإلغاء التعديل
         </Button>
         <Button variant="outline" onClick={() => setOpen((o) => !o)} className="gap-2">
-          <FileCode2 className="h-4 w-4" /> {open ? 'إخفاء التغييرات' : 'عرض التغييرات'}
+          <FileCode2 className="h-4 w-4" /> {open ? 'إخفاء الفرق الكامل' : 'عرض الفرق الكامل'}
           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
       </div>
@@ -162,7 +329,7 @@ const PastRequest: React.FC<{ r: DeployRequest }> = ({ r }) => {
           {st.text}
         </span>
         <span dir="auto" className="font-semibold text-foreground">
-          {r.commit_message}
+          {r.summary?.trim() || r.commit_message}
         </span>
         <span dir="ltr" className="text-muted-foreground">
           {r.user_email}

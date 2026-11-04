@@ -117,7 +117,7 @@ const COMMANDS: Record<string, Command> = {
       out(`  ${c.cyan(pad('claude', 28))} Chat mode with Claude (exit to leave)`);
       out(`  ${c.cyan(pad('antigravity <prompt>', 28))} Ask the Antigravity agent there (also: agy)`);
       out(`  ${c.cyan(pad('antigravity', 28))} Chat mode with Antigravity (exit to leave)`);
-      out(`  ${c.cyan(pad('ai <prompt>', 28))} Your assigned agent (Claude or Antigravity)`);
+      out(`  ${c.cyan(pad('ai <prompt>', 28))} Your default agent (Claude or Antigravity)`);
       out(`  ${c.cyan(pad('sh <command>', 28))} Run a shell command there (also: $ <command>)`);
       out(`  ${c.cyan(pad('shell', 28))} Shell mode (exit to leave)`);
       out(`  ${c.cyan(pad('submit [message]', 28))} Send the changes for the admin's approval (also: request-push)`);
@@ -176,7 +176,7 @@ const COMMANDS: Record<string, Command> = {
   quota: {
     usage: 'quota',
     help: 'Your command quota and usage',
-    run: async ({ begin, isPrincipal, out }) => {
+    run: async ({ service, userId, begin, isPrincipal, out }) => {
       if (isPrincipal) {
         out(c.green('Unlimited (principal).'));
         return;
@@ -186,6 +186,21 @@ const COMMANDS: Record<string, Command> = {
       out(`${pad('total', 12)} ${q.used_total}${q.total_limit != null ? ' / ' + q.total_limit : ' (no total limit)'}`);
       out(`${pad('rate', 12)} ${q.per_minute_limit} commands per minute`);
       out(`${pad('session', 12)} ${q.session_minutes} minutes per session`);
+      const { data: a } = await service.from('usage_quotas').select('*').eq('user_id', userId).maybeSingle();
+      if (a) {
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' });
+        const fresh = a.agent_usage_day === today;
+        for (const [key, name] of [['claude', 'Claude'], ['antigravity', 'Antigravity']] as const) {
+          if (!a[`allow_${key}`]) {
+            out(`${pad(name, 12)} ${c.dim('not allowed')}`);
+            continue;
+          }
+          const msgs = fresh ? a[`${key}_used_messages`] : 0;
+          const toks = fresh ? Number(a[`${key}_used_tokens`]) : 0;
+          const lim = a[`${key}_daily_tokens`];
+          out(`${pad(name, 12)} ${msgs}/${a[`${key}_daily_messages`]} messages · ${fmtTokens(toks)}/${lim == null ? '∞' : fmtTokens(Number(lim))} tokens today`);
+        }
+      }
     },
   },
   history: {
@@ -444,7 +459,7 @@ COMMANDS.bridge = {
   usage: 'bridge',
   help: 'Status of the bridge to the principal\'s computer',
   run: async ({ service, isPrincipal, begin, out }) => {
-    if (!isPrincipal) out(`${pad('your agent', 10)} ${begin.allow_claude ? begin.agent : 'none'}`);
+    if (!isPrincipal) out(`${pad('agents', 10)} ${[begin.allow_claude && 'claude', begin.allow_antigravity && 'antigravity'].filter(Boolean).join(', ') || 'none'}`);
     const { data } = await service.from('bridge_devices').select('name, last_seen_at, info, revoked').eq('revoked', false).order('last_seen_at', { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
     if (!masterKey()) out(c.yellow('Bridge signing key is not configured on the server (BRIDGE_MASTER_KEY).'));
     if (!data) return out(c.yellow('No computer is paired. The principal pairs one from /admin?tab=terminal.'));
@@ -468,6 +483,14 @@ const DENIED: Record<string, string> = {
   session_terminated: 'This session was terminated by the principal.',
   session_expired: 'Session time is over. Reload the page to start a new one.',
   session_closed: 'This session is closed.',
+};
+
+const fmtTokens = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
+const AGENT_DENIED: Record<string, (name: string, ab: Record<string, any>) => string> = {
+  no_access: () => 'You do not have terminal access.',
+  agent_not_allowed: (name) => `${name}: not allowed for your account. Ask the principal.`,
+  agent_messages: (name, ab) => `${name}: daily message limit reached (${ab.used}/${ab.limit}). Try again tomorrow.`,
+  agent_tokens: (name, ab) => `${name}: daily token limit reached (${fmtTokens(ab.used)}/${fmtTokens(ab.limit)}). Try again tomorrow.`,
 };
 
 // ---------------------------------------------------------------- handler
@@ -546,6 +569,13 @@ serve(async (req) => {
     return json({ ok: true, device_id: dev.id, code });
   }
 
+  if (body.action === 'setup-status') {
+    // Principal only: what the bridge setup wizard in /admin?tab=terminal cannot see from the browser
+    const principal = (await service.rpc('terminal_is_principal', { p_user_id: user.id })).data === true;
+    if (!principal) return json({ error: 'principal only' }, 403);
+    return json({ ok: true, master_key: !!masterKey() });
+  }
+
   if (body.action === 'end') {
     if (body.session_id) await service.rpc('terminal_end_session', { p_user_id: user.id, p_session_id: body.session_id });
     return json({ ok: true });
@@ -595,11 +625,11 @@ serve(async (req) => {
       if (bridgeMatch && bridgeMatch[2]) {
         const word = bridgeMatch[1].toLowerCase();
         // `ai` goes to the user's assigned agent (Claude for the principal)
-        const kind =
+        let kind =
           word === 'submit' ? 'submit'
           : word === 'sh' ? 'shell'
           : word === 'claude' ? 'claude'
-          : word === 'ai' ? (begin.is_principal ? 'claude' : begin.agent)
+          : word === 'ai' ? 'auto'
           : 'antigravity';
         const input = bridgeMatch[2];
         const fail = async (msg: string) => {
@@ -609,16 +639,22 @@ serve(async (req) => {
           controller.close();
         };
         if (kind === 'submit') {
-          if (!begin.allow_claude && !begin.allow_shell) return fail('submit: not allowed for your account. Ask the principal.');
-        } else if (kind !== 'shell' && !begin.is_principal) {
-          const agentName = begin.agent === 'antigravity' ? 'Antigravity' : 'Claude';
-          if (!begin.allow_claude) return fail('AI agent: not allowed for your account. Ask the principal.');
-          if (begin.agent !== kind) return fail(`Your AI agent is ${agentName}. Use: ai <prompt>  (or: ${begin.agent} <prompt>)`);
+          if (!begin.allow_claude && !begin.allow_antigravity && !begin.allow_shell) return fail('submit: not allowed for your account. Ask the principal.');
         }
         if (kind === 'shell' && !begin.allow_shell) return fail('sh: not allowed for your account. Ask the principal.');
         if (!masterKey()) return fail('Bridge is not configured on the server (BRIDGE_MASTER_KEY missing).');
         const device = await onlineDevice(service);
         if (!device) return fail("Bridge offline: the principal's computer is not connected.");
+        // AI agents: each has its own permission, daily messages and daily tokens (one message is counted here)
+        let agentUse: Record<string, any> | null = null;
+        if (kind === 'claude' || kind === 'antigravity' || kind === 'auto') {
+          const { data: ab, error: abError } = await service.rpc('terminal_agent_begin', { p_user_id: user.id, p_agent: kind });
+          if (abError || !ab) return fail(`agent: ${abError?.message ?? 'check failed'}`);
+          const name = ab.agent === 'antigravity' ? 'Antigravity' : 'Claude';
+          if (!ab.ok) return fail(AGENT_DENIED[ab.reason]?.(name, ab) ?? `${name}: denied (${ab.reason})`);
+          kind = ab.agent;
+          agentUse = ab.unlimited ? null : ab;
+        }
         const resume = (kind === 'claude' || kind === 'antigravity') && typeof body.resume_session === 'string' && /^[A-Za-z0-9-]{8,80}$/.test(body.resume_session) ? body.resume_session : null;
         const job = {
           id: crypto.randomUUID(),
@@ -637,7 +673,7 @@ serve(async (req) => {
           .insert({ ...row, session_id: body.session_id, user_id: user.id, log_id: begin.log_id, signature });
         if (jobError) return fail(`bridge: ${jobError.message}`);
         // The browser follows the job through realtime; bridge_finish() closes the command log.
-        send({ t: 'bridge', job_id: job.id, kind, quota: begin.quota ?? null });
+        send({ t: 'bridge', job_id: job.id, kind, quota: begin.quota ?? null, agent_use: agentUse });
         controller.close();
         return;
       }

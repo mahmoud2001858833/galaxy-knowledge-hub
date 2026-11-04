@@ -243,6 +243,24 @@ const GATE_NOTE =
   'command (vercel, supabase, gh): they are blocked. Just edit the files; when you finish, your changes are sent ' +
   "automatically to the platform principal for approval and pushed only after they approve.";
 
+// The principal reads this on the approval request: a one-line summary and a per-file explanation.
+const REPORT_NOTE =
+  'If you changed any files, end your final reply with this report, written in the language of the request:\n' +
+  'SUMMARY: <one short sentence: what changed and why>\n' +
+  'DETAILS:\n- <file path>: <what changed in it and why>\n- ... (one line per changed file, then any risk or follow-up)';
+
+// Splits the agent's final reply into the report (SUMMARY/DETAILS); falls back to the whole reply.
+function reportFrom(reply) {
+  const text = String(reply ?? '').replace(/\x1b\[[0-9;]*m/g, '').trim();
+  if (!text) return { summary: null, details: null };
+  const m = text.match(/(?:^|\n)\s*\**SUMMARY\**\s*[:：]\s*(.+)/i);
+  const d = text.match(/(?:^|\n)\s*\**DETAILS\**\s*[:：]?\s*\n([\s\S]+)$/i);
+  const summary = (m?.[1] ?? text.split(/\n/).find((l) => l.trim()) ?? '').replace(/\*+/g, '').trim().slice(0, 600) || null;
+  let details = (d?.[1] ?? (m ? text.slice(0, m.index).trim() : text)).trim();
+  if (!details || details === summary) details = null;
+  return { summary, details: details?.slice(0, 30000) ?? null };
+}
+
 // Writes the git/deploy shims and the hook that refuses ref updates; returns the env for a job.
 function guardEnv(extra = {}) {
   const bin = join(GUARD, 'bin');
@@ -406,7 +424,7 @@ const commitMessageFor = (prompt, paths) => {
 };
 
 // Sends paths (merged with this computer's pending request, if any) for approval.
-async function submitChanges(cfg, rpc, { jobId = null, prompt = '', paths = null, message = null }) {
+async function submitChanges(cfg, rpc, { jobId = null, prompt = '', paths = null, message = null, reply = null }) {
   let list = paths ?? [...gitStatus(cfg).keys()];
   const pending = await rpc('bridge_deploy_pending', {});
   if (pending?.changed_files) list = [...list, ...pending.changed_files.map((f) => f.path)];
@@ -420,6 +438,10 @@ async function submitChanges(cfg, rpc, { jobId = null, prompt = '', paths = null
     p_diff_preview: d.diff_preview,
     p_diff_hash: d.diff_hash,
     p_branch: d.branch,
+    ...(() => {
+      const r = reportFrom(reply);
+      return r.summary || r.details ? { p_summary: r.summary, p_details: r.details } : {};
+    })(),
   });
   log(`  approval request ${String(res.id).slice(0, 8)}${res.merged ? ' (updated)' : ''}: ${d.paths.length} file(s)`);
   return { ...res, paths: d.paths };
@@ -528,7 +550,7 @@ async function runShell(cfg, job, out) {
 async function runClaude(cfg, job, out) {
   if (!cfg.claude.bin) return { code: -1, error: 'Claude Code is not installed on this computer' };
   const mode = job.is_principal ? cfg.claude.permissionMode : cfg.claude.othersPermissionMode;
-  const args = ['-p', job.input, '--output-format', 'stream-json', '--verbose', '--permission-mode', mode, '--append-system-prompt', GATE_NOTE];
+  const args = ['-p', job.input, '--output-format', 'stream-json', '--verbose', '--permission-mode', mode, '--append-system-prompt', `${GATE_NOTE}\n\n${REPORT_NOTE}`];
   const deny = [
     ...BLOCKED_GIT.filter((c) => c !== 'config').map((c) => `Bash(git ${c}:*)`),
     ...BLOCKED_TOOLS.map((t) => `Bash(${t}:*)`),
@@ -570,6 +592,11 @@ async function runClaude(cfg, job, out) {
         }
       } else if (m.type === 'result') {
         meta.cost = m.total_cost_usd ?? null;
+        const u = m.usage ?? {};
+        // every token the model read (cached or not) plus what it wrote
+        meta.tokensIn = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+        meta.tokensOut = u.output_tokens ?? 0;
+        if (typeof m.result === 'string') meta.reply = m.result;
         meta.isError = !!m.is_error;
         if (m.is_error && m.result) out.push('err', `${m.result}\n`);
       }
@@ -847,7 +874,7 @@ async function runAntigravity(cfg, job, out, api) {
   out.push('sys', `\x1b[2mAntigravity · ${model.label}${offset ? ' · continuing' : ''}\x1b[0m\n`);
   await agCall('SendUserCascadeMessage', {
     cascadeId,
-    items: [{ text: `${job.input}\n\n(${AG_NOTE})` }],
+    items: [{ text: `${job.input}\n\n(${AG_NOTE})\n\n${REPORT_NOTE}` }],
     cascadeConfig: { plannerConfig: { conversational: {}, planModel: model.id, requestedModel: { model: model.id } } },
   });
 
@@ -863,11 +890,21 @@ async function runAntigravity(cfg, job, out, api) {
   const images = new Set();
   const uploaded = new Set();
   const asked = new Set(); // step indexes whose question was already put to the user
+  // tokens: the model usage the language server records on each step (no usage → estimated from text)
+  const usage = { in: 0, out: 0, seen: false, chars: job.input.length, reply: '' };
+  const done = (r) => ({
+    ...r,
+    session: cascadeId,
+    reply: usage.reply,
+    tokensIn: usage.seen ? usage.in : Math.ceil(usage.chars / 4),
+    tokensOut: usage.seen ? usage.out : Math.ceil(usage.reply.length / 4),
+    tokensEstimated: !usage.seen,
+  });
   for (;;) {
     if (!stop && Date.now() > deadline) stop = 'timeout';
     if (stop) {
       await agCall('CancelCascadeInvocation', { cascadeId }).catch(() => {});
-      return { code: 1, killed: stop, session: cascadeId };
+      return done({ code: 1, killed: stop });
     }
     await sleep(1200);
     let steps;
@@ -900,6 +937,17 @@ async function runAntigravity(cfg, job, out, api) {
         break;
       }
       turnOver = showAgStep(step, out);
+      const mu = step.metadata?.modelUsage;
+      if (mu) {
+        usage.seen = true;
+        usage.in += Number(mu.inputTokens ?? 0) || 0;
+        usage.out += (Number(mu.outputTokens ?? 0) || 0) + (Number(mu.thinkingOutputTokens ?? 0) || 0);
+      }
+      const said = step.plannerResponse?.modifiedResponse ?? step.plannerResponse?.response;
+      if (said) {
+        usage.reply = said;
+        usage.chars += said.length;
+      }
       const sub = step.invokeSubagent;
       if (sub) sub.results?.forEach((r, i) => r.conversationId && children.set(r.conversationId, sub.subagents?.[i]?.role ?? 'subagent'));
       // a follow-up message to a subagent (send_message) means waiting for its answer again
@@ -925,7 +973,7 @@ async function runAntigravity(cfg, job, out, api) {
       const status = all?.trajectorySummaries?.[cascadeId]?.status;
       if (!status || status === 'CASCADE_RUN_STATUS_IDLE') {
         // background subagents (image generation…) report back later and the agent then continues
-        if (!children.size) return { code: 0, session: cascadeId };
+        if (!children.size) return done({ code: 0 });
         if (!childNoticeShown) {
           out.push('sys', `\x1b[2mwaiting for ${[...children.values()].join(', ')}…\x1b[0m\n`);
           childNoticeShown = true;
@@ -1001,12 +1049,16 @@ async function handle(cfg, rpc, job, state) {
       const changed = changedSince(cfg, before);
       if (changed.length) {
         const message = job.kind === 'shell' ? commitMessageFor('', changed) : null;
-        reportSubmitted(out, await submitChanges(cfg, rpc, { jobId: job.id, prompt: job.input, paths: changed, message }));
+        reportSubmitted(out, await submitChanges(cfg, rpc, { jobId: job.id, prompt: job.input, paths: changed, message, reply: r.reply ?? null }));
       }
     } catch (e) {
       log('  approval request failed:', e.message);
       out.push('err', `Could not create the approval request: ${e.message}\n`);
     }
+  }
+  if (r.tokensIn != null) {
+    const k = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
+    out.push('sys', `\x1b[2m${r.tokensEstimated ? '~' : ''}${k(r.tokensIn)} tokens in · ${k(r.tokensOut ?? 0)} out${r.tokensEstimated ? ' (estimated)' : ''}\x1b[0m\n`);
   }
   await out.close();
   const status = r.error ? 'error' : 'done';
@@ -1018,8 +1070,11 @@ async function handle(cfg, rpc, job, state) {
     p_error: r.error ?? (r.killed ? (r.killed === 'cancelled' ? 'Stopped' : 'Time limit') : null),
     p_cost: r.cost ?? null,
     p_preview: out.preview,
+    ...(r.tokensIn != null || r.tokensOut != null
+      ? { p_tokens_in: r.tokensIn ?? 0, p_tokens_out: r.tokensOut ?? 0, p_tokens_estimated: !!r.tokensEstimated }
+      : {}),
   }).catch((e) => log('finish error:', e.message));
-  log(`  ${r.killed ?? status} (exit ${r.code})`);
+  log(`  ${r.killed ?? status} (exit ${r.code})${r.tokensIn != null ? ` · ${r.tokensIn + (r.tokensOut ?? 0)} tokens${r.tokensEstimated ? ' (estimated)' : ''}` : ''}`);
 }
 
 // ---------------------------------------------------------------- main loop

@@ -1533,6 +1533,9 @@ export type Database = {
       }
       bridge_jobs: {
         Row: {
+          tokens_in: number | null
+          tokens_out: number | null
+          tokens_estimated: boolean
           awaiting_input: boolean
           claude_session: string | null
           cost_usd: number | null
@@ -1556,6 +1559,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          tokens_in?: number | null
+          tokens_out?: number | null
+          tokens_estimated?: boolean
           awaiting_input?: boolean
           claude_session?: string | null
           cost_usd?: number | null
@@ -1579,6 +1585,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          tokens_in?: number | null
+          tokens_out?: number | null
+          tokens_estimated?: boolean
           awaiting_input?: boolean
           claude_session?: string | null
           cost_usd?: number | null
@@ -4976,6 +4985,9 @@ export type Database = {
       }
       terminal_deploy_requests: {
         Row: {
+          summary: string | null
+          details: string | null
+          agent: string | null
           branch: string | null
           changed_files: Json
           claimed_at: string | null
@@ -4998,6 +5010,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          summary?: string | null
+          details?: string | null
+          agent?: string | null
           branch?: string | null
           changed_files?: Json
           claimed_at?: string | null
@@ -5020,6 +5035,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          summary?: string | null
+          details?: string | null
+          agent?: string | null
           branch?: string | null
           changed_files?: Json
           claimed_at?: string | null
@@ -5060,6 +5078,18 @@ export type Database = {
       }
       usage_quotas: {
         Row: {
+          allow_antigravity: boolean
+          claude_daily_messages: number
+          claude_daily_tokens: number | null
+          antigravity_daily_messages: number
+          antigravity_daily_tokens: number | null
+          claude_used_messages: number
+          claude_used_tokens: number
+          antigravity_used_messages: number
+          antigravity_used_tokens: number
+          claude_tokens_total: number
+          antigravity_tokens_total: number
+          agent_usage_day: string
           agent: string
           allow_claude: boolean
           allow_shell: boolean
@@ -5082,6 +5112,18 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          allow_antigravity?: boolean
+          claude_daily_messages?: number
+          claude_daily_tokens?: number | null
+          antigravity_daily_messages?: number
+          antigravity_daily_tokens?: number | null
+          claude_used_messages?: number
+          claude_used_tokens?: number
+          antigravity_used_messages?: number
+          antigravity_used_tokens?: number
+          claude_tokens_total?: number
+          antigravity_tokens_total?: number
+          agent_usage_day?: string
           agent?: string
           allow_claude?: boolean
           allow_shell?: boolean
@@ -5104,6 +5146,18 @@ export type Database = {
           user_id: string
         }
         Update: {
+          allow_antigravity?: boolean
+          claude_daily_messages?: number
+          claude_daily_tokens?: number | null
+          antigravity_daily_messages?: number
+          antigravity_daily_tokens?: number | null
+          claude_used_messages?: number
+          claude_used_tokens?: number
+          antigravity_used_messages?: number
+          antigravity_used_tokens?: number
+          claude_tokens_total?: number
+          antigravity_tokens_total?: number
+          agent_usage_day?: string
           agent?: string
           allow_claude?: boolean
           allow_shell?: boolean

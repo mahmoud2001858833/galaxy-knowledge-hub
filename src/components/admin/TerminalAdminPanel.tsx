@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Ban, Check, Copy, KeyRound, Laptop, Loader2, Plus, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, Users } from 'lucide-react';
+import { Activity, Ban, KeyRound, Laptop, Loader2, Pencil, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, UserPlus, Users } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
 import { AgentModelsCard } from '@/components/admin/AgentModelsCard';
+import { BridgeSetupSteps } from '@/components/admin/BridgeSetupSteps';
+import { TerminalGrantDialog } from '@/components/admin/TerminalGrantDialog';
+import { AGENT_LABEL, fmtTokens, usageToday, type AgentKey } from '@/components/terminal/agentUsage';
 import { callTerminal } from '@/components/terminal/WebTerminal';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -93,24 +96,29 @@ const useLive = () => {
 };
 
 
-const CopyLine: React.FC<{ text: string }> = ({ text }) => {
-  const [done, setDone] = useState(false);
+type BridgeJob = Tables<'bridge_jobs'>;
+
+/** Today's use of one agent for a user row: messages and tokens against the limits. */
+const AgentUsageCell: React.FC<{ q: Quota; agent: AgentKey }> = ({ q, agent }) => {
+  const u = usageToday(q, agent);
+  if (!u.allowed) return <span className="text-xs text-muted-foreground">معطّل</span>;
+  const pct = u.tokensLimit ? Math.min(100, Math.round((u.tokens / u.tokensLimit) * 100)) : Math.min(100, Math.round((u.messages / Math.max(1, u.messagesLimit)) * 100));
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-2" dir="ltr">
-      <code className="flex-1 whitespace-pre-wrap break-all font-mono text-[11px] leading-relaxed">{text}</code>
-      <button
-        type="button"
-        onClick={() => navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 1500); })}
-        className="shrink-0 rounded-lg p-1 text-muted-foreground hover:text-foreground"
-        aria-label="نسخ"
-      >
-        {done ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-      </button>
+    <div className="min-w-32 text-xs" title={`${AGENT_LABEL[agent]}: ${u.messages}/${u.messagesLimit} رسالة · ${fmtTokens(u.tokens)}/${fmtTokens(u.tokensLimit)} توكن اليوم`}>
+      <div className="flex justify-between gap-2">
+        <span>
+          {u.messages}/{u.messagesLimit} رسالة
+        </span>
+        <span dir="ltr" className="text-muted-foreground">
+          {fmtTokens(u.tokens)}/{fmtTokens(u.tokensLimit)}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className={`h-full ${pct >= 100 ? 'bg-destructive' : pct > 75 ? 'bg-warning' : 'bg-success'}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 };
-
-type BridgeJob = Tables<'bridge_jobs'>;
 
 /** The principal's computer: online state, pairing, and jobs running on it right now. */
 const BridgeCard: React.FC = () => {
@@ -190,24 +198,7 @@ const BridgeCard: React.FC = () => {
         </div>
       </div>
 
-      {code && (
-        <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning/5 p-4 text-sm">
-          <p className="text-xs font-semibold text-warning">رمز الربط يظهر مرة واحدة ويحتوي مفاتيح الجهاز. لا تشاركه.</p>
-          <div className="font-bold">1. في مجلد المشروع على جهازك:</div>
-          <CopyLine text={`npm run bridge -- pair ${code}`} />
-          <div className="font-bold">2. شغّل الجسر (اترك النافذة مفتوحة):</div>
-          <CopyLine text="npm run bridge" />
-          <div className="text-xs text-muted-foreground">
-            ليعمل دائماً في الخلفية: <code dir="ltr">npm run bridge -- install-service</code>
-          </div>
-        </div>
-      )}
-      {!code && !online && (
-        <div className="space-y-2 text-sm">
-          <div className="text-muted-foreground">لتشغيل الجسر على جهازك (بعد الربط مرة واحدة):</div>
-          <CopyLine text="npm run bridge" />
-        </div>
-      )}
+      <BridgeSetupSteps status={status} code={code} onPair={pair} pairing={pairing} />
 
       {running.length > 0 && (
         <div className="space-y-2">
@@ -235,8 +226,8 @@ const BridgeCard: React.FC = () => {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت تستخدم Claude وAntigravity معاً. لكل مستخدم آخر اختر
-        وكيله (Claude أو Antigravity) أو Shell من جدول المستخدمين أدناه، ويكتب هو <code dir="ltr">ai &lt;طلبه&gt;</code>. Claude يعدّل لهم الملفات
+        الأوامر تمرّ أولاً بفحص الصلاحية والحصة في السحابة، ثم تُوقَّع ويُنفّذها الجسر. أنت تستخدم Claude وAntigravity معاً. لكل مستخدم آخر حدّد
+        من جدول المستخدمين أدناه ما يُسمح له به لكل وكيل (رسائل وتوكن يومياً)، فيظهر له تبويب خاص بكل وكيل في الطرفية. Claude يعدّل لهم الملفات
         فقط (بلا أوامر)، وتعديلاتهم تنتظر موافقتك. أما Antigravity فوكيله ينفّذ أي أمر على جهازك بلا قيود، لذلك هو لك وحدك إلا إذا غيّرت{' '}
         <code dir="ltr">antigravity.allowOthers</code>، وكذلك Shell إلا إذا غيّرت <code dir="ltr">shell.allowOthers</code>، وكلاهما في{' '}
         <code dir="ltr">~/.zarwa-bridge/config.json</code>.
@@ -248,9 +239,7 @@ const BridgeCard: React.FC = () => {
 export const TerminalAdminPanel: React.FC = () => {
   const { loading, roles } = useTeamRoles();
   const { quotas, sessions, logs, loadQuotas, loadSessions } = useLive();
-  const [email, setEmail] = useState('');
-  const [daily, setDaily] = useState('100');
-  const [adding, setAdding] = useState(false);
+  const [dialog, setDialog] = useState<{ open: boolean; editing: Quota | null }>({ open: false, editing: null });
   const [logFilter, setLogFilter] = useState('all');
 
   const emailOf = useMemo(() => {
@@ -273,20 +262,6 @@ export const TerminalAdminPanel: React.FC = () => {
     if (error) toast.error(errText(error));
     else {
       if (ok) toast.success(ok);
-      loadQuotas();
-    }
-  };
-
-  const grant = async () => {
-    const value = email.trim().toLowerCase();
-    if (!value.includes('@')) return toast.error('اكتب إيميلاً صحيحاً');
-    setAdding(true);
-    const { error } = await supabase.from('usage_quotas').insert({ email: value, daily_limit: Math.max(0, parseInt(daily, 10) || 0) } as never);
-    setAdding(false);
-    if (error) toast.error(error.code === '23505' ? 'لهذا الإيميل صلاحية مسبقاً' : errText(error));
-    else {
-      setEmail('');
-      toast.success('مُنحت الصلاحية');
       loadQuotas();
     }
   };
@@ -400,14 +375,21 @@ export const TerminalAdminPanel: React.FC = () => {
         <h3 className="flex items-center gap-2 font-bold">
           <Users className="h-4 w-4" /> من يحق له استخدام الطرفية
         </h3>
-        <div className="flex flex-wrap gap-2">
-          <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" className="w-64 text-left" />
-          <Input dir="ltr" value={daily} onChange={(e) => setDaily(e.target.value.replace(/[^\d]/g, ''))} className="w-24 text-center" aria-label="الحد اليومي" />
-          <Button onClick={grant} disabled={adding} className="gap-1">
-            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} منح الصلاحية
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => setDialog({ open: true, editing: null })} className="gap-2">
+            <UserPlus className="h-4 w-4" /> إضافة مستخدم
           </Button>
-          <span className="self-center text-xs text-muted-foreground">يجب أن يكون صاحب الإيميل مسجلاً في المنصة. الرئيس لا يحتاج صلاحية ولا حدود عليه.</span>
+          <span className="text-xs text-muted-foreground">
+            اختر من مسؤولي الذكاء الاصطناعي أو اكتب إيميلاً، وحدّد لكل وكيل عدد الرسائل والتوكن. الرئيس لا يحتاج صلاحية ولا حدود عليه.
+          </span>
         </div>
+        <TerminalGrantDialog
+          open={dialog.open}
+          editing={dialog.editing}
+          quotas={quotas}
+          onOpenChange={(open) => setDialog((d) => ({ ...d, open }))}
+          onSaved={loadQuotas}
+        />
 
         {quotas.length === 0 ? (
           <p className="text-sm text-muted-foreground">لم تُمنح الصلاحية لأحد بعد.</p>
@@ -418,7 +400,8 @@ export const TerminalAdminPanel: React.FC = () => {
                 <tr className="text-right">
                   <th className="p-2">الإيميل</th>
                   <th className="p-2">مفعّل</th>
-                  <th className="p-2">وكيل الذكاء</th>
+                  <th className="p-2">Claude اليوم</th>
+                  <th className="p-2">Antigravity اليوم</th>
                   <th className="p-2">Shell</th>
                   <th className="p-2">الحالة</th>
                   <th className="p-2">استهلاك اليوم</th>
@@ -442,20 +425,10 @@ export const TerminalAdminPanel: React.FC = () => {
                         <Switch checked={q.enabled} onCheckedChange={(v) => update(q, { enabled: v }, v ? 'فُعّلت الصلاحية' : 'سُحبت الصلاحية وأُنهيت الجلسات')} />
                       </td>
                       <td className="p-2">
-                        <select
-                          aria-label="وكيل الذكاء"
-                          value={q.allow_claude ? q.agent : 'off'}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            if (v === 'off') update(q, { allow_claude: false }, 'أُوقف وكيل الذكاء له');
-                            else update(q, { allow_claude: true, agent: v }, v === 'claude' ? 'وكيله الآن Claude (تعديل ملفات بموافقتك)' : 'وكيله الآن Antigravity — يعمل له فقط إذا فعّلت antigravity.allowOthers على جهازك');
-                          }}
-                          className="rounded-lg border border-border bg-background px-2 py-1 text-xs"
-                        >
-                          <option value="off">معطّل</option>
-                          <option value="claude">Claude</option>
-                          <option value="antigravity">Antigravity</option>
-                        </select>
+                        <AgentUsageCell q={q} agent="claude" />
+                      </td>
+                      <td className="p-2">
+                        <AgentUsageCell q={q} agent="antigravity" />
                       </td>
                       <td className="p-2">
                         <Switch
@@ -509,7 +482,22 @@ export const TerminalAdminPanel: React.FC = () => {
                       </td>
                       <td className="p-2">
                         <div className="flex justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8" title="تصفير استهلاك اليوم" onClick={() => update(q, { used_today: 0 }, 'صُفّر استهلاك اليوم')}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title="تعديل الاستخدام المسموح" onClick={() => setDialog({ open: true, editing: q })}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            title="تصفير استهلاك اليوم"
+                            onClick={() =>
+                              update(
+                                q,
+                                { used_today: 0, claude_used_messages: 0, claude_used_tokens: 0, antigravity_used_messages: 0, antigravity_used_tokens: 0 },
+                                'صُفّر استهلاك اليوم',
+                              )
+                            }
+                          >
                             <RotateCcw className="h-4 w-4" />
                           </Button>
                           <Button size="icon" variant="ghost" className="h-8 w-8 hover:text-destructive" title="سحب الصلاحية نهائياً" onClick={() => remove(q)}>
