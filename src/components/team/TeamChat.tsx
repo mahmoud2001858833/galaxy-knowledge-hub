@@ -154,6 +154,7 @@ const NewPollDialog: React.FC<{ open: boolean; onClose: () => void; onCreated: (
 export const TeamChat: React.FC<{ me: string; members: TeamMember[]; isLead: boolean }> = ({ me, members, isLead }) => {
   const people = useMemo(() => uniquePeople(members), [members]);
   const nameOf = useCallback((id: string) => people.find((p) => p.user_id === id)?.name ?? 'عضو سابق', [people]);
+  const titleOf = useCallback((id: string) => people.find((p) => p.user_id === id)?.title ?? 'عضو سابق', [people]);
 
   const [conv, setConv] = useState<Conversation>({ kind: 'group' });
   const [messages, setMessages] = useState<TeamMessage[]>([]);
@@ -338,7 +339,12 @@ export const TeamChat: React.FC<{ me: string; members: TeamMember[]; isLead: boo
             return (
               <div key={m.id} className={`group flex ${mine ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${mine ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  {!mine && <div className="mb-0.5 text-[11px] font-bold opacity-80">{nameOf(m.sender_id)}</div>}
+                  {!mine && (
+                    <div className="mb-0.5 text-[11px] font-bold opacity-80">
+                      {titleOf(m.sender_id)}
+                      {people.find((p) => p.user_id === m.sender_id)?.hasName && <span className="font-normal opacity-80"> · {nameOf(m.sender_id)}</span>}
+                    </div>
+                  )}
                   {m.image_path && <TeamImage path={m.image_path} className="mb-1 max-h-64 w-full rounded-xl" />}
                   {poll && (
                     <div className="rounded-xl bg-background p-2 text-foreground">

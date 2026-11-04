@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { WINDOW_LABEL, perMillion, usePlanLimits, type PlanLimits } from '@/components/terminal/usePlanLimits';
 import {
   AGENT_LABEL,
   AGENT_SCOPE,
@@ -78,7 +79,39 @@ const TokenField: React.FC<{ value: number | null; onChange: (v: number | null) 
   );
 };
 
-const AgentCard: React.FC<{ agent: AgentKey; value: AgentAllowance; onChange: (v: AgentAllowance) => void }> = ({ agent, value, onChange }) => {
+/** What the daily token limit means for the principal's own subscription (measured, see PlanUsageCard). */
+const PlanShare: React.FC<{ agent: AgentKey; tokens: number | null; limits: PlanLimits | null }> = ({ agent, tokens, limits }) => {
+  const wins = agent === 'claude' ? ['five_hour', 'seven_day'] : ['quota'];
+  const rows = wins.map((w) => ({ w, s: perMillion(limits, agent, w) })).filter((r) => r.s);
+  return (
+    <div className="rounded-xl border border-border bg-background/70 p-3 text-xs">
+      <div className="mb-1 font-bold text-foreground">كم يأخذ من اشتراكك؟</div>
+      {tokens == null ? (
+        <p className="text-muted-foreground">بلا حد توكن: قد يستهلك كامل نافذتك إذا استخدمه بكثافة.</p>
+      ) : rows.length ? (
+        <ul className="space-y-1">
+          {rows.map(({ w, s }) => {
+            const day = (tokens / 1e6) * s!.per_million!;
+            return (
+              <li key={w} className="flex justify-between gap-2">
+                <span className="text-muted-foreground">{WINDOW_LABEL[w] ?? w}</span>
+                <span className="font-semibold">
+                  ≈ {Math.min(100, w === 'seven_day' ? day * 7 : day).toFixed(day < 10 ? 1 : 0)}%
+                  <span className="mr-1 font-normal text-muted-foreground">{w === 'seven_day' ? 'إذا استُهلك الحد كل يوم' : 'إذا استُهلك حد اليوم دفعة واحدة'}</span>
+                </span>
+              </li>
+            );
+          })}
+          <li className="text-muted-foreground">محسوب من {rows[0].s!.samples} رسالة فعلية: 1M توكن ≈ {rows.map(({ w, s }) => `${s!.per_million!.toFixed(1)}% من ${WINDOW_LABEL[w] ?? w}`).join('، و')}.</li>
+        </ul>
+      ) : (
+        <p className="text-muted-foreground">لا توجد قياسات بعد: لا تنشر Anthropic ولا Google عدد التوكن في الحدود، فيحسبه الجسر من استخدامك الفعلي بعد أول رسائل.</p>
+      )}
+    </div>
+  );
+};
+
+const AgentCard: React.FC<{ agent: AgentKey; value: AgentAllowance; onChange: (v: AgentAllowance) => void; limits: PlanLimits | null }> = ({ agent, value, onChange, limits }) => {
   const Icon = agent === 'claude' ? Bot : Sparkles;
   const scope = AGENT_SCOPE[agent];
   const fits = whatFits(agent, value);
@@ -133,10 +166,19 @@ const AgentCard: React.FC<{ agent: AgentKey; value: AgentAllowance; onChange: (v
               ))}
             </ul>
           </div>
-          {scope.note && (
-            <p className="flex gap-1.5 rounded-xl bg-warning/10 p-2 text-xs text-warning">
-              <AlertTriangle className="h-4 w-4 shrink-0" /> {scope.note}
+          <PlanShare agent={agent} tokens={value.tokens} limits={limits} />
+          {agent === 'antigravity' && limits?.policy && !limits.policy.antigravityOthers ? (
+            <p className="flex gap-1.5 rounded-xl bg-destructive/10 p-2 text-xs text-destructive">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              مقفل الآن على جهازك: سيظهر للمستخدم «Antigravity on this computer is for the principal only» حتى تضع antigravity.allowOthers: true في
+              ~/.zarwa-bridge/config.json وتعيد تشغيل الجسر. وكيل Antigravity ينفّذ أي أمر على جهازك بلا قيود.
             </p>
+          ) : (
+            scope.note && (
+              <p className="flex gap-1.5 rounded-xl bg-warning/10 p-2 text-xs text-warning">
+                <AlertTriangle className="h-4 w-4 shrink-0" /> {scope.note}
+              </p>
+            )
           )}
         </>
       ) : (
@@ -159,6 +201,7 @@ export const TerminalGrantDialog: React.FC<{
   const [a, setA] = useState<Allowance>(DEFAULT_ALLOWANCE);
   const [preset, setPreset] = useState<string>('medium');
   const [saving, setSaving] = useState(false);
+  const { limits } = usePlanLimits(open);
 
   const has = useMemo(() => new Set(quotas.map((q) => q.email.toLowerCase())), [quotas]);
 
@@ -337,8 +380,8 @@ export const TerminalGrantDialog: React.FC<{
         </section>
 
         <div className="grid gap-3 lg:grid-cols-2">
-          <AgentCard agent="claude" value={a.claude} onChange={(v) => setAgent('claude', v)} />
-          <AgentCard agent="antigravity" value={a.antigravity} onChange={(v) => setAgent('antigravity', v)} />
+          <AgentCard agent="claude" value={a.claude} onChange={(v) => setAgent('claude', v)} limits={limits} />
+          <AgentCard agent="antigravity" value={a.antigravity} onChange={(v) => setAgent('antigravity', v)} limits={limits} />
         </div>
 
         <section className="space-y-3 rounded-2xl border border-border p-4">

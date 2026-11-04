@@ -5,6 +5,7 @@ import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
 import { AgentModelsCard } from '@/components/admin/AgentModelsCard';
 import { BridgeSetupSteps } from '@/components/admin/BridgeSetupSteps';
+import { PlanUsageCard } from '@/components/admin/PlanUsageCard';
 import { TerminalGrantDialog } from '@/components/admin/TerminalGrantDialog';
 import { AGENT_LABEL, fmtTokens, usageToday, type AgentKey } from '@/components/terminal/agentUsage';
 import { callTerminal } from '@/components/terminal/WebTerminal';
@@ -321,6 +322,8 @@ export const TerminalAdminPanel: React.FC = () => {
       <BridgeCard />
 
       <AgentModelsCard />
+
+      <PlanUsageCard />
 
       {/* active sessions + kill switch */}
       <section className="space-y-3 rounded-3xl border border-border bg-card p-5">

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Crown, Loader2 } from 'lucide-react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Crown, Loader2, TerminalSquare } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { RoleWorkspace } from './RoleWorkspace';
 import { EmployeesControlCenter } from './EmployeesControlCenter';
 import { DayOffMemberNotice } from './DayOffControls';
@@ -15,11 +16,38 @@ import {
   type WorkerRole,
 } from './teamApi';
 
-/** The dashboards a member can open: one per worker role they hold, plus the control center for leads. */
-export const teamTabsFor = (roles: TeamRole[]) => [
+const TerminalWorkspace = lazy(() => import('@/pages/terminal/TerminalPage').then((m) => ({ default: m.TerminalWorkspace })));
+
+/** The dashboards a member can open: one per worker role they hold, the control center for leads,
+ * and the terminal for whoever the principal gave terminal access (the principal always has it). */
+export const teamTabsFor = (roles: TeamRole[], terminal = false) => [
   ...(isLeadRole(roles) ? [{ id: 'control', label: 'لوحة تحكم الموظفين' }] : []),
   ...WORKER_ROLES.filter((r) => roles.includes(r)).map((r) => ({ id: r, label: `لوحة ${ROLE_LABELS[r]}` })),
+  ...(terminal || roles.includes('principal') ? [{ id: 'terminal', label: 'الطرفية' }] : []),
 ];
+
+/** Whether the signed-in member has terminal access (usage_quotas row, enabled, not banned); live. */
+export function useTerminalAccess(me: string) {
+  const [has, setHas] = useState(false);
+  useEffect(() => {
+    const load = () =>
+      supabase
+        .from('usage_quotas')
+        .select('enabled, banned')
+        .eq('user_id', me)
+        .maybeSingle()
+        .then(({ data }) => setHas(!!data && data.enabled && !data.banned));
+    load();
+    const ch = supabase
+      .channel(`team-terminal-access-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'usage_quotas' }, load)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [me]);
+  return has;
+}
 
 const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean; members: TeamMember[] }> = ({
   role,
@@ -49,6 +77,10 @@ export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[
       <DayOffMemberNotice me={me} roles={roles} members={members} windowKey={tab} />
       {tab === 'control' ? (
         <EmployeesControlCenter />
+      ) : tab === 'terminal' ? (
+        <Suspense fallback={<Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />}>
+          <TerminalWorkspace />
+        </Suspense>
       ) : (
         <Workspace role={tab as WorkerRole} me={me} isLead={isLeadRole(roles)} members={members} />
       )}
@@ -58,9 +90,14 @@ export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[
 
 /** Role tab bar + the selected dashboard. */
 export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: string }> = ({ me, roles, initialTab }) => {
-  const tabs = teamTabsFor(roles);
+  const terminal = useTerminalAccess(me);
+  const tabs = teamTabsFor(roles, terminal);
   const [tab, setTab] = useState(initialTab && tabs.some((t) => t.id === initialTab) ? initialTab : tabs[0]?.id);
 
+  // terminal access arrives after the first render: honour ?tab=terminal once it does
+  useEffect(() => {
+    if (initialTab === 'terminal' && terminal) setTab('terminal');
+  }, [initialTab, terminal]);
   useEffect(() => {
     if (!tabs.some((t) => t.id === tab)) setTab(tabs[0]?.id);
   }, [tabs, tab]);
@@ -80,6 +117,7 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
             }`}
           >
             {t.id === 'control' && <Crown className="h-4 w-4" aria-hidden />}
+            {t.id === 'terminal' && <TerminalSquare className="h-4 w-4" aria-hidden />}
             {t.label}
           </button>
         ))}

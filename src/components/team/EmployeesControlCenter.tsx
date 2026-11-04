@@ -124,6 +124,18 @@ const RoleEmails: React.FC<{
   );
 };
 
+/** Emails the new task to whoever it is for (team-task-email); the task itself is already saved. */
+const emailTask = async (taskId: string) => {
+  const { data, error } = await supabase.functions.invoke('team-task-email', { body: { task_id: taskId } });
+  if (error) return toast.error('حُفظت المهمة لكن تعذّر إرسالها بالإيميل');
+  const sent: string[] = data?.sent ?? [];
+  const failed: { email: string; reason: string }[] = data?.failed ?? [];
+  if (sent.length) toast.success(`أُرسلت المهمة بالإيميل إلى ${sent.join('، ')}`);
+  if (failed.some((f) => f.reason === 'domain_unverified'))
+    toast.error('لم يُرسل الإيميل: يجب توثيق نطاق المنصة في Resend أولاً (حالياً يصل البريد لصاحب حساب Resend فقط).', { duration: 10000 });
+  else if (failed.length) toast.error(`تعذّر الإرسال إلى: ${failed.map((f) => f.email).join('، ')}`);
+};
+
 const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = ({ members, onCreated }) => {
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
@@ -143,7 +155,7 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
     }
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
-    const { error } = await supabase.from('team_tasks').insert({
+    const { data: created, error } = await supabase.from('team_tasks').insert({
       title: title.trim(),
       details: details.trim() || null,
       assignee_role: role,
@@ -151,11 +163,12 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       due_at: due ? new Date(due).toISOString() : null,
       extra_requirements: reqs,
       created_by: session?.user.id,
-    });
+    }).select('id').single();
     setSaving(false);
     if (error) toast.error(errorMessage(error));
     else {
       toast.success('أُسندت المهمة');
+      if (created?.id) emailTask(created.id);
       setTitle('');
       setDetails('');
       setDue('');

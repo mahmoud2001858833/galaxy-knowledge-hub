@@ -148,11 +148,20 @@ export function useTeamMembers() {
 
 /** Unique people (a person may hold several roles). */
 export const uniquePeople = (members: TeamMember[]) => {
-  const map = new Map<string, { user_id: string; name: string; email: string; roles: TeamRole[] }>();
+  const map = new Map<string, { user_id: string; name: string; title: string; email: string; roles: TeamRole[]; hasName: boolean }>();
   for (const m of members) {
-    const p = map.get(m.user_id) ?? { user_id: m.user_id, name: m.display_name || m.email, email: m.email, roles: [] };
+    const p = map.get(m.user_id) ?? { user_id: m.user_id, name: '', title: '', email: m.email, roles: [], hasName: false };
     p.roles.push(m.role as TeamRole);
+    if (m.display_name) {
+      p.name = m.display_name;
+      p.hasName = true;
+    }
     map.set(m.user_id, p);
+  }
+  // people are shown by their job title, never by their email
+  for (const p of map.values()) {
+    p.title = p.roles.map((r) => ROLE_LABELS[r]).join('، ');
+    if (!p.hasName) p.name = p.title;
   }
   return [...map.values()];
 };

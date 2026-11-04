@@ -578,6 +578,12 @@ async function runClaude(cfg, job, out) {
         return out.push('out', line + '\n');
       }
       if (m.session_id) meta.session = m.session_id;
+      if (m.type === 'rate_limit_event') {
+        const w = m.rate_limit_info?.unifiedWindows ?? {};
+        const windows = {};
+        for (const [k, v] of Object.entries(w)) if (typeof v?.utilization === 'number') windows[k] = { used: v.utilization, resets: String(v.resetsAt ?? '') };
+        if (Object.keys(windows).length) meta.limitsAfter = { at: Date.now(), windows };
+      }
       if (m.type === 'assistant') {
         for (const b of m.message?.content ?? []) {
           if (b.type === 'text' && b.text) out.push('out', b.text.replace(/\n*$/, '\n'));
@@ -697,6 +703,19 @@ async function agModelList() {
     data,
     list: (data.clientModelConfigs ?? []).filter((c) => c.modelOrAlias?.model && !c.disabled).map((c) => ({ id: c.modelOrAlias.model, label: c.label })),
   };
+}
+
+// Remaining share of each model's quota in the Antigravity plan (quotaInfo on the model configs)
+async function agQuotas() {
+  const data = await agCall('GetCascadeModelConfigData', {});
+  const out = {};
+  for (const c of data.clientModelConfigs ?? []) {
+    const q = c.quotaInfo;
+    const id = c.modelOrAlias?.model;
+    if (!id || !q || q.remainingFraction == null) continue;
+    out[id] = { label: c.label ?? id, used: Math.max(0, Math.min(1, 1 - Number(q.remainingFraction))), resets: String(q.resetTime ?? '') };
+  }
+  return out;
 }
 
 async function agModel(cfg, override) {
@@ -872,6 +891,15 @@ async function runAntigravity(cfg, job, out, api) {
     offset = 0;
   }
   out.push('sys', `\x1b[2mAntigravity · ${model.label}${offset ? ' · continuing' : ''}\x1b[0m\n`);
+  const quotaOf = async () => {
+    try {
+      const q = (await agQuotas())[model.id];
+      return q ? { at: Date.now(), windows: { quota: { used: q.used, resets: q.resets } } } : null;
+    } catch {
+      return null;
+    }
+  };
+  const limitsBefore = await quotaOf();
   await agCall('SendUserCascadeMessage', {
     cascadeId,
     items: [{ text: `${job.input}\n\n(${AG_NOTE})\n\n${REPORT_NOTE}` }],
@@ -892,8 +920,11 @@ async function runAntigravity(cfg, job, out, api) {
   const asked = new Set(); // step indexes whose question was already put to the user
   // tokens: the model usage the language server records on each step (no usage → estimated from text)
   const usage = { in: 0, out: 0, seen: false, chars: job.input.length, reply: '' };
-  const done = (r) => ({
+  const done = async (r) => ({
     ...r,
+    limitsBefore,
+    limitsAfter: await quotaOf(),
+    model: model.id,
     session: cascadeId,
     reply: usage.reply,
     tokensIn: usage.seen ? usage.in : Math.ceil(usage.chars / 4),
@@ -904,7 +935,7 @@ async function runAntigravity(cfg, job, out, api) {
     if (!stop && Date.now() > deadline) stop = 'timeout';
     if (stop) {
       await agCall('CancelCascadeInvocation', { cascadeId }).catch(() => {});
-      return done({ code: 1, killed: stop });
+      return await done({ code: 1, killed: stop });
     }
     await sleep(1200);
     let steps;
@@ -973,7 +1004,7 @@ async function runAntigravity(cfg, job, out, api) {
       const status = all?.trajectorySummaries?.[cascadeId]?.status;
       if (!status || status === 'CASCADE_RUN_STATUS_IDLE') {
         // background subagents (image generation…) report back later and the agent then continues
-        if (!children.size) return done({ code: 0 });
+        if (!children.size) return await done({ code: 0 });
         if (!childNoticeShown) {
           out.push('sys', `\x1b[2mwaiting for ${[...children.values()].join(', ')}…\x1b[0m\n`);
           childNoticeShown = true;
@@ -1034,6 +1065,7 @@ async function handle(cfg, rpc, job, state) {
       log('  snapshot failed:', e.message);
     }
   }
+  const lastClaude = state.limits?.claude;
   try {
     if (job.kind === 'submit') r = await runSubmit(cfg, rpc, job, out);
     else if (job.kind === 'claude') r = await runClaude(cfg, job, out);
@@ -1043,6 +1075,13 @@ async function handle(cfg, rpc, job, state) {
     r = { code: -1, error: e.message };
   }
   state.current = null;
+  if (job.kind === 'claude' && r.limitsAfter) {
+    // the previous reading counts as "before" only if nothing else had long to use the plan in between
+    if (lastClaude && Date.now() - lastClaude.at < 15 * 60 * 1000) r.limitsBefore = lastClaude;
+    state.limits = { ...(state.limits ?? {}), claude: r.limitsAfter };
+    state.onLimits?.();
+  }
+  if (job.kind === 'antigravity') state.refreshAg?.();
   if (r.killed === 'timeout') out.push('err', '\nTime limit reached; process stopped.\n');
   if (before) {
     try {
@@ -1073,6 +1112,7 @@ async function handle(cfg, rpc, job, state) {
     ...(r.tokensIn != null || r.tokensOut != null
       ? { p_tokens_in: r.tokensIn ?? 0, p_tokens_out: r.tokensOut ?? 0, p_tokens_estimated: !!r.tokensEstimated }
       : {}),
+    ...(r.limitsBefore && r.limitsAfter ? { p_limits: { before: r.limitsBefore, after: r.limitsAfter, ...(r.model ? { model: r.model } : {}) } } : {}),
   }).catch((e) => log('finish error:', e.message));
   log(`  ${r.killed ?? status} (exit ${r.code})${r.tokensIn != null ? ` · ${r.tokensIn + (r.tokensOut ?? 0)} tokens${r.tokensEstimated ? ' (estimated)' : ''}` : ''}`);
 }
@@ -1092,16 +1132,23 @@ async function main() {
     antigravity: agVersion(cfg),
     // offered in /admin?tab=terminal ("model per agent")
     models: { claude: cfg.claude.bin ? CLAUDE_MODELS : [], antigravity: [] },
+    // locks that only this computer can open (shown in the admin panel)
+    policy: { antigravityOthers: !!cfg.antigravity?.allowOthers, shellOthers: !!cfg.shell?.allowOthers },
+    // latest plan readings: Claude from its last run, Antigravity per model
+    limits: {},
   };
+  state.onLimits = () => (info.limits = { ...info.limits, claude: state.limits?.claude ?? null });
   const refreshAgModels = async () => {
     if (cfg.antigravity?.app === 'ide' || !existsSync(AG_APP)) return;
     try {
       await agConnect();
       info.models.antigravity = (await agModelList()).list;
+      info.limits = { ...info.limits, antigravity: { at: Date.now(), models: await agQuotas() } };
     } catch {}
   };
   refreshAgModels();
   setInterval(refreshAgModels, 10 * 60 * 1000).unref();
+  state.refreshAg = refreshAgModels;
 
   // Doorbell: new job → poll now; cancelled current job → kill now.
   client

@@ -88,7 +88,8 @@ const useCountdown = (iso: string | null) => {
   return `${m}:${String(s).padStart(2, '0')}`;
 };
 
-const TerminalPage: React.FC = () => {
+/** The terminal itself (session, tabs, terminals); used by /terminal and by the employees dashboard. */
+export const TerminalWorkspace: React.FC = () => {
   const [state, setState] = useState<StartState>({ kind: 'loading' });
   const [ended, setEnded] = useState<SessionEnd | null>(null);
   const [quota, setQuota] = useState<Quota | null>(null);
@@ -169,21 +170,7 @@ const TerminalPage: React.FC = () => {
   const currentTab = TABS.find((t) => t.id === current)!;
 
   return (
-    <PageShell>
-      <SEO title="الطرفية | ذروة العلم" description="طرفية سحابية تعمل داخل المتصفح لإدارة وفحص المنصة" />
-      <PageHeader
-        title="الطرفية"
-        description="طرفية سحابية تعمل بالكامل داخل المتصفح. الأوامر تُنفَّذ على خوادم المنصة بعد التحقق من صلاحيتك وحصتك."
-        icon={TerminalSquare}
-        crumbs={[{ label: 'الرئيسية', to: '/' }, { label: 'الطرفية' }]}
-        actions={
-          isPrincipal ? (
-            <Button asChild variant="outline">
-              <Link to="/admin?tab=terminal">إدارة الصلاحيات والحصص</Link>
-            </Button>
-          ) : undefined
-        }
-      />
+    <div className="space-y-4" dir="rtl">
 
       {state.kind === 'loading' && (
         <div className="flex justify-center py-20">
@@ -253,6 +240,11 @@ const TerminalPage: React.FC = () => {
                 <span className="flex items-center gap-1 text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> متبقٍ {countdown}
                 </span>
+              )}
+              {isPrincipal && (
+                <Link to="/admin?tab=terminal" className="font-semibold text-primary hover:underline">
+                  إدارة الصلاحيات والحصص
+                </Link>
               )}
               <span className="mr-auto flex gap-1.5" dir="ltr" aria-hidden>
                 <span className="h-3 w-3 rounded-full bg-destructive/70" />
@@ -324,8 +316,21 @@ const TerminalPage: React.FC = () => {
           </p>
         </div>
       )}
-    </PageShell>
+    </div>
   );
 };
+
+const TerminalPage: React.FC = () => (
+  <PageShell>
+    <SEO title="الطرفية | ذروة العلم" description="طرفية سحابية تعمل داخل المتصفح لإدارة وفحص المنصة" />
+    <PageHeader
+      title="الطرفية"
+      description="طرفية سحابية تعمل بالكامل داخل المتصفح. الأوامر تُنفَّذ على خوادم المنصة بعد التحقق من صلاحيتك وحصتك."
+      icon={TerminalSquare}
+      crumbs={[{ label: 'الرئيسية', to: '/' }, { label: 'الطرفية' }]}
+    />
+    <TerminalWorkspace />
+  </PageShell>
+);
 
 export default TerminalPage;
