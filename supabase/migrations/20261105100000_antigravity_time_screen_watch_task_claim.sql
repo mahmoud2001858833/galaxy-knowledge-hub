@@ -41,6 +41,7 @@ DECLARE
   v_token_limit bigint;
   v_window timestamptz;
   v_ends timestamptz;
+  v_in_hours boolean;
 BEGIN
   IF p_agent NOT IN ('claude', 'antigravity', 'auto') THEN
     RAISE EXCEPTION 'bad agent';
@@ -82,9 +83,11 @@ BEGIN
   END IF;
 
   IF v_agent = 'antigravity' THEN
-    IF q.antigravity_hours_start IS NOT NULL AND NOT CASE
-         WHEN q.antigravity_hours_start < q.antigravity_hours_end THEN v_hour >= q.antigravity_hours_start AND v_hour < q.antigravity_hours_end
-         ELSE v_hour >= q.antigravity_hours_start OR v_hour < q.antigravity_hours_end END THEN
+    -- computed first: a CASE inside an IF condition would end the condition at the CASE's THEN
+    v_in_hours := q.antigravity_hours_start IS NULL
+      OR (q.antigravity_hours_start < q.antigravity_hours_end AND v_hour >= q.antigravity_hours_start AND v_hour < q.antigravity_hours_end)
+      OR (q.antigravity_hours_start > q.antigravity_hours_end AND (v_hour >= q.antigravity_hours_start OR v_hour < q.antigravity_hours_end));
+    IF NOT v_in_hours THEN
       RETURN jsonb_build_object('ok', false, 'reason', 'agent_hours', 'agent', v_agent,
         'hours_start', q.antigravity_hours_start, 'hours_end', q.antigravity_hours_end);
     END IF;

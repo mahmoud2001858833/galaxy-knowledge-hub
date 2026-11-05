@@ -155,7 +155,10 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
   const promptTextRef = useRef(promptText);
   promptTextRef.current = promptText;
 
+  // rows between the prompt's first row and the cursor: a long line wraps, and redraw must clear every row
+  const editRow = useRef(0);
   const prompt = useCallback(() => {
+    editRow.current = 0;
     termRef.current?.write(`\r\n${promptText()}`);
   }, [promptText]);
 
@@ -399,7 +402,11 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
         }
         s.asking = true;
         s.pending = [];
-        window.setTimeout(() => term.write(`\r\n${promptTextRef.current()}${s.line}`), 0);
+        window.setTimeout(() => {
+          term.write('\r\n');
+          editRow.current = 0;
+          redraw();
+        }, 0);
         return true;
       }
       if (data === 'ZarwaAskDone') {
@@ -430,20 +437,54 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
     if (active) term.focus();
     setReady(true);
 
+    // terminal cells a string takes: Arabic marks take none, CJK takes two
+    const cells = (str: string) => {
+      let n = 0;
+      for (const ch of str) {
+        const c = ch.codePointAt(0)!;
+        if ((c >= 0x300 && c <= 0x36f) || (c >= 0x610 && c <= 0x61a) || (c >= 0x64b && c <= 0x65f) || c === 0x670 || (c >= 0x6d6 && c <= 0x6ed) || c === 0x200c || c === 0x200d) continue;
+        n += (c >= 0x1100 && c <= 0x115f) || (c >= 0x2e80 && c <= 0xa4cf) || (c >= 0xac00 && c <= 0xd7a3) || (c >= 0xf900 && c <= 0xfaff) || (c >= 0xff00 && c <= 0xff60) || c >= 0x20000 ? 2 : 1;
+      }
+      return n;
+    };
+    // eslint-disable-next-line no-control-regex
+    const promptCells = () => cells(promptTextRef.current().replace(/\x1b\[[0-9;]*m/g, ''));
+    const upToStart = () => (editRow.current > 0 ? `\x1b[${editRow.current}A` : '') + '\r\x1b[J';
+
     const redraw = () => {
       const s = state.current;
-      // rewrite the current input line and put the cursor in place
-      term.write('\x1b[2K\r');
-      term.write(`${promptTextRef.current()}${s.line}`);
-      const back = s.line.length - s.cursor;
-      if (back > 0) term.write(`\x1b[${back}D`);
+      // rewrite the whole input (every wrapped row) and put the cursor in place
+      const cols = term.cols || 80;
+      const pw = promptCells();
+      let out = upToStart() + promptTextRef.current() + s.line;
+      const total = pw + cells(s.line);
+      const endRow = total > 0 && total % cols === 0 ? total / cols - 1 : Math.floor(total / cols);
+      const target = pw + cells(s.line.slice(0, s.cursor));
+      let row = endRow;
+      if (target < total) {
+        const tr = Math.floor(target / cols);
+        const tc = target % cols;
+        if (endRow > tr) out += `\x1b[${endRow - tr}A`;
+        out += '\r' + (tc ? `\x1b[${tc}C` : '');
+        row = tr;
+      }
+      editRow.current = row;
+      term.write(out);
+    };
+    // before Enter / Ctrl+C: cursor to the end of the input so output starts below it
+    const toEnd = () => {
+      const s = state.current;
+      if (s.cursor === s.line.length) return;
+      s.cursor = s.line.length;
+      redraw();
     };
 
     noticeRef.current = (text: string) => {
       const s = state.current;
       if (s.ended) return;
       if (s.busy) return void term.write(`\r\n${text}`);
-      term.write(`\x1b[2K\r${text}\r\n`);
+      term.write(`${upToStart()}${text}\r\n`);
+      editRow.current = 0;
       redraw();
     };
 
@@ -462,6 +503,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       const s = state.current;
       if (s.ended) return;
       if (s.busy && s.asking && data === '\r') {
+        toEnd();
         const line = s.line;
         s.line = '';
         s.cursor = 0;
@@ -480,6 +522,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
         return;
       }
       if (data === '\r') {
+        toEnd();
         const line = s.line;
         s.line = '';
         s.cursor = 0;
@@ -495,6 +538,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
         return;
       }
       if (data === '\x03') {
+        toEnd();
         term.write('^C');
         s.line = '';
         s.cursor = 0;
@@ -503,6 +547,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       }
       if (data === '\x0c') {
         term.clear();
+        editRow.current = 0;
         redraw();
         return;
       }
@@ -518,14 +563,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       if (data === '\x1b[D') {
         if (s.cursor > 0) {
           s.cursor--;
-          term.write(data);
+          redraw();
         }
         return;
       }
       if (data === '\x1b[C') {
         if (s.cursor < s.line.length) {
           s.cursor++;
-          term.write(data);
+          redraw();
         }
         return;
       }
@@ -561,6 +606,9 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       } catch {
         /* host hidden */
       }
+      // the width changed, so the input wraps differently: recount the cursor's row
+      const s = state.current;
+      if (!s.busy || s.asking) editRow.current = Math.floor((promptCells() + cells(s.line.slice(0, s.cursor))) / (term.cols || 80));
     });
     ro.observe(host);
 
