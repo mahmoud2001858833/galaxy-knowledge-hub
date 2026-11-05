@@ -176,3 +176,8 @@ Antigravity لا يملك سطر أوامر، لذلك يتصل الجسر با�
 - **إيميل المهام:** عند إسناد مهمة تُستدعى الدالة `team-task-email`، فترسل المهمة عبر Resend إلى المكلَّف بها، أو إلى كل أصحاب الدور إن لم تُحدَّد لشخص.
   - **المُرسِل:** يُضبط بالسر `TEAM_EMAIL_FROM`، مثل `ذروة العلم <tasks@althrow.com>`.
   - **شرط التوصيل:** إن لم يكن النطاق موثّقاً في Resend فلن يصل البريد إلا لصاحب حساب Resend، وتعرض الصفحة رسالة تنبّه لذلك.
+
+## Antigravity time and screen watch (2026-11-05, migration 20261105100000)
+- `usage_quotas.antigravity_minutes`: Antigravity minutes per Amman day, counted from the first Antigravity message (`antigravity_window_started_at`; set it to NULL to reopen today's window, the grant dialog's «إعادة فتح وقت اليوم» button). `antigravity_hours_start/end`: allowed Amman hours, end exclusive, start > end wraps past midnight. Both are checked in `terminal_agent_begin()` (reasons `agent_hours`, `agent_time`), so a refused message never reaches the bridge; the rest of the terminal stays open.
+- Bridge: `antigravity.allowOthers` is now true by default, so the platform grant decides who may use Antigravity. The desktop agent ignores tool limits: grant it only to people you trust.
+- Screen watch: `ScreenRecorder` (mounted in main.tsx) records team members and terminal users (never the principal; `screen_watch_applies()`) with rrweb into `screen_watch_sessions` / `screen_watch_chunks`. Only the principal can read or delete them (RLS); they watch live or replay in the employees dashboard → «مراقبة الشاشة». Only the platform tab's DOM is recorded, password fields are masked, and the person sees a «مسجَّل» badge. No automatic retention: delete old sessions from the panel.

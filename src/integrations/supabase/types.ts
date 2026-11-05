@@ -5076,6 +5076,78 @@ export type Database = {
           },
         ]
       }
+      screen_watch_chunks: {
+        Row: {
+          created_at: string
+          events: Json
+          has_full_snapshot: boolean
+          id: number
+          path: string | null
+          session_id: string
+          seq: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          events: Json
+          has_full_snapshot?: boolean
+          id?: never
+          path?: string | null
+          session_id: string
+          seq: number
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          events?: Json
+          has_full_snapshot?: boolean
+          id?: never
+          path?: string | null
+          session_id?: string
+          seq?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      screen_watch_sessions: {
+        Row: {
+          chunks: number
+          email: string | null
+          height: number | null
+          id: string
+          last_event_at: string
+          last_path: string | null
+          started_at: string
+          user_agent: string | null
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          chunks?: number
+          email?: string | null
+          height?: number | null
+          id: string
+          last_event_at?: string
+          last_path?: string | null
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+          width?: number | null
+        }
+        Update: {
+          chunks?: number
+          email?: string | null
+          height?: number | null
+          id?: string
+          last_event_at?: string
+          last_path?: string | null
+          started_at?: string
+          user_agent?: string | null
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: []
+      }
       usage_quotas: {
         Row: {
           allow_antigravity: boolean
@@ -5089,6 +5161,10 @@ export type Database = {
           antigravity_used_tokens: number
           claude_tokens_total: number
           antigravity_tokens_total: number
+          antigravity_minutes: number | null
+          antigravity_hours_start: number | null
+          antigravity_hours_end: number | null
+          antigravity_window_started_at: string | null
           agent_usage_day: string
           agent: string
           allow_claude: boolean
@@ -5123,6 +5199,10 @@ export type Database = {
           antigravity_used_tokens?: number
           claude_tokens_total?: number
           antigravity_tokens_total?: number
+          antigravity_minutes?: number | null
+          antigravity_hours_start?: number | null
+          antigravity_hours_end?: number | null
+          antigravity_window_started_at?: string | null
           agent_usage_day?: string
           agent?: string
           allow_claude?: boolean
@@ -5157,6 +5237,10 @@ export type Database = {
           antigravity_used_tokens?: number
           claude_tokens_total?: number
           antigravity_tokens_total?: number
+          antigravity_minutes?: number | null
+          antigravity_hours_start?: number | null
+          antigravity_hours_end?: number | null
+          antigravity_window_started_at?: string | null
           agent_usage_day?: string
           agent?: string
           allow_claude?: boolean
@@ -5387,6 +5471,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      screen_watch_applies: { Args: never; Returns: boolean }
       adjust_art_project_likes: {
         Args: { increment: number; project_id: string }
         Returns: undefined

@@ -27,3 +27,6 @@
 - **التحقق داخل قاعدة البيانات:** إغلاق المهام يتم فقط عبر `team_complete_task()`، التي تتحقق من متطلبات كل دور. الواجهة لا تستطيع تجاوزها.
 - **الصور:** في حاوية خاصة `team-files`. كل عضو يرفع إلى مجلده فقط، وكل أعضاء الفريق يستطيعون القراءة.
 - **المهام المتأخرة:** هي المهام غير المنجزة التي تجاوزت موعد التسليم.
+
+## First one to take a task wins (2026-11-05)
+Tasks left to a whole role (`assignee_user_id` NULL) go to whoever presses «ابدأ» first: `team_start_task()` locks the row, and a member who comes later gets `TASK_TAKEN` («سبقك زميلك… انتظر المهمة القادمة»). The claimer's tab also sends a Realtime broadcast on `team-task-claims`, so the others' lists refresh and an open dialog for that task closes with the same message (RLS hides the claimed row from them, which postgres_changes does not announce).

@@ -491,7 +491,10 @@ const AGENT_DENIED: Record<string, (name: string, ab: Record<string, any>) => st
   agent_not_allowed: (name) => `${name}: not allowed for your account. Ask the principal.`,
   agent_messages: (name, ab) => `${name}: daily message limit reached (${ab.used}/${ab.limit}). Try again tomorrow.`,
   agent_tokens: (name, ab) => `${name}: daily token limit reached (${fmtTokens(ab.used)}/${fmtTokens(ab.limit)}). Try again tomorrow.`,
+  agent_hours: (name, ab) => `${name}: allowed only from ${hh(ab.hours_start)} to ${hh(ab.hours_end)} (Amman time).`,
+  agent_time: (name, ab) => `${name}: your ${ab.minutes} minutes for today are over. Try again tomorrow or ask the principal.`,
 };
+const hh = (h: number) => `${String(h % 24).padStart(2, '0')}:00`;
 
 // ---------------------------------------------------------------- handler
 serve(async (req) => {
@@ -654,6 +657,10 @@ serve(async (req) => {
           if (!ab.ok) return fail(AGENT_DENIED[ab.reason]?.(name, ab) ?? `${name}: denied (${ab.reason})`);
           kind = ab.agent;
           agentUse = ab.unlimited ? null : ab;
+          if (ab.ends_at) {
+            const left = Math.max(0, Math.round((Date.parse(ab.ends_at) - Date.now()) / 60000));
+            out(c.dim(`${name}: ${left} min left today.`));
+          }
         }
         const resume = (kind === 'claude' || kind === 'antigravity') && typeof body.resume_session === 'string' && /^[A-Za-z0-9-]{8,80}$/.test(body.resume_session) ? body.resume_session : null;
         const job = {

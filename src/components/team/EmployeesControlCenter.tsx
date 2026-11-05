@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Coffee, Crown, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
+import { Bell, ClipboardList, Coffee, Crown, Eye, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TaskBoard } from './TaskBoard';
 import { TeamChat } from './TeamChat';
 import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
+import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -403,6 +404,11 @@ export const EmployeesControlCenter: React.FC = () => {
           <TabsTrigger value="chat" className="gap-1.5 rounded-xl">
             <MessagesSquare className="h-4 w-4" /> المحادثات
           </TabsTrigger>
+          {roles.includes('principal') && (
+            <TabsTrigger value="watch" className="gap-1.5 rounded-xl">
+              <Eye className="h-4 w-4" /> مراقبة الشاشة
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="roles" className="space-y-4">
@@ -468,6 +474,12 @@ export const EmployeesControlCenter: React.FC = () => {
           {roles.includes('principal') && <ClearTeamChat onCleared={() => setChatKey((k) => k + 1)} />}
           <TeamChat key={chatKey} me={userId} members={members} isLead />
         </TabsContent>
+
+        {roles.includes('principal') && (
+          <TabsContent value="watch">
+            <ScreenWatchPanel names={Object.fromEntries(members.filter((m) => m.display_name).map((m) => [m.user_id, m.display_name as string]))} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

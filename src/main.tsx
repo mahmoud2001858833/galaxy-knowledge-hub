@@ -9,6 +9,7 @@ import { LanguageProvider } from '@/i18n/LanguageContext';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { NotificationProvider } from "@/components/NotificationProvider";
+import { ScreenRecorder } from "@/components/screenWatch/ScreenRecorder";
 import { offlineCacheService } from "@/services/offlineCacheService";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ root.render(
           <NotificationProvider>
             <App />
             <Toaster />
+            <ScreenRecorder />
             <SonnerToaster richColors closeButton position="top-center" />
           </NotificationProvider>
         </LanguageProvider>

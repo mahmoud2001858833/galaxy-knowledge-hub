@@ -101,7 +101,7 @@ function pair(code) {
       // ide chat modes: agent (can act), edit, ask (answers only). Others get ask.
       app: 'desktop',
       model: null, // a label such as "Gemini 3.8 Flash (High)"; null = the app's default
-      allowOthers: false, // the desktop agent runs any command: principal only unless true
+      allowOthers: true, // others need the Antigravity grant in /admin?tab=terminal; set false for principal only
       mode: 'agent',
       othersMode: 'ask',
     },
@@ -620,7 +620,7 @@ async function runClaude(cfg, job, out) {
 // is undocumented, so an Antigravity update may change it; `antigravity.app: "ide"` in the config
 // falls back to the Antigravity IDE CLI (task delivered, reply stays in the app).
 // The agent there runs any command and writes anywhere (tool limits are ignored), so it is for the
-// principal only unless antigravity.allowOthers is true.
+// for granted users only while antigravity.allowOthers is true (set it false for principal only).
 const AG_APP = '/Applications/Antigravity.app';
 const AG_API = 'exa.language_server_pb.LanguageServerService';
 const AG_NOTE = GATE_NOTE.replace('Just edit the files; when you finish, your changes are sent automatically', 'Just edit the files; when you finish, your changes are sent');

@@ -48,6 +48,10 @@ export interface Allowance {
   shell: boolean;
   dailyCommands: number;
   sessionMinutes: number;
+  /** Antigravity minutes per Amman day from the first message; null = no limit */
+  antigravityMinutes: number | null;
+  /** Antigravity allowed hours (Amman, end exclusive, may wrap past midnight); null = any time */
+  antigravityHours: { start: number; end: number } | null;
 }
 
 export const PRESETS: { id: string; label: string; hint: string; claude: Omit<AgentAllowance, 'enabled'>; antigravity: Omit<AgentAllowance, 'enabled'>; sessionMinutes: number }[] = [
@@ -62,6 +66,8 @@ export const DEFAULT_ALLOWANCE: Allowance = {
   shell: false,
   dailyCommands: 100,
   sessionMinutes: PRESETS[1].sessionMinutes,
+  antigravityMinutes: null,
+  antigravityHours: null,
 };
 
 export const fmtTokens = (n: number | null | undefined) => {
@@ -100,6 +106,9 @@ export const allowanceColumns = (a: Allowance) => ({
   allow_shell: a.shell,
   daily_limit: a.dailyCommands,
   session_minutes: a.sessionMinutes,
+  antigravity_minutes: a.antigravityMinutes,
+  antigravity_hours_start: a.antigravityHours?.start ?? null,
+  antigravity_hours_end: a.antigravityHours?.end ?? null,
 });
 
 export interface AgentUsageRow {
@@ -129,7 +138,16 @@ export const usageToday = (row: AgentUsageRow, agent: AgentKey) => {
   };
 };
 
-export const allowanceFromRow = (row: AgentUsageRow & { allow_shell: boolean; daily_limit: number; session_minutes: number }): Allowance => ({
+export const allowanceFromRow = (
+  row: AgentUsageRow & {
+    allow_shell: boolean;
+    daily_limit: number;
+    session_minutes: number;
+    antigravity_minutes?: number | null;
+    antigravity_hours_start?: number | null;
+    antigravity_hours_end?: number | null;
+  },
+): Allowance => ({
   claude: { enabled: row.allow_claude, messages: row.claude_daily_messages, tokens: row.claude_daily_tokens == null ? null : Number(row.claude_daily_tokens) },
   antigravity: {
     enabled: row.allow_antigravity,
@@ -139,4 +157,20 @@ export const allowanceFromRow = (row: AgentUsageRow & { allow_shell: boolean; da
   shell: row.allow_shell,
   dailyCommands: row.daily_limit,
   sessionMinutes: row.session_minutes,
+  antigravityMinutes: row.antigravity_minutes ?? null,
+  antigravityHours:
+    row.antigravity_hours_start != null && row.antigravity_hours_end != null ? { start: row.antigravity_hours_start, end: row.antigravity_hours_end } : null,
 });
+
+/** "09:00–17:00" (Amman) */
+export const fmtHours = (h: { start: number; end: number }) =>
+  `${String(h.start).padStart(2, '0')}:00–${String(h.end % 24).padStart(2, '0')}:00`;
+
+/** Minutes of Antigravity left today for a quota row (null = no minute limit, 0 = over or not started yet → full). */
+export const antigravityMinutesLeft = (row: { antigravity_minutes?: number | null; antigravity_window_started_at?: string | null }) => {
+  if (row.antigravity_minutes == null) return null;
+  const started = row.antigravity_window_started_at;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' });
+  if (!started || new Date(started).toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' }) !== today) return row.antigravity_minutes;
+  return Math.max(0, Math.round((Date.parse(started) + row.antigravity_minutes * 60000 - Date.now()) / 60000));
+};

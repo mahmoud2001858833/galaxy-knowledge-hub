@@ -17,7 +17,10 @@ import {
   fetchSubmissions,
   formatDate,
   isOverdue,
+  isTaskTaken,
   startTask,
+  TASK_TAKEN_TEXT,
+  useTaskClaims,
   taskColumn,
   type TaskStatus,
   type TeamMember,
@@ -240,17 +243,29 @@ export const TaskDialog: React.FC<{
     if (task.source_task_id) fetchSubmissions(task.source_task_id).then(setSourceSubs).catch(() => setSourceSubs([]));
   }, [task]);
 
+  // someone else took the task while this member had it open
+  useTaskClaims(({ taskId }) => {
+    if (!task || taskId !== task.id || task.status !== 'todo' || isLead) return;
+    toast.warning(TASK_TAKEN_TEXT, { duration: 8000 });
+    onChanged();
+    onClose();
+  });
+
   if (!task) return null;
 
   const start = async () => {
     setStarting(true);
     try {
       await startTask(task.id);
-      toast.success('بدأت العمل على المهمة');
+      toast.success('المهمة لك! بدأت العمل عليها');
       onChanged();
       onClose();
     } catch (e) {
-      toast.error(errorMessage(e));
+      if (isTaskTaken(e)) {
+        toast.warning(TASK_TAKEN_TEXT, { duration: 8000 });
+        onChanged();
+        onClose();
+      } else toast.error(errorMessage(e));
     } finally {
       setStarting(false);
     }

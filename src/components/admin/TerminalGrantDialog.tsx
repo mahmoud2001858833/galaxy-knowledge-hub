@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Bot, Check, Loader2, Mail, Sparkles, SquareTerminal, UserCheck, X } from 'lucide-react';
+import { AlertTriangle, Bot, Check, Clock, Loader2, Mail, RotateCcw, Sparkles, SquareTerminal, UserCheck, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -15,6 +15,8 @@ import {
   PRESETS,
   allowanceColumns,
   allowanceFromRow,
+  antigravityMinutesLeft,
+  fmtHours,
   fmtTokens,
   parseTokens,
   whatFits,
@@ -188,6 +190,78 @@ const AgentCard: React.FC<{ agent: AgentKey; value: AgentAllowance; onChange: (v
   );
 };
 
+/** Antigravity's own clock: minutes per day from the first message, and/or allowed hours (Amman). */
+const AntigravityTime: React.FC<{
+  value: Allowance;
+  onChange: (v: Pick<Allowance, 'antigravityMinutes' | 'antigravityHours'>) => void;
+  editing: Quota | null;
+  onReopened: () => void;
+}> = ({ value, onChange, editing, onReopened }) => {
+  const [reopening, setReopening] = useState(false);
+  const minutes = value.antigravityMinutes;
+  const hours = value.antigravityHours;
+  const left = editing ? antigravityMinutesLeft(editing) : null;
+  const set = (v: Partial<Pick<Allowance, 'antigravityMinutes' | 'antigravityHours'>>) =>
+    onChange({ antigravityMinutes: minutes, antigravityHours: hours, ...v });
+  const reopen = async () => {
+    if (!editing) return;
+    setReopening(true);
+    const { error } = await supabase.from('usage_quotas').update({ antigravity_window_started_at: null }).eq('id', editing.id);
+    setReopening(false);
+    if (error) return toast.error(error.message);
+    toast.success(`أُعيد فتح وقت Antigravity اليوم لـ ${editing.email}`);
+    onReopened();
+  };
+  return (
+    <section className="space-y-3 rounded-2xl border border-brand-to/40 bg-brand-to/5 p-4">
+      <h4 className="flex items-center gap-2 text-sm font-bold">
+        <Clock className="h-4 w-4 text-brand-to" /> وقت Antigravity
+      </h4>
+      <div className="flex flex-wrap items-end gap-6">
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs font-semibold">
+            <Switch checked={minutes != null} onCheckedChange={(v) => set({ antigravityMinutes: v ? 60 : null })} aria-label="حد دقائق يومي" />
+            دقائق يومياً
+          </label>
+          {minutes != null && (
+            <NumberField label="من أول رسالة في اليوم" value={minutes} min={1} max={1440} onChange={(m) => set({ antigravityMinutes: m })} suffix="دقيقة" />
+          )}
+        </div>
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs font-semibold">
+            <Switch checked={!!hours} onCheckedChange={(v) => set({ antigravityHours: v ? { start: 9, end: 17 } : null })} aria-label="ساعات مسموحة" />
+            ساعات مسموحة (توقيت عمّان)
+          </label>
+          {hours && (
+            <div className="flex gap-3">
+              <NumberField label="من الساعة" value={hours.start} min={0} max={23} onChange={(start) => set({ antigravityHours: { ...hours, start } })} suffix=":00" />
+              <NumberField label="حتى الساعة" value={hours.end} min={1} max={24} onChange={(end) => set({ antigravityHours: { ...hours, end } })} suffix=":00" />
+            </div>
+          )}
+        </div>
+      </div>
+      {hours && hours.start === hours.end && <p className="text-xs text-destructive">ساعة البداية والنهاية متساويتان: اختر مدة.</p>}
+      {hours && hours.start > hours.end && hours.start !== hours.end && (
+        <p className="text-xs text-muted-foreground">يمتد بعد منتصف الليل: من {hours.start}:00 حتى {hours.end}:00 في اليوم التالي.</p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        يبدأ العدّ مع أول رسالة لـ Antigravity في اليوم، وينتهي بعد المدة حتى لو أغلق الصفحة. خارج الوقت تُرفض رسائله قبل أن تصل جهازك، وتبقى بقية الطرفية مفتوحة.
+      </p>
+      {editing && left != null && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-background/70 p-3 text-xs">
+          <span>
+            المتبقي له اليوم: <b>{left} دقيقة</b>
+          </span>
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={reopen} disabled={reopening}>
+            {reopening ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+            إعادة فتح وقت اليوم
+          </Button>
+        </div>
+      )}
+    </section>
+  );
+};
+
 export const TerminalGrantDialog: React.FC<{
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -252,6 +326,7 @@ export const TerminalGrantDialog: React.FC<{
   const save = async () => {
     if (!targets.length) return toast.error('اختر مسؤولاً واحداً على الأقل أو اكتب إيميلاً');
     if (badTyped.length) return toast.error(`إيميل غير صحيح: ${badTyped.join('، ')}`);
+    if (a.antigravityHours && a.antigravityHours.start === a.antigravityHours.end) return toast.error('ساعات Antigravity: البداية والنهاية متساويتان');
     // every agent message is also a terminal command, so the command limit must leave room for them
     const cols = { ...allowanceColumns(a), daily_limit: Math.max(a.dailyCommands, neededCommands) };
     setSaving(true);
@@ -384,6 +459,18 @@ export const TerminalGrantDialog: React.FC<{
           <AgentCard agent="antigravity" value={a.antigravity} onChange={(v) => setAgent('antigravity', v)} limits={limits} />
         </div>
 
+        {a.antigravity.enabled && (
+          <AntigravityTime
+            value={a}
+            onChange={(v) => {
+              setPreset('custom');
+              setA((c) => ({ ...c, ...v }));
+            }}
+            editing={editing ?? null}
+            onReopened={onSaved}
+          />
+        )}
+
         <section className="space-y-3 rounded-2xl border border-border p-4">
           <h4 className="text-sm font-bold">الجلسة والأوامر</h4>
           <div className="flex flex-wrap gap-4">
@@ -424,6 +511,18 @@ export const TerminalGrantDialog: React.FC<{
                     {AGENT_LABEL[k]}: حتى {a[k].messages} رسالة و<span dir="ltr">{fmtTokens(a[k].tokens)}</span> توكن يومياً، أي نحو {whatFits(k, a[k])[1].n} تعديل صغير.
                   </li>
                 ))}
+              {a.antigravity.enabled && (a.antigravityMinutes != null || a.antigravityHours) && (
+                <li>
+                  وقت Antigravity:{a.antigravityMinutes != null && ` ${a.antigravityMinutes} دقيقة يومياً من أول رسالة`}
+                  {a.antigravityMinutes != null && a.antigravityHours && '،'}
+                  {a.antigravityHours && (
+                    <>
+                      {' '}بين <span dir="ltr">{fmtHours(a.antigravityHours)}</span> بتوقيت عمّان
+                    </>
+                  )}
+                  .
+                </li>
+              )}
               {a.shell && <li>Shell مفعّل على جهازك.</li>}
               <li>العدّ يتصفّر يومياً بتوقيت عمّان. كل تعديل ينتظر موافقتك قبل رفعه.</li>
               <li>الحد يُفحص قبل كل رسالة، فقد تتجاوز آخر رسالة في اليوم الحد قليلاً.</li>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -76,7 +76,50 @@ export const taskColumn = (t: TeamTask): TaskStatus | 'overdue' => (isOverdue(t)
 
 export const errorMessage = (e: unknown) => {
   const msg = (e as { message?: string })?.message ?? String(e);
-  return msg.replace(/^.*?ERROR:\s*/, '');
+  return msg.replace(/^.*?ERROR:\s*/, '').replace(/^TASK_TAKEN:\s*/, '');
+};
+
+// ---------------------------------------------------------------- first one to take a task wins
+/** team_start_task() refused because another member took the task first. */
+export const isTaskTaken = (e: unknown) => /TASK_TAKEN/.test((e as { message?: string })?.message ?? String(e));
+export const TASK_TAKEN_TEXT = 'سبقك زميلك وأخذ هذه المهمة. حظاً أوفر، انتظر المهمة القادمة';
+
+// After a claim the task disappears from the others' lists through RLS, which Realtime does not
+// announce to them, so the claimer also rings this broadcast (payload: task id and who took it).
+type Claim = { taskId: string; by: string };
+// one shared channel per tab: Supabase returns the same channel object for the same topic
+const claimListeners = new Set<(c: Claim) => void>();
+let claimsChannel: ReturnType<typeof supabase.channel> | null = null;
+let claimsReady: Promise<void> | null = null;
+const claims = () => {
+  if (!claimsChannel) {
+    claimsChannel = supabase
+      .channel('team-task-claims', { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'claimed' }, ({ payload }) => claimListeners.forEach((l) => l(payload as Claim)));
+    const ch = claimsChannel;
+    claimsReady = new Promise((resolve) => ch.subscribe((status) => status === 'SUBSCRIBED' && resolve()));
+  }
+  return { channel: claimsChannel, ready: claimsReady! };
+};
+
+export function useTaskClaims(onClaim: (c: Claim) => void) {
+  const ref = useRef(onClaim);
+  ref.current = onClaim;
+  useEffect(() => {
+    claims();
+    const l = (c: Claim) => ref.current(c);
+    claimListeners.add(l);
+    return () => {
+      claimListeners.delete(l);
+    };
+  }, []);
+}
+
+const announceClaim = async (taskId: string) => {
+  const { data } = await supabase.auth.getUser();
+  const { channel, ready } = claims();
+  await Promise.race([ready, new Promise((r) => setTimeout(r, 3000))]);
+  await channel.send({ type: 'broadcast', event: 'claimed', payload: { taskId, by: data.user?.id ?? '' } });
 };
 
 /** Fired after the team roster changes in this tab, so role-dependent UI refreshes at once. */
@@ -187,6 +230,7 @@ export function useTeamTasks() {
       supabase.removeChannel(channel);
     };
   }, [reload]);
+  useTaskClaims(() => reload());
 
   return { tasks, loading, reload };
 }
@@ -343,6 +387,7 @@ export interface CompletionInput {
 export const startTask = async (taskId: string) => {
   const { error } = await supabase.rpc('team_start_task', { p_task_id: taskId });
   if (error) throw error;
+  announceClaim(taskId).catch(() => {});
 };
 
 export const completeTask = async (taskId: string, input: CompletionInput) => {
