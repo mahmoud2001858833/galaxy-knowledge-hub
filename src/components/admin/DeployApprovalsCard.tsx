@@ -7,6 +7,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 
+// project names for the badge (ذروة العلم is "main"); loaded once per page
+let projectNames: Promise<Record<string, string>> | null = null;
+const loadProjectNames = () =>
+  (projectNames ??= Promise.resolve(supabase.from('bridge_projects').select('slug, name')).then(({ data }) =>
+    Object.fromEntries((data ?? []).map((p) => [p.slug, p.name])),
+  ));
+const ProjectBadge: React.FC<{ project?: string | null }> = ({ project }) => {
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (project && project !== 'main') loadProjectNames().then(setNames);
+  }, [project]);
+  const label = !project || project === 'main' ? 'ذروة العلم' : names[project] ?? project;
+  return <span className="rounded-full border border-border px-2 py-0.5 font-semibold text-foreground">{label}</span>;
+};
+
 /**
  * Admin push & deploy approval gate. Nothing typed in /terminal can commit or push: the bridge files
  * the changed files here, and only the principal decides (terminal_deploy_decide() checks it in the
@@ -175,6 +190,7 @@ const PendingRequest: React.FC<{ r: DeployRequest; online: boolean }> = ({ r, on
           {r.user_email ?? '—'}
         </span>
         <span className="text-muted-foreground">{fmt(r.updated_at)}</span>
+        <ProjectBadge project={r.project} />
         {r.branch && (
           <span className="flex items-center gap-1 text-muted-foreground" dir="ltr">
             <GitCommitHorizontal className="h-3.5 w-3.5" /> {r.branch}
@@ -334,6 +350,7 @@ const PastRequest: React.FC<{ r: DeployRequest }> = ({ r }) => {
         <span dir="ltr" className="text-muted-foreground">
           {r.user_email}
         </span>
+        <ProjectBadge project={r.project} />
         <span className="text-muted-foreground">{filesOf(r).length} ملف</span>
         {r.commit_sha && (
           <code dir="ltr" className="rounded bg-muted px-1.5 py-0.5">

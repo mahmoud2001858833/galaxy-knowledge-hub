@@ -47,6 +47,8 @@ interface Props {
   primary?: boolean;
   /** The tab is visible: refit and focus. */
   active?: boolean;
+  /** Project on the principal's computer: 'main' (ذروة العلم) or a bridge_projects slug. */
+  project?: string;
 }
 
 const FIXED_INTRO: Record<Exclude<Mode, 'cloud'>, string> = {
@@ -112,7 +114,8 @@ const modeFor = (word: string): Exclude<Mode, 'cloud'> | null => {
   return null;
 };
 
-export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true }) => {
+export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true, project = 'main' }) => {
+  const projectRef = useRef(project);
   const hostRef = useRef<HTMLDivElement>(null);
   // Phones/tablets: the on-screen keyboard (suggestions, composition) re-sends words to xterm and the
   // line repeats, and xterm shows Arabic left-to-right. There, typing goes through a normal input below.
@@ -139,6 +142,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
   const feedRef = useRef<(data: string) => void>(() => {});
   // prints a line above the input line without disturbing what the user is typing
   const noticeRef = useRef<(text: string) => void>(() => {});
+  // another project: agent conversations belong to the old one, so start fresh
+  useEffect(() => {
+    if (projectRef.current === project) return;
+    projectRef.current = project;
+    state.current.claudeSession = null;
+    state.current.agentSession = null;
+    noticeRef.current(`\x1b[2mProject: ${project === 'main' ? 'zarwa (main)' : project}. New conversation.\x1b[0m`);
+  }, [project]);
   const [ready, setReady] = useState(false);
   const fitRef = useRef<FitAddon | null>(null);
   // images an agent made on the principal's computer (uploaded by the bridge to terminal-media)
@@ -315,7 +326,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       term.write('\r\n');
       let first = true;
       try {
-        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command: wire, resume_session: resume }, abort.signal);
+        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command: wire, resume_session: resume, project: projectRef.current }, abort.signal);
         if (!res.ok || !res.body) {
           const text = await res.text();
           term.write(`\x1b[31merror: ${res.status} ${text.slice(0, 200)}\x1b[0m`);

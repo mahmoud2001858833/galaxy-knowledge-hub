@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Ban, Bot, Clock, Cloud, Gauge, Laptop, Loader2, Lock, RefreshCw, ShieldCheck, Sparkles, SquareTerminal, TerminalSquare } from 'lucide-react';
+import { Ban, Bot, Clock, Cloud, FolderGit2, Gauge, Laptop, Loader2, Lock, RefreshCw, ShieldCheck, Sparkles, SquareTerminal, TerminalSquare } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { SEO } from '@/components/SEO';
@@ -25,6 +25,43 @@ const readTab = (): Mode => {
   } catch {
     return 'cloud';
   }
+};
+
+const PROJECT_KEY = 'zarwa-terminal-project';
+const readProject = () => {
+  try {
+    return window.localStorage.getItem(PROJECT_KEY) || 'main';
+  } catch {
+    return 'main';
+  }
+};
+
+/**
+ * Projects this user may work on besides ذروة العلم: all ready ones for the principal, the granted
+ * ready ones for everyone else (RLS decides). Live, so a new grant shows up without a reload.
+ */
+const useTerminalProjects = (enabled: boolean) => {
+  const [list, setList] = useState<{ slug: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!enabled) return;
+    const load = () =>
+      supabase
+        .from('bridge_projects')
+        .select('slug, name')
+        .eq('status', 'ready')
+        .order('name')
+        .then(({ data }) => setList(data ?? []));
+    load();
+    const ch = supabase
+      .channel(`terminal-projects-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bridge_projects' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bridge_project_grants' }, load)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [enabled]);
+  return list;
 };
 
 /** Today's messages and tokens for an agent tab (non-principal users). */
@@ -96,6 +133,18 @@ export const TerminalWorkspace: React.FC = () => {
   const [tab, setTab] = useState<Mode>(readTab);
   const [opened, setOpened] = useState<Set<Mode>>(() => new Set<Mode>(['cloud', readTab()]));
   const started = useRef(false);
+  const projects = useTerminalProjects(state.kind === 'ready');
+  const [projectPick, setProjectPick] = useState(readProject);
+  // a project that was removed or whose grant was withdrawn falls back to ذروة العلم
+  const project = projectPick !== 'main' && projects.some((p) => p.slug === projectPick) ? projectPick : 'main';
+  const pickProject = (slug: string) => {
+    setProjectPick(slug);
+    try {
+      window.localStorage.setItem(PROJECT_KEY, slug);
+    } catch {
+      /* private mode */
+    }
+  };
 
   const start = useCallback(async () => {
     setEnded(null);
@@ -273,6 +322,24 @@ export const TerminalWorkspace: React.FC = () => {
                 );
               })}
             </div>
+            {projects.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-2 text-xs">
+                <FolderGit2 className="h-4 w-4 text-primary" aria-hidden />
+                <span className="font-semibold">المشروع:</span>
+                {[{ slug: 'main', name: 'ذروة العلم' }, ...projects].map((p) => (
+                  <button
+                    key={p.slug}
+                    type="button"
+                    onClick={() => pickProject(p.slug)}
+                    aria-pressed={project === p.slug}
+                    className={`rounded-full border px-3 py-1 transition ${project === p.slug ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border hover:border-primary/50'}`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+                <span className="text-muted-foreground">Claude وAntigravity وShell تعمل داخل مجلد المشروع المختار.</span>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2 text-xs">
               <span className="text-muted-foreground">{currentTab.hint}</span>
               {(current === 'claude' || current === 'antigravity') &&
@@ -294,6 +361,7 @@ export const TerminalWorkspace: React.FC = () => {
                     fixedMode={t.id === 'cloud' ? undefined : (t.id as Exclude<Mode, 'cloud'>)}
                     primary={t.id === 'cloud'}
                     active={t.id === current}
+                    project={project}
                   />
                 </div>
               ))}

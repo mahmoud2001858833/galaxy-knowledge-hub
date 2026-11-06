@@ -23,6 +23,11 @@
 //   Claude is told so (and has those commands disallowed). Files a job changed are sent as a
 //   terminal_deploy_requests row; when the principal approves in /admin?tab=terminal this bridge
 //   commits and pushes exactly the reviewed files, and when they reject it restores them.
+// * Projects: besides workdir (ذروة العلم, project "main") the principal can add projects in
+//   /admin?tab=terminal → «المشاريع». This bridge creates or clones each one into
+//   ~/zarwa-projects/<slug> (projectsRoot) and remembers it in config.projects; a job runs in its
+//   project's folder only if the project is in that local list. The folder is never taken from the
+//   database, and the project is part of the signed job.
 
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
@@ -32,7 +37,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const DIR = process.env.ZARWA_BRIDGE_DIR || join(homedir(), '.zarwa-bridge');
 const CONFIG = join(DIR, 'config.json');
 const PLIST = join(homedir(), 'Library', 'LaunchAgents', 'com.zarwa.bridge.plist');
@@ -107,6 +112,8 @@ function pair(code) {
     },
     shell: old.shell ?? { bin: process.env.SHELL || '/bin/zsh', allowOthers: false },
     maxMinutes: old.maxMinutes ?? { principal: 30, others: 5 },
+    projectsRoot: old.projectsRoot ?? join(homedir(), 'zarwa-projects'),
+    projects: old.projects ?? {},
   };
   mkdirSync(DIR, { recursive: true, mode: 0o700 });
   writeFileSync(CONFIG, JSON.stringify(cfg, null, 2));
@@ -134,8 +141,29 @@ const makeApi = (cfg) => {
   return { client, rpc, authKey };
 };
 
+// the project joins the payload only when it is not "main" (same rule as web-terminal-exec)
 const payloadOf = (job, deviceId) =>
-  [job.id, deviceId, job.kind, job.input, job.resume_session ?? '', job.is_principal ? '1' : '0', String(job.issued_at), job.user_email ?? ''].join('\n');
+  [job.id, deviceId, job.kind, job.input, job.resume_session ?? '', job.is_principal ? '1' : '0', String(job.issued_at), job.user_email ?? '',
+    ...(job.project && job.project !== 'main' ? [job.project] : [])].join('\n');
+
+// ---------------------------------------------------------------- projects
+const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]{1,39}$/;
+const GITHUB_URL = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+const projectsRoot = (cfg) => cfg.projectsRoot || join(homedir(), 'zarwa-projects');
+
+// The config a job of this project runs with: the same settings, another working directory.
+function projectCfg(cfg, slug) {
+  if (!slug || slug === 'main') return { ...cfg, project: 'main' };
+  const entry = PROJECT_SLUG.test(slug) ? cfg.projects?.[slug] : null;
+  if (!entry?.dir || !existsSync(entry.dir)) throw new Error(`project ${slug} is not set up on this computer`);
+  return { ...cfg, workdir: entry.dir, project: slug };
+}
+
+function saveConfig(cfg) {
+  const { project: _p, ...plain } = cfg;
+  writeFileSync(CONFIG, JSON.stringify(plain, null, 2));
+  chmodSync(CONFIG, 0o600);
+}
 
 function verify(job, cfg) {
   const expected = Buffer.from(hmacHex(cfg.deviceKey, payloadOf(job, cfg.deviceId)), 'hex');
@@ -143,6 +171,7 @@ function verify(job, cfg) {
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return 'bad signature';
   if (Math.abs(Date.now() - Number(job.issued_at)) > MAX_AGE_MS) return 'job is too old';
   if (job.kind === 'shell' && !job.is_principal && !cfg.shell.allowOthers) return 'shell is disabled for other users on this computer';
+  if (job.project && job.project !== 'main' && !cfg.projects?.[job.project]) return `project ${job.project} is not set up on this computer`;
   return null;
 }
 
@@ -426,7 +455,8 @@ const commitMessageFor = (prompt, paths) => {
 // Sends paths (merged with this computer's pending request, if any) for approval.
 async function submitChanges(cfg, rpc, { jobId = null, prompt = '', paths = null, message = null, reply = null }) {
   let list = paths ?? [...gitStatus(cfg).keys()];
-  const pending = await rpc('bridge_deploy_pending', {});
+  const proj = cfg.project && cfg.project !== 'main' ? { p_project: cfg.project } : {};
+  const pending = await rpc('bridge_deploy_pending', proj);
   if (pending?.changed_files) list = [...list, ...pending.changed_files.map((f) => f.path)];
   const d = describeChanges(cfg, list);
   if (!d) return null;
@@ -438,12 +468,13 @@ async function submitChanges(cfg, rpc, { jobId = null, prompt = '', paths = null
     p_diff_preview: d.diff_preview,
     p_diff_hash: d.diff_hash,
     p_branch: d.branch,
+    ...proj,
     ...(() => {
       const r = reportFrom(reply);
       return r.summary || r.details ? { p_summary: r.summary, p_details: r.details } : {};
     })(),
   });
-  log(`  approval request ${String(res.id).slice(0, 8)}${res.merged ? ' (updated)' : ''}: ${d.paths.length} file(s)`);
+  log(`  approval request ${String(res.id).slice(0, 8)}${res.merged ? ' (updated)' : ''}: ${d.paths.length} file(s)${proj.p_project ? ` in ${proj.p_project}` : ''}`);
   return { ...res, paths: d.paths };
 }
 
@@ -457,13 +488,22 @@ function reportSubmitted(out, sub) {
 }
 
 // Carries out the principal's decisions: approved → commit + push the reviewed files; rejected → restore them.
-async function processDecisions(cfg, rpc) {
+async function processDecisions(baseCfg, rpc) {
   for (;;) {
     const [req] = (await rpc('bridge_deploy_claim', {})) ?? [];
     if (!req) return;
     const files = (req.changed_files ?? []).map((f) => f.path);
     const finish = (status, logText, sha = null) =>
       rpc('bridge_deploy_finish', { p_id: req.id, p_status: status, p_log: logText, p_commit_sha: sha }).catch((e) => log('deploy finish error:', e.message));
+    // the request's project decides the folder (ذروة العلم when the column is missing or "main")
+    let cfg;
+    try {
+      cfg = projectCfg(baseCfg, req.project);
+    } catch (e) {
+      log(`  deploy ${req.id.slice(0, 8)}: ${e.message}`);
+      await finish(req.status === 'rejected' ? 'rejected' : 'failed', `${e.message}; nothing was changed.`);
+      continue;
+    }
     const unchanged = files.length > 0 && filesHash(cfg, files) === req.diff_hash;
 
     if (req.status === 'rejected') {
@@ -518,19 +558,107 @@ async function processDecisions(cfg, rpc) {
       const trailers = [`Requested-by: ${req.user_email ?? 'unknown'} via the web terminal`, `Approved-in: /admin?tab=terminal (request ${req.id})`].join('\n');
       g(['commit', '-q', '-m', req.commit_message, '-m', trailers, '--', ...files]);
       const sha = git(cfg, ['rev-parse', 'HEAD']).stdout.trim();
+      // a project without a GitHub remote keeps its commits on this computer
+      if (!git(cfg, ['remote'], { allowFail: true }).stdout.trim()) {
+        log(`  deploy ${req.id.slice(0, 8)} committed ${sha.slice(0, 7)} on ${branch} (no remote)`);
+        await finish('deployed', [`Committed ${sha.slice(0, 7)} on ${branch}. This project has no GitHub remote, so it stays on the computer.`, ...steps].join('\n\n'), sha);
+        continue;
+      }
+      // first push of a new branch (a new or empty repository) sets its upstream
+      const hasUpstream = git(cfg, ['rev-parse', '--abbrev-ref', '@{u}'], { allowFail: true }).code === 0;
       try {
-        g(['push'], { timeout: 180000 });
+        g(hasUpstream ? ['push'] : ['push', '-u', 'origin', 'HEAD'], { timeout: 180000 });
       } catch (e) {
         steps.push(e.output ?? e.message);
         git(cfg, ['reset', '-q', '--soft', 'HEAD~1'], { allowFail: true });
         git(cfg, ['reset', '-q', 'HEAD', '--', ...files], { allowFail: true });
         throw new Error('git push failed; the commit was undone and the changes are still on the computer.');
       }
-      log(`  deploy ${req.id.slice(0, 8)} pushed ${sha.slice(0, 7)} to ${branch}`);
+      log(`  deploy ${req.id.slice(0, 8)} pushed ${sha.slice(0, 7)} to ${branch}${cfg.project !== 'main' ? ` (${cfg.project})` : ''}`);
       await finish('deployed', [`Pushed ${sha.slice(0, 7)} to ${branch}.`, ...steps].join('\n\n'), sha);
     } catch (e) {
       log(`  deploy ${req.id.slice(0, 8)} failed: ${e.message}`);
       await finish('failed', [e.message, ...steps].join('\n\n'));
+    }
+  }
+}
+
+// Creates or clones the projects the principal added in /admin?tab=terminal and writes their links.
+async function setupProjects(cfg, rpc) {
+  for (;;) {
+    const [p] = (await rpc('bridge_project_claim', {})) ?? [];
+    if (!p) return;
+    const done = (status, detail, path = null) =>
+      rpc('bridge_project_finish', { p_id: p.id, p_status: status, p_detail: detail, p_path: path }).catch((e) => log('project finish error:', e.message));
+    try {
+      if (!PROJECT_SLUG.test(p.slug)) throw new Error('invalid project name');
+      if (p.repo_url && !GITHUB_URL.test(p.repo_url)) throw new Error('only https://github.com/<owner>/<repo> links are accepted');
+      const root = projectsRoot(cfg);
+      const dir = join(root, p.slug);
+      const known = cfg.projects?.[p.slug]?.dir === dir && existsSync(dir);
+      const steps = [];
+      const pc = { ...cfg, workdir: dir, project: p.slug };
+      const g = (args, opts) => {
+        const r = git(pc, ['-c', `core.hooksPath=${NO_HOOKS}`, ...args], opts);
+        if (r.output) steps.push(r.output);
+        return r;
+      };
+      if (!known) {
+        if (existsSync(dir)) throw new Error(`${dir} already exists and is not a project of this bridge; rename or move it first`);
+        mkdirSync(root, { recursive: true });
+        if (p.source === 'github') {
+          log(`project ${p.slug}: cloning ${p.repo_url}`);
+          const r = spawnSync(REAL_GIT, ['clone', '--quiet', p.repo_url.replace(/\.git$/, '') + '.git', dir], {
+            encoding: 'utf8', timeout: 15 * 60 * 1000, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+          });
+          if (r.status !== 0) {
+            throw new Error(`git clone failed: ${`${r.stderr ?? ''}${r.stdout ?? ''}`.trim() || r.error?.message || 'unknown error'}. For a private repository, sign in to GitHub on this computer once (git push in Terminal.app asks for it).`);
+          }
+          steps.push(`Cloned ${p.repo_url}`);
+        } else {
+          log(`project ${p.slug}: creating ${dir}`);
+          mkdirSync(dir);
+          g(['init', '-q', '-b', 'main']);
+          if (p.repo_url) g(['remote', 'add', 'origin', p.repo_url.replace(/\.git$/, '') + '.git']);
+          steps.push(`Created ${dir}`);
+        }
+        // an empty repository (new, or an empty GitHub one) gets a first commit, so approvals work on it
+        if (git(pc, ['rev-parse', '--verify', '-q', 'HEAD'], { allowFail: true }).code !== 0) {
+          git(pc, ['symbolic-ref', 'HEAD', 'refs/heads/main'], { allowFail: true });
+          writeFileSync(join(dir, 'README.md'), `# ${p.name}\n\n${p.description ? p.description + '\n' : ''}`);
+          writeFileSync(join(dir, '.gitignore'), 'node_modules/\ndist/\n.env\n.env.*\n!.env.example\n.DS_Store\n');
+          g(['add', 'README.md', '.gitignore']);
+          g(['-c', 'user.name=Zarwa bridge', '-c', 'user.email=bridge@zarwa.local', 'commit', '-q', '-m', 'Initial commit']);
+          steps.push('First commit created (README.md, .gitignore); it is pushed with the first approved change.');
+        }
+      }
+      // the linked database: public values only, in .env.local (never committed: excluded locally)
+      const envFile = join(dir, '.env.local');
+      const MARK = '# zarwa-bridge: linked database';
+      const kept = existsSync(envFile)
+        ? readFileSync(envFile, 'utf8').split(MARK)[0].replace(/\s+$/, '')
+        : '';
+      if (p.db_url && p.db_public_key) {
+        const block = [MARK, `VITE_SUPABASE_URL=${p.db_url}`, `VITE_SUPABASE_PUBLISHABLE_KEY=${p.db_public_key}`, `SUPABASE_URL=${p.db_url}`, ''].join('\n');
+        writeFileSync(envFile, (kept ? kept + '\n\n' : '') + block, { mode: 0o600 });
+        const exclude = join(dir, '.git', 'info', 'exclude');
+        if (existsSync(join(dir, '.git')) && !(existsSync(exclude) && readFileSync(exclude, 'utf8').includes('.env.local'))) {
+          mkdirSync(dirname(exclude), { recursive: true });
+          writeFileSync(exclude, (existsSync(exclude) ? readFileSync(exclude, 'utf8') : '') + '\n.env.local\n');
+        }
+        steps.push(`Database linked in .env.local (${p.db_url}). Secret keys: add them to ${envFile} on this computer yourself.`);
+      } else if (existsSync(envFile) && readFileSync(envFile, 'utf8').includes(MARK)) {
+        writeFileSync(envFile, kept ? kept + '\n' : '');
+        steps.push('Database link removed from .env.local');
+      }
+      installRepoGuard(pc);
+      cfg.projects = { ...(cfg.projects ?? {}), [p.slug]: { dir, name: p.name } };
+      saveConfig(cfg);
+      log(`project ${p.slug}: ready (${dir})`);
+      await done('ready', steps.join('\n').slice(0, 4000) || 'Ready', dir);
+    } catch (e) {
+      log(`project ${p.slug}: ${e.message}`);
+      await done('error', e.message);
     }
   }
 }
@@ -1042,10 +1170,19 @@ async function runSubmit(cfg, rpc, job, out) {
   return { code: 0 };
 }
 
-async function handle(cfg, rpc, job, state) {
-  log(`job ${job.id.slice(0, 8)} ${job.kind} from ${job.user_email}: ${job.input.slice(0, 80)}`);
-  const problem = state.seen.has(job.id) ? 'job already ran' : verify(job, cfg);
+async function handle(baseCfg, rpc, job, state) {
+  log(`job ${job.id.slice(0, 8)} ${job.kind}${job.project && job.project !== 'main' ? ` [${job.project}]` : ''} from ${job.user_email}: ${job.input.slice(0, 80)}`);
+  let problem = state.seen.has(job.id) ? 'job already ran' : verify(job, baseCfg);
   state.seen.add(job.id);
+  // the job runs in its project's folder, with the same settings
+  let cfg = baseCfg;
+  if (!problem) {
+    try {
+      cfg = projectCfg(baseCfg, job.project);
+    } catch (e) {
+      problem = e.message;
+    }
+  }
   if (problem) {
     log(`  refused: ${problem}`);
     await rpc('bridge_finish', { p_job_id: job.id, p_status: 'rejected', p_error: `Refused by the computer: ${problem}` }).catch(() => {});
@@ -1134,6 +1271,8 @@ async function main() {
     models: { claude: cfg.claude.bin ? CLAUDE_MODELS : [], antigravity: [] },
     // locks that only this computer can open (shown in the admin panel)
     policy: { antigravityOthers: !!cfg.antigravity?.allowOthers, shellOthers: !!cfg.shell?.allowOthers },
+    projectsRoot: projectsRoot(cfg),
+    projects: Object.keys(cfg.projects ?? {}),
     // latest plan readings: Claude from its last run, Antigravity per model
     limits: {},
   };
@@ -1158,10 +1297,18 @@ async function main() {
       else state.wake?.();
     })
     .on('broadcast', { event: 'deploy' }, () => state.wake?.())
+    .on('broadcast', { event: 'project' }, () => state.wake?.())
     .subscribe((s) => log(`realtime: ${s}`));
 
   installRepoGuard(cfg);
-  log(`Zarwa bridge ${VERSION} · ${info.host} · ${cfg.workdir}`);
+  for (const slug of Object.keys(cfg.projects ?? {})) {
+    try {
+      installRepoGuard(projectCfg(cfg, slug));
+    } catch (e) {
+      log(`project ${slug}: ${e.message}`);
+    }
+  }
+  log(`Zarwa bridge ${VERSION} · ${info.host} · ${cfg.workdir}${info.projects.length ? ` · projects: ${info.projects.join(', ')}` : ''}`);
   let delay = 5000;
   for (;;) {
     try {
@@ -1170,6 +1317,14 @@ async function main() {
       state.first = false;
       delay = 5000;
       await processDecisions(cfg, rpc);
+      try {
+        await setupProjects(cfg, rpc);
+        info.projects = Object.keys(cfg.projects ?? {});
+      } catch (e) {
+        // the platform may not have the projects feature yet (migration not applied)
+        if (!state.projectsWarned) log('projects:', e.message);
+        state.projectsWarned = true;
+      }
       if (jobs?.length) {
         await handle(cfg, rpc, jobs[0], state);
         continue; // there may be more queued
@@ -1198,6 +1353,7 @@ async function main() {
 async function check() {
   const cfg = loadConfig();
   console.log(`workdir      ${cfg.workdir} ${existsSync(cfg.workdir) ? '✓' : '✗ missing'}`);
+  for (const [slug, p] of Object.entries(cfg.projects ?? {})) console.log(`project      ${slug} · ${p.dir} ${existsSync(p.dir) ? '✓' : '✗ missing'}`);
   console.log(`shell        ${cfg.shell.bin} · others allowed: ${cfg.shell.allowOthers}`);
   try {
     console.log(`claude       ${execFileSync(cfg.claude.bin, ['--version'], { encoding: 'utf8' }).trim()} · ${cfg.claude.permissionMode} / others ${cfg.claude.othersPermissionMode}`);

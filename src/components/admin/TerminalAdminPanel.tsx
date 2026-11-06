@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Activity, Ban, KeyRound, Laptop, Loader2, Pencil, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, UserPlus, Users } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
+import { BridgeProjectsCard } from '@/components/admin/BridgeProjectsCard';
 import { AgentModelsCard } from '@/components/admin/AgentModelsCard';
 import { BridgeSetupSteps } from '@/components/admin/BridgeSetupSteps';
 import { PlanUsageCard } from '@/components/admin/PlanUsageCard';
@@ -294,6 +295,8 @@ export const TerminalAdminPanel: React.FC = () => {
   return (
     <div className="space-y-6" dir="rtl">
       <DeployApprovalsCard />
+
+      <BridgeProjectsCard />
 
       <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-border bg-card p-5">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-from to-brand-to text-white">

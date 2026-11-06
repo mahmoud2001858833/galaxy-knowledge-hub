@@ -440,8 +440,10 @@ const sha256Hex = async (text: string) => toHex(await crypto.subtle.digest('SHA-
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const masterKey = () => Deno.env.get('BRIDGE_MASTER_KEY') ?? '';
 const deviceKeyFor = (deviceId: string) => hmacHex(masterKey(), `bridge-device:${deviceId}`);
-export const jobPayload = (j: { id: string; device_id: string; kind: string; input: string; resume_session: string | null; is_principal: boolean; issued_at: number; user_email: string }) =>
-  [j.id, j.device_id, j.kind, j.input, j.resume_session ?? '', j.is_principal ? '1' : '0', String(j.issued_at), j.user_email].join('\n');
+// The project joins the signed payload only when it is not ذروة العلم itself, so 'main' jobs keep the old format.
+export const jobPayload = (j: { id: string; device_id: string; kind: string; input: string; resume_session: string | null; is_principal: boolean; issued_at: number; user_email: string; project: string }) =>
+  [j.id, j.device_id, j.kind, j.input, j.resume_session ?? '', j.is_principal ? '1' : '0', String(j.issued_at), j.user_email, ...(j.project && j.project !== 'main' ? [j.project] : [])].join('\n');
+const PROJECT_SLUG = /^[a-z0-9][a-z0-9-]{1,39}$/;
 
 const onlineDevice = async (service: SupabaseClient) => {
   const { data } = await service
@@ -507,7 +509,7 @@ serve(async (req) => {
 
   let body: {
     action?: string; session_id?: string; command?: string; resume_session?: string; job_id?: string; name?: string;
-    device_id?: string; auth_key?: string; content_type?: string;
+    device_id?: string; auth_key?: string; content_type?: string; project?: string;
   };
   try {
     body = await req.json();
@@ -648,6 +650,18 @@ serve(async (req) => {
         if (!masterKey()) return fail('Bridge is not configured on the server (BRIDGE_MASTER_KEY missing).');
         const device = await onlineDevice(service);
         if (!device) return fail("Bridge offline: the principal's computer is not connected.");
+        // which project on that computer: ذروة العلم ('main') or one the principal granted (bridge_project_grants)
+        const project = typeof body.project === 'string' && body.project && body.project !== 'main' ? body.project : 'main';
+        if (project !== 'main') {
+          if (!PROJECT_SLUG.test(project)) return fail('project: invalid name.');
+          const { data: p } = await service.from('bridge_projects').select('id, status').eq('slug', project).maybeSingle();
+          if (!p) return fail(`project ${project}: not found. Pick another project above the terminal.`);
+          if (p.status !== 'ready') return fail(`project ${project}: not ready on the computer yet (${p.status}).`);
+          if (!begin.is_principal) {
+            const { data: g } = await service.from('bridge_project_grants').select('user_id').eq('project_id', p.id).eq('user_id', user.id).maybeSingle();
+            if (!g) return fail(`project ${project}: you do not have access. Ask the principal.`);
+          }
+        }
         // AI agents: each has its own permission, daily messages and daily tokens (one message is counted here)
         let agentUse: Record<string, any> | null = null;
         if (kind === 'claude' || kind === 'antigravity' || kind === 'auto') {
@@ -672,6 +686,7 @@ serve(async (req) => {
           is_principal: !!begin.is_principal,
           issued_at: Date.now(),
           user_email: begin.email as string,
+          project,
         };
         const signature = await hmacHex(await deviceKeyFor(device.id), jobPayload(job));
         const { user_email: _e, ...row } = job;
@@ -679,6 +694,7 @@ serve(async (req) => {
           .from('bridge_jobs')
           .insert({ ...row, session_id: body.session_id, user_id: user.id, log_id: begin.log_id, signature });
         if (jobError) return fail(`bridge: ${jobError.message}`);
+        if (project !== 'main') out(c.dim(`project: ${project}`));
         // The browser follows the job through realtime; bridge_finish() closes the command log.
         send({ t: 'bridge', job_id: job.id, kind, quota: begin.quota ?? null, agent_use: agentUse });
         controller.close();

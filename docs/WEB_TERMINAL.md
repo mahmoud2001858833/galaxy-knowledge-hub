@@ -181,3 +181,32 @@ Antigravity لا يملك سطر أوامر، لذلك يتصل الجسر با�
 - `usage_quotas.antigravity_minutes`: Antigravity minutes per Amman day, counted from the first Antigravity message (`antigravity_window_started_at`; set it to NULL to reopen today's window, the grant dialog's «إعادة فتح وقت اليوم» button). `antigravity_hours_start/end`: allowed Amman hours, end exclusive, start > end wraps past midnight. Both are checked in `terminal_agent_begin()` (reasons `agent_hours`, `agent_time`), so a refused message never reaches the bridge; the rest of the terminal stays open.
 - Bridge: `antigravity.allowOthers` is now true by default, so the platform grant decides who may use Antigravity. The desktop agent ignores tool limits: grant it only to people you trust.
 - Screen watch: `ScreenRecorder` (mounted in main.tsx) records team members and terminal users (never the principal; `screen_watch_applies()`) with rrweb into `screen_watch_sessions` / `screen_watch_chunks`. Only the principal can read or delete them (RLS); they watch live or replay in the employees dashboard → «مراقبة الشاشة». Only the platform tab's DOM is recorded, password fields are masked, and the person sees a «مسجَّل» badge. No automatic retention: delete old sessions from the panel.
+
+## Projects outside ذروة العلم (multi-project bridge)
+
+Besides ذروة العلم (project `main`, the bridge's `workdir`), the principal adds projects in
+`/admin?tab=terminal` → «المشاريع الخارجية» (`src/components/admin/BridgeProjectsCard.tsx`):
+
+- **New project**: the bridge creates `~/zarwa-projects/<slug>` with `git init -b main` and a first
+  commit (README, .gitignore); optionally with a GitHub remote (an empty repository).
+- **GitHub repository**: the bridge clones `https://github.com/<owner>/<repo>`. Private repositories use
+  the Mac's GitHub sign-in (keychain); nothing about GitHub is stored in the database.
+- **Database**: a Supabase URL and publishable key go to the project's `.env.local` (excluded in
+  `.git/info/exclude`). Secret keys are added to that file by hand on the Mac; the table refuses `sb_secret_` keys.
+- **Who**: `bridge_project_grants`. Granted users see the project picker above the terminal; the
+  principal sees every ready project.
+
+How it is enforced (migration `20261107100000_bridge_projects.sql`):
+
+- `web-terminal-exec` checks the project is ready and granted before it signs a job; the slug is part
+  of the signed payload (only when it is not `main`, so old jobs keep their format).
+- The bridge keeps its own list (`config.projects` in `~/.zarwa-bridge/config.json`) and computes the
+  folder itself; a job or approval for a slug it did not set up is refused.
+- Approval requests carry the project; approving commits and pushes in that project's folder
+  (`push -u origin HEAD` for a first push; a project without a remote commits on the Mac only).
+- Setup: a pending row rings the bridge (`bridge_project_claim` / `bridge_project_finish`); the result
+  and any error show on the project card. Editing the database link sends the project to the bridge again.
+
+Deploy order: migration → `supabase functions deploy web-terminal-exec --use-api` (it writes the new
+`bridge_jobs.project` column) → restart the bridge (`launchctl kickstart -k gui/$(id -u)/com.zarwa.bridge`).
+The frontend works before the migration (the card shows a notice).

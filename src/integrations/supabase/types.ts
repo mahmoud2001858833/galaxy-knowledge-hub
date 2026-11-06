@@ -1531,8 +1531,92 @@ export type Database = {
           },
         ]
       }
+      bridge_project_grants: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_project_grants_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "bridge_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bridge_projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          db_public_key: string | null
+          db_url: string | null
+          description: string | null
+          device_id: string | null
+          id: string
+          local_path: string | null
+          name: string
+          repo_url: string | null
+          slug: string
+          source: string
+          status: string
+          status_detail: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          db_public_key?: string | null
+          db_url?: string | null
+          description?: string | null
+          device_id?: string | null
+          id?: string
+          local_path?: string | null
+          name: string
+          repo_url?: string | null
+          slug: string
+          source: string
+          status?: string
+          status_detail?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          db_public_key?: string | null
+          db_url?: string | null
+          description?: string | null
+          device_id?: string | null
+          id?: string
+          local_path?: string | null
+          name?: string
+          repo_url?: string | null
+          slug?: string
+          source?: string
+          status?: string
+          status_detail?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bridge_jobs: {
         Row: {
+          project: string
           tokens_in: number | null
           tokens_out: number | null
           tokens_estimated: boolean
@@ -1559,6 +1643,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          project?: string
           tokens_in?: number | null
           tokens_out?: number | null
           tokens_estimated?: boolean
@@ -1585,6 +1670,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          project?: string
           tokens_in?: number | null
           tokens_out?: number | null
           tokens_estimated?: boolean
@@ -4985,6 +5071,7 @@ export type Database = {
       }
       terminal_deploy_requests: {
         Row: {
+          project: string
           summary: string | null
           details: string | null
           agent: string | null
@@ -5010,6 +5097,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          project?: string
           summary?: string | null
           details?: string | null
           agent?: string | null
@@ -5035,6 +5123,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          project?: string
           summary?: string | null
           details?: string | null
           agent?: string | null
