@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
@@ -114,6 +114,11 @@ const modeFor = (word: string): Exclude<Mode, 'cloud'> | null => {
 
 export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true }) => {
   const hostRef = useRef<HTMLDivElement>(null);
+  // Phones/tablets: the on-screen keyboard (suggestions, composition) re-sends words to xterm and the
+  // line repeats, and xterm shows Arabic left-to-right. There, typing goes through a normal input below.
+  const touch = useMemo(() => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches, []);
+  const composerRef = useRef<HTMLInputElement>(null);
+  const [composer, setComposer] = useState('');
   const termRef = useRef<Terminal | null>(null);
   const state = useRef({
     line: '',
@@ -376,6 +381,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       convertEol: false,
       allowProposedApi: false,
       theme: themeFromTokens(),
+      disableStdin: touch,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -638,7 +644,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       } catch {
         /* still hidden */
       }
-      termRef.current?.focus();
+      if (touch) composerRef.current?.focus({ preventScroll: true });
+      else termRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(id);
   }, [active, ready]);
@@ -776,9 +783,38 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
         ref={hostRef}
         dir="ltr"
         data-ready={ready}
-        className={`h-[60vh] min-h-[360px] w-full overflow-hidden bg-card px-3 py-2 text-left ${images.length ? '' : 'rounded-b-3xl'}`}
-        onClick={() => termRef.current?.focus()}
+        className={`h-[60vh] min-h-[360px] w-full overflow-hidden bg-card px-3 py-2 text-left ${images.length || touch ? '' : 'rounded-b-3xl'}`}
+        onClick={() => (touch ? composerRef.current?.focus() : termRef.current?.focus())}
       />
+      <form
+        dir="rtl"
+        className={`flex gap-2 border-t border-border bg-card p-2 ${touch ? (images.length ? '' : 'rounded-b-3xl') : 'hidden'}`}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const text = composer.replace(/[\r\n]+/g, ' ').slice(0, 1000);
+          setComposer('');
+          if (text) feedRef.current(text);
+          feedRef.current('\r');
+          composerRef.current?.focus();
+        }}
+      >
+        <input
+          ref={composerRef}
+          value={composer}
+          onChange={(e) => setComposer(e.target.value)}
+          dir="auto"
+          enterKeyHint="send"
+          autoComplete="off"
+          placeholder="اكتب طلبك هنا واضغط إرسال…"
+          className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        />
+        <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
+          إرسال
+        </button>
+        <button type="button" title="إيقاف (Ctrl+C)" onClick={() => feedRef.current('\x03')} className="rounded-lg border border-border px-3 py-2 text-sm">
+          إيقاف
+        </button>
+      </form>
       {images.length > 0 && (
         <div className="flex gap-3 overflow-x-auto rounded-b-3xl border-t border-border bg-muted/30 p-3" dir="ltr">
           {images.map((img) => (
