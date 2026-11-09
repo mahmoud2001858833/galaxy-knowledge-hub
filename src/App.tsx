@@ -16,7 +16,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import PlatformGuideAssistant from '@/components/PlatformGuideAssistant';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { LiveSupportCornerWidget } from '@/components/support/LiveSupportCornerWidget';
 import SafeBoundary from '@/components/common/SafeBoundary';
 import Index from './pages/Index';
 
@@ -346,7 +345,6 @@ const RootLayout = () => {
       <ScrollToTop />
       <Outlet />
       {!isGJUMode && <SafeBoundary name="PlatformGuideAssistant"><PlatformGuideAssistant /></SafeBoundary>}
-      {!isGJUMode && <SafeBoundary name="LiveSupportCornerWidget"><LiveSupportCornerWidget /></SafeBoundary>}
       {!isGJUMode && <SafeBoundary name="AccessibilityPanel"><AccessibilityPanel /></SafeBoundary>}
       <SafeBoundary name="AdminBrainOrb"><Suspense fallback={null}><AdminBrainOrb /></Suspense></SafeBoundary>
       {isGJUMode && !isDamijRoute && <SafeBoundary name="GJUFloatingNav"><GJUFloatingNav /></SafeBoundary>}
