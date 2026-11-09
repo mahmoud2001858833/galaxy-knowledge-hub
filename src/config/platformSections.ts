@@ -25,7 +25,6 @@ import {
   MessagesSquare,
   Microscope,
   Moon,
-  Newspaper,
   Palette,
   PenTool,
   Puzzle,
@@ -36,7 +35,6 @@ import {
   Sigma,
   Sparkles,
   Store,
-  Trophy,
   Users,
   Video,
 } from 'lucide-react';
@@ -148,10 +146,8 @@ export const CORE_SECTIONS: PlatformSection[] = [
     icon: School,
     pages: [
       { title: 'مجتمع الطلبة', description: 'منتدى نقاش مفتوح بين الطلبة', path: '/community', icon: MessagesSquare },
-      { title: 'المجلة المدرسية', description: 'أخبار المدرسة وإعلاناتها', path: '/school-magazine', icon: Newspaper },
       { title: 'جسر التواصل', description: 'المعلم وولي الأمر: الواجبات والملاحظات والمحادثة', path: '/communication-bridge', icon: Users },
       { title: 'الإدارة والمعلمون', description: 'مشاريع المعلمين ومتابعة المشرفين', path: '/administrators-teachers', icon: Building2, requiresAuth: true },
-      { title: 'إنجازات المعلمين', description: 'قصص نجاح وإنجازات الكادر', path: '/teacher-achievements', icon: Trophy },
       { title: 'الفن والتصميم', description: 'معرض أعمال وتحديات رسم', path: '/art-design', icon: Palette },
       { title: 'الاستدامة البيئية', description: 'حاسبة الكربون ومشاريع إعادة التدوير', path: '/environmental-sustainability', icon: Leaf },
       { title: 'الشراكات المؤسسية', description: 'انضم كمدرسة أو مؤسسة شريكة', path: '/institutional-partnerships', icon: Handshake },
