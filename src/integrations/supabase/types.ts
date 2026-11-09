@@ -4884,8 +4884,10 @@ export type Database = {
           created_by: string | null
           details: string | null
           due_at: string | null
+          emailed_at: string | null
           extra_requirements: string[]
           id: string
+          publish_at: string | null
           source_task_id: string | null
           status: string
           title: string
@@ -4900,8 +4902,10 @@ export type Database = {
           created_by?: string | null
           details?: string | null
           due_at?: string | null
+          emailed_at?: string | null
           extra_requirements?: string[]
           id?: string
+          publish_at?: string | null
           source_task_id?: string | null
           status?: string
           title: string
@@ -4916,8 +4920,10 @@ export type Database = {
           created_by?: string | null
           details?: string | null
           due_at?: string | null
+          emailed_at?: string | null
           extra_requirements?: string[]
           id?: string
+          publish_at?: string | null
           source_task_id?: string | null
           status?: string
           title?: string

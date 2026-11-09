@@ -8,6 +8,7 @@ import {
   ROLE_PROOF,
   formatDate,
   isOverdue,
+  isScheduled,
   type TeamMember,
   type TeamNotification,
   type TeamTask,
@@ -33,7 +34,7 @@ const TaskRow: React.FC<{ task: TeamTask; onOpen: () => void; note?: string }> =
     <span>
       <span className="block font-semibold">{task.title}</span>
       <span className="text-[11px] text-muted-foreground">
-        {note ?? formatDate(task.created_at)}
+        {note ?? formatDate(task.publish_at ?? task.created_at)}
         {task.due_at && ` · التسليم ${formatDate(task.due_at)}`}
       </span>
     </span>
@@ -49,13 +50,12 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
   const [open, setOpen] = useState<TeamTask | null>(null);
 
   const myTasks = useMemo(
-    () => tasks.filter((t) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me)),
+    // leads can read scheduled tasks early; as a worker they get them at publish_at like everyone else
+    () => tasks.filter((t) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me) && !isScheduled(t)),
     [tasks, role, me],
   );
   const inbox = myTasks.filter((t) => t.status !== 'done');
-  // Hand-overs from other roles
-  const fromSpeakers = role === 'page_manager' ? tasks.filter((t) => t.assignee_role === 'speaker' && t.status === 'done') : [];
-  const fromAuditors = role === 'ai_manager' ? tasks.filter((t) => t.assignee_role === 'auditor' && t.status === 'done') : [];
+  // Finished work goes to the principal and supervisor only; no hand-over between roles.
   const myNotifications = notifications.filter((n) => n.recipient_role === role);
 
   const canWork = (t: TeamTask) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me);
@@ -87,32 +87,10 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
             <p className="text-sm text-muted-foreground">لا توجد مهام مفتوحة.</p>
           ) : (
             inbox.map((t) => (
-              <TaskRow key={t.id} task={t} onOpen={() => setOpen(t)} note={t.source_task_id ? 'محوّلة تلقائياً من المدقق' : undefined} />
+              <TaskRow key={t.id} task={t} onOpen={() => setOpen(t)} />
             ))
           )}
         </section>
-
-        {role === 'page_manager' && (
-          <section className="space-y-2">
-            <h3 className="font-bold">مهام أنجزها المتكلم ({fromSpeakers.length})</h3>
-            {fromSpeakers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">لم ينجز المتكلم أي زيارة بعد.</p>
-            ) : (
-              fromSpeakers.map((t) => <TaskRow key={t.id} task={t} onOpen={() => setOpen(t)} note={`أُنجزت ${formatDate(t.completed_at)}`} />)
-            )}
-          </section>
-        )}
-
-        {role === 'ai_manager' && (
-          <section className="space-y-2">
-            <h3 className="font-bold">تقارير المدقق ({fromAuditors.length})</h3>
-            {fromAuditors.length === 0 ? (
-              <p className="text-sm text-muted-foreground">لا توجد تقارير.</p>
-            ) : (
-              fromAuditors.map((t) => <TaskRow key={t.id} task={t} onOpen={() => setOpen(t)} note={`أُنجزت ${formatDate(t.completed_at)}`} />)
-            )}
-          </section>
-        )}
 
         <section className="space-y-2">
           <h3 className="flex items-center gap-1.5 font-bold">

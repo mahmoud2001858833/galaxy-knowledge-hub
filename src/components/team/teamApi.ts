@@ -42,7 +42,10 @@ export const ROLE_PROOF: Record<WorkerRole, string> = {
   file_manager: 'وصف تفصيلي للعمل + صورة إثبات',
 };
 
-export const STATUS_LABELS: Record<TaskStatus | 'overdue', string> = {
+export type TaskColumn = TaskStatus | 'overdue' | 'scheduled';
+
+export const STATUS_LABELS: Record<TaskColumn, string> = {
+  scheduled: 'مهام مجدولة',
   todo: 'مهام مطلوبة',
   in_progress: 'مهام قيد الإعداد',
   overdue: 'مهام متأخرة',
@@ -72,7 +75,25 @@ export const isLeadRole = (roles: TeamRole[]) => roles.includes('principal') || 
 export const isOverdue = (t: Pick<TeamTask, 'status' | 'due_at'>) =>
   t.status !== 'done' && !!t.due_at && new Date(t.due_at).getTime() < Date.now();
 
-export const taskColumn = (t: TeamTask): TaskStatus | 'overdue' => (isOverdue(t) ? 'overdue' : (t.status as TaskStatus));
+/** A scheduled task that members cannot see yet (only the leads do, until publish_at). */
+export const isScheduled = (t: Pick<TeamTask, 'publish_at'>) => !!t.publish_at && new Date(t.publish_at).getTime() > Date.now();
+
+export const taskColumn = (t: TeamTask): TaskColumn =>
+  isScheduled(t) ? 'scheduled' : isOverdue(t) ? 'overdue' : (t.status as TaskStatus);
+
+/** Next 8:00 in the browser's local time (today if it is still before 8, otherwise tomorrow). */
+export const nextAtHour = (hour: number) => {
+  const d = new Date();
+  d.setHours(hour, 0, 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d;
+};
+
+/** Date -> value for <input type="datetime-local"> in local time. */
+export const toLocalInput = (d: Date) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 export const errorMessage = (e: unknown) => {
   const msg = (e as { message?: string })?.message ?? String(e);
@@ -209,7 +230,11 @@ export const uniquePeople = (members: TeamMember[]) => {
   return [...map.values()];
 };
 
-/** Tasks visible to the caller (RLS decides which), kept live through realtime. */
+/**
+ * Tasks visible to the caller (RLS decides which), kept live through realtime. Also re-read every
+ * minute: a scheduled task becomes visible to members when its time comes, and the leads' board
+ * moves it out of «مجدولة».
+ */
 export function useTeamTasks() {
   const [tasks, setTasks] = useState<TeamTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,8 +251,10 @@ export function useTeamTasks() {
       .channel(`team-tasks-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_tasks' }, () => reload())
       .subscribe();
+    const tick = window.setInterval(reload, 60_000);
     return () => {
       supabase.removeChannel(channel);
+      window.clearInterval(tick);
     };
   }, [reload]);
   useTaskClaims(() => reload());

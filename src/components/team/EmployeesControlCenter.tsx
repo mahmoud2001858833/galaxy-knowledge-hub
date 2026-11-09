@@ -22,6 +22,8 @@ import {
   WORKER_ROLES,
   errorMessage,
   formatDate,
+  nextAtHour,
+  toLocalInput,
   useTeamDayOff,
   useTeamMembers,
   useTeamNotifications,
@@ -143,6 +145,8 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
   const [role, setRole] = useState<WorkerRole>('speaker');
   const [assignee, setAssignee] = useState('any');
   const [due, setDue] = useState('');
+  // empty = send now; otherwise the task reaches the member at this time
+  const [publishAt, setPublishAt] = useState('');
   const [reqs, setReqs] = useState<string[]>([]);
   const [req, setReq] = useState('');
   const [saving, setSaving] = useState(false);
@@ -154,6 +158,12 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       toast.error('اكتب عنوان المهمة');
       return;
     }
+    const publish = publishAt ? new Date(publishAt) : null;
+    const scheduled = !!publish && publish.getTime() > Date.now();
+    if (scheduled && due && new Date(due).getTime() <= publish.getTime()) {
+      toast.error('موعد التسليم يجب أن يكون بعد وقت إرسال المهمة');
+      return;
+    }
     setSaving(true);
     const { data: { session } } = await supabase.auth.getSession();
     const { data: created, error } = await supabase.from('team_tasks').insert({
@@ -162,17 +172,22 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       assignee_role: role,
       assignee_user_id: assignee === 'any' ? null : assignee,
       due_at: due ? new Date(due).toISOString() : null,
+      publish_at: scheduled ? publish.toISOString() : null,
       extra_requirements: reqs,
       created_by: session?.user.id,
     }).select('id').single();
     setSaving(false);
     if (error) toast.error(errorMessage(error));
     else {
-      toast.success('أُسندت المهمة');
-      if (created?.id) emailTask(created.id);
+      if (scheduled) toast.success(`جُدولت المهمة، تصل للعضو ${formatDate(publish.toISOString())}`);
+      else {
+        toast.success('أُسندت المهمة');
+        if (created?.id) emailTask(created.id);
+      }
       setTitle('');
       setDetails('');
       setDue('');
+      setPublishAt('');
       setReqs([]);
       onCreated();
     }
@@ -228,6 +243,21 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
           </Select>
         </div>
         <div className="space-y-1.5">
+          <Label>وقت إرسال المهمة للعضو</Label>
+          <Input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} />
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" variant={publishAt ? 'outline' : 'secondary'} size="sm" onClick={() => setPublishAt('')}>
+              الآن
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => setPublishAt(toLocalInput(nextAtHour(8)))}>
+              الساعة 8 صباحاً
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            {publishAt ? 'لن يرى العضو المهمة ولن يصله الإيميل قبل هذا الوقت.' : 'تصل المهمة للعضو فور الإسناد.'}
+          </p>
+        </div>
+        <div className="space-y-1.5">
           <Label>موعد التسليم (اختياري)</Label>
           <Input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
         </div>
@@ -262,7 +292,7 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       </div>
       <Button onClick={create} disabled={saving} className="gap-2">
         {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-        إسناد المهمة
+        {publishAt ? 'جدولة المهمة' : 'إسناد المهمة'}
       </Button>
     </div>
   );

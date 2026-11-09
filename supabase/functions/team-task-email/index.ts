@@ -1,8 +1,12 @@
 // Emails a newly assigned team task to the people it is for (Resend).
 //
-// Called by the principal/supervisor right after creating a task: { task_id }. The caller must be a
-// team lead (principal or supervisor). Recipients: the assigned member, or every member holding the
-// task's role when it is open to anyone in that role.
+// Two ways in:
+// - { task_id }: called by the principal/supervisor right after creating a task that starts now.
+//   The caller must be a team lead (principal or supervisor).
+// - { scheduled: true }: called every minute by pg_cron (team_dispatch_scheduled_tasks). It claims the
+//   scheduled tasks whose publish_at has come and that were not sent yet (sets emailed_at), then emails
+//   them. Safe to call by anyone: it only ever sends a due task once.
+// Recipients: the assigned member, or every member holding the task's role when it is open to anyone in that role.
 //
 // Sender: TEAM_EMAIL_FROM (e.g. "ذروة العلم <tasks@althrow.com>", on a domain verified in Resend).
 // Without a verified domain Resend only delivers to the Resend account's own address; such failures
@@ -61,50 +65,38 @@ function html(t: { title: string; details: string | null; role: string; due_at: 
 </body></html>`;
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+type Task = {
+  id: string;
+  title: string;
+  details: string | null;
+  assignee_role: string;
+  assignee_user_id: string | null;
+  due_at: string | null;
+  extra_requirements: string[] | null;
+  created_at: string;
+  created_by: string | null;
+  publish_at: string | null;
+  status: string;
+};
+const TASK_COLUMNS = 'id, status, title, details, assignee_role, assignee_user_id, due_at, extra_requirements, created_at, created_by, publish_at';
 
-  const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
-  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-  const { data: auth } = await service.auth.getUser(token);
-  if (!auth?.user) return json({ error: 'unauthorized' }, 401);
+type Service = ReturnType<typeof createClient>;
 
-  let body: { task_id?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: 'bad request' }, 400);
-  }
-  if (!body.task_id || !/^[0-9a-f-]{36}$/.test(body.task_id)) return json({ error: 'bad request' }, 400);
-
-  const { data: myRoles } = await service.from('team_members').select('role, display_name').eq('user_id', auth.user.id);
-  const lead = (myRoles ?? []).find((r) => r.role === 'principal' || r.role === 'supervisor');
-  if (!lead) return json({ error: 'leads only' }, 403);
-
-  const { data: task } = await service
-    .from('team_tasks')
-    .select('id, title, details, assignee_role, assignee_user_id, due_at, extra_requirements, created_at')
-    .eq('id', body.task_id)
-    .maybeSingle();
-  if (!task) return json({ error: 'task not found' }, 404);
-  // only for a task just created, so this cannot be used to spam the team with old tasks
-  if (Date.now() - new Date(task.created_at).getTime() > 10 * 60 * 1000) return json({ error: 'task is not new' }, 409);
+async function sendTask(service: Service, task: Task, fromLabel: string) {
+  const sent: string[] = [];
+  const failed: { email: string; reason: string; detail?: string }[] = [];
 
   let q = service.from('team_members').select('user_id, email, display_name, role').eq('role', task.assignee_role);
   if (task.assignee_user_id) q = q.eq('user_id', task.assignee_user_id);
   const { data: members } = await q;
   const recipients = [...new Map((members ?? []).map((m) => [m.email.toLowerCase(), m])).values()];
-  if (!recipients.length) return json({ ok: true, sent: [], failed: [], note: 'no recipients' });
+  if (!recipients.length) return { sent, failed, note: 'no recipients' };
 
   const key = Deno.env.get('RESEND_API_KEY');
-  if (!key) return json({ error: 'RESEND_API_KEY is not set' }, 412);
+  if (!key) return { sent, failed, error: 'RESEND_API_KEY is not set' };
   const from = Deno.env.get('TEAM_EMAIL_FROM') ?? 'ذروة العلم <onboarding@resend.dev>';
   const site = (Deno.env.get('SITE_URL') ?? 'https://althrow.com').replace(/\/$/, '');
-  const fromLabel = lead.display_name || ROLE_LABELS[lead.role];
 
-  const sent: string[] = [];
-  const failed: { email: string; reason: string; detail?: string }[] = [];
   for (const r of recipients) {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -131,5 +123,68 @@ serve(async (req) => {
       });
     }
   }
-  return json({ ok: true, sent, failed });
+  return { sent, failed };
+}
+
+const leadLabel = async (service: Service, userId: string | null) => {
+  if (!userId) return 'الإدارة';
+  const { data } = await service.from('team_members').select('role, display_name').eq('user_id', userId);
+  const lead = (data ?? []).find((r) => r.role === 'principal' || r.role === 'supervisor');
+  return lead ? lead.display_name || ROLE_LABELS[lead.role] : 'الإدارة';
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
+
+  const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } });
+
+  let body: { task_id?: string; scheduled?: boolean };
+  try {
+    body = await req.json();
+  } catch {
+    return json({ error: 'bad request' }, 400);
+  }
+
+  // ------------------------------------------------ scheduled tasks whose time has come (pg_cron)
+  if (body.scheduled === true) {
+    const now = new Date().toISOString();
+    // claim first, so an overlapping run cannot send the same task twice
+    const { data: due, error } = await service
+      .from('team_tasks')
+      .update({ emailed_at: now })
+      .not('publish_at', 'is', null)
+      .lte('publish_at', now)
+      .is('emailed_at', null)
+      .select(TASK_COLUMNS);
+    if (error) return json({ error: error.message }, 500);
+    const results = [];
+    for (const task of (due ?? []) as Task[]) {
+      if (task.status === 'done') continue; // finished before its time: nothing to send
+      results.push({ task_id: task.id, ...(await sendTask(service, task, await leadLabel(service, task.created_by))) });
+    }
+    return json({ ok: true, results });
+  }
+
+  // ------------------------------------------------ a task a lead just created
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const { data: auth } = await service.auth.getUser(token);
+  if (!auth?.user) return json({ error: 'unauthorized' }, 401);
+  if (!body.task_id || !/^[0-9a-f-]{36}$/.test(body.task_id)) return json({ error: 'bad request' }, 400);
+
+  const { data: myRoles } = await service.from('team_members').select('role, display_name').eq('user_id', auth.user.id);
+  const lead = (myRoles ?? []).find((r) => r.role === 'principal' || r.role === 'supervisor');
+  if (!lead) return json({ error: 'leads only' }, 403);
+
+  const { data: task } = await service.from('team_tasks').select(TASK_COLUMNS).eq('id', body.task_id).maybeSingle();
+  if (!task) return json({ error: 'task not found' }, 404);
+  // only for a task just created, so this cannot be used to spam the team with old tasks
+  if (Date.now() - new Date(task.created_at).getTime() > 10 * 60 * 1000) return json({ error: 'task is not new' }, 409);
+  // a scheduled task is emailed by the scheduler at its time, not now
+  if (task.publish_at && new Date(task.publish_at).getTime() > Date.now()) return json({ error: 'task is scheduled' }, 409);
+
+  await service.from('team_tasks').update({ emailed_at: new Date().toISOString() }).eq('id', task.id);
+  const result = await sendTask(service, task as Task, lead.display_name || ROLE_LABELS[lead.role]);
+  if ('error' in result && result.error) return json({ error: result.error }, 412);
+  return json({ ok: true, ...result });
 });

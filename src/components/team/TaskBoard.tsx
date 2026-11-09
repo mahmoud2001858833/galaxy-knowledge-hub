@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlarmClock, CheckCircle2, CircleDashed, ClipboardList, Loader2, Play, Plus, RotateCcw, Send, Trash2 } from 'lucide-react';
+import { AlarmClock, CalendarClock, CheckCircle2, CircleDashed, ClipboardList, Loader2, Play, Plus, RotateCcw, Send, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -17,19 +17,21 @@ import {
   fetchSubmissions,
   formatDate,
   isOverdue,
+  isScheduled,
   isTaskTaken,
   startTask,
   TASK_TAKEN_TEXT,
   useTaskClaims,
   taskColumn,
-  type TaskStatus,
+  type TaskColumn,
   type TeamMember,
   type TeamSubmission,
   type TeamTask,
   type WorkerRole,
 } from './teamApi';
 
-const COLUMNS: { id: TaskStatus | 'overdue'; icon: React.ElementType; tone: string }[] = [
+const COLUMNS: { id: TaskColumn; icon: React.ElementType; tone: string; leadOnly?: boolean }[] = [
+  { id: 'scheduled', icon: CalendarClock, tone: 'text-muted-foreground', leadOnly: true },
   { id: 'todo', icon: ClipboardList, tone: 'text-primary' },
   { id: 'in_progress', icon: CircleDashed, tone: 'text-warning' },
   { id: 'overdue', icon: AlarmClock, tone: 'text-destructive' },
@@ -198,6 +200,16 @@ const LeadActions: React.FC<{ task: TeamTask; onChanged: () => void; onClose: ()
         </div>
       )}
       <div className="flex flex-wrap gap-2">
+        {isScheduled(task) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={() => run(() => supabase.from('team_tasks').update({ publish_at: new Date().toISOString() }).eq('id', task.id), 'ستصل المهمة للعضو خلال دقيقة', true)}
+          >
+            <Send className="h-4 w-4" /> أرسلها الآن
+          </Button>
+        )}
         {task.status === 'done' && (
           <Button
             variant="outline"
@@ -279,6 +291,7 @@ export const TaskDialog: React.FC<{
           <DialogDescription className="text-right">
             {ROLE_LABELS[task.assignee_role as WorkerRole]}
             {task.assignee_user_id ? ` · ${nameOf(members, task.assignee_user_id)}` : ' · لأي عضو بهذا الدور'}
+            {isScheduled(task) && ` · مجدولة: تصل للعضو ${formatDate(task.publish_at)}`}
             {task.due_at && ` · التسليم: ${formatDate(task.due_at)}`}
             {isOverdue(task) && ' · متأخرة'}
           </DialogDescription>
@@ -343,6 +356,7 @@ const TaskCard: React.FC<{ task: TeamTask; members: TeamMember[]; onOpen: () => 
     <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
       <span>{ROLE_LABELS[task.assignee_role as WorkerRole]}</span>
       {task.assignee_user_id && <span>· {nameOf(members, task.assignee_user_id)}</span>}
+      {isScheduled(task) && <span className="font-semibold text-primary">· تُرسل {formatDate(task.publish_at)}</span>}
       {task.due_at && <span>· {formatDate(task.due_at)}</span>}
       {task.source_task_id && <span className="text-primary">· من المدقق</span>}
     </div>
@@ -359,16 +373,17 @@ export const TaskBoard: React.FC<{
   isLead?: boolean;
 }> = ({ tasks, members, canWork, onChanged, emptyText = 'لا توجد مهام', isLead = false }) => {
   const [open, setOpen] = useState<TeamTask | null>(null);
+  const columns = COLUMNS.filter((c) => !c.leadOnly || isLead);
   const grouped = useMemo(() => {
-    const g: Record<string, TeamTask[]> = { todo: [], in_progress: [], overdue: [], done: [] };
+    const g: Record<string, TeamTask[]> = { scheduled: [], todo: [], in_progress: [], overdue: [], done: [] };
     for (const t of tasks) g[taskColumn(t)].push(t);
     return g;
   }, [tasks]);
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {COLUMNS.map(({ id, icon: Icon, tone }) => (
+      <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${columns.length > 4 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
+        {columns.map(({ id, icon: Icon, tone }) => (
           <div key={id} className="flex flex-col gap-2 rounded-3xl border border-border bg-muted/40 p-3">
             <div className="flex items-center justify-between px-1">
               <span className={`flex items-center gap-1.5 text-sm font-bold ${tone}`}>
