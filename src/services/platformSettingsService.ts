@@ -44,7 +44,7 @@ export interface PlatformSettings {
 const DEFAULT_SETTINGS: PlatformSettings = {
   siteName: 'منصة ذروة العلم',
   tagline: 'منصة تعليمية أردنية ذكية للطالب والمعلم والمدرسة',
-  schoolAttribution: 'تم تطوير المنصة عن طريق فريق مدرسة عنبه الثانوية',
+  schoolAttribution: 'تم تطوير المنصه عن طريق فريق المستقبل',
   developedBy: 'إشراف وتطوير نخبة من الأكاديميين والمبرمجين',
   contactEmail: 'contact@zarwat-alelm.edu.jo',
   contactPhone: '0796830150',
@@ -72,8 +72,12 @@ const DEFAULT_SETTINGS: PlatformSettings = {
 
 const STORAGE_KEY = 'galaxy_platform_settings_v3';
 
-/** Earlier default attribution; browsers that saved it get the current default instead. */
-const LEGACY_SCHOOL_ATTRIBUTION = 'تم إنشاء وتطوير المنصة بواسطة مدرسة عنبه الثانوية الشاملة للبنين';
+/** Earlier default attributions; browsers that saved them get the current default instead. */
+const LEGACY_SCHOOL_ATTRIBUTIONS = [
+  'تم إنشاء وتطوير المنصة بواسطة مدرسة عنبه الثانوية الشاملة للبنين',
+  'تم تطوير المنصة عن طريق فريق مدرسة عنبه الثانوية',
+  'تم تطوير المنصة عن طريق فريق مدرسة عنبة الثانويه',
+];
 
 class PlatformSettingsService {
   private settings: PlatformSettings = DEFAULT_SETTINGS;
@@ -87,7 +91,7 @@ class PlatformSettingsService {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         this.settings = { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-        if (this.settings.schoolAttribution === LEGACY_SCHOOL_ATTRIBUTION) {
+        if (LEGACY_SCHOOL_ATTRIBUTIONS.includes(this.settings.schoolAttribution)) {
           this.settings.schoolAttribution = DEFAULT_SETTINGS.schoolAttribution;
           this.save();
         }
