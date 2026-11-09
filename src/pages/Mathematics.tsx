@@ -39,9 +39,9 @@ const Mathematics = () => {
       path: '/mathematics/ai-assistant'
     },
     {
-      title: 'بنك الأسئلة',
+      title: 'بنك أسئلة الرياضيات',
       icon: <FileQuestion className="w-12 h-12 text-purple-400" />,
-      description: 'أنشئ أسئلة رياضية مخصصة مع إجاباتها النموذجية',
+      description: 'أسئلة مصنفة حسب الوحدة والصعوبة مع إجاباتها النموذجية',
       path: '/mathematics/question-bank',
       isNew: true
     }
