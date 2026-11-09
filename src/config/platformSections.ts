@@ -152,8 +152,9 @@ export const CORE_SECTIONS: PlatformSection[] = [
 ];
 
 /**
- * Projects that are parked: kept reachable, not actively developed.
- * They are excluded from the main navigation and listed on /future-projects.
+ * Projects grouped under "ذكاء المنصة" (المشاريع المستقبلية سابقاً):
+ * Kept reachable, including AI, robotics, digital twins, and medical research models.
+ * Excluded from the main curriculum navigation and listed on /future-projects.
  */
 export const FUTURE_PROJECTS: PlatformPage[] = [
   { title: 'دامج: منصة أصحاب الهمم', description: 'التوحد وفرط الحركة والبرايل ولغة الإشارة وعين الكفيف والمحاكاة السريرية', path: '/damij', icon: HandHeart },

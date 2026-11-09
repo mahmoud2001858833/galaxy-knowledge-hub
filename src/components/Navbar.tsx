@@ -173,7 +173,7 @@ const Navbar = () => {
   // Main navigation comes from the platform sections config (src/config/platformSections.ts)
   const navLinks: { label: string; path: string; icon: React.ElementType; badge?: string }[] = [
     ...CORE_SECTIONS.map((section) => ({ label: section.navLabel, path: section.path, icon: section.icon })),
-    { label: 'مشاريع مستقبلية', path: FUTURE_PROJECTS_PATH, icon: Lightbulb },
+    { label: 'ذكاء المنصة', path: FUTURE_PROJECTS_PATH, icon: Sparkles },
   ];
   const isNavActive = (path: string) =>
     location.pathname === path || findSectionByPath(location.pathname)?.path === path;

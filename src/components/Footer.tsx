@@ -10,7 +10,7 @@ import { CORE_SECTIONS, FUTURE_PROJECTS_PATH } from '@/config/platformSections';
 const linkClass = 'text-muted-foreground transition-colors hover:text-foreground';
 
 const MORE_LINKS = [
-  { title: 'مشاريع مستقبلية', to: FUTURE_PROJECTS_PATH },
+  { title: 'ذكاء المنصة', to: FUTURE_PROJECTS_PATH },
   { title: 'الشراكات المؤسسية', to: '/institutional-partnerships' },
   { title: 'تواصل معنا', to: '/contact' },
   { title: 'الخصوصية والشروط', to: '/privacy' },

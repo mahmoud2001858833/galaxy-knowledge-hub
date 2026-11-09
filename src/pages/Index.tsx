@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Handshake, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Handshake, Sparkles } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { PageShell } from '@/components/layout/PageShell';
 import { HomeHero } from '@/components/home/HomeHero';
@@ -63,12 +63,12 @@ const MoreLinks: React.FC = () => (
       className="group flex items-center gap-4 rounded-[2rem] border border-dashed border-border bg-background p-6 transition hover:-translate-y-0.5 hover:border-primary/40"
     >
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-secondary text-secondary-foreground">
-        <Lightbulb className="h-6 w-6" aria-hidden />
+        <Sparkles className="h-6 w-6" aria-hidden />
       </span>
       <span className="flex-1">
-        <span className="block text-lg font-black">مشاريع مستقبلية</span>
+        <span className="block text-lg font-black">ذكاء المنصة</span>
         <span className="text-sm text-muted-foreground">
-          {FUTURE_PROJECTS.length} مشروعاً تجريبياً، منها {FUTURE_PROJECTS.slice(0, 2).map((p) => p.title.split(':')[0]).join(' و')}.
+          {FUTURE_PROJECTS.length} مشاريع ذكية ونماذج تجريبية: الروبوتات، الذكاء الاصطناعي، التوأم الرقمي، والكشف الطبي.
         </span>
       </span>
       <ArrowLeft className="h-5 w-5 text-primary transition-transform group-hover:-translate-x-1" aria-hidden />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { PageShell, PageHeader, PageCardLink } from '@/components/layout/PageShell';
 import { FUTURE_PROJECTS } from '@/config/platformSections';
@@ -7,14 +7,14 @@ import { FUTURE_PROJECTS } from '@/config/platformSections';
 const FutureProjectsPage: React.FC = () => (
   <PageShell>
     <SEO
-      title="المشاريع المستقبلية | ذروة العلم"
-      description="مشاريع تجريبية وأفكار قيد التطوير خارج المسار التعليمي الأساسي للمنصة"
+      title="ذكاء المنصة | ذروة العلم"
+      description="مشاريع ونماذج ذكية قائمة على الذكاء الاصطناعي والتقنيات الحديثة خارج المسار التعليمي الأساسي للمنصة"
     />
     <PageHeader
-      title="المشاريع المستقبلية"
-      description="نماذج تجريبية وأفكار نعمل عليها لاحقاً. هي متاحة للتجربة، لكنها ليست جزءاً من المسار التعليمي الأساسي ولا تخضع للتطوير النشط حالياً."
-      icon={Lightbulb}
-      crumbs={[{ label: 'الرئيسية', to: '/' }, { label: 'المشاريع المستقبلية' }]}
+      title="ذكاء المنصة"
+      description="نماذج ومشاريع ذكية قائمة على الذكاء الاصطناعي والتقنيات الحديثة (الروبوتات، التوأم الرقمي، النماذج الطبية، والكشف المبكر) متاحة للتجربة والاستكشاف."
+      icon={Sparkles}
+      crumbs={[{ label: 'الرئيسية', to: '/' }, { label: 'ذكاء المنصة' }]}
     />
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {FUTURE_PROJECTS.map((p) => (
