@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Mail, MapPin, Phone } from 'lucide-react';
+import { Building2, MapPin, Phone } from 'lucide-react';
 import { platformSettings, type PlatformSettings } from '@/services/platformSettingsService';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { CORE_SECTIONS, FUTURE_PROJECTS_PATH } from '@/config/platformSections';
@@ -77,10 +77,6 @@ const Footer: React.FC = () => {
                 <a href={`tel:${(settings.contactPhone || '0796830150').replace(/\s+/g, '')}`} className="transition-colors hover:text-foreground" dir="ltr">
                   {settings.contactPhone || '0796830150'}
                 </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-                <span dir="ltr">{settings.contactEmail}</span>
               </div>
               <div className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
