@@ -205,7 +205,6 @@ const PlatformSecurityReport = wrap(lazy(() => import("./pages/PlatformSecurityR
 const SpacedRepetitionSystem = wrap(lazy(() => import("./pages/SpacedRepetitionSystem")));
 const AIImageGenerator = wrap(lazy(() => import("./pages/AIImageGenerator")));
 const SignLanguagePage = wrap(lazy(() => import("./pages/SignLanguagePage")));
-const ExamScannerPage = wrap(lazy(() => import("./pages/ExamScannerPage")));
 const AIConceptMindmapStudioPage = wrap(lazy(() => import("./pages/AIConceptMindmapStudioPage")));
 const LiveInteractiveExam = wrap(lazy(() => import("./pages/LiveInteractiveExam")));
 const ExamCreator = wrap(lazy(() => import("./pages/ExamCreator")));
@@ -511,7 +510,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'btec-section',
-        element: <PublicRoute><BTEC /></PublicRoute>,
+        element: <Navigate to="/btec" replace />,
       },
       {
         path: 'btec-it',
@@ -599,7 +598,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'exam-scanner',
-        element: <AuthGuard><ExamScannerPage /></AuthGuard>,
+        element: <Navigate to="/exam-creator" replace />,
       },
       {
         path: 'exam-creator',
@@ -656,7 +655,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'research',
-        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+        element: <Navigate to="/scientific-journal" replace />,
       },
       {
         path: 'scientific-research',
@@ -664,7 +663,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'papers',
-        element: <PublicRoute><ScientificJournal /></PublicRoute>,
+        element: <Navigate to="/scientific-journal" replace />,
       },
       {
         path: 'magazine',
@@ -712,7 +711,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'forum',
-        element: <PublicRoute><StudentCommunityForum /></PublicRoute>,
+        element: <Navigate to="/community" replace />,
       },
       {
         path: 'student-community-forum',
@@ -736,7 +735,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'terms',
-        element: <PublicRoute><PrivacyAndTerms /></PublicRoute>,
+        element: <Navigate to="/privacy" replace />,
       },
       {
         path: 'complaints',
@@ -1203,7 +1202,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'recycling-advisor',
-        element: <PublicRoute><RecyclingProjectAdvisor /></PublicRoute>,
+        element: <Navigate to="/environmental/recycling-advisor" replace />,
       },
       {
         path: 'environmental/eco-predict',
@@ -1300,11 +1299,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'platform-security',
-        element: <PublicRoute><PlatformSecurityReport /></PublicRoute>,
+        element: <Navigate to="/security-report" replace />,
       },
       {
         path: 'security',
-        element: <PublicRoute><PlatformSecurityReport /></PublicRoute>,
+        element: <Navigate to="/security-report" replace />,
       },
       {
         path: 'education-section',
@@ -1316,11 +1315,11 @@ const router = createBrowserRouter([
       },
       {
         path: 'comprehensive-education',
-        element: <PublicRoute><EducationSection /></PublicRoute>,
+        element: <Navigate to="/education-section" replace />,
       },
       {
         path: 'education-hub',
-        element: <PublicRoute><EducationSection /></PublicRoute>,
+        element: <Navigate to="/education-section" replace />,
       },
       {
         path: 'ai-assistant-section',
