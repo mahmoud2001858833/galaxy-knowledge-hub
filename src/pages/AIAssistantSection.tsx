@@ -84,10 +84,10 @@ export const AIAssistantSection: React.FC = () => {
       icon: Heart,
       featured: true,
       description: "منظومة إرشاد نفسي متقدمة قائمة على العلاج المعرفي السلوكي (CBT) وعلم النفس العصبي. تساعدك في تفريغ الضغط الدراسي، خفض قلق الامتحانات، استعادة التركيز، وممارسة تقنيات التنفس والتأريض الحسي.",
-      color: "from-teal-500 via-emerald-600 to-cyan-600",
-      gradient: "from-teal-600/20 via-emerald-600/10 to-transparent",
-      bgLight: "bg-teal-50 dark:bg-teal-950/20",
-      borderColor: "border-teal-300 dark:border-teal-700/50",
+      color: "from-[#A87948] via-[#946535] to-[#784F25]",
+      gradient: "from-[#A87948]/20 via-[#946535]/10 to-transparent",
+      bgLight: "bg-[#FAF7F0] dark:bg-[#251E17]",
+      borderColor: "border-[#E4D7C3] dark:border-[#52412F]",
       link: "/psychological-guide",
       features: [
         "تمارين التنفس الصندوقي 4-4-4-4 مع مؤشر بصري وصوتي حي",
@@ -377,21 +377,21 @@ export const AIAssistantSection: React.FC = () => {
           </div>
         </section>
 
-        {/* SPECIAL SPOTLIGHT: المرشد النفسي والوجداني (Hero Spotlight Banner) */}
-        <section className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-teal-950/60 via-slate-900 to-cyan-950/60 border border-teal-500/30 shadow-xl overflow-hidden">
+        {/* SPECIAL SPOTLIGHT: المرشد النفسي والوجداني (Hero Spotlight Banner) - Beige Theme */}
+        <section className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-[#FDFBF7] via-[#F7F2E7] to-[#EFE7D8] dark:from-[#2B2319] dark:via-[#241D15] dark:to-[#1D1711] border border-[#E4D7C3] dark:border-[#52412F] shadow-xl overflow-hidden">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center shadow-lg shrink-0">
-                <Heart className="w-8 h-8 animate-pulse text-cyan-200" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#B38752] via-[#9B703D] to-[#7C5328] text-white flex items-center justify-center shadow-lg shrink-0">
+                <Heart className="w-8 h-8 animate-pulse text-amber-100" />
               </div>
               <div className="space-y-1.5 text-right">
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300 text-[11px] font-bold">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#EFE4D2] dark:bg-amber-950/50 border border-[#DCCAaf] dark:border-amber-800/40 text-[#7D5329] dark:text-[#E8CDA9] text-[11px] font-bold">
                   <span>مساحتك الآمنة للتفريغ والسكينة</span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-white">
+                <h2 className="text-xl sm:text-2xl font-black text-[#382C1E] dark:text-[#FBF6EE]">
                   مرشدك النفسي الذكي: خفف توتر الامتحانات واستعد هدوءك في دقائق
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                <p className="text-xs sm:text-sm text-[#665440] dark:text-[#D6C7B2] max-w-2xl">
                   جلسة إرشادية تفاعلية قائمة على العلاج المعرفي السلوكي (CBT)، مزودة بتمارين التنفس الصندوقي 4-4-4-4، التأريض الحسي 5-4-3-2-1، وآيات السكينة لخفض التوتر والقلق الدراسي.
                 </p>
               </div>
@@ -400,7 +400,7 @@ export const AIAssistantSection: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 shrink-0 w-full lg:w-auto justify-end">
               <Button
                 onClick={() => navigate('/psychological-guide')}
-                className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white font-bold text-xs sm:text-sm px-6 h-12 shadow-lg flex items-center gap-2"
+                className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-[#8C6239] via-[#A87948] to-[#6E4B27] hover:from-[#78532F] hover:to-[#5E3F1F] text-white font-bold text-xs sm:text-sm px-6 h-12 shadow-lg flex items-center gap-2"
               >
                 <Heart className="w-4 h-4" />
                 <span>دخول جلسة الإرشاد النفسي</span>
@@ -623,8 +623,10 @@ export const AIAssistantSection: React.FC = () => {
                   transition={{ duration: 0.35, delay: index * 0.05 }}
                   whileHover={{ y: -6 }}
                   onClick={() => navigate(ast.link)}
-                  className={`group relative flex flex-col justify-between bg-white dark:bg-slate-900 rounded-3xl border ${ast.borderColor} shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden p-6 sm:p-7 ${
-                    ast.featured ? 'ring-2 ring-rose-500/30' : ''
+                  className={`group relative flex flex-col justify-between ${
+                    ast.id === 'psychological' ? 'bg-[#FAF7F0] dark:bg-[#251E17]' : 'bg-white dark:bg-slate-900'
+                  } rounded-3xl border ${ast.borderColor} shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden p-6 sm:p-7 ${
+                    ast.featured ? 'ring-2 ring-amber-500/30' : ''
                   }`}
                 >
                   <div className="space-y-4">
