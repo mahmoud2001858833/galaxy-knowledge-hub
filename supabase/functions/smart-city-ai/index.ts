@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const GEMINI_API_KEY = "AIzaSyAyC_JZtXVKTUXXbW1EDsoxiFu-IWd5B_A";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 
 async function callGemini(prompt: string): Promise<string> {
   const response = await fetch(
