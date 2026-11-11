@@ -187,8 +187,19 @@ export const ExecutiveOverviewTab: React.FC<ExecutiveOverviewTabProps> = ({ onNa
 
           {onNavigateTab && (
             <Button
-              onClick={() => onNavigateTab('lcm')}
+              onClick={() => onNavigateTab('tasks-hub')}
               className="rounded-xl text-xs gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-md shadow-cyan-500/20"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>إدارة المهام والمدققين ونقاط AI</span>
+            </Button>
+          )}
+
+          {onNavigateTab && (
+            <Button
+              onClick={() => onNavigateTab('lcm')}
+              variant="outline"
+              className="rounded-xl text-xs gap-1.5 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>إدارة المقررات (LCM)</span>
