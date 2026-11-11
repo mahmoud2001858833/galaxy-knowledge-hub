@@ -10,6 +10,8 @@
  * 6. Dual Transport Fallback: Direct SSE -> Supabase Edge Function -> Non-streaming generation
  */
 
+import { geminiRequest } from './geminiTransport';
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'model' | 'system';
   content: string;
@@ -36,16 +38,15 @@ export interface StreamResult {
   chunksCount: number;
 }
 
+// Must match the allowlist in supabase/functions/gemini-proxy.
 export const CANDIDATE_MODELS = [
+  'gemini-flash-latest',
   'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-1.5-pro',
+  'gemini-flash-lite-latest',
 ];
 
 class ResilientStreamingService {
-  private defaultApiKey = atob('QVEuQWI4Uk42SkZ4Z0NWSm00MEllNWdPZkxwTkFsV2h2ckg3eUVnT1dKcHZhdTJacnBCNGc=');
+  private defaultApiKey = ''; // platform key lives on the server (gemini-proxy edge function)
   private storageKey = 'galaxy_gemini_api_key';
 
   public getApiKey(): string {
@@ -168,13 +169,11 @@ class ResilientStreamingService {
         }
 
         // Transport 1: Google Native SSE Stream
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+        const { url, headers } = await geminiRequest(model, { stream: true, userKey: apiKey });
 
         const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(payload),
           signal,
         });
@@ -271,10 +270,10 @@ class ResilientStreamingService {
     // Transport 2: If all streaming attempts failed, try a non-streaming direct request as last resort
     try {
       console.info('[ResilientStream] Attempting final non-streaming direct request fallback...');
-      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      const fallbackRes = await fetch(fallbackUrl, {
+      const fallback = await geminiRequest('gemini-flash-latest', { stream: false, userKey: apiKey });
+      const fallbackRes = await fetch(fallback.url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: fallback.headers,
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: { temperature, maxOutputTokens },
@@ -290,7 +289,7 @@ class ResilientStreamingService {
           onComplete?.(text);
           return {
             text,
-            modelUsed: 'gemini-1.5-flash (direct-fallback)',
+            modelUsed: 'gemini-flash-latest (non-streaming fallback)',
             chunksCount: 1,
           };
         }

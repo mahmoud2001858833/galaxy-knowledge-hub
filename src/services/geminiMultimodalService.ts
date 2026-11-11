@@ -8,6 +8,7 @@
  */
 
 import { simulationCatalogService, type SimulationRecord } from './simulationCatalogService';
+import { geminiRequest } from './geminiTransport';
 
 export interface MindmapTreeNode {
   id: string;
@@ -54,14 +55,15 @@ export interface LessonSlideData {
 }
 
 class GeminiMultimodalService {
-  private defaultApiKey = atob('QVEuQWI4Uk42SkZ4Z0NWSm00MEllNWdPZkxwTkFsV2h2ckg3eUVnT1dKcHZhdTJacnBCNGc=');
+  private defaultApiKey = ''; // platform key lives on the server (gemini-proxy edge function)
   private primaryApiKey: string;
   private storageKey = 'galaxy_gemini_api_key';
-  private activeModel: string = 'gemini-2.5-flash';
+  private activeModel: string = 'gemini-flash-latest';
+  // Must match the allowlist in supabase/functions/gemini-proxy.
   private fallbackModels: string[] = [
+    'gemini-flash-latest',
     'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-1.5-flash'
+    'gemini-flash-lite-latest'
   ];
 
   constructor() {
@@ -105,10 +107,10 @@ class GeminiMultimodalService {
     for (const key of keysToTry) {
       for (const model of modelsToTry) {
         try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+          const { url, headers } = await geminiRequest(model, { stream: false, userKey: key });
           const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify(payload)
           });
 
