@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { MessageCircle, Move, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,19 +105,9 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDR0bf_lLE8A83mionE3IT5gAH3Z8-O-MA`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `أنت مساعد ذكي متخصص في الفيزياء الذرية. أجب على السؤال باللغة العربية بشكل مختصر وعلمي: ${question}
+      // Goes through the ai-assistant edge function so the Gemini key stays on the server.
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: { prompt: `أنت مساعد ذكي متخصص في الفيزياء الذرية. أجب على السؤال باللغة العربية بشكل مختصر وعلمي: ${question}
                     
                     الذرة الحالية:
                     - العنصر: ${atomData.element} (${atomData.symbol})
@@ -131,19 +122,11 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
                     ${atomData.warnings.length > 0 ? `- تحذيرات: ${atomData.warnings.join(', ')}` : ''}
                     
                     أجب بشكل مختصر ومفيد (3 أسطر كحد أقصى).
-                    `
-                  }
-                ]
-              }
-            ]
-          })
-        }
-      );
+                    `, useGemini: true },
+      });
 
-      const data = await response.json();
-      
-      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        setResponse(data.candidates[0].content.parts[0].text);
+      if (!error && data?.response) {
+        setResponse(data.response);
       } else {
         setResponse('عذراً، لم أتمكن من الحصول على إجابة. يرجى المحاولة مرة أخرى.');
       }

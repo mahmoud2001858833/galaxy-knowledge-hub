@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GEMINI_API_KEY = "AIzaSyABqat_3N9lZNurPyi90pb94e88ihh2oUA";
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
 const EXAM_PROMPT = `أنت معلم خبير. حلل صور الامتحان التالية واستخرج جميع الأسئلة الموجودة فيها.

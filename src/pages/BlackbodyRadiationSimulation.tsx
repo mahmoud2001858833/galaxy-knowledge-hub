@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Thermometer, Eye, Calculator, MessageCircle, Move, X, Star, Sun, Lightbulb, Flame } from 'lucide-react';
@@ -168,36 +169,18 @@ const BlackbodyRadiationSimulation = () => {
   const queryGeminiAPI = async (question: string) => {
     setIsLoadingResponse(true);
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDR0bf_lLE8A83mionE3IT5gAH3Z8-O-MA`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `أنت مساعد ذكي متخصص في الفيزياء وإشعاع الجسم الأسود. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
+      // Goes through the ai-assistant edge function so the Gemini key stays on the server.
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: { prompt: `أنت مساعد ذكي متخصص في الفيزياء وإشعاع الجسم الأسود. أجب على السؤال التالي باللغة العربية بشكل علمي ومبسط: ${question}
                     
                     السياق الحالي:
                     - درجة الحرارة: ${temperatureCelsius}°C (${temperatureKelvin.toFixed(1)}K)
                     - طول موجة الذروة: ${wienDisplacement.toFixed(1)} نانومتر
-                    `
-                  }
-                ]
-              }
-            ]
-          })
-        }
-      );
+                    `, useGemini: true },
+      });
 
-      const data = await response.json();
-      
-      if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-        setAssistantResponse(data.candidates[0].content.parts[0].text);
+      if (!error && data?.response) {
+        setAssistantResponse(data.response);
       } else {
         setAssistantResponse('عذراً، لم أتمكن من الحصول على إجابة. يرجى المحاولة مرة أخرى.');
       }
