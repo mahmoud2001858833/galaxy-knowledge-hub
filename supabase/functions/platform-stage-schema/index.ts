@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { analysis } = await req.json();
-    const KEY = Deno.env.get("LOVABLE_API_KEY");
+    const KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!KEY) throw new Error("LOVABLE_API_KEY not set");
 
     const sys = `أنت مهندس قواعد بيانات محترف. صمّم schema احترافي قوي.
@@ -63,11 +63,11 @@ serve(async (req) => {
 
 التزم بالـ JSON الصحيح فقط.`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: `التحليل: ${JSON.stringify(analysis)}\nصمّم schema احترافي قوي.` },

@@ -8,13 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODELS = [
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "google/gemini-3-flash-preview",
-  "openai/gpt-4o",
-];
+const GATEWAY = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
 type Lang = "en" | "ar";
 
@@ -78,7 +73,7 @@ async function callGateway(
   visualContext?: string,
   intent?: string,
 ) {
-  const key = Deno.env.get("LOVABLE_API_KEY");
+  const key = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
   const messages: any[] = [{ role: "system", content: SYSTEM(lang) }];

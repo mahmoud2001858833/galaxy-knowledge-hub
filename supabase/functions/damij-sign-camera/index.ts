@@ -8,12 +8,12 @@ const corsHeaders = {
 };
 
 const KEY =
-  Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY") ||
-  Deno.env.get("GEMINI_API_KEY") ||
-  Deno.env.get("GOOGLE_AI_API_KEY") ||
-  Deno.env.get("GEMINI_API_KEY_NEW");
+  (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY")) ||
+  (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) ||
+  (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY")) ||
+  (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY_NEW"));
 
-const MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"];
+const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
 async function geminiVision(imageBase64: string, mime: string, prompt: string) {
   if (!KEY) throw new Error("missing_gemini_key");

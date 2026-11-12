@@ -287,8 +287,8 @@ function providers(): Provider[] {
     key: cfTok,
     model: Deno.env.get("ADMIN_BRAIN_CF_MODEL") || "@cf/meta/llama-4-scout-17b-16e-instruct",
   });
-  const g = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY");
-  if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.8-flash" });
+  const g = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("ADMIN_BRAIN_GEMINI_KEY"));
+  if (g) list.push({ name: "gemini", url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", key: g, model: Deno.env.get("ADMIN_BRAIN_GEMINI_MODEL") || "gemini-3.1-flash-lite" });
   return list;
 }
 
@@ -439,7 +439,7 @@ function wav(pcm: Uint8Array, rate = 24000): Uint8Array {
 }
 
 async function speakGemini(text: string): Promise<Uint8Array> {
-  const key = Deno.env.get("ADMIN_BRAIN_GEMINI_KEY") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
+  const key = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("ADMIN_BRAIN_GEMINI_KEY")) || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
   if (!key) throw new Error("no gemini key");
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`, {
     signal: AbortSignal.timeout(20_000),

@@ -4,7 +4,7 @@
 const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 function getKey(): string {
-  const k = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
+  const k = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) || Deno.env.get("GOOGLE_AI_API_KEY");
   if (!k) throw new Error("GEMINI_API_KEY is not configured");
   return k;
 }
@@ -44,7 +44,7 @@ export interface CallOpts {
 
 /** Plain text completion */
 export async function callGeminiText(prompt: string, opts: CallOpts = {}): Promise<string> {
-  const model = opts.model || "gemini-2.5-flash";
+  const model = opts.model || "gemini-3.1-flash-lite";
   const parts: any[] = [];
   if (opts.system) parts.push({ text: `${opts.system}\n\n${prompt}` });
   else parts.push({ text: prompt });
@@ -84,7 +84,7 @@ export async function callGeminiVision(
   mimeType = "image/jpeg",
   opts: CallOpts = {}
 ): Promise<string> {
-  const model = opts.model || "gemini-2.5-flash";
+  const model = opts.model || "gemini-3.1-flash-lite";
   // strip data URL prefix if present
   const data = imageBase64.replace(/^data:[^;]+;base64,/, "");
   const sys = opts.system ? `${opts.system}\n\n` : "";
@@ -119,7 +119,7 @@ export async function callGeminiAudio(
   mimeType = "audio/webm",
   opts: CallOpts = {}
 ): Promise<string> {
-  const model = opts.model || "gemini-2.5-flash";
+  const model = opts.model || "gemini-3.1-flash-lite";
   const data = audioBase64.replace(/^data:[^;]+;base64,/, "");
   const body: any = {
     contents: [
@@ -141,7 +141,7 @@ export async function callGeminiAudio(
 }
 
 /** Image generation -> data:image/png;base64 URL */
-export async function callGeminiImage(prompt: string, model = "gemini-2.5-flash-image"): Promise<string> {
+export async function callGeminiImage(prompt: string, model = "gemini-3.1-flash-image-preview"): Promise<string> {
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
@@ -162,7 +162,7 @@ export async function callGeminiImageEdit(
   prompt: string,
   imageBase64: string,
   mimeType = "image/png",
-  model = "gemini-2.5-flash-image"
+  model = "gemini-3.1-flash-image-preview"
 ): Promise<string> {
   const data = imageBase64.replace(/^data:[^;]+;base64,/, "");
   const body = {

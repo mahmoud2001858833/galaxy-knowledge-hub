@@ -137,7 +137,7 @@ serve(async (req) => {
   try {
     const { question, userName = "صديقي", allMessages = [] } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!LOVABLE_API_KEY) {
       console.error("platform-guide-assistant: LOVABLE_API_KEY is missing");
       return new Response(
@@ -218,14 +218,14 @@ serve(async (req) => {
       { role: "user", content: question },
     ];
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages,
       }),
     });

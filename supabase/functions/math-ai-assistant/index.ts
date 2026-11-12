@@ -22,7 +22,7 @@ serve(async (req) => {
 
     console.log('Processing math question:', question);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
@@ -46,14 +46,14 @@ serve(async (req) => {
 - سؤال: "ما هو جذر 144؟" - الإجابة: "جذر 144 = 12، لأن 12 × 12 = 144. النتيجة: 12"
 - سؤال: "احسب 15% من 200" - الإجابة: "15% من 200 = (15/100) × 200 = 30. النتيجة: 30"`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: question }

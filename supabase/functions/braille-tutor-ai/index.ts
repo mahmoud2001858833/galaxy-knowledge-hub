@@ -11,7 +11,7 @@ serve(async (req) => {
 
   try {
     const { mode, prompt, context } = await req.json();
-    const apiKey = Deno.env.get("BRAILLE_LEARN_GEMINI_KEY");
+    const apiKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("BRAILLE_LEARN_GEMINI_KEY"));
     if (!apiKey) throw new Error("BRAILLE_LEARN_GEMINI_KEY is not configured");
 
     let systemPrompt = "أنت مدرس متخصص في تعليم لغة بريل العربية. أجب باللغة العربية، باختصار وبأسلوب تشجيعي مبسّط.";
@@ -26,7 +26,7 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,7 +48,7 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-3.1-flash-lite",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt },

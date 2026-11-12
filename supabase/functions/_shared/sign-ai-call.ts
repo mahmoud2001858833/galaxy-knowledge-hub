@@ -1,5 +1,6 @@
 // Shared helper: call Gemini directly with key rotation; fallback to Lovable AI only on failure.
 const GEMINI_KEY_NAMES = [
+  "GOOGLE_API_KEY",
   "SIGN_TRANSLATE_GEMINI_KEY",
   "GEMINI_API_KEY",
   "GOOGLE_AI_API_KEY",
@@ -49,7 +50,7 @@ const GEMINI_KEYS = GEMINI_KEY_NAMES
   .map((n) => Deno.env.get(n))
   .filter((k): k is string => !!k && k.length > 10);
 
-const MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
 async function callGeminiDirect(prompt: string, json: boolean): Promise<string | null> {
   for (const model of MODELS) {
@@ -90,7 +91,7 @@ async function callLovableFallback(prompt: string, json: boolean): Promise<strin
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.1-flash-lite",
         messages: [{ role: "user", content: prompt }],
         ...(json ? { response_format: { type: "json_object" } } : {}),
       }),

@@ -38,7 +38,7 @@ const callGateway = async (apiKey: string, body: object) => {
 
 // Direct call to Google AI Studio as a fallback when Lovable AI is rate-limited / out of credits
 const callGeminiDirect = async (apiKey: string, prompt: string, schema: any) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -88,7 +88,7 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = "shim-key";
-    const FALLBACK_KEY = Deno.env.get("GEMINI_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY");
+    const FALLBACK_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY_NEW")) || Deno.env.get("GEMINI_API_KEY");
 
     if (!LOVABLE_API_KEY && !FALLBACK_KEY) throw new Error("لا يوجد مفتاح AI متاح");
 
@@ -158,7 +158,7 @@ ${contextLines.length ? `السياق الإضافي:\n${contextLines.join("\n")
       }];
 
       const resp = await callGateway(LOVABLE_API_KEY, {
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMsg },

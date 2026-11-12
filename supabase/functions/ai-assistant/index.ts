@@ -24,7 +24,7 @@ serve(async (req) => {
 
     if (useGemini) {
       // Use Gemini API with environment variable
-      const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+      const GEMINI_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY'));
       if (!GEMINI_API_KEY) {
         return new Response(
           JSON.stringify({ error: 'API key not configured' }),
@@ -55,7 +55,7 @@ serve(async (req) => {
 
       // Call Gemini API directly
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: {
@@ -101,7 +101,7 @@ serve(async (req) => {
       );
     } else {
       // Use environment variable for API key
-      const API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+      const API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY'));
       
       if (!API_KEY) {
         return new Response(
@@ -131,10 +131,10 @@ serve(async (req) => {
         }
       }
 
-      // For biology specifically, try to use gemini-2.0-flash model
+      // For biology specifically, try to use gemini-3.1-flash-lite model
       if (subject === 'biology') {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${API_KEY}`,
           {
             method: 'POST',
             headers: {
@@ -175,7 +175,7 @@ serve(async (req) => {
 
       // Use Gemini API for other subjects - with enhanced model and configuration
       const response = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
         {
           method: 'POST',
           headers: {

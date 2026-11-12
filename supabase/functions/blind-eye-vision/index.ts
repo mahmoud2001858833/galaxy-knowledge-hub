@@ -8,13 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODELS = [
-  "google/gemini-2.5-flash-lite",
-  "google/gemini-2.5-flash",
-  "google/gemini-2.5-pro",
-  "google/gemini-3-flash-preview",
-];
+const GATEWAY = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
 type Lang =
   | "en" | "ar" | "fr" | "es" | "de" | "pt" | "ru" | "tr"
@@ -278,7 +273,7 @@ function toGeminiSchema(s: any): any {
   return out;
 }
 
-const DIRECT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+const DIRECT_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 // flash-lite misnames objects too often (window -> TV, cabinet -> door); use full flash where the
 // answer is what the user acts on, keep lite first only for split-second hazard calls.
 const ACCURATE_FIRST = new Set(["map", "identify", "ocr", "describe_scene", "spin_scan"]);
@@ -288,7 +283,7 @@ const orderFor = (mode: string, list: string[]) =>
 let directBlockedUntil = 0;
 
 async function callDirect(model: string, sysPrompt: string, userText: string, images: string[], tool: any, maxTokens: number) {
-  const key = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
+  const key = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) || Deno.env.get("GOOGLE_AI_API_KEY");
   if (!key) throw new Error("no gemini key");
   const parts: any[] = [{ text: userText }];
   for (const url of images) {
@@ -344,7 +339,7 @@ async function callGateway(
   extraContext?: string,
   target?: string
 ) {
-  const key = Deno.env.get("LOVABLE_API_KEY");
+  const key = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!key) throw new Error("LOVABLE_API_KEY not configured");
 
   const { sysPrompt, tool, maxTokens } = buildPrompt(mode, lang, target);

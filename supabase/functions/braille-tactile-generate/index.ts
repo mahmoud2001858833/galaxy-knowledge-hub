@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GEMINI_KEY = Deno.env.get("BRAILLE_TACTILE_GEMINI_API_KEY");
+const GEMINI_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("BRAILLE_TACTILE_GEMINI_API_KEY"));
 const LOVABLE_KEY = "shim-key";
 
 const SYSTEM = `You are a tactile graphics designer producing figures for blind students.
@@ -126,7 +126,7 @@ const translateSchema = {
 
 async function callGemini(parts: any[], schema: any) {
   if (!GEMINI_KEY) return null;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_KEY}`;
   const body = {
     systemInstruction: { parts: [{ text: SYSTEM }] },
     contents: [{ role: "user", parts }],
@@ -152,7 +152,7 @@ async function callLovable(userText: string, imageDataUrl: string | null, schema
   const userContent: any[] = [{ type: "text", text: userText }];
   if (imageDataUrl) userContent.push({ type: "image_url", image_url: { url: imageDataUrl } });
   const body = {
-    model: "google/gemini-2.5-flash",
+    model: "google/gemini-3.1-flash-lite",
     messages: [
       { role: "system", content: SYSTEM },
       { role: "user", content: userContent },

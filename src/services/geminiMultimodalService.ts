@@ -58,12 +58,10 @@ class GeminiMultimodalService {
   private defaultApiKey = ''; // platform key lives on the server (gemini-proxy edge function)
   private primaryApiKey: string;
   private storageKey = 'galaxy_gemini_api_key';
-  private activeModel: string = 'gemini-flash-latest';
-  // Must match the allowlist in supabase/functions/gemini-proxy.
+  private activeModel: string = 'gemini-3.1-flash-lite';
+  // The gemini-proxy edge function picks the model itself (3.1 Flash-Lite, then 3.5).
   private fallbackModels: string[] = [
-    'gemini-flash-latest',
-    'gemini-2.5-flash',
-    'gemini-flash-lite-latest'
+    'gemini-3.1-flash-lite',
   ];
 
   constructor() {

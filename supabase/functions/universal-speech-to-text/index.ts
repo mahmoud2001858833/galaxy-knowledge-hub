@@ -19,7 +19,7 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = "shim-key";
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const GEMINI_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY'));
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
     const langName = language === 'ar' ? 'العربية' : language === 'en' ? 'الإنجليزية' : language;
@@ -28,7 +28,7 @@ serve(async (req) => {
     // ── PRIORITY 1: Lovable AI Gateway (Gemini 2.5 Flash) ──
     if (LOVABLE_API_KEY) {
       try {
-        console.log('Trying Lovable AI Gateway (gemini-2.5-flash) for STT…');
+        console.log('Trying Lovable AI Gateway (gemini-3.1-flash-lite) for STT…');
         const response = await geminiFetch("ai-shim", {
           method: 'POST',
           headers: {
@@ -36,7 +36,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'google/gemini-3.1-flash-lite',
             messages: [
               {
                 role: 'user',
@@ -119,7 +119,7 @@ serve(async (req) => {
       console.log('Trying Gemini Direct for STT…');
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

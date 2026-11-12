@@ -180,7 +180,7 @@ async function callGemini(
   prompt: string,
   opts: { temperature?: number; maxOutputTokens?: number; mimeType?: string } = {},
 ): Promise<string> {
-  const userKey = Deno.env.get("BRAILLE_GEMINI_API_KEY");
+  const userKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("BRAILLE_GEMINI_API_KEY"));
   if (!userKey) throw new Error("missing_key");
 
   let lastErr = "ai_error";
@@ -240,7 +240,7 @@ ${text}
 
 Braille:`;
   const out = await callGemini(
-    ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+    ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"],
     prompt,
     { temperature: 0.1, maxOutputTokens: 8192 },
   );
@@ -292,7 +292,7 @@ Final decoded ${langName} text:`;
 
   // Speed priority: fastest models first, single pass, smaller tokens.
   const out = await callGemini(
-    ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"],
+    ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"],
     prompt,
     { temperature: 0.05, maxOutputTokens: 4096, mimeType: "text/plain" },
   );
@@ -322,7 +322,7 @@ Polished ${langName} text:`;
 
   try {
     const refined = await callGemini(
-      ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"],
+      ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"],
       refinePrompt,
       { temperature: 0.15, maxOutputTokens: 8192 },
     );

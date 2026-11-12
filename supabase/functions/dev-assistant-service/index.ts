@@ -14,13 +14,13 @@ const json = (body: unknown, status = 200) =>
   });
 
 async function callAI(messages: any[], opts: { model?: string; temperature?: number } = {}) {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  const apiKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: opts.model ?? "google/gemini-2.5-flash",
+      model: opts.model ?? "gemini-3.1-flash-lite",
       messages,
       ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
     }),
@@ -108,7 +108,7 @@ serve(async (req) => {
       const userMsg = existingCode
         ? `الكود الحالي:\n\`\`\`${language}\n${existingCode}\n\`\`\`\n\nالمطلوب: ${prompt}`
         : prompt;
-      const r = await callAI([{ role: "system", content: sys }, { role: "user", content: userMsg }], { model: "google/gemini-2.5-pro", temperature: 0.3 });
+      const r = await callAI([{ role: "system", content: sys }, { role: "user", content: userMsg }], { model: "gemini-3.1-flash-lite", temperature: 0.3 });
       if ((r as any)._err) return (r as any)._err;
       const text = r.text;
       const m = text.match(/```[\w]*\n?([\s\S]*?)```/);

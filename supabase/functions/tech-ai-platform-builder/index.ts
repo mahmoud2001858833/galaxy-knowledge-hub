@@ -17,7 +17,7 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not set");
 
     // الحصول على رابط المشروع وAPI key لتمريرهما للمنصة المُنشأة (لاستخدام AI Gateway)
@@ -122,14 +122,14 @@ async function askAI(prompt, history = []) {
       { role: "user", content: description },
     ];
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "gemini-3.1-flash-lite",
         messages,
       }),
     });

@@ -135,15 +135,15 @@ serve(async (req) => {
     const cityKey = (city || "amman").toLowerCase();
     const cityData = getCityData(cityKey);
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const JORDAN_TWIN_AI_KEY = Deno.env.get("JORDAN_TWIN_AI_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
+    const JORDAN_TWIN_AI_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("JORDAN_TWIN_AI_KEY"));
 
     const userMsg = `حلّل بيانات مدينة ${cityData.name} الآتية وقدّم توصيات ذكية:\n${JSON.stringify(cityData, null, 2)}`;
 
     if (LOVABLE_API_KEY) {
       try {
         const resp = await fetch(
-          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
           {
             method: "POST",
             headers: {
@@ -151,7 +151,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-pro",
+              model: "gemini-3.1-flash-lite",
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 { role: "user", content: userMsg },
@@ -199,7 +199,7 @@ serve(async (req) => {
 
     // Fallback Gemini Direct
     if (JORDAN_TWIN_AI_KEY) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${JORDAN_TWIN_AI_KEY}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${JORDAN_TWIN_AI_KEY}`;
       const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

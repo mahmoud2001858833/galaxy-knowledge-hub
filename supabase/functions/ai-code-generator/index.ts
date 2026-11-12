@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-const AI_ENDPOINT = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
+const AI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
 // Builder Universal API endpoint
 const BUILDER_API_URL = 'https://esifpjjehdnpkhyilctv.supabase.co/functions/v1/builder-universal-api';
@@ -1123,7 +1123,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite',
         messages,
         temperature: 0.7,
         max_tokens: 100000,

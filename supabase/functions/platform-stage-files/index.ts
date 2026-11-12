@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1183,11 +1184,11 @@ function formatPrefs(p: any = {}): string {
 }
 
 async function generateAIHeroImage(topic: string, query: string): Promise<string | null> {
-  const KEY = Deno.env.get("LOVABLE_API_KEY");
+  const KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!KEY) return null;
   try {
     const prompt = `Wide cinematic hero banner illustrating: ${topic}. ${query}. Elegant, premium, editorial-quality, soft depth, dramatic lighting, rich colors, no text, no watermark, no logos, ultra-detailed, 16:9 composition.`;
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await geminiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1204,7 +1205,7 @@ async function generateAIHeroImage(topic: string, query: string): Promise<string
 }
 
 async function generateBrandTheme(description: string, analysis: any, prefs: any = {}): Promise<{ css: string; hero: string } | null> {
-  const KEY = Deno.env.get("LOVABLE_API_KEY");
+  const KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!KEY) return null;
   try {
     const sys = `أنت Art Director عالمي المستوى (مزيج من Pentagram + Awwwards + Behance Top 1%). مهمتك أن تصمّم لكل منصة هويةً بصرية فريدة بمستوى وكالات التصميم العالمية، تختلف جذرياً عن أي منصة سابقة.
@@ -1276,11 +1277,11 @@ async function generateBrandTheme(description: string, analysis: any, prefs: any
 - الـ heroDecorationSvg يجب أن يكون عملاً فنياً حقيقياً وليس مجرد دائرة بسيطة
 - لا تستخدم نفس النمط مرتين`;
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const r = await geminiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: `وصف المنصة: ${description}\nالتحليل: ${JSON.stringify(analysis)}\n\n=== تفضيلات المستخدم الإلزامية (يجب الالتزام بها بدقة، تجاوزها يعتبر فشلاً) ===\n${formatPrefs(prefs)}\n\nصمّم هوية بصرية بمستوى Awwwards Site of the Day. كن جريئاً واستثنائياً، لكن التزم بكل تفضيل اختاره المستخدم أعلاه.` },

@@ -15,7 +15,7 @@ async function callAI(prompt: string): Promise<string> {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3.1-flash-lite',
       messages: [
         { role: 'system', content: 'أنت أخصائي تقييم نفسي-عصبي للأطفال خبير في DSM-5-TR و ADHD. تكتب تقارير سريرية واضحة، رحيمة، عملية باللغة العربية الفصحى المبسّطة. لا تشخّص بشكل قاطع، بل تقدّم مؤشرات وتوصيات.' },
         { role: 'user', content: prompt },

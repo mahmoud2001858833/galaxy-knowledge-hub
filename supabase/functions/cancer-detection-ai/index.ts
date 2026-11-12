@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     // 1) Lovable AI Gateway attempt (uses LOVABLE_API_KEY automatically if available)
     const LOVABLE_API_KEY = "shim-key";
     if (LOVABLE_API_KEY) {
-      const gatewayModels = ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "google/gemini-2.5-flash-lite"];
+      const gatewayModels = ["google/gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"];
       for (const gm of gatewayModels) {
         try {
           // Build OpenAI-compatible message with image (data URL) if present
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
     }
 
     // 2) Direct Gemini API fallback with currently-supported models
-    const MODELS = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite", "gemini-2.0-flash"];
+    const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
     outer: for (const model of MODELS) {
       if (geminiResp) break;

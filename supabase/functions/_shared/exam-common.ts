@@ -107,7 +107,7 @@ export function buildFileParts(files: InFile[], opts: { pageNumbers?: "original"
 }
 
 function apiKeys(): string[] {
-  return [Deno.env.get("GEMINI_API_KEY")].filter(Boolean) as string[];
+  return [(Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY"))].filter(Boolean) as string[];
 }
 
 export type GeminiErrCode = "rate_limited" | "timeout" | "auth" | "unavailable" | "invalid";
@@ -132,7 +132,7 @@ export async function callGeminiJson(opts: {
   const keys = apiKeys();
   if (keys.length === 0) throw new GeminiError("auth", "GEMINI_API_KEY غير مضبوط في أسرار الدالة");
   const deadline = opts.deadlineAt ?? Date.now() + 100_000;
-  const models = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+  const models = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: opts.system }] },
     contents: [{ role: "user", parts: opts.parts }],

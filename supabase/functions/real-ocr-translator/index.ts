@@ -54,7 +54,7 @@ serve(async (req) => {
     console.log('OCR completed, extracted text length:', extractedText.length);
 
     // ترجمة النص المستخرج إلى العربية
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    const GEMINI_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY'));
     if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured', success: false }),
@@ -68,7 +68,7 @@ serve(async (req) => {
 
 يرجى تقديم ترجمة دقيقة وطبيعية باللغة العربية فقط.`;
 
-    const translationResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const translationResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

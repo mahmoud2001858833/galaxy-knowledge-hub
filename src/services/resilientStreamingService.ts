@@ -40,9 +40,8 @@ export interface StreamResult {
 
 // Must match the allowlist in supabase/functions/gemini-proxy.
 export const CANDIDATE_MODELS = [
-  'gemini-flash-latest',
-  'gemini-2.5-flash',
-  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3.5-flash-lite',
 ];
 
 class ResilientStreamingService {
@@ -270,7 +269,7 @@ class ResilientStreamingService {
     // Transport 2: If all streaming attempts failed, try a non-streaming direct request as last resort
     try {
       console.info('[ResilientStream] Attempting final non-streaming direct request fallback...');
-      const fallback = await geminiRequest('gemini-flash-latest', { stream: false, userKey: apiKey });
+      const fallback = await geminiRequest('gemini-3.1-flash-lite', { stream: false, userKey: apiKey });
       const fallbackRes = await fetch(fallback.url, {
         method: 'POST',
         headers: fallback.headers,
@@ -289,7 +288,7 @@ class ResilientStreamingService {
           onComplete?.(text);
           return {
             text,
-            modelUsed: 'gemini-flash-latest (non-streaming fallback)',
+            modelUsed: 'gemini-3.1-flash-lite (non-streaming fallback)',
             chunksCount: 1,
           };
         }

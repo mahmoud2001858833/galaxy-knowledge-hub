@@ -45,7 +45,7 @@ ${SECTION_MAP}
 6) إذا السؤال خارج نطاق دامج، اعتذر بلطف ووجّه المستخدم لأقسام المنصة.`;
 
   const body = {
-    model: 'google/gemini-2.5-flash',
+    model: 'google/gemini-3.1-flash-lite',
     messages: [{ role: 'system', content: system }, ...messages],
     response_format: { type: 'json_object' },
   };

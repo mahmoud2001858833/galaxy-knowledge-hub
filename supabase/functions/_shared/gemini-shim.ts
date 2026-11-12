@@ -7,24 +7,24 @@ const BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 
 function getKey(): string {
   const k =
-    Deno.env.get("GEMINI_API_KEY") ||
-    Deno.env.get("GOOGLE_AI_API_KEY") ||
-    Deno.env.get("BRAILLE_LEARN_GEMINI_KEY");
+    (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) ||
+    (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY")) ||
+    (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("BRAILLE_LEARN_GEMINI_KEY"));
   if (!k) throw new Error("GEMINI_API_KEY not configured");
   return k;
 }
 
 // Map OpenAI-style model id -> Gemini model id
 function mapModel(m?: string): string {
-  if (!m) return "gemini-2.5-flash";
-  if (m.includes("image")) return "gemini-2.5-flash-image";
-  if (m.includes("flash-lite")) return "gemini-2.5-flash-lite";
-  if (m.includes("pro")) return "gemini-2.5-pro";
-  if (m.includes("flash")) return "gemini-2.5-flash";
+  if (!m) return "gemini-3.1-flash-lite";
+  if (m.includes("image")) return "gemini-3.1-flash-image-preview";
+  if (m.includes("flash-lite")) return "gemini-3.1-flash-lite";
+  if (m.includes("pro")) return "gemini-3.1-flash-lite";
+  if (m.includes("flash")) return "gemini-3.1-flash-lite";
   // strip provider prefix e.g. google/xxx
   const tail = m.split("/").pop() || m;
   if (tail.startsWith("gemini-")) return tail;
-  return "gemini-2.5-flash";
+  return "gemini-3.1-flash-lite";
 }
 
 function messagesToGemini(messages: any[]): { contents: any[]; systemInstruction?: any } {

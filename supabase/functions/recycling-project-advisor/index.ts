@@ -166,11 +166,11 @@ serve(async (req) => {
     contents.push({ role: 'user', parts: currentParts });
 
     const keys = [
-      Deno.env.get('GEMINI_API_KEY'),
-      Deno.env.get('GEMINI_API_KEY_NEW'),
-      Deno.env.get('GOOGLE_AI_API_KEY'),
-      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
-      Deno.env.get('AUTISM_GEMINI_API_KEY'),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY_NEW')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY_V2')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY')),
     ].filter(Boolean) as string[];
 
     if (keys.length === 0) {
@@ -180,7 +180,7 @@ serve(async (req) => {
       }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    const models = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
     let aiResponse = '';
     let lastErr = '';
     let rateLimited = false;

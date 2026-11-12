@@ -14,12 +14,12 @@ const json = (body: unknown, status = 200) =>
   });
 
 async function callAI(body: any) {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  const apiKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "google/gemini-2.5-flash", ...body }),
+    body: JSON.stringify({ model: "gemini-3.1-flash-lite", ...body }),
   });
   if (r.status === 429) return { _err: json({ error: "تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً" }, 429) };
   if (r.status === 402) return { _err: json({ error: "يرجى إضافة رصيد إلى Lovable AI" }, 402) };

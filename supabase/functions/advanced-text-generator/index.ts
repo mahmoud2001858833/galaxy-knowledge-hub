@@ -16,7 +16,7 @@ serve(async (req) => {
     
     console.log('Text generation request:', { topic, style, difficulty, wordCount, language });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
     if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured', success: false }),
@@ -78,14 +78,14 @@ Requirements:
 Please write only the English text, no explanations or headers.`;
 
     // Use Lovable AI Gateway
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: "You are an expert English text writer. Write high-quality, engaging content based on the given requirements." },
           { role: "user", content: englishPrompt }
@@ -118,14 +118,14 @@ Please write only the English text, no explanations or headers.`;
 
 "${generatedText}"`;
 
-      const translationResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const translationResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gemini-3.1-flash-lite",
           messages: [
             { role: "system", content: "You are an expert translator from English to Arabic. Provide accurate and natural translations." },
             { role: "user", content: translationPrompt }

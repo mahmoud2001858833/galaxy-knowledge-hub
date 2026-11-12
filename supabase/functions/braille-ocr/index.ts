@@ -130,9 +130,9 @@ Deno.serve(async (req) => {
     if (m) { mime = m[1]; b64 = m[2]; }
 
     const geminiKey =
-      Deno.env.get("BRAILLE_GEMINI_API_KEY") ||
-      Deno.env.get("GEMINI_API_KEY") ||
-      Deno.env.get("GOOGLE_AI_API_KEY");
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("BRAILLE_GEMINI_API_KEY")) ||
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) ||
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY"));
 
     if (!geminiKey) {
       return new Response(JSON.stringify({
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
 
     // Primary: direct Gemini (project rule: do not use Lovable AI Gateway)
     // Speed priority: fastest model first.
-    const models = ["gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"];
+    const models = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
     for (const mdl of models) {
       try {
         raw = await geminiVision(mdl, geminiKey, prompt, mime, b64, true);
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
 النص:
 ${parsed.text}`;
         const refineFn = async () => {
-          if (geminiKey) return await geminiText("gemini-2.5-flash-lite", geminiKey, refinePrompt);
+          if (geminiKey) return await geminiText("gemini-3.1-flash-lite", geminiKey, refinePrompt);
           return "";
         };
         const refined = (await refineFn())

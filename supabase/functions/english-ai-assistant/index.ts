@@ -16,7 +16,7 @@ serve(async (req) => {
     
     console.log('English AI Assistant request:', { message, language });
 
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    const GEMINI_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY'));
     if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
@@ -56,7 +56,7 @@ Provide comprehensive answers with practical examples and clear explanations.`;
 
 يرجى تقديم إجابة شاملة ومفيدة لتعلم اللغة الإنجليزية.`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

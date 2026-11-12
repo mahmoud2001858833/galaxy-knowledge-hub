@@ -101,15 +101,15 @@ Deno.serve(async (req) => {
     };
 
     const geminiKeys = [
-      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
-      Deno.env.get('AUTISM_GEMINI_API_KEY'),
-      Deno.env.get('GEMINI_API_KEY'),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY_V2')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')),
     ].filter(Boolean) as string[];
     if (!geminiKeys.length) throw new Error('Gemini API key missing');
     const userPrompt = SYSTEM + '\n\nأعد JSON فقط وفق:\n' + JSON.stringify(SCHEMA) + '\n\nبيانات اليوم (تشمل قياس التحسن لكل لعبة مقارنة بأول مرة لعبها):\n' + JSON.stringify(summary);
     let report: any = null;
     let aiErr: any = null;
-    for (const model of ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']) {
+    for (const model of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite']) {
       for (const gk of geminiKeys) {
         try {
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gk}`;

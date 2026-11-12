@@ -112,10 +112,10 @@ Deno.serve(async (req) => {
 
     // Try keys in order; fall back if a key is invalid / rate-limited / quota exhausted.
     const keys = [
-      Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY"),
-      Deno.env.get("GEMINI_API_KEY"),
-      Deno.env.get("GOOGLE_AI_API_KEY"),
-      Deno.env.get("GEMINI_API_KEY_NEW"),
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("SIGN_TRANSLATE_GEMINI_KEY")),
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")),
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY")),
+      (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY_NEW")),
     ].filter((k): k is string => !!k && k.length > 10);
 
     if (keys.length === 0) {
@@ -129,10 +129,10 @@ Deno.serve(async (req) => {
     const prompt = buildPrompt(body);
 
     // Model fallback chain: try faster/cheaper models first to avoid pro-tier quota limits.
-    // gemini-2.5-flash has ~10x the free quota of gemini-2.5-pro and handles structured JSON well.
+    // gemini-3.1-flash-lite has ~10x the free quota of gemini-3.1-flash-lite and handles structured JSON well.
     const models = heavy
-      ? ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
-      : ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
+      ? ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+      : ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
     let r: Response | null = null;
     let lastErrText = "";
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     let raw = "";
     if (!r || !r.ok) {
       console.warn("All Gemini attempts failed — falling back to Lovable AI Gateway");
-      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+      const lovableKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
       if (!lovableKey) {
         const status = r?.status ?? 500;
         const msg = status === 429
@@ -165,11 +165,11 @@ Deno.serve(async (req) => {
         });
       }
       const lvBody: any = {
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages: [{ role: "user", content: prompt }],
       };
       if (isJson) lvBody.response_format = { type: "json_object" };
-      const lr = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const lr = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(lvBody),

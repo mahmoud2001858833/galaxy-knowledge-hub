@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +18,7 @@ serve(async (req) => {
     console.log('Prompt:', prompt);
     console.log('Subject:', subject, 'Grade:', grade);
     
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const lovableApiKey = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
     if (!lovableApiKey) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
@@ -39,7 +40,7 @@ Image Requirements:
 IMPORTANT: Generate ONLY the visual image without any text or writing on it. The image should speak for itself visually.`;
 
     // Generate educational image using Lovable AI
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await geminiFetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,

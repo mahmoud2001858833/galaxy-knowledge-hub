@@ -21,12 +21,7 @@ const PROMPT = `أنت محلّل صور تعليمي للمكفوفين. حلّ
 }
 الإحداثيات بالنسبة المئوية للصورة. اجعل tactileRegions بين 4 و 10 مناطق رئيسية.`;
 
-const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-];
+const GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
 
 const KEY_NAMES = [
   'SENSORY_TACTILE_GEMINI_KEY',
@@ -102,7 +97,7 @@ async function callLovableGateway(imageBase64: string, mimeType: string) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3.1-flash-lite',
       messages: [
         { role: 'system', content: 'You return ONLY valid JSON, no prose.' },
         {

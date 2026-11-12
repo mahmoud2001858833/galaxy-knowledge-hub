@@ -46,13 +46,13 @@ const SCHEMA = {
 
 async function callGemini(prompt: string): Promise<any> {
   const keys = [
-    Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
-    Deno.env.get('AUTISM_GEMINI_API_KEY'),
-    Deno.env.get('GEMINI_API_KEY'),
+    (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY_V2')),
+    (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY')),
+    (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GEMINI_API_KEY')),
   ].filter(Boolean) as string[];
   if (!keys.length) throw new Error('Gemini API key missing');
   let lastErr: any = null;
-  for (const model of ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']) {
+  for (const model of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite']) {
     for (const k of keys) {
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${k}`;

@@ -1,6 +1,6 @@
 // Direct Gemini API helper (Lovable AI Gateway is forbidden in this project).
 async function geminiGenerate(prompt: string, apiKey: string, json: boolean, signal?: AbortSignal): Promise<Response> {
-  const model = "gemini-2.5-flash";
+  const model = "gemini-3.1-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body: any = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -410,7 +410,7 @@ Deno.serve(async (req) => {
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const apiKey = Deno.env.get("GEMINI_API_KEY") || "";
+    const apiKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY")) || "";
     let segments = transcript.segments;
     let translated = false;
 

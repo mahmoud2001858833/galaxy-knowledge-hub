@@ -18,7 +18,7 @@ interface EcoRequest {
 }
 
 const callGemini = async (apiKey: string, prompt: string, schema: any) => {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -43,8 +43,8 @@ serve(async (req) => {
     const body: EcoRequest = await req.json();
     const { context, userData, currentEmissions, targetReduction = 30, goals = [], language = "ar" } = body;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    const FALLBACK_KEY = Deno.env.get("GEMINI_API_KEY_NEW") || Deno.env.get("GEMINI_API_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
+    const FALLBACK_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY_NEW")) || Deno.env.get("GEMINI_API_KEY");
 
     const langPrompt = language === "ar" ? "أجب بالعربية" : "Answer in English";
 
@@ -119,14 +119,14 @@ ${goals.length ? `أولويات المستخدم: ${goals.join(", ")}.` : ""}
     // Try Lovable AI first
     if (LOVABLE_API_KEY) {
       try {
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "gemini-3.1-flash-lite",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: "ولّد خطة شخصية بصيغة JSON المطلوبة." },

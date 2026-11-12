@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +24,7 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const LOVABLE_API_KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
@@ -50,14 +51,14 @@ serve(async (req) => {
 أرجع النتيجة كـ JSON فقط بالشكل التالي بدون أي نص إضافي:
 [{"title":"...","question":"...","options":["أ","ب","ج","د"],"correct_answer":"أ"},...]`;
 
-    const textResponse = await fetch(LOVABLE_AI_URL, {
+    const textResponse = await geminiFetch(LOVABLE_AI_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: "أنت مساعد تعليمي متخصص في توليد ألغاز تعليمية. أجب بـ JSON فقط." },
           { role: "user", content: textPrompt },
@@ -103,7 +104,7 @@ serve(async (req) => {
 The image should be a simple, colorful educational diagram or illustration. 
 IMPORTANT: Do NOT include any text, letters, numbers, words, or Arabic characters in the image. Only visual elements.`;
 
-        const imgResponse = await fetch(LOVABLE_AI_URL, {
+        const imgResponse = await geminiFetch(LOVABLE_AI_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

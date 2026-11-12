@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const { text, direction, context, language } = await req.json()
     
-    const GEMINI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    const GEMINI_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('GOOGLE_AI_API_KEY'));
     if (!GEMINI_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured', translation: '', explanation: '', grammarExplanation: '', keyWords: [], suggestions: [] }),
@@ -87,7 +87,7 @@ Format the response as JSON:
   "suggestions": ["suggestion 1", "suggestion 2"]
 }`
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

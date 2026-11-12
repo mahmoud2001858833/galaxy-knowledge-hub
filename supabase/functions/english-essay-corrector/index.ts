@@ -13,7 +13,7 @@ serve(async (req) => {
   try {
     const { text, essayType } = await req.json()
     
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
     if (!LOVABLE_API_KEY) {
       return new Response(
         JSON.stringify({ error: 'API key not configured' }),
@@ -61,7 +61,7 @@ Required:
 Please ensure the correction is accurate, detailed, and comprehensive covering all aspects of English writing.`;
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       {
         method: 'POST',
         headers: { 
@@ -69,7 +69,7 @@ Please ensure the correction is accurate, detailed, and comprehensive covering a
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "gemini-3.1-flash-lite",
           messages: [{ role: "user", content: prompt }]
         })
       }

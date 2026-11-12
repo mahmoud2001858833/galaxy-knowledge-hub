@@ -15,7 +15,7 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const KEY = Deno.env.get("LOVABLE_API_KEY");
+    const KEY = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
     if (!KEY) throw new Error("LOVABLE_API_KEY not set");
 
     const sys = `أنت محلل متطلبات منصات ويب. أعد JSON فقط (بدون markdown) بالشكل:
@@ -32,11 +32,11 @@ serve(async (req) => {
   "summary": "ملخص قصير بسطرين"
 }`;
 
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gemini-3.1-flash-lite",
         messages: [
           { role: "system", content: sys },
           { role: "user", content: `وصف المنصة: ${description}` },

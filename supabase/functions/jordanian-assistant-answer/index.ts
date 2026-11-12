@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!;
+const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'))!;
 
 // ✅ دالة محسنة لاستخراج الكلمات المفتاحية
 function extractKeywords(question: string): string[] {
@@ -286,14 +286,14 @@ ${booksContext}
       messages.push({ role: 'user', content: `السؤال: ${question}` });
     }
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite',
         messages,
         temperature: 0.2,
         max_tokens: 10000,

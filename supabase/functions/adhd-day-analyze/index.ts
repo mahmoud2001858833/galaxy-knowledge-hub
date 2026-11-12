@@ -14,7 +14,7 @@ async function callAI(prompt: string) {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3.1-flash-lite',
       messages: [
         { role: 'system', content: 'أنت مدرّب ADHD يكتب تقارير يومية قصيرة، إيجابية، وعملية للأهل. استخدم فصحى مبسّطة.' },
         { role: 'user', content: prompt },

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,19 +7,19 @@ const corsHeaders = {
 };
 
 async function callLovableAI(prompt: string): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
   if (!LOVABLE_API_KEY) {
     throw new Error('LOVABLE_API_KEY not configured');
   }
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+  const response = await geminiFetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${LOVABLE_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: 'google/gemini-3.1-flash-lite',
       messages: [
         { role: 'user', content: prompt }
       ],
@@ -37,7 +38,7 @@ async function callLovableAI(prompt: string): Promise<string> {
 
 async function generateImage(eventDescription: string, eventTitle: string, locationDescription?: string): Promise<string | null> {
   try {
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY not configured for image generation');
       return null;
@@ -85,7 +86,7 @@ async function generateImage(eventDescription: string, eventTitle: string, locat
     - Ultra high quality, cinematic, 16:9 aspect ratio
     - Dramatic lighting and atmospheric depth`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await geminiFetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,

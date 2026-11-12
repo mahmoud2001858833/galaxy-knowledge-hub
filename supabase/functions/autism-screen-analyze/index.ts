@@ -129,7 +129,7 @@ const TOOL_SCHEMA = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function callGemini(apiKey: string, userPrompt: string, model = 'gemini-2.5-flash'): Promise<any> {
+async function callGemini(apiKey: string, userPrompt: string, model = 'gemini-3.1-flash-lite'): Promise<any> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   let lastErr: any = null;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -159,7 +159,7 @@ async function callGemini(apiKey: string, userPrompt: string, model = 'gemini-2.
   throw lastErr;
 }
 
-async function callGateway(userPrompt: string, model = 'google/gemini-2.5-flash'): Promise<any> {
+async function callGateway(userPrompt: string, model = 'google/gemini-3.1-flash-lite'): Promise<any> {
   const key = "shim-key";
   if (!key) throw new Error('LOVABLE_API_KEY missing');
   let lastErr: any = null;
@@ -215,15 +215,15 @@ Deno.serve(async (req) => {
 استخدم البيانات الرقمية أعلاه كأدلة في حقل evidence لكل بُعد، وحلّل نقاط القوة والضعف. أعطِ تقريراً عربياً متكاملاً يشمل: المستوى التقديري للدعم وفق DSM-5، dsm_dimensions مع evidence وclinical_note لكل بُعد، الملف الوظيفي والمعرفي، parent_actions ملموسة، referral_priority، ومسارات الألعاب الموصى بها.`;
 
     const keys = [
-      Deno.env.get('AUTISM_GEMINI_API_KEY_V2'),
-      Deno.env.get('AUTISM_GEMINI_API_KEY'),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY_V2')),
+      (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('AUTISM_GEMINI_API_KEY')),
     ].filter(Boolean) as string[];
 
     let report: any = null;
     let provider = 'gemini';
     let lastErr: any = null;
 
-    const geminiModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    const geminiModels = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
     for (const model of geminiModels) {
       for (const k of keys) {
         try {
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
 
     if (!report) {
       provider = 'gateway';
-      const gwModels = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite'];
+      const gwModels = ['google/gemini-3.1-flash-lite', 'google/gemini-3.1-flash-lite'];
       for (const m of gwModels) {
         try {
           report = await callGateway(userPrompt, m);

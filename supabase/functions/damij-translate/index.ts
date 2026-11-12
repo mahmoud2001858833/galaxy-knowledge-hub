@@ -3,10 +3,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_AI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 async function lovableTranslate(systemPrompt: string, userPrompt: string): Promise<string> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  const apiKey = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
   if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
   const response = await fetch(LOVABLE_AI_URL, {
@@ -16,7 +16,7 @@ async function lovableTranslate(systemPrompt: string, userPrompt: string): Promi
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "gemini-3.1-flash-lite",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

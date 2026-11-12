@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { geminiFetch } from "../_shared/gemini-shim.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
 
     console.log('Generating real AI image for project:', projectName);
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const LOVABLE_API_KEY = (Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('LOVABLE_API_KEY'));
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
@@ -52,7 +53,7 @@ CRITICAL RULES:
 Style: Modern, colorful, clean vector-like illustration with depth and dimension.`;
 
     // Call Lovable AI Gateway with image generation model
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await geminiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
