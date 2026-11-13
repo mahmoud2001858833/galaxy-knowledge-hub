@@ -428,7 +428,7 @@ export const PlatformTour: React.FC = () => {
           id="tour-title"
           className="text-3xl font-black tracking-tight sm:text-4xl"
         >
-          استكشف ذروة العلم بثواني
+          استكشف ذروة العلم بدقائق
         </h2>
         <p className="max-w-2xl text-muted-foreground">
           ست محطات تريك كيف يستخدم الطالب والمعلم ذروة العلم. اضغط أي محطة أو
