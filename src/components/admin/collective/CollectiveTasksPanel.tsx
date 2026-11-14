@@ -13,6 +13,7 @@ import {
   loadTask, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
   type ApprovalRule, type CollectiveMember, type CollectiveTask, type Subtask, type TaskDraft,
 } from './collectiveApi';
+import { AssistBox } from './AssistBox';
 
 /**
  * المهام الجماعية: the admin gives one big task to a group. Phase 1: write it, let the AI plan it
@@ -193,6 +194,30 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
         <Button variant="ghost" onClick={onBack}><ArrowRight className="ml-1 h-4 w-4" /> كل المهام الجماعية</Button>
         {task && <Badge variant={STATUS_VARIANT[task.status]}>{STATUS_LABEL[task.status]}</Badge>}
       </div>
+
+      {editable && (
+        <AssistBox
+          current={{
+            ...draft,
+            people: emails.map((e) => ({ email: e, focus: focus[e] ?? '' })),
+            send_at_local: sendAt,
+          }}
+          onApply={(d) => {
+            setDraft({
+              title: d.title || draft.title,
+              goals: d.goals || draft.goals,
+              final_vision: d.final_vision || draft.final_vision,
+              duration_days: d.duration_days || draft.duration_days,
+              approval_rule: d.approval_rule,
+            });
+            if (d.people.length) {
+              setEmailsText(d.people.map((p) => p.email).join('\n'));
+              setFocus((f) => ({ ...f, ...Object.fromEntries(d.people.filter((p) => p.focus).map((p) => [p.email, p.focus])) }));
+            }
+            if (d.send_at) setSendAt(toLocalInput(new Date(d.send_at)));
+          }}
+        />
+      )}
 
       {/* 1. the task */}
       <section className="space-y-4 rounded-2xl border border-border bg-card p-5">

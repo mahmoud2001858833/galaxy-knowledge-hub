@@ -52,6 +52,7 @@ import {
   type AICommandResult
 } from '@/services/adminTaskManagementService';
 import { labSound } from '@/utils/labAudio';
+import { commandAi, confirmPending, type ChatTurn, type PendingAction } from '@/components/admin/collective/collectiveApi';
 
 // Color themes & styling presets for each job role option (Light & Dark mode optimized)
 const roleStyles: Record<string, {
@@ -177,13 +178,32 @@ export const AdminTasksAuditorsHub: React.FC = () => {
   // Central AI States
   const [aiCommandInput, setAiCommandInput] = useState('');
   const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [aiChatHistory, setAiChatHistory] = useState<Array<{ sender: 'admin' | 'ai'; text: string; time: string }>>([
+  const [aiChatHistory, setAiChatHistory] = useState<Array<{ sender: 'admin' | 'ai'; text: string; time: string; pending?: PendingAction[]; resolved?: boolean }>>([
     {
       sender: 'ai',
-      text: `مرحباً بك يا حضرة المشرف العام! أنا **المشرف الذكي المركزي للمهام**.\nاطلب مني مباشرة: *"مهام المكملة من المدققن"* أو *"أعطِ 100 نقطة للمدقق د. عثمان"* وسأنفذ أمرك فوراً.`,
+      text: `مرحباً! أنا الذكاء الاصطناعي المركزي للمهام، أعمل على بيانات المنصة الحقيقية.\nجرّب: «اعمل مهمة جماعية لإعادة بناء قسم الامتحانات خلال أسبوعين لأحمد ومحمد»، أو «كيف ماشية المهام الجماعية؟»، أو «مين متأخر بمهام الفريق؟».\nأي إرسال للفريق لا يتم إلا بعد تأكيدك.`,
       time: 'الآن'
     }
   ]);
+  const nowTime = () => new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+  // Run a send/schedule the Central AI prepared, only after the admin presses تأكيد
+  const handleConfirmPending = async (msgIndex: number, p: PendingAction | null) => {
+    setAiChatHistory(prev => prev.map((m, i) => (i === msgIndex ? { ...m, resolved: true } : m)));
+    if (!p) {
+      setAiChatHistory(prev => [...prev, { sender: 'ai', text: 'تمام، ما أرسلت شي.', time: nowTime() }]);
+      return;
+    }
+    setIsAiProcessing(true);
+    try {
+      const r = await confirmPending(p);
+      setAiChatHistory(prev => [...prev, { sender: 'ai', text: r.reply, time: nowTime() }]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsAiProcessing(false);
+    }
+  };
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -248,8 +268,26 @@ export const AdminTasksAuditorsHub: React.FC = () => {
     setAiCommandInput('');
     setIsAiProcessing(true);
 
+    // The real Central AI (server, Gemini + platform data). Falls back to the local demo engine only if unreachable.
     try {
       labSound.playLaserPulse(600);
+      const turns: ChatTurn[] = [
+        ...aiChatHistory.slice(1).map((m) => ({ role: (m.sender === 'admin' ? 'user' : 'assistant') as ChatTurn['role'], content: m.text })),
+        { role: 'user', content: prompt },
+      ];
+      const ai = await commandAi(turns);
+      setAiChatHistory(prev => [...prev, { sender: 'ai', text: ai.reply || 'تم.', time: nowTime(), pending: ai.pending }]);
+      labSound.playSuccessChime();
+      return;
+    } catch (err) {
+      console.warn('Central AI unavailable, using local engine', err);
+    } finally {
+      setIsAiProcessing(false);
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+
+    setIsAiProcessing(true);
+    try {
       const res: AICommandResult = await adminTaskService.processCentralAICommand(prompt);
 
       // Apply filter changes if requested by AI
@@ -590,6 +628,16 @@ export const AdminTasksAuditorsHub: React.FC = () => {
                   <span className="font-mono">{msg.time}</span>
                 </div>
                 <div className="whitespace-pre-wrap leading-relaxed font-sans">{msg.text}</div>
+                {msg.pending && msg.pending.length > 0 && !msg.resolved && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {msg.pending.map((p, k) => (
+                      <Button key={k} size="sm" onClick={() => handleConfirmPending(i, p)} disabled={isAiProcessing}>
+                        تأكيد: {p.label}
+                      </Button>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => handleConfirmPending(i, null)} disabled={isAiProcessing}>إلغاء</Button>
+                  </div>
+                )}
               </div>
             ))}
             <div ref={chatBottomRef} />

@@ -126,9 +126,31 @@ async function withNames(rows: Record<string, unknown>[]) {
 }
 
 let PAGES: { title: string; path: string }[] = [];
+// The admin's own session token for this request: collective-task tools call that function as the admin.
+let ADMIN_TOKEN = "";
+
+async function collectiveCall(body: Record<string, unknown>) {
+  const r = await fetch(`${SB_URL}/functions/v1/collective-task-ai`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${ADMIN_TOKEN}`, apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(110_000),
+  });
+  const j = await r.json().catch(() => ({}));
+  return r.ok ? j : { error: j?.error ?? `collective-task-ai ${r.status}` };
+}
 const normAr = (x: string) => x.toLowerCase().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[ًٌٍَُِّْـ]/g, "");
 
 const SERVER_TOOLS: Record<string, (a: any) => Promise<unknown>> = {
+  // Collective tasks (المهام الجماعية): one Central Task AI shared with the admin panel chat.
+  async collective_tasks({ request }) {
+    const r: any = await collectiveCall({ action: "command", messages: [{ role: "user", content: String(request ?? "") }] });
+    if (r?.pending?.length) return { ...r, needs_confirmation: true, ask_admin: r.pending.map((p: any) => p.label).join(" / ") };
+    return r;
+  },
+  async collective_confirm({ pending }) {
+    return await collectiveCall({ action: "confirm", pending });
+  },
   async find_page({ query }) {
     const words = normAr(String(query ?? "")).split(/[\s/,-]+/).filter((w) => w.length > 1);
     const scored = PAGES.map((p) => {
@@ -217,6 +239,8 @@ const TOOLS = [
   fn("send_team_message", "Send a message in the team chat (team_messages), to the whole group or privately to one member. Waits for the admin's confirmation.", {
     text: { type: "string" }, to: { type: "string", description: "member name or email; empty = the whole team group" },
   }, ["text"]),
+  fn("collective_tasks", "Collective tasks (المهام الجماعية) and the everyday team tasks: create a collective task from the admin's words (goals, final vision, days, people by name, send time), build its day-by-day AI plan, follow progress, find who is late. Pass the admin's whole request in Arabic. Sending emails never happens here: it returns pending + needs_confirmation.", { request: { type: "string" } }, ["request"]),
+  fn("collective_confirm", "Run ONE pending action returned by collective_tasks (send now / schedule) after the admin clearly said yes. Pass that pending object exactly.", { pending: { type: "object" } }, ["pending"]),
   fn("terminal_run", "Type a command into the platform's real terminal (/terminal, opened automatically) as the admin and return its output. Examples: 'help', 'stats', 'users', 'db tables', 'antigravity <task>', 'claude <task>', 'sh <shell command>'. Account-changing or deleting commands wait for confirmation.", {
     command: { type: "string" },
   }, ["command"]),
@@ -246,6 +270,7 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
 - التجارب على صفحات المنصة (صفحات "تجربة:" في القائمة): افتحي الصفحة بـ navigate_to، ثم read_controls لتري المتغيرات، ثم set_control لتغييرها (مثلاً الحرارة أو التركيز أو الزاوية)، ثم read_page_text لتقرئي النتيجة، واشرحي للمدير ماذا تغيّر ولماذا علمياً. إذا قال "غيّر/زيد/نقّص X" فغيّريه فوراً.
 - تجارب محسوبة بسرعة مع رسم: run_experiment.
 - رسائل الفريق: send_team_message (للمجموعة كلها أو لعضو). لا تحاولي الكتابة في صفحات أخرى لإرسال رسائل.
+- المهام الجماعية ومهام الفريق: collective_tasks (أنشئ، خطّط، تابع، حلّل) بنقل طلب المدير كاملاً. إذا رجعت needs_confirmation اسأله بجملة واحدة، وإذا قال نعم استعمل collective_confirm بنفس كائن pending.
 - الطرفية: terminal_run يكتب الأمر في الطرفية الحقيقية بصلاحيات المدير. أوامرها: help، stats، users، sessions، db health|tables|migrations، logs، quota؛ و "antigravity <المهمة بالتفصيل>" لتكليف Antigravity، و "claude <المهمة>" لتكليف Claude، و "sh <أمر>" لأوامر الجهاز. بعد تكليف وكيل استعملي terminal_read لمتابعة رده. أي تعديل كود يحتاج موافقة المدير من /admin?tab=terminal قبل أن يُرفع.
 
 قواعد مهمة:
@@ -390,7 +415,7 @@ async function chat(body: any) {
   timing.ms = [];
   timing.provider = undefined;
   const took = () => ({ provider: timing.provider, model_ms: timing.ms, total_ms: Date.now() - t0 });
-  for (let round = 0; round < 8 && Date.now() - t0 < 90_000; round++) {
+  for (let round = 0; round < 8 && Date.now() - t0 < 120_000; round++) {
     const msg = await gateway([{ role: "system", content: systemPrompt(pages, current) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
@@ -407,7 +432,7 @@ async function chat(body: any) {
       let out: unknown;
       try {
         out = SERVER_TOOLS[name]
-          ? await Promise.race([SERVER_TOOLS[name](args), new Promise((_, rej) => setTimeout(() => rej(new Error("tool timeout")), 20_000))])
+          ? await Promise.race([SERVER_TOOLS[name](args), new Promise((_, rej) => setTimeout(() => rej(new Error("tool timeout")), String(name).startsWith("collective") ? 100_000 : 20_000))])
           : { error: `unknown tool ${name}` };
       }
       catch (e) { out = { error: String(e).slice(0, 200) }; }
@@ -514,6 +539,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
   try {
     const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    ADMIN_TOKEN = token;
     const { data: u, error: uErr } = await service.auth.getUser(token);
     if (uErr || !u?.user) return json({ error: "not signed in" }, 401);
     const { data: isAdmin, error: aErr } = await service.rpc("is_platform_admin", { _user_id: u.user.id });

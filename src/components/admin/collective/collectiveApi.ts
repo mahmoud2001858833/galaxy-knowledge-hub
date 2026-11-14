@@ -187,3 +187,32 @@ export const generatePlan = (taskId: string) =>
   callAi({ action: 'plan', task_id: taskId }) as Promise<{ ok: boolean; model: string; subtasks: number }>;
 export const sendNow = (taskId: string) =>
   callAi({ action: 'send_now', task_id: taskId }) as Promise<{ ok: boolean; report: Record<string, { ok: boolean; reason?: string }> }>;
+
+// ------------------------------------------------------------------ AI: describe / command / confirm
+export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+
+export interface AssistResult {
+  reply: string;
+  draft: {
+    title: string;
+    goals: string;
+    final_vision: string;
+    duration_days: number;
+    people: { email: string; focus: string }[];
+    send_at: string | null;
+    approval_rule: ApprovalRule;
+  };
+  missing: string[];
+  ready: boolean;
+}
+/** The admin describes the task in their own words; the AI fills the fields and asks for what is missing. */
+export const assistDraft = (messages: ChatTurn[], draft: Record<string, unknown>) =>
+  callAi({ action: 'assist', messages, draft }) as Promise<AssistResult>;
+
+export interface PendingAction { type: 'send_now' | 'schedule'; task_id: string; send_at?: string; label: string }
+export interface CommandResult { reply: string; pending: PendingAction[]; task_ids: string[] }
+/** The Central Task AI: a real agent over collective tasks and team tasks. Never sends without confirm. */
+export const commandAi = (messages: ChatTurn[]) =>
+  callAi({ action: 'command', messages }) as Promise<CommandResult>;
+export const confirmPending = (pending: PendingAction) =>
+  callAi({ action: 'confirm', pending }) as Promise<{ ok: boolean; reply: string }>;

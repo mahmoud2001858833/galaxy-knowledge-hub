@@ -8,6 +8,12 @@
 //   { action: "dispatch" }           called every minute by pg_cron (collective_dispatch_due). Claims the
 //                                    scheduled tasks whose send time has come and emails them. Safe for
 //                                    anyone to call: a task is only ever sent once.
+//   { action: "assist", messages, draft }  admin only. The admin describes the task in their own words
+//                                    (typed or spoken); returns the filled fields + what is still missing.
+//   { action: "command", messages }  admin only. The Central Task AI: an agent with tools over collective
+//                                    tasks and team tasks (list, follow up, create drafts, build plans...).
+//                                    Anything that emails people comes back as pending_action, never runs.
+//   { action: "confirm", pending }   admin only. Runs a pending_action the admin approved (send / schedule).
 //
 // Secrets: GOOGLE_API_KEY (Gemini), RESEND_API_KEY, TEAM_EMAIL_FROM, SITE_URL.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -195,14 +201,20 @@ async function loadTask(id: string) {
   return { task: t as Task, members: (members ?? []) as Member[] };
 }
 
+class UserError extends Error { constructor(msg: string, public status = 400) { super(msg); } }
+
 async function plan(taskId: string) {
+  return json(await planCore(taskId));
+}
+
+async function planCore(taskId: string) {
   const { task, members } = await loadTask(taskId);
-  if (!members.length) return json({ error: "أضف بريداً واحداً على الأقل قبل طلب الخطة" }, 400);
-  if (!["draft", "planned"].includes(task.status)) return json({ error: "لا يمكن تغيير خطة مهمة أُرسلت" }, 409);
+  if (!members.length) throw new UserError("أضف بريداً واحداً على الأقل قبل طلب الخطة");
+  if (!["draft", "planned"].includes(task.status)) throw new UserError("لا يمكن تغيير خطة مهمة أُرسلت", 409);
 
   const { text, model } = await gemini(buildPrompt(task, members), SYSTEM);
   let raw: Plan;
-  try { raw = JSON.parse(text); } catch { return json({ error: "رد الذكاء الاصطناعي ليس JSON صالحاً، جرّب مرة أخرى" }, 502); }
+  try { raw = JSON.parse(text); } catch { throw new UserError("رد الذكاء الاصطناعي ليس JSON صالحاً، جرّب مرة أخرى", 502); }
   const p = cleanPlan(raw, task, members);
 
   await service.from("collective_subtasks").delete().eq("task_id", taskId);
@@ -216,7 +228,7 @@ async function plan(taskId: string) {
     .update({ plan: { ...p, model }, plan_generated_at: new Date().toISOString(), status: "planned" })
     .eq("id", taskId);
   if (error) throw error;
-  return json({ ok: true, model, subtasks: p.subtasks.length });
+  return { ok: true, model, subtasks: p.subtasks.length };
 }
 
 // ---------------------------------------------------------------- email
@@ -304,14 +316,298 @@ async function dispatchDue() {
 }
 
 async function sendNow(taskId: string) {
+  return json(await sendNowCore(taskId));
+}
+
+async function sendNowCore(taskId: string) {
   const now = new Date().toISOString();
   const { data, error } = await service.from("collective_tasks")
     .update({ emailed_at: now, send_at: now, status: "active" })
     .eq("id", taskId).in("status", ["planned", "scheduled"]).is("emailed_at", null)
     .select("*").maybeSingle();
   if (error) throw error;
-  if (!data) return json({ error: "المهمة أُرسلت من قبل أو ليست جاهزة (اطلب الخطة أولاً)" }, 409);
-  return json({ ok: true, report: await sendTask(data as Task) });
+  if (!data) throw new UserError("المهمة أُرسلت من قبل أو ليست جاهزة (اطلب الخطة أولاً)", 409);
+  return { ok: true, report: await sendTask(data as Task) };
+}
+
+async function scheduleCore(taskId: string, sendAtIso: string) {
+  const when = new Date(sendAtIso);
+  if (Number.isNaN(when.getTime())) throw new UserError("موعد الإرسال غير صالح");
+  if (when.getTime() < Date.now() - 60_000) throw new UserError("موعد الإرسال في الماضي");
+  const { data, error } = await service.from("collective_tasks")
+    .update({ send_at: when.toISOString(), status: "scheduled" })
+    .eq("id", taskId).in("status", ["planned", "scheduled"]).select("id").maybeSingle();
+  if (error) throw error;
+  if (!data) throw new UserError("ابنِ الخطة أولاً قبل الجدولة", 409);
+  return { ok: true, send_at: when.toISOString() };
+}
+
+// ---------------------------------------------------------------- shared context for the AI
+const AMMAN_OFFSET = "+03:00"; // Jordan stays on UTC+3 all year
+
+function ammanNow() {
+  return new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "full", timeStyle: "short" });
+}
+/** "2026-11-16T08:00" (Amman wall clock) -> ISO; anything else -> null */
+function ammanLocalToIso(v: unknown): string | null {
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})$/.exec(String(v ?? "").trim());
+  if (!m) return null;
+  const d = new Date(`${m[1]}T${m[2]}:00${AMMAN_OFFSET}`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+type TeamPerson = { email: string; name: string | null; role: string };
+async function teamPeople(): Promise<TeamPerson[]> {
+  const { data } = await service.from("team_members").select("email, display_name, role").order("created_at");
+  return (data ?? []).map((m: any) => ({ email: String(m.email).toLowerCase(), name: m.display_name, role: m.role }));
+}
+const teamText = (people: TeamPerson[]) =>
+  people.length
+    ? people.map((p) => `- ${p.name ?? "(بلا اسم)"} <${p.email}> — ${p.role}`).join("\n")
+    : "(لا يوجد أعضاء فريق مسجلون)";
+
+/** OpenAI-compatible chat call to Gemini (supports tools), with the 3.1 -> 3.5 fallback. */
+async function geminiChat(payload: Record<string, unknown>): Promise<any> {
+  const key = Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
+  if (!key) throw new Error("مفتاح Google غير مضبوط على الخادم (GOOGLE_API_KEY)");
+  let last = "";
+  for (const model of MODELS) {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, model }),
+      signal: AbortSignal.timeout(90_000),
+    });
+    if (r.status === 404) { last = `${model}: 404`; continue; }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(`Gemini ${r.status}: ${(Array.isArray(j) ? j[0] : j)?.error?.message ?? "error"}`);
+    return j?.choices?.[0]?.message ?? {};
+  }
+  throw new Error(`no Gemini model available (${last})`);
+}
+
+type ChatMsg = { role: "user" | "assistant"; content: string };
+const cleanHistory = (m: unknown): ChatMsg[] =>
+  (Array.isArray(m) ? m : [])
+    .filter((x: any) => (x?.role === "user" || x?.role === "assistant") && typeof x?.content === "string" && x.content.trim())
+    .slice(-20)
+    .map((x: any) => ({ role: x.role, content: String(x.content).slice(0, 6000) }));
+
+// ---------------------------------------------------------------- assist: talk, and the form fills itself
+const ASSIST_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: { type: "string" },
+    title: { type: "string" },
+    goals: { type: "string" },
+    final_vision: { type: "string" },
+    duration_days: { type: "integer" },
+    people: {
+      type: "array",
+      items: { type: "object", properties: { email: { type: "string" }, focus: { type: "string" } }, required: ["email", "focus"] },
+    },
+    send_at_local: { type: "string" },
+    approval_rule: { type: "string", enum: ["members_then_admin", "all_members", "majority"] },
+    missing: { type: "array", items: { type: "string" } },
+    ready: { type: "boolean" },
+  },
+  required: ["reply", "title", "goals", "final_vision", "duration_days", "people", "send_at_local", "approval_rule", "missing", "ready"],
+};
+
+async function assist(body: any) {
+  const people = await teamPeople();
+  const draft = body?.draft && typeof body.draft === "object" ? body.draft : {};
+  const system = `أنت مساعد الأدمن في منصة "ذروة العلم" لإنشاء "مهمة جماعية" (عمل كبير لفريق كامل).
+يصف الأدمن المهمة بكلامه (قد يكون كلاماً منطوقاً بالعامية الأردنية). مهمتك تعبئة الحقول بدقة:
+- title: عنوان قصير واضح.
+- goals: الأهداف، هدف في كل سطر، قابلة للقياس.
+- final_vision: كيف يبدو الناتج في النهاية بالضبط.
+- duration_days: عدد الأيام (1-90). "أسبوع"=7، "أسبوعين"=14، "شهر"=30.
+- people: المشاركون. حوّل الأسماء إلى البريد من قائمة الفريق أدناه فقط؛ وإذا ذكر بريداً صريحاً خذه كما هو. focus: ما يركّز عليه الشخص إن ذُكر وإلا "".
+- send_at_local: موعد الإرسال بتوقيت عمّان بالشكل YYYY-MM-DDTHH:mm، أو "" إن لم يُذكر. الوقت الآن في عمّان: ${ammanNow()}.
+- approval_rule: members_then_admin افتراضياً، all_members إذا قال "الكل لازم يوافق"، majority إذا قال "الأغلبية".
+- احتفظ بقيم المسودة الحالية ما لم يغيّرها الأدمن.
+- missing: ما زال ناقصاً من (العنوان، الأهداف، التصور النهائي، المدة، المشاركون، موعد الإرسال).
+- ready: true فقط إذا لم ينقص شيء أساسي (موعد الإرسال ليس إلزامياً).
+- reply: رد قصير ودود بالعربية: ماذا فهمت، وسؤال واحد واضح عن أهم شيء ناقص. لا تخترع أهدافاً لم تُذكر؛ يمكنك صياغتها بشكل أوضح فقط.
+
+قائمة الفريق:
+${teamText(people)}
+
+المسودة الحالية (JSON):
+${JSON.stringify(draft).slice(0, 6000)}`;
+  const msg = await geminiChat({
+    messages: [{ role: "system", content: system }, ...cleanHistory(body?.messages)],
+    temperature: 0.2,
+    response_format: { type: "json_schema", json_schema: { name: "collective_draft", schema: ASSIST_SCHEMA } },
+  });
+  let out: any;
+  try { out = JSON.parse(String(msg.content ?? "{}")); } catch { throw new UserError("رد الذكاء الاصطناعي غير مفهوم، أعد صياغة طلبك", 502); }
+  const emailOk = (e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+  return {
+    reply: String(out.reply ?? ""),
+    draft: {
+      title: String(out.title ?? "").slice(0, 200),
+      goals: String(out.goals ?? "").slice(0, 8000),
+      final_vision: String(out.final_vision ?? "").slice(0, 8000),
+      duration_days: Math.min(90, Math.max(1, Math.round(Number(out.duration_days) || Number(draft.duration_days) || 7))),
+      people: (Array.isArray(out.people) ? out.people : [])
+        .map((p: any) => ({ email: String(p?.email ?? "").trim().toLowerCase(), focus: String(p?.focus ?? "").slice(0, 300) }))
+        .filter((p: any) => emailOk(p.email)),
+      send_at: ammanLocalToIso(out.send_at_local),
+      approval_rule: ["members_then_admin", "all_members", "majority"].includes(out.approval_rule) ? out.approval_rule : "members_then_admin",
+    },
+    missing: (Array.isArray(out.missing) ? out.missing : []).map(String).slice(0, 10),
+    ready: out.ready === true,
+  };
+}
+
+// ---------------------------------------------------------------- command: the Central Task AI agent
+const tool = (name: string, description: string, properties: Record<string, unknown> = {}, required: string[] = []) => ({
+  type: "function", function: { name, description, parameters: { type: "object", properties, required } },
+});
+const COMMAND_TOOLS = [
+  tool("list_collective_tasks", "List all collective tasks with status, dates, people and progress (done/total subtasks)."),
+  tool("get_collective_task", "Full details of one collective task: goals, vision, plan summary, every subtask with owner/days/status, email report.", { task_id: { type: "string" } }, ["task_id"]),
+  tool("create_collective_task", "Create a NEW collective task as a draft (nothing is sent). Use team emails exactly.", {
+    title: { type: "string" }, goals: { type: "string" }, final_vision: { type: "string" },
+    duration_days: { type: "integer" }, emails: { type: "array", items: { type: "string" } },
+    approval_rule: { type: "string", enum: ["members_then_admin", "all_members", "majority"] },
+  }, ["title", "goals", "final_vision", "duration_days", "emails"]),
+  tool("update_collective_task", "Change a draft/planned collective task (only fields given). emails replaces the people list.", {
+    task_id: { type: "string" }, title: { type: "string" }, goals: { type: "string" }, final_vision: { type: "string" },
+    duration_days: { type: "integer" }, emails: { type: "array", items: { type: "string" } },
+  }, ["task_id"]),
+  tool("build_plan", "Ask the planner to build (or rebuild) the day-by-day plan of a draft/planned task.", { task_id: { type: "string" } }, ["task_id"]),
+  tool("request_send", "Prepare sending a planned task: now, or at an Amman time 'YYYY-MM-DDTHH:mm'. It does NOT send: the admin must confirm.", {
+    task_id: { type: "string" }, when: { type: "string", description: "'now' or 'YYYY-MM-DDTHH:mm' Amman time" },
+  }, ["task_id", "when"]),
+  tool("team_members", "The platform team: names, emails, roles."),
+  tool("team_tasks_overview", "The everyday team tasks (not collective): counts by status and role, overdue ones, latest tasks."),
+];
+
+async function commandTool(name: string, a: any, pending: any[]): Promise<unknown> {
+  const id = String(a?.task_id ?? "");
+  switch (name) {
+    case "list_collective_tasks": {
+      const { data } = await service.from("collective_tasks").select("id,title,status,duration_days,send_at,emailed_at,created_at").order("created_at", { ascending: false }).limit(30);
+      const ids = (data ?? []).map((t: any) => t.id);
+      const { data: subs } = ids.length ? await service.from("collective_subtasks").select("task_id,status").in("task_id", ids) : { data: [] };
+      const { data: mem } = ids.length ? await service.from("collective_task_members").select("task_id,email").in("task_id", ids) : { data: [] };
+      return (data ?? []).map((t: any) => {
+        const s = (subs ?? []).filter((x: any) => x.task_id === t.id);
+        return { ...t, people: (mem ?? []).filter((m: any) => m.task_id === t.id).map((m: any) => m.email), subtasks_total: s.length, subtasks_done: s.filter((x: any) => x.status === "done").length };
+      });
+    }
+    case "get_collective_task": {
+      const { task, members } = await loadTask(id);
+      const { data: subs } = await service.from("collective_subtasks").select("position,title,assignee_email,day_from,day_to,status,acceptance").eq("task_id", id).order("position");
+      return { ...task, plan: task.plan ? { summary: task.plan.summary, days: task.plan.days, risks: task.plan.risks } : null, people: members, subtasks: subs ?? [] };
+    }
+    case "create_collective_task":
+    case "update_collective_task": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["title", "goals", "final_vision", "approval_rule"]) if (typeof a?.[k] === "string" && a[k].trim()) fields[k] = a[k].trim();
+      if (a?.duration_days) fields.duration_days = Math.min(90, Math.max(1, Math.round(Number(a.duration_days))));
+      let taskId = id;
+      if (name === "create_collective_task") {
+        const { data, error } = await service.from("collective_tasks").insert(fields).select("id").single();
+        if (error) return { error: error.message };
+        taskId = (data as any).id;
+      } else {
+        const { task } = await loadTask(id);
+        if (!["draft", "planned"].includes(task.status)) return { error: "لا يمكن تعديل مهمة أُرسلت" };
+        if (Object.keys(fields).length) {
+          const { error } = await service.from("collective_tasks").update(fields).eq("id", id);
+          if (error) return { error: error.message };
+        }
+      }
+      if (Array.isArray(a?.emails)) {
+        const emails = [...new Set(a.emails.map((e: unknown) => String(e).trim().toLowerCase()).filter((e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
+        await service.from("collective_task_members").delete().eq("task_id", taskId);
+        if (emails.length) await service.from("collective_task_members").insert(emails.map((email) => ({ task_id: taskId, email })));
+      }
+      return { ok: true, task_id: taskId, status: name === "create_collective_task" ? "draft" : "updated" };
+    }
+    case "build_plan":
+      try { return await planCore(id); } catch (e) { return { error: (e as Error).message }; }
+    case "request_send": {
+      const { task } = await loadTask(id);
+      if (!["planned", "scheduled"].includes(task.status)) return { error: "ابنِ الخطة أولاً، أو المهمة أُرسلت من قبل" };
+      const when = String(a?.when ?? "").trim();
+      const iso = when === "now" ? null : ammanLocalToIso(when);
+      if (when !== "now" && !iso) return { error: "الموعد يجب أن يكون now أو YYYY-MM-DDTHH:mm" };
+      const p = iso
+        ? { type: "schedule", task_id: id, send_at: iso, label: `جدولة إرسال «${task.title}» ${new Date(iso).toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "full", timeStyle: "short" })}` }
+        : { type: "send_now", task_id: id, label: `إرسال «${task.title}» الآن لكل المشاركين` };
+      pending.push(p);
+      return { needs_confirmation: true, waiting_for_admin: p.label };
+    }
+    case "team_members":
+      return await teamPeople();
+    case "team_tasks_overview": {
+      const { data } = await service.from("team_tasks").select("title,assignee_role,status,due_at,created_at").order("created_at", { ascending: false }).limit(200);
+      const rows = (data ?? []) as any[];
+      const now = Date.now();
+      const by = (k: string) => rows.reduce((m: Record<string, number>, r) => ({ ...m, [r[k]]: (m[r[k]] ?? 0) + 1 }), {});
+      return {
+        total: rows.length, by_status: by("status"), by_role: by("assignee_role"),
+        overdue: rows.filter((r) => r.status !== "done" && r.due_at && new Date(r.due_at).getTime() < now).slice(0, 15),
+        latest: rows.slice(0, 10),
+      };
+    }
+  }
+  return { error: `unknown tool ${name}` };
+}
+
+async function command(body: any) {
+  const people = await teamPeople();
+  const system = `أنت "الذكاء الاصطناعي المركزي للمهام" في منصة "ذروة العلم". تتحدث مع الأدمن فقط.
+تدير "المهام الجماعية" (عمل كبير لفريق كامل بخطة يومية) وتتابع مهام الفريق اليومية.
+- استعمل الأدوات للحصول على بيانات حقيقية؛ لا تخترع أرقاماً أو مهاماً أبداً.
+- عند إنشاء مهمة جماعية: اجمع العنوان والأهداف والتصور النهائي والمدة والمشاركين؛ إن نقص شيء أساسي اسأل سؤالاً واحداً. حوّل الأسماء إلى البريد من قائمة الفريق.
+- بعد الإنشاء اقترح بناء الخطة (build_plan) ونفّذه إذا طلبه الأدمن أو كان واضحاً من كلامه.
+- الإرسال والجدولة عبر request_send فقط؛ هو لا يرسل، بل ينتظر تأكيد الأدمن. قل له ذلك بجملة واحدة.
+- عند المتابعة والتحليل: قارن المنجز بالخطة اليومية والمدة المنقضية، واذكر من المتأخر وما الخطوة التالية.
+- الرد بالعربية، مختصر ومنظم (نقاط قصيرة عند الحاجة).
+الوقت الآن في عمّان: ${ammanNow()}
+
+قائمة الفريق:
+${teamText(people)}`;
+  const messages: any[] = [{ role: "system", content: system }, ...cleanHistory(body?.messages)];
+  const pending: any[] = [];
+  const touched = new Set<string>();
+  for (let round = 0; round < 6; round++) {
+    const msg = await geminiChat({ messages, tools: COMMAND_TOOLS, tool_choice: "auto", temperature: 0.3, max_tokens: 1500 });
+    const calls: any[] = msg.tool_calls ?? [];
+    messages.push({ role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) });
+    if (!calls.length) return { reply: String(msg.content ?? "").trim(), pending, task_ids: [...touched] };
+    for (const c of calls) {
+      let args: any = {};
+      try { args = JSON.parse(c.function?.arguments || "{}"); } catch { /* empty */ }
+      let out: unknown;
+      try { out = await commandTool(c.function?.name, args, pending); } catch (e) { out = { error: String((e as Error)?.message ?? e).slice(0, 200) }; }
+      if ((out as any)?.task_id) touched.add((out as any).task_id);
+      if (args?.task_id) touched.add(String(args.task_id));
+      messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 6000) });
+    }
+  }
+  return { reply: "الطلب طويل؛ قسّمه لخطوات أصغر من فضلك.", pending, task_ids: [...touched] };
+}
+
+async function confirmAction(p: any) {
+  const taskId = String(p?.task_id ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(taskId)) throw new UserError("طلب تأكيد غير صالح");
+  if (p?.type === "send_now") {
+    const r = await sendNowCore(taskId);
+    const failed = Object.entries(r.report).filter(([, v]: any) => !v.ok).map(([e]) => e);
+    return { ok: true, reply: failed.length ? `أُرسلت، لكن تعذّر الوصول إلى: ${failed.join("، ")}` : "تم إرسال المهمة لكل المشاركين ✅", report: r.report };
+  }
+  if (p?.type === "schedule") {
+    const r = await scheduleCore(taskId, String(p?.send_at ?? ""));
+    return { ok: true, reply: `تمت الجدولة ✅ ستُرسل ${new Date(r.send_at).toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "full", timeStyle: "short" })}` };
+  }
+  throw new UserError("نوع تأكيد غير معروف");
 }
 
 // ---------------------------------------------------------------- entry
@@ -325,12 +621,16 @@ Deno.serve(async (req) => {
 
     const who = await requireAdmin(req);
     if (who instanceof Response) return who;
+    if (action === "assist") return json(await assist(body));
+    if (action === "command") return json(await command(body));
+    if (action === "confirm") return json(await confirmAction(body?.pending));
     const taskId = String(body?.task_id ?? "");
     if (!/^[0-9a-f-]{36}$/i.test(taskId)) return json({ error: "task_id مطلوب" }, 400);
     if (action === "plan") return await plan(taskId);
     if (action === "send_now") return await sendNow(taskId);
     return json({ error: "unknown action" }, 400);
   } catch (e) {
+    if (e instanceof UserError) return json({ error: e.message }, e.status);
     console.error("collective-task-ai", e);
     return json({ error: String((e as Error)?.message ?? e).slice(0, 300) }, 500);
   }

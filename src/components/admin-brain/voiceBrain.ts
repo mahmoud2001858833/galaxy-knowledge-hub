@@ -200,7 +200,7 @@ export class VoiceBrain {
   }
 
   private async call(body: unknown): Promise<any> {
-    const r = await fetch(FN_URL, { method: 'POST', signal: AbortSignal.timeout(100_000), headers: { ...(await this.auth()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch(FN_URL, { method: 'POST', signal: AbortSignal.timeout(130_000), headers: { ...(await this.auth()), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(j?.error || `brain ${r.status}`);
     return j;
