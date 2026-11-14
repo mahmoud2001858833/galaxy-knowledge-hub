@@ -40,10 +40,12 @@ type Task = {
 type Member = { id: string; email: string; focus: string | null };
 type PlanSubtask = {
   title: string; detail: string; assignee_email: string; day_from: number; day_to: number;
-  acceptance: string[]; depends_on: number[];
+  acceptance: string[]; depends_on: number[]; covers: string[]; effort_hours: number;
 };
 type Plan = {
   summary: string;
+  requirements: { id: string; text: string }[];
+  uncovered?: string[];
   days: { day: number; focus: string; milestones: string[] }[];
   subtasks: PlanSubtask[];
   risks: { risk: string; mitigation: string }[];
@@ -65,6 +67,14 @@ const PLAN_SCHEMA = {
   type: "OBJECT",
   properties: {
     summary: { type: "STRING" },
+    requirements: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { id: { type: "STRING" }, text: { type: "STRING" } },
+        required: ["id", "text"],
+      },
+    },
     days: {
       type: "ARRAY",
       items: {
@@ -89,8 +99,10 @@ const PLAN_SCHEMA = {
           day_to: { type: "INTEGER" },
           acceptance: { type: "ARRAY", items: { type: "STRING" } },
           depends_on: { type: "ARRAY", items: { type: "INTEGER" } },
+          covers: { type: "ARRAY", items: { type: "STRING" } },
+          effort_hours: { type: "NUMBER" },
         },
-        required: ["title", "detail", "assignee_email", "day_from", "day_to", "acceptance", "depends_on"],
+        required: ["title", "detail", "assignee_email", "day_from", "day_to", "acceptance", "depends_on", "covers", "effort_hours"],
       },
     },
     risks: {
@@ -103,7 +115,7 @@ const PLAN_SCHEMA = {
     },
     final_check: { type: "ARRAY", items: { type: "STRING" } },
   },
-  required: ["summary", "days", "subtasks", "risks", "final_check"],
+  required: ["summary", "requirements", "days", "subtasks", "risks", "final_check"],
 };
 
 async function gemini(prompt: string, system: string): Promise<{ text: string; model: string }> {
@@ -119,7 +131,7 @@ async function gemini(prompt: string, system: string): Promise<{ text: string; m
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 8192,
+          maxOutputTokens: 16000,
           responseMimeType: "application/json",
           responseSchema: PLAN_SCHEMA,
         },
@@ -136,18 +148,35 @@ async function gemini(prompt: string, system: string): Promise<{ text: string; m
   throw new Error(`no Gemini model available (${last})`);
 }
 
-const SYSTEM = `أنت مدير مشاريع خبير ودقيق جداً لمنصة "ذروة العلم" التعليمية الأردنية.
-مهمتك تحويل مهمة جماعية إلى خطة تنفيذ يومية دقيقة قابلة للقياس.
-قواعد صارمة:
+const SYSTEM = `أنت مدير مشاريع تقني خبير ودقيق جداً لمنصة "ذروة العلم" التعليمية الأردنية.
+تستلم مهمة جماعية فيها "التصور النهائي" وقد يكون مواصفات مشروع كاملة (أقسام، مكونات، نصوص، ألوان، سلوك تفاعلي).
+مهمتك تحويلها إلى خطة تنفيذ يومية دقيقة لا يضيع فيها أي بند.
+
+الخطوة 1 — تحليل المواصفات (requirements):
+- فكّك الأهداف والتصور النهائي إلى متطلبات مرقّمة R1، R2، ... كل متطلب بند واحد قابل للتحقق
+  (مثال: "R4: زر «ابدأ رحلة التطوع الآن 🚀» ينزل تلقائياً لمعالج البوصلة").
+- انسخ النصوص الحرفية المطلوبة (عناوين، أزرار، روابط) كما هي داخل نص المتطلب.
+- لا تهمل أي قسم أو مكوّن أو شرط (التجاوب مع الجوال، التخزين المحلي، الألوان...).
+
+الخطوة 2 — المهام الفرعية (subtasks):
 - كل مهمة فرعية لها مالك واحد فقط من قائمة البريد المعطاة حرفياً، ولا تخترع بريداً.
-- وزّع العمل بعدل على الجميع، مع مراعاة "التركيز" المكتوب بجانب كل شخص إن وُجد.
-- كل مهمة فرعية صغيرة بما يكفي لتُنجز في يوم إلى ثلاثة أيام، ومعها 2-4 معايير قبول قابلة للتحقق (لا عبارات عامة مثل "جودة عالية").
-- day_from وday_to بين 1 وعدد الأيام، وday_to >= day_from.
-- depends_on أرقام ترتيب (تبدأ من 0) لمهام فرعية يجب أن تنتهي قبلها، ولا تعتمد مهمة على نفسها أو على مهمة بعدها.
-- اترك آخر يوم (أو آخر 20% من المدة) للمراجعة والاختبار والدمج.
-- days: سطر لكل يوم من 1 إلى عدد الأيام، فيه تركيز اليوم ومعالم يجب أن تتحقق في نهايته.
-- final_check: قائمة تحقق نهائية تقارن الناتج بـ "التصور النهائي" بنداً بنداً.
-- اكتب بالعربية الفصحى الواضحة والمختصرة.`;
+- covers: أرقام المتطلبات التي تنجزها المهمة (مثل ["R3","R4"]). يجب أن يُغطّى كل متطلب بمهمة واحدة على الأقل.
+- مهام ملموسة تقنياً: ماذا يُبنى بالضبط (مكوّن، قسم، منطق، بيانات، اختبار)، وليس "العمل على التصميم".
+- detail: خطوات التنفيذ المختصرة + النصوص الحرفية المطلوبة من المواصفات.
+- acceptance: 2-4 معايير قبول قابلة للتحقق مأخوذة من المواصفات نفسها (لا عبارات عامة).
+- effort_hours: تقدير واقعي بالساعات. لا تتجاوز ~6 ساعات عمل للشخص في اليوم الواحد.
+- وزّع العمل بعدل وحسب "التركيز" المكتوب بجانب كل شخص.
+- الترتيب المنطقي: الأساس والهوية البصرية أولاً، ثم الأقسام، ثم الربط والتفاعل، ثم التجاوب والاختبار، ثم المراجعة النهائية.
+- day_from وday_to بين 1 وعدد الأيام، وday_to >= day_from. اترك آخر يوم (أو آخر 20% من المدة) للاختبار والمراجعة والدمج.
+- depends_on: أرقام ترتيب (تبدأ من 0) لمهام يجب أن تنتهي قبلها فقط (لا تعتمد مهمة على نفسها أو على ما بعدها).
+
+الخطوة 3 — الجدول والمخاطر:
+- days: سطر لكل يوم من 1 إلى عدد الأيام: تركيز اليوم ومعالم يجب أن تتحقق في نهايته.
+- risks: المخاطر الحقيقية لهذا المشروع وكيف نتجنبها.
+- final_check: قائمة فحص نهائية تقارن الناتج بالتصور النهائي بنداً بنداً.
+- summary: ملخص الخطة في 3-4 أسطر.
+
+اكتب بالعربية الفصحى الواضحة والمختصرة.`;
 
 function buildPrompt(t: Task, members: Member[]) {
   const people = members.map((m) => `- ${m.email}${m.focus ? ` (التركيز: ${m.focus})` : ""}`).join("\n");
@@ -169,7 +198,11 @@ function cleanPlan(raw: Plan, t: Task, members: Member[]): Plan {
   const emails = new Map(members.map((m) => [m.email.toLowerCase(), m.email]));
   const firstEmail = members[0]?.email ?? "";
   const clampDay = (d: number) => Math.min(Math.max(Math.round(Number(d) || 1), 1), t.duration_days);
-  const subtasks = (raw.subtasks ?? []).slice(0, 120).map((s, i) => {
+  const requirements = (raw.requirements ?? []).slice(0, 150)
+    .map((r, i) => ({ id: String(r.id ?? `R${i + 1}`).trim().toUpperCase().slice(0, 10), text: String(r.text ?? "").trim().slice(0, 1000) }))
+    .filter((r) => r.text);
+  const reqIds = new Set(requirements.map((r) => r.id));
+  const subtasks = (raw.subtasks ?? []).slice(0, 150).map((s, i) => {
     const from = clampDay(s.day_from), to = Math.max(from, clampDay(s.day_to));
     return {
       title: String(s.title ?? "").trim().slice(0, 300) || `مهمة ${i + 1}`,
@@ -179,14 +212,19 @@ function cleanPlan(raw: Plan, t: Task, members: Member[]): Plan {
       day_to: to,
       acceptance: (s.acceptance ?? []).map((a) => String(a).trim()).filter(Boolean).slice(0, 8),
       depends_on: [...new Set((s.depends_on ?? []).map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d < i))],
+      covers: [...new Set((s.covers ?? []).map((c) => String(c).trim().toUpperCase()).filter((c) => reqIds.has(c)))],
+      effort_hours: Math.min(200, Math.max(0, Math.round((Number(s.effort_hours) || 0) * 10) / 10)),
     };
   });
+  const covered = new Set(subtasks.flatMap((s) => s.covers));
   const days = Array.from({ length: t.duration_days }, (_, k) => {
     const d = (raw.days ?? []).find((x) => Number(x.day) === k + 1);
     return { day: k + 1, focus: String(d?.focus ?? "").trim(), milestones: (d?.milestones ?? []).map(String).slice(0, 10) };
   });
   return {
     summary: String(raw.summary ?? "").trim(),
+    requirements,
+    uncovered: requirements.filter((r) => !covered.has(r.id)).map((r) => r.id),
     days,
     subtasks,
     risks: (raw.risks ?? []).slice(0, 15).map((r) => ({ risk: String(r.risk ?? ""), mitigation: String(r.mitigation ?? "") })),
@@ -235,35 +273,55 @@ async function planCore(taskId: string) {
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const nl = (s: string) => esc(s).replace(/\n/g, "<br>");
 
-type SubRow = { position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null; day_from: number; day_to: number };
+type SubRow = {
+  position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null;
+  day_from: number; day_to: number; depends_on: number[]; covers: string[]; effort_hours: number | null; status: string;
+};
 
-function emailHtml(t: Task, to: string, mine: SubRow[], all: number, site: string) {
-  const start = t.send_at ? new Date(t.send_at) : new Date();
-  const dayDate = (d: number) =>
-    new Date(start.getTime() + (d - 1) * 86_400_000).toLocaleDateString("ar-JO", { timeZone: "Asia/Amman", weekday: "long", day: "numeric", month: "long" });
-  const rows = mine.map((s) => `
-    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin:10px 0">
-      <div style="font-size:12px;color:#2563eb;font-weight:bold">اليوم ${s.day_from}${s.day_to > s.day_from ? `–${s.day_to}` : ""} · ${esc(dayDate(s.day_from))}</div>
-      <div style="font-size:15px;font-weight:bold;margin:4px 0">${esc(s.title)}</div>
+const dayDate = (t: Task, d: number) =>
+  new Date(new Date(t.send_at ?? Date.now()).getTime() + (d - 1) * 86_400_000)
+    .toLocaleDateString("ar-JO", { timeZone: "Asia/Amman", weekday: "long", day: "numeric", month: "long" });
+
+function card(s: SubRow, day: number, reqs: Map<string, string>) {
+  const tag = s.day_from === day && s.day_to === day ? "تبدأ وتنتهي اليوم"
+    : s.day_from === day ? `تبدأ اليوم · حتى اليوم ${s.day_to}`
+    : s.day_to === day ? "آخر يوم لها — يجب أن تكتمل اليوم"
+    : `مستمرة (اليوم ${s.day_from}–${s.day_to})`;
+  const urgent = s.day_to === day;
+  const covers = s.covers.filter((c) => reqs.has(c));
+  return `
+    <div style="border:1px solid ${urgent ? "#fca5a5" : "#e2e8f0"};border-radius:12px;padding:14px 16px;margin:10px 0">
+      <div style="font-size:12px;color:${urgent ? "#dc2626" : "#2563eb"};font-weight:bold">${esc(tag)}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}</div>
+      <div style="font-size:15px;font-weight:bold;margin:4px 0">#${s.position} ${esc(s.title)}</div>
       ${s.detail ? `<div style="color:#334155;line-height:1.8;font-size:14px">${nl(s.detail)}</div>` : ""}
       ${s.acceptance.length ? `<div style="margin-top:8px;font-size:13px;color:#475569">تُعتبر منجزة عندما:</div><ul style="margin:4px 0 0;padding-right:18px;color:#334155;font-size:13px">${s.acceptance.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
-    </div>`).join("");
+      ${covers.length ? `<div style="margin-top:8px;font-size:12px;color:#64748b">من المواصفات: ${covers.map((c) => `<b>${esc(c)}</b> ${esc((reqs.get(c) ?? "").slice(0, 140))}`).join(" · ")}</div>` : ""}
+    </div>`;
+}
+
+function dailyHtml(t: Task, to: string, day: number, today: SubRow[], tomorrow: SubRow[], waiting: string[], mineAll: SubRow[], site: string, reqs: Map<string, string>) {
+  const first = day === 1;
+  const last = day === t.duration_days;
+  const schedule = first && mineAll.length
+    ? `<h3 style="margin:22px 0 6px;font-size:15px">جدولك الكامل</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${mineAll.map((s) => `<li>اليوم ${s.day_from}${s.day_to > s.day_from ? `–${s.day_to}` : ""}: ${esc(s.title)}</li>`).join("")}</ul>`
+    : "";
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(t.title)}</title></head>
 <body style="margin:0;background:#f1f5f9;padding:24px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a">
   <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0">
     <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:22px 24px;color:#fff">
-      <div style="font-size:13px;opacity:.9">ذروة العلم · مهمة جماعية لـ ${esc(to)}</div>
+      <div style="font-size:13px;opacity:.9">ذروة العلم · مهمة جماعية · ${esc(to)}</div>
       <h1 style="margin:6px 0 0;font-size:21px;line-height:1.5">${esc(t.title)}</h1>
-      <div style="font-size:13px;opacity:.9;margin-top:6px">المدة ${t.duration_days} يوم · ${all} مهمة فرعية للفريق، منها ${mine.length} لك</div>
+      <div style="font-size:14px;margin-top:6px">اليوم ${day} من ${t.duration_days} · ${esc(dayDate(t, day))}${last ? " · اليوم الأخير" : ""}</div>
     </div>
     <div style="padding:24px">
-      <h3 style="margin:0 0 6px;font-size:15px">الأهداف</h3>
-      <div style="line-height:1.9;color:#334155">${nl(t.goals)}</div>
-      <h3 style="margin:18px 0 6px;font-size:15px">التصور النهائي</h3>
-      <div style="line-height:1.9;color:#334155">${nl(t.final_vision)}</div>
-      ${t.plan?.summary ? `<h3 style="margin:18px 0 6px;font-size:15px">ملخص الخطة</h3><div style="line-height:1.9;color:#334155">${nl(t.plan.summary)}</div>` : ""}
-      <h3 style="margin:22px 0 4px;font-size:16px">مهامك</h3>
-      ${rows || '<div style="color:#64748b">لا توجد مهام فرعية باسمك في الخطة؛ تابع مع الأدمن.</div>'}
+      ${first ? `<h3 style="margin:0 0 6px;font-size:15px">الأهداف</h3><div style="line-height:1.9;color:#334155">${nl(t.goals)}</div>
+      ${t.plan?.summary ? `<h3 style="margin:18px 0 6px;font-size:15px">ملخص الخطة</h3><div style="line-height:1.9;color:#334155">${nl(t.plan.summary)}</div>` : ""}` : ""}
+      <h3 style="margin:${first ? "22px" : "0"} 0 4px;font-size:16px">مهامك اليوم (${today.length})</h3>
+      ${today.length ? today.map((s) => card(s, day, reqs)).join("") : '<div style="color:#64748b;font-size:14px">لا مهام جديدة لك اليوم؛ راجع ما سبق وساعد الفريق.</div>'}
+      ${waiting.length ? `<h3 style="margin:20px 0 6px;font-size:15px">تنتظر من زملائك</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${waiting.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+      ${tomorrow.length ? `<h3 style="margin:20px 0 6px;font-size:15px">غداً</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${tomorrow.map((s) => `<li>${esc(s.title)}</li>`).join("")}</ul>` : ""}
+      ${schedule}
+      ${last ? `<div style="margin-top:20px;padding:12px 14px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:14px">اليوم الأخير: أكمل مهامك وجهّز عملك للمراجعة النهائية مقابل التصور النهائي.</div>` : ""}
       <div style="margin-top:26px;text-align:center">
         <a href="${site}/team" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:12px">فتح لوحة الفريق</a>
       </div>
@@ -286,32 +344,66 @@ async function sendEmail(to: string, subject: string, html: string) {
   return { ok: false, reason: /testing emails|verify a domain|domain is not verified/i.test(text) ? "domain_unverified" : "send_failed", detail: text.slice(0, 200) };
 }
 
-async function sendTask(task: Task) {
+/** Emails every person their tasks for one day of the task. Skips people with nothing today/tomorrow (except day 1). */
+async function sendDay(task: Task, day: number) {
   const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
   const { data: members } = await service.from("collective_task_members").select("id,email").eq("task_id", task.id);
   const { data: subs } = await service.from("collective_subtasks")
-    .select("position,title,detail,acceptance,assignee_email,day_from,day_to").eq("task_id", task.id).order("position");
+    .select("position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status")
+    .eq("task_id", task.id).order("position");
   const rows = (subs ?? []) as SubRow[];
+  const byPos = new Map(rows.map((r) => [r.position, r]));
+  const reqs = new Map((task.plan?.requirements ?? []).map((r) => [r.id, r.text]));
   const report: Record<string, unknown> = {};
   for (const m of members ?? []) {
     const mine = rows.filter((s) => (s.assignee_email ?? "").toLowerCase() === m.email.toLowerCase());
-    const res = await sendEmail(m.email, `مهمة جماعية: ${task.title}`, emailHtml(task, m.email, mine, rows.length, site));
+    const today = mine.filter((s) => s.day_from <= day && day <= s.day_to && s.status !== "done");
+    const tomorrow = day < task.duration_days ? mine.filter((s) => s.day_from === day + 1) : [];
+    const waiting = [...new Set(today.flatMap((s) => s.depends_on)
+      .map((p) => byPos.get(p))
+      .filter((d): d is SubRow => !!d && d.status !== "done" && (d.assignee_email ?? "").toLowerCase() !== m.email.toLowerCase())
+      .map((d) => `#${d.position} ${d.title} — ${d.assignee_email}`))];
+    if (day > 1 && !today.length && !tomorrow.length) { report[m.email] = { ok: true, skipped: "no tasks" }; continue; }
+    const subject = day === 1
+      ? `انطلاق المهمة الجماعية «${task.title}» — مهامك لليوم 1`
+      : `اليوم ${day} من ${task.duration_days}: مهامك في «${task.title}»`;
+    const res = await sendEmail(m.email, subject, dailyHtml(task, m.email, day, today, tomorrow, waiting, mine, site, reqs));
     report[m.email] = res;
     if (res.ok) await service.from("collective_task_members").update({ emailed_at: new Date().toISOString() }).eq("id", m.id);
   }
+  await service.from("collective_daily_sends").update({ report }).eq("task_id", task.id).eq("day", day);
   await service.from("collective_tasks").update({ email_report: report }).eq("id", task.id);
   return report;
 }
 
-async function dispatchDue() {
-  // Claim first (one UPDATE), so a task can never be emailed twice even if two calls overlap.
-  const { data, error } = await service.from("collective_tasks")
-    .update({ emailed_at: new Date().toISOString(), status: "active" })
-    .eq("status", "scheduled").is("emailed_at", null).lte("send_at", new Date().toISOString())
-    .select("*");
+/** Claims (task, day) once; returns true if this call owns sending that day. */
+async function claimDay(taskId: string, day: number) {
+  const { data, error } = await service.from("collective_daily_sends")
+    .upsert({ task_id: taskId, day }, { onConflict: "task_id,day", ignoreDuplicates: true })
+    .select("day");
   if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+const currentDay = (t: Task) => Math.floor((Date.now() - new Date(t.send_at!).getTime()) / 86_400_000) + 1;
+
+async function dispatchDue() {
+  // 1) scheduled tasks whose time came -> active (claim with one UPDATE so it happens once)
+  await service.from("collective_tasks")
+    .update({ emailed_at: new Date().toISOString(), status: "active" })
+    .eq("status", "scheduled").is("emailed_at", null).lte("send_at", new Date().toISOString());
+  // 2) every active task: send today's emails once, or close it when its days are over
+  const { data } = await service.from("collective_tasks").select("*").eq("status", "active").lte("send_at", new Date().toISOString());
   const sent: Record<string, unknown> = {};
-  for (const t of (data ?? []) as Task[]) sent[t.id] = await sendTask(t);
+  for (const t of (data ?? []) as Task[]) {
+    const day = currentDay(t);
+    if (day > t.duration_days) {
+      await service.from("collective_tasks").update({ status: "review" }).eq("id", t.id).eq("status", "active");
+      sent[t.id] = "moved to review";
+      continue;
+    }
+    if (day >= 1 && await claimDay(t.id, day)) sent[`${t.id}#${day}`] = await sendDay(t, day);
+  }
   return json({ ok: true, sent });
 }
 
@@ -327,7 +419,8 @@ async function sendNowCore(taskId: string) {
     .select("*").maybeSingle();
   if (error) throw error;
   if (!data) throw new UserError("المهمة أُرسلت من قبل أو ليست جاهزة (اطلب الخطة أولاً)", 409);
-  return { ok: true, report: await sendTask(data as Task) };
+  const report = (await claimDay(taskId, 1)) ? await sendDay(data as Task, 1) : {};
+  return { ok: true, report };
 }
 
 async function scheduleCore(taskId: string, sendAtIso: string) {
@@ -391,7 +484,7 @@ const cleanHistory = (m: unknown): ChatMsg[] =>
   (Array.isArray(m) ? m : [])
     .filter((x: any) => (x?.role === "user" || x?.role === "assistant") && typeof x?.content === "string" && x.content.trim())
     .slice(-20)
-    .map((x: any) => ({ role: x.role, content: String(x.content).slice(0, 6000) }));
+    .map((x: any) => ({ role: x.role, content: String(x.content).slice(0, 20000) }));
 
 // ---------------------------------------------------------------- assist: talk, and the form fills itself
 const ASSIST_SCHEMA = {
@@ -421,7 +514,8 @@ async function assist(body: any) {
 يصف الأدمن المهمة بكلامه (قد يكون كلاماً منطوقاً بالعامية الأردنية). مهمتك تعبئة الحقول بدقة:
 - title: عنوان قصير واضح.
 - goals: الأهداف، هدف في كل سطر، قابلة للقياس.
-- final_vision: كيف يبدو الناتج في النهاية بالضبط.
+- final_vision: كيف يبدو الناتج في النهاية بالضبط. إذا لصق الأدمن مواصفات مفصّلة (أقسام، نصوص، ألوان، مكونات)
+  فانسخها كما هي حرفياً بكامل تفاصيلها وترتيبها، ولا تختصرها أبداً؛ يمكنك فقط إصلاح التنسيق.
 - duration_days: عدد الأيام (1-90). "أسبوع"=7، "أسبوعين"=14، "شهر"=30.
 - people: المشاركون. حوّل الأسماء إلى البريد من قائمة الفريق أدناه فقط؛ وإذا ذكر بريداً صريحاً خذه كما هو. focus: ما يركّز عليه الشخص إن ذُكر وإلا "".
 - send_at_local: موعد الإرسال بتوقيت عمّان بالشكل YYYY-MM-DDTHH:mm، أو "" إن لم يُذكر. الوقت الآن في عمّان: ${ammanNow()}.
@@ -435,10 +529,11 @@ async function assist(body: any) {
 ${teamText(people)}
 
 المسودة الحالية (JSON):
-${JSON.stringify(draft).slice(0, 6000)}`;
+${JSON.stringify(draft).slice(0, 30000)}`;
   const msg = await geminiChat({
     messages: [{ role: "system", content: system }, ...cleanHistory(body?.messages)],
     temperature: 0.2,
+    max_tokens: 16000, // room to copy a long pasted spec into final_vision word for word
     response_format: { type: "json_schema", json_schema: { name: "collective_draft", schema: ASSIST_SCHEMA } },
   });
   let out: any;
@@ -448,8 +543,8 @@ ${JSON.stringify(draft).slice(0, 6000)}`;
     reply: String(out.reply ?? ""),
     draft: {
       title: String(out.title ?? "").slice(0, 200),
-      goals: String(out.goals ?? "").slice(0, 8000),
-      final_vision: String(out.final_vision ?? "").slice(0, 8000),
+      goals: String(out.goals ?? "").slice(0, 20000),
+      final_vision: String(out.final_vision ?? "").slice(0, 20000),
       duration_days: Math.min(90, Math.max(1, Math.round(Number(out.duration_days) || Number(draft.duration_days) || 7))),
       people: (Array.isArray(out.people) ? out.people : [])
         .map((p: any) => ({ email: String(p?.email ?? "").trim().toLowerCase(), focus: String(p?.focus ?? "").slice(0, 300) }))
@@ -539,7 +634,7 @@ async function commandTool(name: string, a: any, pending: any[]): Promise<unknow
       if (when !== "now" && !iso) return { error: "الموعد يجب أن يكون now أو YYYY-MM-DDTHH:mm" };
       const p = iso
         ? { type: "schedule", task_id: id, send_at: iso, label: `جدولة إرسال «${task.title}» ${new Date(iso).toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "full", timeStyle: "short" })}` }
-        : { type: "send_now", task_id: id, label: `إرسال «${task.title}» الآن لكل المشاركين` };
+        : { type: "send_now", task_id: id, label: `ابدأ «${task.title}» الآن (مهام اليوم 1 تصل للجميع)` };
       pending.push(p);
       return { needs_confirmation: true, waiting_for_admin: p.label };
     }
@@ -578,7 +673,7 @@ ${teamText(people)}`;
   const pending: any[] = [];
   const touched = new Set<string>();
   for (let round = 0; round < 6; round++) {
-    const msg = await geminiChat({ messages, tools: COMMAND_TOOLS, tool_choice: "auto", temperature: 0.3, max_tokens: 1500 });
+    const msg = await geminiChat({ messages, tools: COMMAND_TOOLS, tool_choice: "auto", temperature: 0.3, max_tokens: 3000 });
     const calls: any[] = msg.tool_calls ?? [];
     messages.push({ role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) });
     if (!calls.length) return { reply: String(msg.content ?? "").trim(), pending, task_ids: [...touched] };
@@ -601,7 +696,7 @@ async function confirmAction(p: any) {
   if (p?.type === "send_now") {
     const r = await sendNowCore(taskId);
     const failed = Object.entries(r.report).filter(([, v]: any) => !v.ok).map(([e]) => e);
-    return { ok: true, reply: failed.length ? `أُرسلت، لكن تعذّر الوصول إلى: ${failed.join("، ")}` : "تم إرسال المهمة لكل المشاركين ✅", report: r.report };
+    return { ok: true, reply: failed.length ? `بدأت المهمة، لكن تعذّر الوصول إلى: ${failed.join("، ")}` : "بدأت المهمة ✅ وصلت مهام اليوم الأول لكل شخص، وكل يوم بنفس الساعة بتوصلهم مهام يومهم.", report: r.report };
   }
   if (p?.type === "schedule") {
     const r = await scheduleCore(taskId, String(p?.send_at ?? ""));

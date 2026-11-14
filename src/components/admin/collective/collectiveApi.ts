@@ -17,6 +17,8 @@ export type ApprovalRule = 'members_then_admin' | 'all_members' | 'majority';
 export interface PlanDay { day: number; focus: string; milestones: string[] }
 export interface Plan {
   summary: string;
+  requirements?: { id: string; text: string }[];
+  uncovered?: string[];
   days: PlanDay[];
   risks: { risk: string; mitigation: string }[];
   final_check: string[];
@@ -49,7 +51,16 @@ export interface Subtask {
   day_from: number;
   day_to: number;
   depends_on: number[];
+  covers: string[];
+  effort_hours: number | null;
   status: 'todo' | 'in_progress' | 'done';
+}
+
+export interface DailySend { task_id: string; day: number; sent_at: string; report: Record<string, { ok: boolean; reason?: string; skipped?: string }> | null }
+export async function listDailySends(taskId: string): Promise<DailySend[]> {
+  const { data, error } = await db.from('collective_daily_sends').select('*').eq('task_id', taskId).order('day');
+  if (error) return [];
+  return (data ?? []) as DailySend[];
 }
 
 export const STATUS_LABEL: Record<CollectiveStatus, string> = {

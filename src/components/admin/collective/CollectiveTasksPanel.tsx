@@ -10,8 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   APPROVAL_LABEL, STATUS_LABEL, addSubtask, cancelTask, deleteSubtask, deleteTask, generatePlan, isEditable, listTasks,
-  loadTask, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
-  type ApprovalRule, type CollectiveMember, type CollectiveTask, type Subtask, type TaskDraft,
+  listDailySends, loadTask, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
+  type ApprovalRule, type CollectiveMember, type CollectiveTask, type DailySend, type Subtask, type TaskDraft,
 } from './collectiveApi';
 import { AssistBox } from './AssistBox';
 
@@ -111,6 +111,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
   const [team, setTeam] = useState<{ email: string; role: string; name: string | null }[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [sendAt, setSendAt] = useState(() => toLocalInput(new Date(Date.now() + 60 * 60_000)));
+  const [daily, setDaily] = useState<DailySend[]>([]);
 
   const reload = useCallback(async () => {
     if (!taskId) return;
@@ -126,6 +127,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
     setEmailsText(r.members.map((m) => m.email).join('\n'));
     setFocus(Object.fromEntries(r.members.map((m) => [m.email, m.focus ?? ''])));
     if (r.task.send_at) setSendAt(toLocalInput(new Date(r.task.send_at)));
+    setDaily(await listDailySends(taskId));
   }, [taskId]);
 
   useEffect(() => { reload().catch((e) => toast.error(errText(e))); }, [reload]);
@@ -173,7 +175,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
     const r = await sendNow(task.id);
     const failed = Object.entries(r.report).filter(([, v]) => !v.ok);
     if (failed.length) toast.warning(`أُرسلت، لكن فشل ${failed.length}: ${failed.map(([e, v]) => `${e} (${v.reason})`).join('، ')}`);
-    else toast.success('أُرسلت المهمة للجميع');
+    else toast.success('بدأت المهمة: وصلت مهام اليوم الأول لكل شخص، والباقي يصل يومياً');
     await reload();
   });
 
@@ -319,6 +321,29 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
           </div>
           {task.plan.summary && <p className="leading-8 text-foreground">{task.plan.summary}</p>}
 
+          {(task.plan.requirements?.length ?? 0) > 0 && (
+            <div>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-bold text-foreground">المتطلبات من المواصفات ({task.plan.requirements!.length})</h4>
+                {(task.plan.uncovered?.length ?? 0) === 0
+                  ? <Badge>كل البنود مغطّاة بمهام</Badge>
+                  : <Badge variant="destructive">بنود بلا مهام: {task.plan.uncovered!.join('، ')}</Badge>}
+              </div>
+              <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl border border-border p-3 text-sm">
+                {task.plan.requirements!.map((r) => {
+                  const by = subtasks.filter((s) => s.covers?.includes(r.id)).map((s) => `#${s.position}`);
+                  return (
+                    <div key={r.id} className="flex items-start gap-2">
+                      <Badge variant={by.length ? 'secondary' : 'destructive'} className="shrink-0">{r.id}</Badge>
+                      <span className="flex-1 text-foreground">{r.text}</span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{by.join(' ') || 'غير مغطّى'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div>
             <h4 className="mb-2 text-sm font-bold text-foreground">الجدول اليومي</h4>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -333,6 +358,41 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="mb-2 text-sm font-bold text-foreground">ماذا يصل كل شخص كل يوم</h4>
+            <div className="overflow-x-auto rounded-xl border border-border">
+              <table className="w-full min-w-[560px] text-xs">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground">
+                    <th className="p-2 text-right font-medium">اليوم</th>
+                    {members.map((m) => <th key={m.email} className="p-2 text-right font-medium" dir="ltr">{m.email.split('@')[0]}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: task.duration_days }, (_, k) => k + 1).map((d) => (
+                    <tr key={d} className="border-b border-border align-top last:border-0">
+                      <td className="p-2 font-bold text-primary">{d}</td>
+                      {members.map((m) => {
+                        const items = subtasks.filter((s) => s.assignee_email?.toLowerCase() === m.email.toLowerCase() && s.day_from <= d && d <= s.day_to);
+                        const hours = items.reduce((h, s) => h + (Number(s.effort_hours) || 0) / (s.day_to - s.day_from + 1), 0);
+                        return (
+                          <td key={m.email} className="p-2 text-foreground">
+                            {items.length ? (
+                              <>
+                                {items.map((s) => <div key={s.id} className="truncate" title={s.title}>#{s.position} {s.title}</div>)}
+                                {hours > 0 && <div className={hours > 6.5 ? 'text-destructive' : 'text-muted-foreground'}>≈ {hours.toFixed(1)} س</div>}
+                              </>
+                            ) : <span className="text-muted-foreground">—</span>}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -392,28 +452,44 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
           {task.status === 'planned' || task.status === 'scheduled' ? (
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1.5">
-                <Label>تاريخ ووقت الإرسال</Label>
+                <Label>موعد البدء (وساعة الإرسال اليومية)</Label>
                 <Input type="datetime-local" value={sendAt} onChange={(e) => setSendAt(e.target.value)} className="w-60" />
               </div>
               <Button onClick={doSchedule} disabled={!!busy}>
                 {busy === 'schedule' ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <CalendarClock className="ml-1 h-4 w-4" />}
-                {task.status === 'scheduled' ? 'غيّر الموعد' : 'اعتمد الخطة وجدول الإرسال'}
+                {task.status === 'scheduled' ? 'غيّر موعد البدء' : 'اعتمد الخطة وحدّد موعد البدء'}
               </Button>
               <Button variant="secondary" onClick={doSendNow} disabled={!!busy}>
-                {busy === 'send' ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Send className="ml-1 h-4 w-4" />} أرسل الآن
+                {busy === 'send' ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Send className="ml-1 h-4 w-4" />} ابدأ الآن
               </Button>
               {task.status === 'scheduled' && (
                 <Button variant="ghost" onClick={() => run('unschedule', async () => { await unschedule(task.id); await reload(); })} disabled={!!busy}>
                   ألغِ الجدولة (للتعديل)
                 </Button>
               )}
-              {task.status === 'scheduled' && (
-                <p className="w-full text-sm text-muted-foreground">مجدولة: تُرسل تلقائياً {fmt(task.send_at)}. لتعديل الخطة ألغِ الجدولة أولاً.</p>
-              )}
+              <p className="w-full text-sm text-muted-foreground">
+                {task.status === 'scheduled' ? `مجدولة: تبدأ ${fmt(task.send_at)}. ` : ''}
+                كل يوم من الأيام الـ{task.duration_days}، وبنفس الساعة، يصل كل شخص بريد بمهام يومه هو فقط: ما يبدأ اليوم، وما يجب أن يكتمل اليوم،
+                وما ينتظره من زملائه، وما ينتظره غداً.{task.status === 'scheduled' ? ' لتعديل الخطة ألغِ الجدولة أولاً.' : ''}
+              </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
-              <div>أُرسلت {fmt(task.emailed_at)}</div>
+              <div>بدأت {fmt(task.send_at)} · {task.status === 'active' ? 'تُرسل مهام كل يوم تلقائياً' : STATUS_LABEL[task.status]}</div>
+              {daily.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: task.duration_days }, (_, k) => k + 1).map((d) => {
+                    const sent = daily.find((x) => x.day === d);
+                    const failed = sent?.report && Object.values(sent.report).some((r) => !r.ok);
+                    return (
+                      <Badge key={d} variant={sent ? (failed ? 'destructive' : 'default') : 'outline'} title={sent ? fmt(sent.sent_at) : 'لم يُرسل بعد'}>
+                        يوم {d}{sent ? ' ✓' : ''}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">آخر إرسال:</div>
               {task.email_report && (
                 <ul className="space-y-1">
                   {Object.entries(task.email_report).map(([e, r]) => (
@@ -488,6 +564,8 @@ function SubtaskRow({ s, editable, people, days, onChanged }: {
             <span className="ml-2 text-xs text-muted-foreground">#{s.position}</span>{s.title}
           </div>
           <div className="flex items-center gap-2">
+            {s.effort_hours ? <span className="text-xs text-muted-foreground">≈ {s.effort_hours} س</span> : null}
+            {s.covers?.map((c) => <Badge key={c} variant="secondary" className="text-[10px]">{c}</Badge>)}
             <Badge variant="outline">اليوم {s.day_from}{s.day_to > s.day_from ? `–${s.day_to}` : ''}</Badge>
             {editable && <Button size="sm" variant="ghost" onClick={() => setEdit(true)}>تعديل</Button>}
           </div>

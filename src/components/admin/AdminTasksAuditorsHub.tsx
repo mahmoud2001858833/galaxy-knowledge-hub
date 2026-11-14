@@ -52,7 +52,7 @@ import {
   type AICommandResult
 } from '@/services/adminTaskManagementService';
 import { labSound } from '@/utils/labAudio';
-import { commandAi, confirmPending, type ChatTurn, type PendingAction } from '@/components/admin/collective/collectiveApi';
+import { CentralTaskChat } from '@/components/admin/collective/CentralTaskChat';
 
 // Color themes & styling presets for each job role option (Light & Dark mode optimized)
 const roleStyles: Record<string, {
@@ -176,37 +176,6 @@ export const AdminTasksAuditorsHub: React.FC = () => {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   // Central AI States
-  const [aiCommandInput, setAiCommandInput] = useState('');
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
-  const [aiChatHistory, setAiChatHistory] = useState<Array<{ sender: 'admin' | 'ai'; text: string; time: string; pending?: PendingAction[]; resolved?: boolean }>>([
-    {
-      sender: 'ai',
-      text: `مرحباً! أنا الذكاء الاصطناعي المركزي للمهام، أعمل على بيانات المنصة الحقيقية.\nجرّب: «اعمل مهمة جماعية لإعادة بناء قسم الامتحانات خلال أسبوعين لأحمد ومحمد»، أو «كيف ماشية المهام الجماعية؟»، أو «مين متأخر بمهام الفريق؟».\nأي إرسال للفريق لا يتم إلا بعد تأكيدك.`,
-      time: 'الآن'
-    }
-  ]);
-  const nowTime = () => new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-  // Run a send/schedule the Central AI prepared, only after the admin presses تأكيد
-  const handleConfirmPending = async (msgIndex: number, p: PendingAction | null) => {
-    setAiChatHistory(prev => prev.map((m, i) => (i === msgIndex ? { ...m, resolved: true } : m)));
-    if (!p) {
-      setAiChatHistory(prev => [...prev, { sender: 'ai', text: 'تمام، ما أرسلت شي.', time: nowTime() }]);
-      return;
-    }
-    setIsAiProcessing(true);
-    try {
-      const r = await confirmPending(p);
-      setAiChatHistory(prev => [...prev, { sender: 'ai', text: r.reply, time: nowTime() }]);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setIsAiProcessing(false);
-    }
-  };
-
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-
   // Sync with service events
   useEffect(() => {
     const handleTasksUpdated = (e: any) => setTasks(e.detail || adminTaskService.getTasks());
@@ -256,67 +225,6 @@ export const AdminTasksAuditorsHub: React.FC = () => {
     };
   }, [tasks, staffPoints]);
 
-  // Execute Central AI Command
-  const handleExecuteAICommand = async (commandToRun?: string) => {
-    const prompt = (commandToRun || aiCommandInput).trim();
-    if (!prompt) return;
-
-    setAiChatHistory(prev => [
-      ...prev,
-      { sender: 'admin', text: prompt, time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) }
-    ]);
-    setAiCommandInput('');
-    setIsAiProcessing(true);
-
-    // The real Central AI (server, Gemini + platform data). Falls back to the local demo engine only if unreachable.
-    try {
-      labSound.playLaserPulse(600);
-      const turns: ChatTurn[] = [
-        ...aiChatHistory.slice(1).map((m) => ({ role: (m.sender === 'admin' ? 'user' : 'assistant') as ChatTurn['role'], content: m.text })),
-        { role: 'user', content: prompt },
-      ];
-      const ai = await commandAi(turns);
-      setAiChatHistory(prev => [...prev, { sender: 'ai', text: ai.reply || 'تم.', time: nowTime(), pending: ai.pending }]);
-      labSound.playSuccessChime();
-      return;
-    } catch (err) {
-      console.warn('Central AI unavailable, using local engine', err);
-    } finally {
-      setIsAiProcessing(false);
-      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-
-    setIsAiProcessing(true);
-    try {
-      const res: AICommandResult = await adminTaskService.processCentralAICommand(prompt);
-
-      // Apply filter changes if requested by AI
-      if (res.filterChange) {
-        if (res.filterChange.status !== undefined) setStatusFilter(res.filterChange.status);
-        if (res.filterChange.assigneeType !== undefined) setAssigneeTypeFilter(res.filterChange.assigneeType);
-        if (res.filterChange.role !== undefined) setRoleFilter(res.filterChange.role);
-      }
-
-      if (res.highlightedTaskIds) {
-        setHighlightedTaskIds(res.highlightedTaskIds);
-      }
-
-      setAiChatHistory(prev => [
-        ...prev,
-        { sender: 'ai', text: res.reply, time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) }
-      ]);
-
-      labSound.playSuccessChime();
-      toast.success('تم تنفيذ الأمر بواسطة الذكاء الاصطناعي المركزي بنجاح!');
-    } catch (err) {
-      toast.error('حدث خطأ أثناء معالجة الأمر');
-    } finally {
-      setIsAiProcessing(false);
-      setTimeout(() => {
-        chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  };
 
   // Open points award modal for specific task
   const handleOpenTaskPointsModal = (task: TaskItem) => {
@@ -548,123 +456,8 @@ export const AdminTasksAuditorsHub: React.FC = () => {
         </Card>
       </div>
 
-      {/* Central Task AI Assistant Panel */}
-      <Card className="bg-gradient-to-br from-white via-indigo-50/40 to-purple-50/40 dark:bg-slate-900 border-2 border-indigo-200/80 dark:border-indigo-900/50 shadow-xl shadow-indigo-950/5 overflow-hidden rounded-3xl">
-        <CardHeader className="py-4 px-6 border-b border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-white dark:bg-indigo-950/30 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-300/60 dark:border-indigo-500/30 shadow-sm animate-pulse">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-black text-indigo-950 dark:text-indigo-200 flex items-center gap-2">
-                الذكاء الاصطناعي المركزي للمهام والأوامر الإدارية (Central Task AI)
-              </CardTitle>
-              <CardDescription className="text-xs text-indigo-700/80 dark:text-indigo-300/70 font-medium">
-                نفذ أوامرك الإدارية باللغة الطبيعية: اطلب منه فوراً &quot;مهام المكملة من المدققن&quot; أو &quot;زيادة نقاط الموظفين&quot;
-              </CardDescription>
-            </div>
-          </div>
-          <Badge variant="outline" className="border-indigo-300 text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 dark:border-indigo-400/40 dark:text-indigo-300 text-[11px] font-bold">
-            جاهز لتلقي أوامر الأدمن
-          </Badge>
-        </CardHeader>
-
-        <CardContent className="p-6 space-y-4">
-          {/* Preset Quick Action Command Pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-indigo-950 dark:text-indigo-200 font-extrabold flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              أوامر سريعة بنقرة واحدة:
-            </span>
-            <button
-              type="button"
-              onClick={() => handleExecuteAICommand('مهام المكملة من المدققن')}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-2 border-emerald-300/70 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-emerald-500/25 active:scale-95 hover:scale-[1.02]"
-            >
-              <UserCheck className="w-4 h-4 text-emerald-100" />
-              <span>مهام المكملة من المدققن 🎯</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExecuteAICommand('مهام الذكاء الاصطناعي المنجزة')}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white border-2 border-purple-300/70 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-purple-500/25 active:scale-95 hover:scale-[1.02]"
-            >
-              <Bot className="w-4 h-4 text-purple-100" />
-              <span>مهام الذكاء الاصطناعي المنجزة 🤖</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExecuteAICommand('أعلى المدققين نقاطاً')}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-2 border-amber-300/70 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-amber-500/25 active:scale-95 hover:scale-[1.02]"
-            >
-              <Trophy className="w-4 h-4 text-amber-100" />
-              <span>أعلى المدققين نقاطاً 🏆</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleExecuteAICommand('أضف 50 نقطة للمدقق د. عثمان الكيلاني')}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-2 border-cyan-300/70 text-xs font-black transition-all flex items-center gap-1.5 shadow-md shadow-cyan-500/25 active:scale-95 hover:scale-[1.02]"
-            >
-              <Zap className="w-4 h-4 text-cyan-100" />
-              <span>أضف 50 نقطة للمدقق د. عثمان ⚡</span>
-            </button>
-          </div>
-
-          {/* Chat Messages Log */}
-          <div className="max-h-[260px] overflow-y-auto space-y-3 p-4 rounded-2xl bg-white/90 dark:bg-slate-950/70 border-2 border-indigo-100 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 shadow-inner">
-            {aiChatHistory.map((msg, i) => (
-              <div
-                key={i}
-                className={`p-3.5 rounded-2xl max-w-[90%] ${
-                  msg.sender === 'admin'
-                    ? 'mr-auto bg-gradient-to-r from-cyan-50 to-blue-50 dark:bg-cyan-950/40 text-cyan-950 dark:text-cyan-100 border border-cyan-200 dark:border-cyan-800 shadow-sm'
-                    : 'ml-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-sm space-y-1'
-                }`}
-              >
-                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
-                  <span className="font-extrabold flex items-center gap-1">
-                    {msg.sender === 'admin' ? 'المشرف العام (أمر إداري)' : 'المشرف الذكي المركزي'}
-                  </span>
-                  <span className="font-mono">{msg.time}</span>
-                </div>
-                <div className="whitespace-pre-wrap leading-relaxed font-sans">{msg.text}</div>
-                {msg.pending && msg.pending.length > 0 && !msg.resolved && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {msg.pending.map((p, k) => (
-                      <Button key={k} size="sm" onClick={() => handleConfirmPending(i, p)} disabled={isAiProcessing}>
-                        تأكيد: {p.label}
-                      </Button>
-                    ))}
-                    <Button size="sm" variant="outline" onClick={() => handleConfirmPending(i, null)} disabled={isAiProcessing}>إلغاء</Button>
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Command Input Box */}
-          <div className="flex items-center gap-2">
-            <Input
-              value={aiCommandInput}
-              onChange={(e) => setAiCommandInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleExecuteAICommand();
-              }}
-              placeholder='اكتب أمرك الإداري هنا، مثلاً: "اعرض لي المهام المكتملة من المدققين" أو "أضف 100 نقطة للمدقق فلان"...'
-              className="h-11 rounded-2xl bg-white dark:bg-slate-950 border-2 border-indigo-200 dark:border-slate-800 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:border-indigo-500 shadow-sm"
-            />
-            <Button
-              onClick={() => handleExecuteAICommand()}
-              disabled={isAiProcessing || !aiCommandInput.trim()}
-              className="h-11 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs shrink-0 flex items-center gap-1.5 shadow-md shadow-indigo-500/25"
-            >
-              {isAiProcessing ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              <span>تنفيذ الأمر</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Central Task AI: the real agent (collective-task-ai "command") */}
+      <CentralTaskChat />
 
       {/* Strict Filtering Bar: Completed by Auditor VS AI VS Role */}
       <Card className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-lg rounded-3xl overflow-hidden">
