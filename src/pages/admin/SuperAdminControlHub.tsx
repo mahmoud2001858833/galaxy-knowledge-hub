@@ -86,6 +86,7 @@ import { UsersPermissionsManager } from '@/components/admin/UsersPermissionsMana
 import { InstitutionalPartnershipsManager } from '@/components/admin/InstitutionalPartnershipsManager';
 import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub';
 import { AdminTasksAuditorsHub } from '@/components/admin/AdminTasksAuditorsHub';
+import CollectiveTasksPanel from '@/components/admin/collective/CollectiveTasksPanel';
 import SafeBoundary from '@/components/common/SafeBoundary';
 import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -93,6 +94,7 @@ import { supabase } from '@/integrations/supabase/client';
 export type AdminTab = 
   | 'overview'
   | 'tasks-hub'
+  | 'collective-tasks'
   | 'exam-library'
   | 'school-content'
   | 'employees'
@@ -626,6 +628,7 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
+        { id: 'collective-tasks', label: 'المهام الجماعية', icon: Users, badge: 'جديد', description: 'مهمة كبيرة لفريق كامل: خطة يومية بالذكاء الاصطناعي وإرسال مجدول' },
         { id: 'tasks-hub', label: 'المهام والمدققين ونقاط AI', icon: CheckSquare, badge: 'جديد', description: 'فلترة المهام المنجزة للمدققين والذكاء الاصطناعي واحتساب النقاط' },
         { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
         { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
@@ -1044,6 +1047,12 @@ export const SuperAdminControlHub: React.FC = () => {
                     baseSolvedPuzzles={48}
                   />
                 </div>
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'collective-tasks' && (
+              <SafeBoundary name="CollectiveTasksPanel">
+                <CollectiveTasksPanel />
               </SafeBoundary>
             )}
 

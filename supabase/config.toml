@@ -296,3 +296,6 @@ verify_jwt = false
 
 [functions.gemini-proxy]
 verify_jwt = true
+
+[functions.collective-task-ai]
+verify_jwt = true
