@@ -32,6 +32,9 @@ const service = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABA
 
 // Cheapest models available to new Google keys; 3.5 only if 3.1 is not available (404).
 const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
+// Planning happens once per task and decides everything after it, so it uses a stronger model
+// (a plan costs a few cents); Flash-Lite stays as the fallback. Everything else stays on Flash-Lite.
+const PLAN_MODELS = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 
 type Task = {
   id: string; title: string; goals: string; final_vision: string; duration_days: number;
@@ -118,11 +121,11 @@ const PLAN_SCHEMA = {
   required: ["summary", "requirements", "days", "subtasks", "risks", "final_check"],
 };
 
-async function gemini(prompt: string, system: string): Promise<{ text: string; model: string }> {
+async function gemini(prompt: string, system: string, models = MODELS): Promise<{ text: string; model: string }> {
   const key = Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("GEMINI_API_KEY");
   if (!key) throw new Error("مفتاح Google غير مضبوط على الخادم (GOOGLE_API_KEY)");
   let last = "";
-  for (const model of MODELS) {
+  for (const model of models) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -153,7 +156,9 @@ const SYSTEM = `أنت مدير مشاريع تقني خبير ودقيق جدا
 مهمتك تحويلها إلى خطة تنفيذ يومية دقيقة لا يضيع فيها أي بند.
 
 الخطوة 1 — تحليل المواصفات (requirements):
-- فكّك الأهداف والتصور النهائي إلى متطلبات مرقّمة R1، R2، ... كل متطلب بند واحد قابل للتحقق
+- فكّك الأهداف والتصور النهائي إلى متطلبات مرقّمة R1، R2، ... كل متطلب بند واحد قابل للتحقق.
+  كن دقيقاً جداً: كل عنوان، وكل زر، وكل خيار، وكل سؤال، وكل رقم يُحسب، وكل بطاقة، وكل بند في قائمة،
+  وكل لون أو شرط (التجاوب، التخزين المحلي...) متطلب مستقل. المواصفات المتوسطة تعطي عادةً 15-30 متطلباً
   (مثال: "R4: زر «ابدأ رحلة التطوع الآن 🚀» ينزل تلقائياً لمعالج البوصلة").
 - انسخ النصوص الحرفية المطلوبة (عناوين، أزرار، روابط) كما هي داخل نص المتطلب.
 - لا تهمل أي قسم أو مكوّن أو شرط (التجاوب مع الجوال، التخزين المحلي، الألوان...).
@@ -166,6 +171,8 @@ const SYSTEM = `أنت مدير مشاريع تقني خبير ودقيق جدا
 - acceptance: 2-4 معايير قبول قابلة للتحقق مأخوذة من المواصفات نفسها (لا عبارات عامة).
 - effort_hours: تقدير واقعي بالساعات. لا تتجاوز ~6 ساعات عمل للشخص في اليوم الواحد.
 - وزّع العمل بعدل وحسب "التركيز" المكتوب بجانب كل شخص.
+- العمل متوازٍ: كل شخص لديه عمل في كل يوم من أيام المهمة (إلا إذا قالت تعليمات الأدمن غير ذلك)،
+  ولا تترك أحداً بلا مهمة بينما يعمل غيره. اهدف إلى (عدد الأشخاص × عدد الأيام) مهمة فرعية على الأقل.
 - الترتيب المنطقي: الأساس والهوية البصرية أولاً، ثم الأقسام، ثم الربط والتفاعل، ثم التجاوب والاختبار، ثم المراجعة النهائية.
 - day_from وday_to بين 1 وعدد الأيام، وday_to >= day_from. اترك آخر يوم (أو آخر 20% من المدة) للاختبار والمراجعة والدمج.
 - depends_on: أرقام ترتيب (تبدأ من 0) لمهام يجب أن تنتهي قبلها فقط (لا تعتمد مهمة على نفسها أو على ما بعدها).
@@ -253,7 +260,7 @@ async function planCore(taskId: string) {
   if (!members.length) throw new UserError("أضف بريداً واحداً على الأقل قبل طلب الخطة");
   if (!["draft", "planned"].includes(task.status)) throw new UserError("لا يمكن تغيير خطة مهمة أُرسلت", 409);
 
-  const { text, model } = await gemini(buildPrompt(task, members), SYSTEM);
+  const { text, model } = await gemini(buildPrompt(task, members), SYSTEM, PLAN_MODELS);
   let raw: Plan;
   try { raw = JSON.parse(text); } catch { throw new UserError("رد الذكاء الاصطناعي ليس JSON صالحاً، جرّب مرة أخرى", 502); }
   const p = cleanPlan(raw, task, members);
@@ -277,9 +284,55 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 const nl = (s: string) => esc(s).replace(/\n/g, "<br>");
 
 type SubRow = {
-  position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null;
+  id: string; position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null;
   day_from: number; day_to: number; depends_on: number[]; covers: string[]; effort_hours: number | null; status: string;
+  team_task_id: string | null;
 };
+
+const WORKER_ROLES = new Set(["speaker", "page_manager", "auditor", "ai_manager", "file_manager"]);
+
+/** End of day N of the task, Amman time (23:59), as ISO. */
+function dayEndIso(t: Task, d: number) {
+  const start = new Date(t.send_at ?? Date.now());
+  const day = new Date(start.getTime() + (d - 1) * 86_400_000);
+  const ymd = day.toLocaleDateString("en-CA", { timeZone: "Asia/Amman" }); // YYYY-MM-DD
+  return new Date(`${ymd}T23:59:00+03:00`).toISOString();
+}
+
+/**
+ * Puts a person's due subtasks into the staff dashboard (team_tasks + a notification), once each.
+ * Only for team members with a worker role; returns how many were created.
+ */
+async function deliverToPortal(task: Task, person: { user_id: string; role: string } | undefined, due: SubRow[], reqs: Map<string, string>) {
+  if (!person || !WORKER_ROLES.has(person.role)) return 0;
+  let made = 0;
+  for (const s of due.filter((x) => !x.team_task_id && x.status !== "done")) {
+    const covers = s.covers.filter((c) => reqs.has(c)).map((c) => `${c}: ${reqs.get(c)}`);
+    const details = [
+      `مهمة جماعية: «${task.title}» — اليوم ${s.day_from}${s.day_to > s.day_from ? `–${s.day_to}` : ""} من ${task.duration_days}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}`,
+      s.detail ?? "",
+      s.acceptance.length ? `تُعتبر منجزة عندما:\n${s.acceptance.map((a) => `• ${a}`).join("\n")}` : "",
+      covers.length ? `من المواصفات:\n${covers.map((c) => `• ${c}`).join("\n")}` : "",
+    ].filter(Boolean).join("\n\n").slice(0, 8000);
+    const { data: tt, error } = await service.from("team_tasks").insert({
+      title: `[جماعية] ${s.title}`.slice(0, 200),
+      details,
+      assignee_role: person.role,
+      assignee_user_id: person.user_id,
+      due_at: dayEndIso(task, s.day_to),
+      emailed_at: new Date().toISOString(), // the collective email covers it; stops team-task-email from sending again
+      created_by: null,
+    }).select("id").single();
+    if (error || !tt) { console.error("team_tasks insert", error); continue; }
+    await service.from("collective_subtasks").update({ team_task_id: (tt as any).id }).eq("id", s.id);
+    await service.from("team_notifications").insert({
+      recipient_role: person.role, task_id: (tt as any).id,
+      message: `مهمة جماعية جديدة لك: ${s.title} (حتى اليوم ${s.day_to})`.slice(0, 500),
+    });
+    made++;
+  }
+  return made;
+}
 
 const dayDate = (t: Task, d: number) =>
   new Date(new Date(t.send_at ?? Date.now()).getTime() + (d - 1) * 86_400_000)
@@ -352,8 +405,13 @@ async function sendDay(task: Task, day: number) {
   const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
   const { data: members } = await service.from("collective_task_members").select("id,email").eq("task_id", task.id);
   const { data: subs } = await service.from("collective_subtasks")
-    .select("position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status")
+    .select("id,position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status,team_task_id")
     .eq("task_id", task.id).order("position");
+  const emails = (members ?? []).map((m: any) => String(m.email).toLowerCase());
+  const { data: team } = emails.length
+    ? await service.from("team_members").select("email,user_id,role").in("email", emails)
+    : { data: [] };
+  const teamBy = new Map((team ?? []).map((p: any) => [String(p.email).toLowerCase(), { user_id: p.user_id, role: p.role }]));
   const rows = (subs ?? []) as SubRow[];
   const byPos = new Map(rows.map((r) => [r.position, r]));
   const reqs = new Map((task.plan?.requirements ?? []).map((r) => [r.id, r.text]));
@@ -366,12 +424,14 @@ async function sendDay(task: Task, day: number) {
       .map((p) => byPos.get(p))
       .filter((d): d is SubRow => !!d && d.status !== "done" && (d.assignee_email ?? "").toLowerCase() !== m.email.toLowerCase())
       .map((d) => `#${d.position} ${d.title} — ${d.assignee_email}`))];
-    if (day > 1 && !today.length && !tomorrow.length) { report[m.email] = { ok: true, skipped: "no tasks" }; continue; }
+    // in the platform first: everything due up to today that is not in their task board yet
+    const portal = await deliverToPortal(task, teamBy.get(m.email.toLowerCase()), mine.filter((s) => s.day_from <= day), reqs);
+    if (day > 1 && !today.length && !tomorrow.length) { report[m.email] = { ok: true, skipped: "no tasks", portal }; continue; }
     const subject = day === 1
       ? `انطلاق المهمة الجماعية «${task.title}» — مهامك لليوم 1`
       : `اليوم ${day} من ${task.duration_days}: مهامك في «${task.title}»`;
     const res = await sendEmail(m.email, subject, dailyHtml(task, m.email, day, today, tomorrow, waiting, mine, site, reqs));
-    report[m.email] = res;
+    report[m.email] = { ...res, portal };
     if (res.ok) await service.from("collective_task_members").update({ emailed_at: new Date().toISOString() }).eq("id", m.id);
   }
   await service.from("collective_daily_sends").update({ report }).eq("task_id", task.id).eq("day", day);
@@ -412,6 +472,15 @@ async function dispatchDue() {
 
 async function sendNow(taskId: string) {
   return json(await sendNowCore(taskId));
+}
+
+/** Admin: send today's tasks again (emails retried; anything missing is added to the staff dashboard). */
+async function resendToday(taskId: string) {
+  const { task } = await loadTask(taskId);
+  if (task.status !== "active" || !task.send_at) throw new UserError("المهمة ليست قيد التنفيذ", 409);
+  const day = Math.min(Math.max(currentDay(task), 1), task.duration_days);
+  await claimDay(taskId, day);
+  return { ok: true, day, report: await sendDay(task, day) };
 }
 
 async function sendNowCore(taskId: string) {
@@ -734,6 +803,7 @@ Deno.serve(async (req) => {
     if (!/^[0-9a-f-]{36}$/i.test(taskId)) return json({ error: "task_id مطلوب" }, 400);
     if (action === "plan") return await plan(taskId);
     if (action === "send_now") return await sendNow(taskId);
+    if (action === "resend_day") return json(await resendToday(taskId));
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     if (e instanceof UserError) return json({ error: e.message }, e.status);

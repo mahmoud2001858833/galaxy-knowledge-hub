@@ -37,7 +37,7 @@ export interface CollectiveTask {
   plan: Plan | null;
   plan_generated_at: string | null;
   emailed_at: string | null;
-  email_report: Record<string, { ok: boolean; reason?: string }> | null;
+  email_report: Record<string, { ok: boolean; reason?: string; portal?: number; skipped?: string }> | null;
   created_at: string;
 }
 export interface CollectiveMember { id: string; task_id: string; email: string; focus: string | null; emailed_at: string | null }
@@ -198,6 +198,9 @@ async function callAi(body: Record<string, unknown>) {
 
 export const generatePlan = (taskId: string) =>
   callAi({ action: 'plan', task_id: taskId }) as Promise<{ ok: boolean; model: string; subtasks: number }>;
+/** Sends today's tasks again: retries emails and adds anything missing to the staff dashboard. */
+export const resendToday = (taskId: string) =>
+  callAi({ action: 'resend_day', task_id: taskId }) as Promise<{ ok: boolean; day: number; report: Record<string, { ok: boolean; reason?: string; portal?: number }> }>;
 export const sendNow = (taskId: string) =>
   callAi({ action: 'send_now', task_id: taskId }) as Promise<{ ok: boolean; report: Record<string, { ok: boolean; reason?: string }> }>;
 

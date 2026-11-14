@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   APPROVAL_LABEL, STATUS_LABEL, addSubtask, cancelTask, deleteSubtask, deleteTask, generatePlan, isEditable, listTasks,
-  listDailySends, loadTask, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
+  listDailySends, loadTask, resendToday, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
   type ApprovalRule, type CollectiveMember, type CollectiveTask, type DailySend, type Subtask, type TaskDraft,
 } from './collectiveApi';
 import { AssistBox } from './AssistBox';
@@ -190,6 +190,15 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
     const failed = Object.entries(r.report).filter(([, v]) => !v.ok);
     if (failed.length) toast.warning(`أُرسلت، لكن فشل ${failed.length}: ${failed.map(([e, v]) => `${e} (${v.reason})`).join('، ')}`);
     else toast.success('بدأت المهمة: وصلت مهام اليوم الأول لكل شخص، والباقي يصل يومياً');
+    await reload();
+  });
+
+  const doResend = () => run('resend', async () => {
+    if (!task) return;
+    const r = await resendToday(task.id);
+    const portal = Object.values(r.report).reduce((n, v) => n + (v.portal ?? 0), 0);
+    const mailed = Object.values(r.report).filter((v) => v.ok).length;
+    toast.success(`اليوم ${r.day}: أُضيفت ${portal} مهمة للوحة الموظفين، ووصل البريد لـ ${mailed} شخص`);
     await reload();
   });
 
@@ -512,6 +521,15 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
                   })}
                 </div>
               )}
+              {task.status === 'active' && (
+                <Button size="sm" variant="secondary" onClick={doResend} disabled={!!busy}>
+                  {busy === 'resend' ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Send className="ml-1 h-4 w-4" />}
+                  أعد إرسال مهام اليوم (البريد + لوحة الموظفين)
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                تصل المهام لكل عضو في الفريق داخل «لوحة الموظفين ← المهام» يومياً، وبالبريد أيضاً. عندما يُنهيها هناك تُحسب منجزة هنا.
+              </p>
               <div className="text-xs text-muted-foreground">آخر إرسال:</div>
               {task.email_report && (
                 <ul className="space-y-1">
@@ -519,7 +537,8 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
                     <li key={e} className="flex items-center gap-2" dir="ltr">
                       {r.ok ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}
                       <span>{e}</span>
-                      {!r.ok && <span className="text-muted-foreground">({r.reason})</span>}
+                      {!r.ok && <span className="text-muted-foreground">(البريد: {r.reason})</span>}
+                      {typeof r.portal === 'number' && <Badge variant="secondary" className="text-[10px]">+{r.portal} في لوحة الموظفين</Badge>}
                     </li>
                   ))}
                 </ul>
