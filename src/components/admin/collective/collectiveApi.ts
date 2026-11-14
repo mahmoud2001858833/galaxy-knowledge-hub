@@ -33,6 +33,7 @@ export interface CollectiveTask {
   send_at: string | null;
   status: CollectiveStatus;
   approval_rule: ApprovalRule;
+  planner_notes: string | null;
   plan: Plan | null;
   plan_generated_at: string | null;
   emailed_at: string | null;
@@ -116,6 +117,7 @@ export interface TaskDraft {
   final_vision: string;
   duration_days: number;
   approval_rule: ApprovalRule;
+  planner_notes: string;
 }
 
 export async function saveTask(id: string | null, draft: TaskDraft): Promise<string> {
@@ -212,6 +214,7 @@ export interface AssistResult {
     people: { email: string; focus: string }[];
     send_at: string | null;
     approval_rule: ApprovalRule;
+    planner_notes: string;
   };
   missing: string[];
   ready: boolean;

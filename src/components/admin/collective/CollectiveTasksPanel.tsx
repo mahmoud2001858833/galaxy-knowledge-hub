@@ -32,7 +32,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'dest
   review: 'secondary', approved: 'default', published: 'default', cancelled: 'destructive',
 };
 
-const EMPTY: TaskDraft = { title: '', goals: '', final_vision: '', duration_days: 7, approval_rule: 'members_then_admin' };
+const EMPTY: TaskDraft = { title: '', goals: '', final_vision: '', duration_days: 7, approval_rule: 'members_then_admin', planner_notes: '' };
 
 export default function CollectiveTasksPanel() {
   const [tasks, setTasks] = useState<CollectiveTask[]>([]);
@@ -122,7 +122,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
     setSubtasks(r.subtasks);
     setDraft({
       title: r.task.title, goals: r.task.goals, final_vision: r.task.final_vision,
-      duration_days: r.task.duration_days, approval_rule: r.task.approval_rule,
+      duration_days: r.task.duration_days, approval_rule: r.task.approval_rule, planner_notes: r.task.planner_notes ?? '',
     });
     setEmailsText(r.members.map((m) => m.email).join('\n'));
     setFocus(Object.fromEntries(r.members.map((m) => [m.email, m.focus ?? ''])));
@@ -145,13 +145,27 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
   const valid = draft.title.trim().length >= 3 && draft.goals.trim().length >= 3 && draft.final_vision.trim().length >= 3
     && draft.duration_days >= 1 && draft.duration_days <= 90;
 
-  const save = () => run('save', async () => {
+  const persist = async () => {
     if (!valid) throw new Error('اكتب العنوان والأهداف والتصور النهائي، والمدة بين 1 و90 يوماً');
     if (!emails.length) throw new Error('أضف بريداً إلكترونياً واحداً على الأقل');
-    const id = await saveTask(task?.id ?? null, draft);
+    const id = await saveTask(task?.id ?? null, { ...draft, planner_notes: draft.planner_notes.trim() });
     await setMembers(id, emails.map((e) => ({ email: e, focus: focus[e]?.trim() || null })));
+    return id;
+  };
+
+  const save = () => run('save', async () => {
+    const id = await persist();
     toast.success('تم الحفظ');
     if (!task) onCreated(id); else await reload();
+  });
+
+  /** One click from the chat: save the form, build the plan, show it. */
+  const saveAndPlan = () => run('plan', async () => {
+    const id = await persist();
+    const r = await generatePlan(id);
+    toast.success(`الخطة جاهزة: ${r.subtasks} مهمة فرعية — انزل لقسم «الخطة»`);
+    if (!task) onCreated(id); else await reload();
+    setTimeout(() => document.getElementById('collective-plan')?.scrollIntoView({ behavior: 'smooth' }), 400);
   });
 
   const plan = () => run('plan', async () => {
@@ -211,6 +225,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
               final_vision: d.final_vision || draft.final_vision,
               duration_days: d.duration_days || draft.duration_days,
               approval_rule: d.approval_rule,
+              planner_notes: d.planner_notes || draft.planner_notes,
             });
             if (d.people.length) {
               setEmailsText(d.people.map((p) => p.email).join('\n'));
@@ -218,6 +233,8 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
             }
             if (d.send_at) setSendAt(toLocalInput(new Date(d.send_at)));
           }}
+          onSaveAndPlan={saveAndPlan}
+          saving={busy === 'plan'}
         />
       )}
 
@@ -255,6 +272,12 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
             >
               {Object.entries(APPROVAL_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label>تعليمات للمخطِّط (اختياري)</Label>
+            <Textarea disabled={!editable} rows={2} value={draft.planner_notes} maxLength={4000}
+              onChange={(e) => setDraft({ ...draft, planner_notes: e.target.value })}
+              placeholder="مثال: وزّع بالتساوي لكن أصعب المهام لمحمد، وأحمد متاح آخر الأسبوع فقط" />
           </div>
         </div>
       </section>
@@ -314,7 +337,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
 
       {/* 3. the plan */}
       {task?.plan && (
-        <section className="space-y-5 rounded-2xl border border-border bg-card p-5">
+        <section id="collective-plan" className="space-y-5 rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 font-bold text-foreground"><BrainCircuit className="h-4 w-4" /> ٣. الخطة</h3>
             <span className="text-xs text-muted-foreground">بُنيت {fmt(task.plan_generated_at)}{task.plan.model ? ` · ${task.plan.model}` : ''}</span>

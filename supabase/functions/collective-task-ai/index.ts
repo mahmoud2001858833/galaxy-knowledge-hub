@@ -35,7 +35,7 @@ const MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
 
 type Task = {
   id: string; title: string; goals: string; final_vision: string; duration_days: number;
-  send_at: string | null; status: string; plan: Plan | null;
+  send_at: string | null; status: string; plan: Plan | null; planner_notes?: string | null;
 };
 type Member = { id: string; email: string; focus: string | null };
 type PlanSubtask = {
@@ -190,7 +190,10 @@ ${t.goals}
 ${t.final_vision}
 
 المشاركون (استعمل هذه العناوين حرفياً في assignee_email):
-${people}`;
+${people}${t.planner_notes?.trim() ? `
+
+تعليمات الأدمن لتوزيع العمل (التزم بها بدقة):
+${t.planner_notes.trim()}` : ""}`;
 }
 
 /** Keeps the model honest: owners from the list, days in range, dependencies only backwards. */
@@ -501,10 +504,11 @@ const ASSIST_SCHEMA = {
     },
     send_at_local: { type: "string" },
     approval_rule: { type: "string", enum: ["members_then_admin", "all_members", "majority"] },
+    planner_notes: { type: "string" },
     missing: { type: "array", items: { type: "string" } },
     ready: { type: "boolean" },
   },
-  required: ["reply", "title", "goals", "final_vision", "duration_days", "people", "send_at_local", "approval_rule", "missing", "ready"],
+  required: ["reply", "title", "goals", "final_vision", "duration_days", "people", "send_at_local", "approval_rule", "planner_notes", "missing", "ready"],
 };
 
 async function assist(body: any) {
@@ -520,10 +524,14 @@ async function assist(body: any) {
 - people: المشاركون. حوّل الأسماء إلى البريد من قائمة الفريق أدناه فقط؛ وإذا ذكر بريداً صريحاً خذه كما هو. focus: ما يركّز عليه الشخص إن ذُكر وإلا "".
 - send_at_local: موعد الإرسال بتوقيت عمّان بالشكل YYYY-MM-DDTHH:mm، أو "" إن لم يُذكر. الوقت الآن في عمّان: ${ammanNow()}.
 - approval_rule: members_then_admin افتراضياً، all_members إذا قال "الكل لازم يوافق"، majority إذا قال "الأغلبية".
+- planner_notes: كل تعليمات الأدمن عن طريقة توزيع العمل وأولوياته (مثل "وزّع بالتساوي لكن أصعب المهام لمحمد"، "أحمد متاح آخر الأسبوع فقط"، "ابدأ بالتصميم"). اجمع كل التعليمات المذكورة عبر المحادثة، ولا تحذف تعليمات سابقة.
+- إذا لم يذكر الأهداف صراحةً فاستخلصها من التصور النهائي (أهداف قابلة للقياس).
 - احتفظ بقيم المسودة الحالية ما لم يغيّرها الأدمن.
 - missing: ما زال ناقصاً من (العنوان، الأهداف، التصور النهائي، المدة، المشاركون، موعد الإرسال).
 - ready: true فقط إذا لم ينقص شيء أساسي (موعد الإرسال ليس إلزامياً).
-- reply: رد قصير ودود بالعربية: ماذا فهمت، وسؤال واحد واضح عن أهم شيء ناقص. لا تخترع أهدافاً لم تُذكر؛ يمكنك صياغتها بشكل أوضح فقط.
+- reply: رد قصير ودود بالعربية: ماذا عبّأت، وسؤال واحد واضح عن أهم شيء ناقص. لا تخترع أهدافاً لم تُذكر.
+  مهم جداً: أنت تعبّئ النموذج فقط. لم تُنشئ خطة ولم توزّع مهاماً ولم تجدول ولم ترسل شيئاً، فلا تدّعِ ذلك أبداً
+  ولا تذكر أعداد مهام أو توزيعاً. عندما يكتمل الأساسي قل له: «اكبس زر "احفظ وابنِ الخطة" تحت الشات، وبتطلع الخطة والجدول اليومي».
 
 قائمة الفريق:
 ${teamText(people)}
@@ -551,6 +559,7 @@ ${JSON.stringify(draft).slice(0, 30000)}`;
         .filter((p: any) => emailOk(p.email)),
       send_at: ammanLocalToIso(out.send_at_local),
       approval_rule: ["members_then_admin", "all_members", "majority"].includes(out.approval_rule) ? out.approval_rule : "members_then_admin",
+      planner_notes: String(out.planner_notes ?? "").trim().slice(0, 4000),
     },
     missing: (Array.isArray(out.missing) ? out.missing : []).map(String).slice(0, 10),
     ready: out.ready === true,
@@ -568,10 +577,12 @@ const COMMAND_TOOLS = [
     title: { type: "string" }, goals: { type: "string" }, final_vision: { type: "string" },
     duration_days: { type: "integer" }, emails: { type: "array", items: { type: "string" } },
     approval_rule: { type: "string", enum: ["members_then_admin", "all_members", "majority"] },
+    planner_notes: { type: "string", description: "the admin's instructions on how to split the work, e.g. hardest tasks to X" },
   }, ["title", "goals", "final_vision", "duration_days", "emails"]),
   tool("update_collective_task", "Change a draft/planned collective task (only fields given). emails replaces the people list.", {
     task_id: { type: "string" }, title: { type: "string" }, goals: { type: "string" }, final_vision: { type: "string" },
     duration_days: { type: "integer" }, emails: { type: "array", items: { type: "string" } },
+    planner_notes: { type: "string" },
   }, ["task_id"]),
   tool("build_plan", "Ask the planner to build (or rebuild) the day-by-day plan of a draft/planned task.", { task_id: { type: "string" } }, ["task_id"]),
   tool("request_send", "Prepare sending a planned task: now, or at an Amman time 'YYYY-MM-DDTHH:mm'. It does NOT send: the admin must confirm.", {
@@ -602,7 +613,7 @@ async function commandTool(name: string, a: any, pending: any[]): Promise<unknow
     case "create_collective_task":
     case "update_collective_task": {
       const fields: Record<string, unknown> = {};
-      for (const k of ["title", "goals", "final_vision", "approval_rule"]) if (typeof a?.[k] === "string" && a[k].trim()) fields[k] = a[k].trim();
+      for (const k of ["title", "goals", "final_vision", "approval_rule", "planner_notes"]) if (typeof a?.[k] === "string" && a[k].trim()) fields[k] = a[k].trim();
       if (a?.duration_days) fields.duration_days = Math.min(90, Math.max(1, Math.round(Number(a.duration_days))));
       let taskId = id;
       if (name === "create_collective_task") {
