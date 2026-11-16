@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/contexts/ThemeContext';
 import { CORE_SECTIONS, FUTURE_PROJECTS_PATH, findSectionByPath } from '@/config/platformSections';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
+import PlatformVideosModal from '@/components/videos/PlatformVideosModal';
 
 interface UserProfile {
   id?: string;
@@ -197,6 +198,9 @@ const Navbar = () => {
               </span>
             </div>
           </Link>
+
+          {/* Platform Videos Button (Directly next to the logo in the top bar) */}
+          <PlatformVideosModal />
 
           {/* Team panel: shown next to the logo for every team member (speaker, supervisor, employee…) */}
           {teamRoles.length > 0 && (
