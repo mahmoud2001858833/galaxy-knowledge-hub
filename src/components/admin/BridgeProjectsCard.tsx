@@ -215,6 +215,14 @@ const ProjectRow: React.FC<{ p: Project; grants: Grant[]; people: Person[]; relo
     if (error) toast.error(errText(error));
     reload();
   };
+  // newer columns (migration 20261116120000) are not in the generated types yet
+  const extra = p as Project & { agent_only?: string | null; preview_enabled?: boolean; preview_url?: string | null; preview_status?: string | null };
+  const setOption = async (patch: Record<string, unknown>, ok: string) => {
+    const { error } = await supabase.from('bridge_projects').update(patch as never).eq('id', p.id);
+    if (error) return toast.error(errText(error));
+    toast.success(ok);
+    reload();
+  };
   const remove = async () => {
     if (!window.confirm(`حذف «${p.name}» من المنصة؟ لن يستطيع أحد العمل عليه من الطرفية. المجلد على جهازك يبقى كما هو.`)) return;
     const { error } = await supabase.from('bridge_projects').delete().eq('id', p.id);
@@ -274,6 +282,26 @@ const ProjectRow: React.FC<{ p: Project; grants: Grant[]; people: Person[]; relo
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-muted/40 px-3 py-2 text-xs">
+        <label className="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" className="h-4 w-4 accent-primary" checked={extra.agent_only === 'antigravity'}
+            onChange={(e) => setOption({ agent_only: e.target.checked ? 'antigravity' : null },
+              e.target.checked ? 'المشروع صار يعمل بـ Antigravity فقط' : 'أُلغي القفل على Antigravity')} />
+          <span>Antigravity فقط (لا Claude ولا Shell)</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" className="h-4 w-4 accent-primary" checked={!!extra.preview_enabled}
+            onChange={(e) => setOption({ preview_enabled: e.target.checked },
+              e.target.checked ? 'المعاينة الحيّة تشتغل خلال دقيقة على جهازك' : 'أُوقفت المعاينة الحيّة')} />
+          <span>معاينة حيّة (Local View) للفريق</span>
+        </label>
+        {extra.preview_enabled && (
+          extra.preview_url
+            ? <a href={extra.preview_url} target="_blank" rel="noreferrer" dir="ltr" className="truncate text-primary underline">{extra.preview_url.replace('https://', '')}</a>
+            : <span className="text-muted-foreground">{extra.preview_status ?? 'بانتظار الجسر…'}</span>
+        )}
       </div>
 
       {p.status_detail && (

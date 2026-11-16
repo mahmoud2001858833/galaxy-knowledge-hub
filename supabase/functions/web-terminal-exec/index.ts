@@ -654,12 +654,22 @@ serve(async (req) => {
         const project = typeof body.project === 'string' && body.project && body.project !== 'main' ? body.project : 'main';
         if (project !== 'main') {
           if (!PROJECT_SLUG.test(project)) return fail('project: invalid name.');
-          const { data: p } = await service.from('bridge_projects').select('id, status').eq('slug', project).maybeSingle();
+          const { data: p } = await service.from('bridge_projects').select('id, status, agent_only').eq('slug', project).maybeSingle();
           if (!p) return fail(`project ${project}: not found. Pick another project above the terminal.`);
           if (p.status !== 'ready') return fail(`project ${project}: not ready on the computer yet (${p.status}).`);
           if (!begin.is_principal) {
             const { data: g } = await service.from('bridge_project_grants').select('user_id').eq('project_id', p.id).eq('user_id', user.id).maybeSingle();
             if (!g) return fail(`project ${project}: you do not have access. Ask the principal.`);
+          }
+          // a project locked to one agent: everything on it goes through that agent (so we know who works on what)
+          const only = (p as { agent_only?: string | null }).agent_only;
+          if (only) {
+            const onlyName = only === 'antigravity' ? 'Antigravity' : 'Claude';
+            if (kind === 'shell') return fail(`project ${project}: works through ${onlyName} only (no sh). Example: ${only} <what you want>`);
+            if (kind === 'auto') kind = only;
+            if ((kind === 'claude' || kind === 'antigravity') && kind !== only) {
+              return fail(`project ${project}: works through ${onlyName} only. Use: ${only} <what you want>`);
+            }
           }
         }
         // AI agents: each has its own permission, daily messages and daily tokens (one message is counted here)
