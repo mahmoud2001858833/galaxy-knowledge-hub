@@ -45,9 +45,9 @@ export const PLATFORM_VIDEOS: PlatformVideo[] = [
     description: 'العرض الرسمي والاستعراضي الشامل لمنصة ذروة العلم الإصدار 3.0: استعراض شامل للمختبرات الافتراضية، ومحركات الذكاء الاصطناعي، ومبادرات الاستدامة، وحلول الفصول الذكية المعتمدة.',
     badge: 'الفيلم الأول • رسمي',
     tagColor: 'from-blue-600 to-indigo-600',
-    src: '/videos/Zarwat_AlIlm_3.0_Official_Film_v5%20(2).mp4',
+    src: '/videos/Zarwat_AlIlm_3.0_Official_Film.mp4',
     fallbackSrc: '/videos/Zarwat_AlIlm_3.0_Official_Film.mp4',
-    size: '206 ميغابايت',
+    size: '80 ميغابايت (FHD فائق السرعة)',
     resolution: 'Full HD 1080p',
     icon: Sparkles,
   },
@@ -62,7 +62,7 @@ export const PLATFORM_VIDEOS: PlatformVideo[] = [
     tagColor: 'from-emerald-600 to-teal-600',
     src: '/videos/Zarwat_AlIlm_School_Visit_Film.mp4',
     fallbackSrc: '/videos/Zarwat_AlIlm_School_Visit_Film.mp4',
-    size: '88 ميغابايت',
+    size: '33 ميغابايت (FHD فائق السرعة)',
     resolution: 'Full HD 1080p',
     icon: School,
   },
@@ -79,11 +79,13 @@ export const PlatformVideosModal: React.FC<PlatformVideosModalProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeVideoId, setActiveVideoId] = useState<string>(PLATFORM_VIDEOS[0].id);
+  const [videoError, setVideoError] = useState(false);
 
   const activeVideo = PLATFORM_VIDEOS.find((v) => v.id === activeVideoId) || PLATFORM_VIDEOS[0];
 
   const handleOpenVideo = (videoId: string) => {
     setActiveVideoId(videoId);
+    setVideoError(false);
     setIsOpen(true);
   };
 
@@ -203,7 +205,10 @@ export const PlatformVideosModal: React.FC<PlatformVideosModalProps> = ({
                     <button
                       key={video.id}
                       type="button"
-                      onClick={() => setActiveVideoId(video.id)}
+                      onClick={() => {
+                        setActiveVideoId(video.id);
+                        setVideoError(false);
+                      }}
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all",
                         isActive
@@ -222,22 +227,51 @@ export const PlatformVideosModal: React.FC<PlatformVideosModalProps> = ({
           </DialogHeader>
 
           {/* Video Player Container */}
-          <div className="relative mt-2 rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl group">
+          <div className="relative mt-2 rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl group min-h-[240px] sm:min-h-[380px] flex items-center justify-center">
             {/* Ambient Backlight Glow */}
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-cyan-600/20 blur-xl opacity-60 -z-10" />
 
-            <video
-              key={activeVideo.src}
-              controls
-              autoPlay
-              playsInline
-              className="w-full aspect-video max-h-[62vh] bg-black object-contain mx-auto"
-              preload="metadata"
-            >
-              <source src={activeVideo.src} type="video/mp4" />
-              <source src={activeVideo.fallbackSrc} type="video/mp4" />
-              عذراً، متصفحك لا يدعم تشغيل الفيديو المباشر. يمكنك تحميل الملف أدناه.
-            </video>
+            {videoError ? (
+              <div className="flex flex-col items-center justify-center p-8 text-center space-y-3 z-10">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-300">
+                  <Film className="w-6 h-6" />
+                </div>
+                <h4 className="text-base font-bold text-white">تحديث بيانات تشغيل الفيديو</h4>
+                <p className="text-xs text-slate-300 max-w-md">
+                  يمكنك النقر أدناه لإعادة تشغيل الفيديو أو تحميله مباشرة بجودة فائقة.
+                </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    onClick={() => setVideoError(false)}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs"
+                  >
+                    إعادة المحاولة
+                  </Button>
+                  <a
+                    href={activeVideo.src}
+                    download
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>تحميل مباشر</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <video
+                key={activeVideo.src}
+                controls
+                autoPlay
+                playsInline
+                className="w-full aspect-video max-h-[62vh] bg-black object-contain mx-auto"
+                preload="auto"
+                onError={() => setVideoError(true)}
+              >
+                <source src={activeVideo.src} type="video/mp4" />
+                عذراً، متصفحك لا يدعم تشغيل الفيديو المباشر. يمكنك تحميل الملف أدناه.
+              </video>
+            )}
           </div>
 
           {/* Video Meta & Action Footer */}
