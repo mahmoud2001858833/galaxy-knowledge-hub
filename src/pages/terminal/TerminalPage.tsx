@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Ban, Bot, Clock, Cloud, FolderGit2, Gauge, Laptop, Loader2, Lock, RefreshCw, ShieldCheck, Sparkles, SquareTerminal, TerminalSquare } from 'lucide-react';
+import { Ban, Bot, Clock, Cloud, ExternalLink, FolderGit2, Gauge, Laptop, Loader2, Lock, Maximize2, Minimize2, MonitorSmartphone, RefreshCw, ShieldCheck, Sparkles, SquareTerminal, TerminalSquare } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { SEO } from '@/components/SEO';
@@ -40,17 +40,28 @@ const readProject = () => {
  * Projects this user may work on besides ذروة العلم: all ready ones for the principal, the granted
  * ready ones for everyone else (RLS decides). Live, so a new grant shows up without a reload.
  */
+interface TerminalProject {
+  slug: string;
+  name: string;
+  /** locked to one agent: everything on it goes through that agent */
+  agent_only?: 'antigravity' | 'claude' | null;
+  preview_enabled?: boolean;
+  preview_url?: string | null;
+  preview_status?: string | null;
+  preview_updated_at?: string | null;
+}
+
 const useTerminalProjects = (enabled: boolean) => {
-  const [list, setList] = useState<{ slug: string; name: string }[]>([]);
+  const [list, setList] = useState<TerminalProject[]>([]);
   useEffect(() => {
     if (!enabled) return;
     const load = () =>
       supabase
         .from('bridge_projects')
-        .select('slug, name')
+        .select('slug, name, agent_only, preview_enabled, preview_url, preview_status, preview_updated_at')
         .eq('status', 'ready')
         .order('name')
-        .then(({ data }) => setList(data ?? []));
+        .then(({ data }) => setList((data ?? []) as unknown as TerminalProject[]));
     load();
     const ch = supabase
       .channel(`terminal-projects-${Math.random().toString(36).slice(2)}`)
@@ -62,6 +73,59 @@ const useTerminalProjects = (enabled: boolean) => {
     };
   }, [enabled]);
   return list;
+};
+
+/**
+ * The project's live preview ("Local View"): the bridge runs the project on the principal's computer
+ * and shares it through a Cloudflare tunnel; this small window shows it and follows its link.
+ */
+const ProjectPreview: React.FC<{ project: TerminalProject }> = ({ project }) => {
+  const [big, setBig] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const url = project.preview_url ?? null;
+  const live = !!url;
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 text-sm">
+        <div className="flex min-w-0 items-center gap-2">
+          <MonitorSmartphone className="h-4 w-4 text-primary" aria-hidden />
+          <span className="font-bold">معاينة حيّة — {project.name}</span>
+          <span className={`h-2 w-2 rounded-full ${live ? 'bg-success' : 'bg-warning'}`} aria-hidden />
+          <span className="truncate text-xs text-muted-foreground">{project.preview_status ?? (live ? 'يعمل' : 'بانتظار الجسر')}</span>
+        </div>
+        {live && (
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" onClick={() => setReloadKey((k) => k + 1)} title="تحديث المعاينة">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setBig((b) => !b)} title={big ? 'صغّر' : 'كبّر'}>
+              {big ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button size="sm" variant="ghost" asChild title="افتح في تبويب جديد">
+              <a href={url!} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+            </Button>
+          </div>
+        )}
+      </div>
+      {live ? (
+        <iframe
+          key={`${url}-${reloadKey}`}
+          src={url!}
+          title={`معاينة ${project.name}`}
+          className={`w-full bg-white ${big ? 'h-[80vh]' : 'h-[380px]'}`}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        />
+      ) : (
+        <div className="p-6 text-center text-sm text-muted-foreground">
+          {project.preview_status ?? 'المعاينة تظهر هنا حين يشغّل الجسر المشروع على جهاز الأدمن.'}
+          <div className="mt-1 text-xs">تبدأ تلقائياً بعد أن يُنشئ Antigravity ملف package.json بأمر dev.</div>
+        </div>
+      )}
+      <div className="border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground">
+        النسخة المحلية من جهاز الأدمن، وتتحدّث مع كل تعديل (اضغط تحديث إن لم تظهر التغييرات). لا تُنشر للناس إلا بعد موافقة الأدمن.
+      </div>
+    </div>
+  );
 };
 
 /** Today's messages and tokens for an agent tab (non-principal users). */
@@ -217,6 +281,13 @@ export const TerminalWorkspace: React.FC = () => {
     }
   };
   const currentTab = TABS.find((t) => t.id === current)!;
+  const projectInfo = projects.find((p) => p.slug === project) ?? null;
+  const lockedAgent = projectInfo?.agent_only ?? null;
+  // a project locked to one agent opens that agent's terminal
+  useEffect(() => {
+    if (lockedAgent && current !== lockedAgent && tabs.some((t) => t.id === lockedAgent)) pick(lockedAgent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedAgent, project, tabs.length]);
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -337,7 +408,11 @@ export const TerminalWorkspace: React.FC = () => {
                     {p.name}
                   </button>
                 ))}
-                <span className="text-muted-foreground">Claude وAntigravity وShell تعمل داخل مجلد المشروع المختار.</span>
+                <span className="text-muted-foreground">
+                  {lockedAgent
+                    ? `هذا المشروع يعمل بـ ${lockedAgent === 'antigravity' ? 'Antigravity' : 'Claude'} فقط، داخل مجلده.`
+                    : 'Claude وAntigravity وShell تعمل داخل مجلد المشروع المختار.'}
+                </span>
               </div>
             )}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2 text-xs">
@@ -366,6 +441,8 @@ export const TerminalWorkspace: React.FC = () => {
                 </div>
               ))}
           </div>
+
+          {projectInfo?.preview_enabled && <ProjectPreview project={projectInfo} />}
 
           {ended && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm">

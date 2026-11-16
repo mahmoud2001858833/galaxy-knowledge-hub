@@ -583,6 +583,138 @@ async function processDecisions(baseCfg, rpc) {
   }
 }
 
+// ---------------------------------------------------------------- live preview ("Local View")
+// For projects with preview_enabled, run the project's own dev server on this computer and open a
+// Cloudflare quick tunnel to it (cloudflared, no account). The https://*.trycloudflare.com link is
+// reported with bridge_project_preview and shown in /terminal as a small live window. The dev server
+// serves only the project folder; the link is random and changes when the tunnel restarts.
+const CLOUDFLARED = [process.env.ZARWA_CLOUDFLARED, join(homedir(), '.zarwa', 'bin', 'cloudflared'),
+  '/opt/homebrew/bin/cloudflared', '/usr/local/bin/cloudflared'].find((p) => p && existsSync(p)) ?? null;
+const PREVIEW_BASE_PORT = 5300;
+const previews = new Map(); // slug -> { port, dev, tunnel, url, status, busy, failures, retryAt, pkgStamp }
+
+const pkgStampOf = (dir) => {
+  try {
+    const st = statSync(join(dir, 'package.json'));
+    const lock = ['package-lock.json', 'bun.lockb', 'pnpm-lock.yaml', 'yarn.lock'].map((f) => join(dir, f)).find((f) => existsSync(f));
+    return `${st.mtimeMs}:${lock ? statSync(lock).mtimeMs : 0}`;
+  } catch { return null; }
+};
+
+function stopPreview(slug) {
+  const p = previews.get(slug);
+  if (!p) return;
+  for (const child of [p.tunnel, p.dev]) {
+    try { if (child && child.exitCode === null) process.kill(-child.pid, 'SIGTERM'); } catch { try { child?.kill('SIGTERM'); } catch {} }
+  }
+  previews.delete(slug);
+}
+const stopAllPreviews = () => { for (const slug of [...previews.keys()]) stopPreview(slug); };
+process.on('exit', stopAllPreviews);
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stopAllPreviews(); process.exit(0); });
+
+async function reportPreview(rpc, slug, url, status) {
+  const p = previews.get(slug);
+  if (p && p.reported === `${url}|${status}`) return;
+  if (p) p.reported = `${url}|${status}`;
+  try { await rpc('bridge_project_preview', { p_slug: slug, p_url: url, p_status: status }); } catch (e) { log(`preview ${slug}: report failed: ${e.message}`); }
+}
+
+const waitForPort = (port, ms) => new Promise((resolve) => {
+  const until = Date.now() + ms;
+  const tryOnce = () => fetch(`http://127.0.0.1:${port}/`).then(() => resolve(true)).catch(() => {
+    if (Date.now() > until) resolve(false); else setTimeout(tryOnce, 1000);
+  });
+  tryOnce();
+});
+
+async function ensurePreview(cfg, rpc, slug, index) {
+  const dir = cfg.projects?.[slug]?.dir;
+  if (!dir || !existsSync(dir)) return;
+  let p = previews.get(slug);
+  if (!p) { p = { port: PREVIEW_BASE_PORT + index, failures: 0, retryAt: 0 }; previews.set(slug, p); }
+  if (p.busy || Date.now() < p.retryAt) return;
+  const running = p.dev && p.dev.exitCode === null && p.tunnel && p.tunnel.exitCode === null && p.url;
+  const stamp = pkgStampOf(dir);
+  if (running && stamp === p.pkgStamp) return;
+  if (!CLOUDFLARED) return reportPreview(rpc, slug, null, 'cloudflared غير مثبّت على جهاز الجسر');
+
+  let pkg = null;
+  try { pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')); } catch {}
+  const dev = pkg?.scripts?.dev;
+  if (!dev) return reportPreview(rpc, slug, null, 'بانتظار أول نسخة من المشروع (package.json وأمر dev)');
+
+  p.busy = true;
+  try {
+    // restart from scratch when packages changed (or something died)
+    for (const child of [p.tunnel, p.dev]) { try { if (child && child.exitCode === null) process.kill(-child.pid, 'SIGTERM'); } catch {} }
+    p.url = null;
+    if (!existsSync(join(dir, 'node_modules')) || stamp !== p.pkgStamp) {
+      await reportPreview(rpc, slug, null, 'يثبّت المكتبات (npm install)…');
+      log(`preview ${slug}: npm install`);
+      const r = spawnSync('npm', ['install', '--no-audit', '--no-fund'], { cwd: dir, encoding: 'utf8', timeout: 10 * 60 * 1000, env: { ...process.env, CI: '1' } });
+      if (r.status !== 0) throw new Error(`npm install failed: ${(r.stderr || r.stdout || '').trim().split('\n').slice(-3).join(' ')}`);
+    }
+    p.pkgStamp = pkgStampOf(dir);
+
+    // start the dev server on a fixed local port (vite / next / anything that honours PORT)
+    const port = p.port;
+    const args = /\bvite\b/.test(dev) ? ['run', 'dev', '--', '--port', String(port), '--strictPort', '--host', '127.0.0.1']
+      : /\bnext\b/.test(dev) ? ['run', 'dev', '--', '-p', String(port), '-H', '127.0.0.1']
+      : ['run', 'dev'];
+    await reportPreview(rpc, slug, null, 'يشغّل المشروع…');
+    log(`preview ${slug}: npm ${args.join(' ')}`);
+    p.dev = spawn('npm', args, {
+      cwd: dir, detached: true, stdio: 'ignore',
+      env: { ...process.env, PORT: String(port), BROWSER: 'none', __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS: '.trycloudflare.com' },
+    });
+    p.dev.on('exit', (code) => { log(`preview ${slug}: dev server stopped (${code})`); p.url = null; });
+    if (!(await waitForPort(port, 90_000))) throw new Error('the dev server did not start within 90 s');
+
+    // the tunnel: its log prints the public https link once it is up
+    p.tunnel = spawn(CLOUDFLARED, ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${port}`], { detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const url = await new Promise((resolve) => {
+      const t = setTimeout(() => resolve(null), 60_000);
+      const scan = (buf) => {
+        const m = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/.exec(String(buf));
+        if (m) { clearTimeout(t); resolve(m[0]); }
+      };
+      p.tunnel.stdout.on('data', scan);
+      p.tunnel.stderr.on('data', scan);
+      p.tunnel.on('exit', () => { clearTimeout(t); resolve(null); });
+    });
+    p.tunnel.on('exit', (code) => { log(`preview ${slug}: tunnel closed (${code})`); p.url = null; });
+    if (!url) throw new Error('cloudflared did not give a link within 60 s');
+    // a fresh quick-tunnel link needs a few seconds before it answers; only report it once it does
+    let reachable = false;
+    for (let i = 0; i < 30 && !reachable; i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      try { reachable = (await fetch(url, { signal: AbortSignal.timeout(10_000) })).status < 500; } catch {}
+    }
+    if (!reachable) throw new Error('the preview link did not answer within 60 s');
+    p.url = url;
+    p.failures = 0;
+    log(`preview ${slug}: ${url}`);
+    await reportPreview(rpc, slug, url, 'يعمل');
+  } catch (e) {
+    p.failures += 1;
+    p.retryAt = Date.now() + Math.min(5 * 60_000, 15_000 * 2 ** (p.failures - 1));
+    log(`preview ${slug}: ${e.message}`);
+    await reportPreview(rpc, slug, null, `متوقف: ${String(e.message).slice(0, 300)}`);
+  } finally {
+    p.busy = false;
+  }
+}
+
+/** Starts/stops previews to match what the platform asks for. Never blocks the job loop. */
+async function syncPreviews(cfg, rpc) {
+  let wanted;
+  try { wanted = (await rpc('bridge_preview_projects', {})) ?? []; } catch { return; } // feature not deployed yet
+  const slugs = wanted.map((w) => w.slug).filter((s) => PROJECT_SLUG.test(s) && cfg.projects?.[s]);
+  for (const slug of [...previews.keys()]) if (!slugs.includes(slug)) stopPreview(slug);
+  slugs.forEach((slug, i) => { ensurePreview(cfg, rpc, slug, i).catch((e) => log(`preview ${slug}: ${e.message}`)); });
+}
+
 // Creates or clones the projects the principal added in /admin?tab=terminal and writes their links.
 async function setupProjects(cfg, rpc) {
   for (;;) {
@@ -1320,6 +1452,7 @@ async function main() {
       try {
         await setupProjects(cfg, rpc);
         info.projects = Object.keys(cfg.projects ?? {});
+        await syncPreviews(cfg, rpc);
       } catch (e) {
         // the platform may not have the projects feature yet (migration not applied)
         if (!state.projectsWarned) log('projects:', e.message);
