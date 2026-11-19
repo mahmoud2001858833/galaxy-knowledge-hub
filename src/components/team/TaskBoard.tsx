@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ImagePicker, TeamImage } from './TeamImages';
+import { TaskPointsActions } from './TaskPointsActions';
 import {
   ROLE_LABELS,
   ROLE_PROOF,
@@ -294,6 +295,7 @@ export const TaskDialog: React.FC<{
             {isScheduled(task) && ` · مجدولة: تصل للعضو ${formatDate(task.publish_at)}`}
             {task.due_at && ` · التسليم: ${formatDate(task.due_at)}`}
             {isOverdue(task) && ' · متأخرة'}
+            {task.points !== null && ` · ${task.points} نقطة`}
           </DialogDescription>
         </DialogHeader>
 
@@ -339,6 +341,16 @@ export const TaskDialog: React.FC<{
               }}
             />
           )}
+          {isLead && (
+            <TaskPointsActions
+              task={task}
+              members={members}
+              onChanged={() => {
+                onChanged();
+                onClose();
+              }}
+            />
+          )}
           {isLead && <LeadActions task={task} onChanged={onChanged} onClose={onClose} />}
         </div>
       </DialogContent>
@@ -359,6 +371,8 @@ const TaskCard: React.FC<{ task: TeamTask; members: TeamMember[]; onOpen: () => 
       {isScheduled(task) && <span className="font-semibold text-primary">· تُرسل {formatDate(task.publish_at)}</span>}
       {task.due_at && <span>· {formatDate(task.due_at)}</span>}
       {task.source_task_id && <span className="text-primary">· من المدقق</span>}
+      {task.points !== null && <span className="font-semibold text-primary">· {task.points} نقطة</span>}
+      {task.quality_status === 'no_remarks' && <span className="text-success">· جودة ✓</span>}
     </div>
   </button>
 );

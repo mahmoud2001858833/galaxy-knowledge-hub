@@ -5,6 +5,7 @@ import { RoleWorkspace } from './RoleWorkspace';
 import { EmployeesControlCenter } from './EmployeesControlCenter';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
 import { DayOffMemberNotice } from './DayOffControls';
+import { MyPointsBadge } from './MyPointsBadge';
 import {
   ROLE_LABELS,
   WORKER_ROLES,
@@ -110,7 +111,7 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
 
   return (
     <div className="space-y-5" dir="rtl">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -126,6 +127,7 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
             {t.label}
           </button>
         ))}
+        <MyPointsBadge me={me} />
       </div>
       <TeamDashboard tab={tab} me={me} roles={roles} />
     </div>

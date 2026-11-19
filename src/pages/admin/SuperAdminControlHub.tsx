@@ -59,7 +59,8 @@ import {
   Volume2,
   Bot,
   Coffee,
-  CheckSquare
+  CheckSquare,
+  Trophy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +92,7 @@ import { InstitutionalPartnershipsManager } from '@/components/admin/Institution
 import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub';
 import { AdminTasksAuditorsHub } from '@/components/admin/AdminTasksAuditorsHub';
 import CollectiveTasksPanel from '@/components/admin/collective/CollectiveTasksPanel';
+import PointsSystemPanel from '@/components/admin/points/PointsSystemPanel';
 import SafeBoundary from '@/components/common/SafeBoundary';
 import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +103,7 @@ export type AdminTab =
   | 'page-files'
   | 'tasks-hub'
   | 'collective-tasks'
+  | 'points'
   | 'exam-library'
   | 'school-content'
   | 'employees'
@@ -637,6 +640,7 @@ export const SuperAdminControlHub: React.FC = () => {
         { id: 'supervisor-hub', label: 'لوحة التواصل مع المشرف', icon: UserCheck, badge: 'مباشر', description: 'شات مباشر مع المشرف، مهام المشرف، والذكاء الاصطناعي المسؤول عن المهام' },
         { id: 'page-files', label: 'مكان الملفات (مسؤول الصفحة)', icon: FolderOpen, badge: 'Drive', description: 'إعطاء الملفات والفيديوهات لمسؤول الصفحة بالوصف ورابط Google Drive (بصلاحية للمشرف أيضاً)' },
         { id: 'collective-tasks', label: 'المهام الجماعية', icon: Users, badge: 'جديد', description: 'مهمة كبيرة لفريق كامل: خطة يومية بالذكاء الاصطناعي وإرسال مجدول' },
+        { id: 'points', label: 'نظام النقاط', icon: Trophy, badge: 'عادل', description: 'احتساب تلقائي لنقاط الفريق، ترتيب بمؤشر الأداء، السجل والتعديل اليدوي' },
         { id: 'tasks-hub', label: 'المهام والمدققين ونقاط AI', icon: CheckSquare, badge: 'جديد', description: 'فلترة المهام المنجزة للمدققين والذكاء الاصطناعي واحتساب النقاط' },
         { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
         { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
@@ -1073,6 +1077,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'collective-tasks' && (
               <SafeBoundary name="CollectiveTasksPanel">
                 <CollectiveTasksPanel />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'points' && (
+              <SafeBoundary name="PointsSystemPanel">
+                <PointsSystemPanel />
               </SafeBoundary>
             )}
 
