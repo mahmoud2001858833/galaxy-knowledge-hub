@@ -672,7 +672,9 @@ async function ensurePreview(cfg, rpc, slug, index) {
     if (!(await waitForPort(port, 90_000))) throw new Error('the dev server did not start within 90 s');
 
     // the tunnel: its log prints the public https link once it is up
-    p.tunnel = spawn(CLOUDFLARED, ['tunnel', '--no-autoupdate', '--url', `http://127.0.0.1:${port}`], { detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    // --http-host-header: the dev server sees "localhost" (Vite and others refuse unknown hosts such as the tunnel's)
+    p.tunnel = spawn(CLOUDFLARED, ['tunnel', '--no-autoupdate', '--http-host-header', 'localhost', '--url', `http://127.0.0.1:${port}`],
+      { detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
     const url = await new Promise((resolve) => {
       const t = setTimeout(() => resolve(null), 60_000);
       const scan = (buf) => {
@@ -689,9 +691,9 @@ async function ensurePreview(cfg, rpc, slug, index) {
     let reachable = false;
     for (let i = 0; i < 30 && !reachable; i++) {
       await new Promise((r) => setTimeout(r, 2000));
-      try { reachable = (await fetch(url, { signal: AbortSignal.timeout(10_000) })).status < 500; } catch {}
+      try { const st = (await fetch(url, { signal: AbortSignal.timeout(10_000) })).status; reachable = st >= 200 && st < 400; } catch {}
     }
-    if (!reachable) throw new Error('the preview link did not answer within 60 s');
+    if (!reachable) throw new Error('the preview link did not answer correctly within 60 s');
     p.url = url;
     p.failures = 0;
     log(`preview ${slug}: ${url}`);
