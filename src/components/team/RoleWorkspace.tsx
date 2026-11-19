@@ -158,7 +158,7 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
 
       {isPageManager && (
         <TabsContent value="files">
-          <PageManagerFilesHub />
+          <PageManagerFilesHub readOnly />
         </TabsContent>
       )}
 

@@ -81,7 +81,7 @@ const normalizeUrl = (raw: string) => {
  * - المدير والمشرف يملكان كامل الصلاحية لإعطاء/تعديل/حذف الملفات والفيديوهات مع وصف ورابط Google Drive.
  * - عند النقر على أي ملف أو فيديو، تظهر نافذة تعرض الوصف الكامل ورابط Google Drive للفتح أو النسخ فوراً.
  */
-export const PageManagerFilesHub: React.FC = () => {
+export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
   const { loading: rolesLoading, userId, roles } = useTeamRoles();
   const { members } = useTeamMembers();
   const { files, loading: filesLoading, reload } = usePageManagerFiles();
@@ -89,8 +89,9 @@ export const PageManagerFilesHub: React.FC = () => {
   const isPrincipal = roles.includes('principal');
   const isSupervisor = roles.includes('supervisor');
   const isPageManager = roles.includes('page_manager');
-  const canManage = isPrincipal || isSupervisor;
-  const canView = canManage || isPageManager;
+  // Strictly ONLY Admin (principal) and Supervisor can upload/edit/delete; Page Manager is always read-only.
+  const canManage = !readOnly && (isPrincipal || isSupervisor);
+  const canView = isPrincipal || isSupervisor || isPageManager;
 
   const pageManagers = useMemo(() => members.filter((m) => m.role === 'page_manager'), [members]);
   const meMember = useMemo(() => members.find((m) => m.user_id === userId) ?? null, [members, userId]);
@@ -122,6 +123,10 @@ export const PageManagerFilesHub: React.FC = () => {
   }, [files, typeFilter, query]);
 
   const openCreate = () => {
+    if (!canManage) {
+      toast.error('رفع وإضافة الملفات متاح للأدمن والمشرف فقط');
+      return;
+    }
     setEditingId(null);
     setTitle('');
     setDescription('');
@@ -132,6 +137,10 @@ export const PageManagerFilesHub: React.FC = () => {
   };
 
   const openEdit = (item: PageManagerFileItem) => {
+    if (!canManage) {
+      toast.error('تعديل الملفات متاح للأدمن والمشرف فقط');
+      return;
+    }
     setEditingId(item.id);
     setTitle(item.title);
     setDescription(item.description);
@@ -143,6 +152,10 @@ export const PageManagerFilesHub: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!canManage) {
+      toast.error('رفع وتعديل الملفات متاح للأدمن والمشرف فقط');
+      return;
+    }
     if (!title.trim()) {
       toast.error('اكتب عنوان الملف أو الفيديو');
       return;
@@ -189,6 +202,10 @@ export const PageManagerFilesHub: React.FC = () => {
   };
 
   const handleDelete = async (item: PageManagerFileItem) => {
+    if (!canManage) {
+      toast.error('حذف الملفات متاح للأدمن والمشرف فقط');
+      return;
+    }
     if (!window.confirm(`هل أنت متأكد من حذف «${item.title}» من مكان الملفات؟`)) return;
     try {
       await deletePageManagerFile(item.id);
@@ -251,7 +268,7 @@ export const PageManagerFilesHub: React.FC = () => {
             </div>
           </div>
 
-          {canManage && (
+          {canManage ? (
             <Button
               type="button"
               onClick={openCreate}
@@ -260,6 +277,10 @@ export const PageManagerFilesHub: React.FC = () => {
               <Upload className="h-4 w-4" />
               إعطاء ملف أو فيديو جديد
             </Button>
+          ) : (
+            <Badge variant="secondary" className="w-fit rounded-xl px-3.5 py-2 text-xs font-bold text-muted-foreground">
+              للعرض والتحميل فقط · الرفع للأدمن والمشرف
+            </Badge>
           )}
         </div>
 

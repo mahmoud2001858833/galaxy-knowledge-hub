@@ -418,6 +418,34 @@ export const fetchSubmissions = async (taskId: string) => {
   return data ?? [];
 };
 
+/** All submissions across all visible tasks (leads see everything), live via realtime. */
+export function useAllTeamSubmissions() {
+  const [submissions, setSubmissions] = useState<TeamSubmission[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    const { data } = await supabase
+      .from('team_task_submissions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setSubmissions(data ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+    const channel = supabase
+      .channel(`team-all-submissions-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_task_submissions' }, () => reload())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reload]);
+
+  return { submissions, loading, reload };
+}
+
 const BUCKET = 'team-files';
 
 /** Uploads an image into the caller's own folder and returns its storage path. */

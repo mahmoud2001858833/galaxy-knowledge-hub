@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
+import { Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Layers, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { TeamChat } from './TeamChat';
 import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
 import { SupervisorCommHub } from './SupervisorCommHub';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
+import { RoleTasksIntelligenceHub } from './RoleTasksIntelligenceHub';
 import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
 import { roleBasePoints, usePointsSettings } from '@/components/admin/points/pointsApi';
 import {
@@ -456,6 +457,9 @@ export const EmployeesControlCenter: React.FC = () => {
           <TabsTrigger value="supervisor-hub" className="gap-1.5 rounded-xl">
             <UserCheck className="h-4 w-4" /> {roles.includes('principal') ? 'التواصل مع المشرف' : 'التواصل مع الرئيس والمهام'}
           </TabsTrigger>
+          <TabsTrigger value="role-tasks-ai" className="gap-1.5 rounded-xl">
+            <Layers className="h-4 w-4" /> {roles.includes('principal') ? 'المهام حسب المسمى + AI' : 'المهام حسب المسمى'}
+          </TabsTrigger>
           <TabsTrigger value="page-files" className="gap-1.5 rounded-xl">
             <FolderOpen className="h-4 w-4" /> مكان الملفات
           </TabsTrigger>
@@ -483,6 +487,10 @@ export const EmployeesControlCenter: React.FC = () => {
 
         <TabsContent value="supervisor-hub">
           <SupervisorCommHub />
+        </TabsContent>
+
+        <TabsContent value="role-tasks-ai">
+          <RoleTasksIntelligenceHub />
         </TabsContent>
 
         <TabsContent value="page-files">

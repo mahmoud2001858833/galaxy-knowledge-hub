@@ -79,6 +79,7 @@ import SchoolContentModeration from '@/components/admin/SchoolContentModeration'
 import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
 import SupervisorCommHub from '@/components/team/SupervisorCommHub';
 import PageManagerFilesHub from '@/components/team/PageManagerFilesHub';
+import RoleTasksIntelligenceHub from '@/components/team/RoleTasksIntelligenceHub';
 import DayOffAdminPanel from '@/components/team/DayOffControls';
 import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
@@ -97,7 +98,7 @@ import TeamHub, { type TeamSection } from '@/components/admin/teamHub/TeamHub';
 
 /** Old team tabs now live inside «إدارة الفريق»; old links (?tab=terminal …) open the matching section. */
 const TEAM_TAB_SECTION: Partial<Record<string, TeamSection>> = {
-  employees: 'members', 'supervisor-hub': 'members', 'page-files': 'members', 'no-tasks': 'members',
+  employees: 'members', 'no-tasks': 'members',
   'collective-tasks': 'collective', points: 'points', terminal: 'terminal',
 };
 import SafeBoundary from '@/components/common/SafeBoundary';
@@ -108,6 +109,7 @@ export type AdminTab =
   | 'overview'
   | 'team'
   | 'supervisor-hub'
+  | 'role-tasks-ai'
   | 'page-files'
   | 'tasks-hub'
   | 'collective-tasks'
@@ -653,6 +655,9 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
+        { id: 'role-tasks-ai', label: 'المهام حسب المسمى الوظيفي + AI', icon: Layers, badge: 'AI شامل', description: 'كل المهام مقسّمة على المسميات الوظيفية والأشخاص بالتفصيل + شات AI عبقري للتقييم والمتابعة' },
+        { id: 'supervisor-hub', label: 'لوحة التواصل مع المشرف', icon: UserCheck, badge: 'مباشر', description: 'شات مباشر مع المشرف، مهام المشرف، والذكاء الاصطناعي المسؤول عن المهام' },
+        { id: 'page-files', label: 'مكان الملفات (مسؤول الصفحة)', icon: FolderOpen, badge: 'Drive', description: 'إعطاء الملفات والفيديوهات لمسؤول الصفحة بالوصف ورابط Google Drive (بصلاحية للمشرف أيضاً)' },
         { id: 'team', label: 'إدارة الفريق', icon: Users, badge: 'الكل', description: 'الأعضاء والمهام اليومية، المهام الجماعية المُوقّتة، الموافقات، النقاط، الطرفية والجلسات، وإعدادات الفريق في مكان واحد' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
@@ -1050,8 +1055,8 @@ export const SuperAdminControlHub: React.FC = () => {
         </aside>
 
         {/* 3. Main Workspace Body with SafeBoundary isolation */}
-        <main className={`flex-1 overflow-y-auto ${currentTab === 'supervisor-hub' || currentTab === 'page-files' ? 'p-3 sm:p-5' : 'p-4 sm:p-8'}`}>
-          <div className={currentTab === 'supervisor-hub' || currentTab === 'page-files' ? 'w-full max-w-none space-y-5' : 'max-w-7xl mx-auto space-y-8'}>
+        <main className={`flex-1 overflow-y-auto ${currentTab === 'supervisor-hub' || currentTab === 'page-files' || currentTab === 'role-tasks-ai' ? 'p-3 sm:p-5' : 'p-4 sm:p-8'}`}>
+          <div className={currentTab === 'supervisor-hub' || currentTab === 'page-files' || currentTab === 'role-tasks-ai' ? 'w-full max-w-none space-y-5' : 'max-w-7xl mx-auto space-y-8'}>
 
             {/* 0. Executive 360° Overview & Platform Digest */}
             {currentTab === 'overview' && (
@@ -1083,6 +1088,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'team' && (
               <SafeBoundary name="TeamHub">
                 <TeamHub />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'role-tasks-ai' && (
+              <SafeBoundary name="RoleTasksIntelligenceHub">
+                <RoleTasksIntelligenceHub />
               </SafeBoundary>
             )}
 

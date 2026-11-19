@@ -81,7 +81,7 @@ export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[
       {tab === 'control' ? (
         <EmployeesControlCenter />
       ) : tab === 'page-files' ? (
-        <PageManagerFilesHub />
+        <PageManagerFilesHub readOnly />
       ) : tab === 'terminal' ? (
         <Suspense fallback={<Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />}>
           <TerminalWorkspace />
