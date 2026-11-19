@@ -52,9 +52,11 @@ export const STATUS_LABELS: Record<TaskColumn, string> = {
   done: 'مهام منجزة',
 };
 
-/** Sentinel markers used to store a member's daily "no tasks today" notice inside team_tasks. */
+/** Sentinel markers used to store special lead/team records inside team_tasks without extra migrations. */
 export const DAY_OFF_TAG = '__TEAM_DAY_OFF__' as const;
 export const DAY_OFF_TITLE_PREFIX = '__DAY_OFF__:' as const;
+export const SUPERVISOR_TASK_TAG = '__SUPERVISOR_TASK__' as const;
+export const PAGE_MANAGER_FILE_TAG = '__PAGE_MANAGER_FILE__' as const;
 
 export interface DayOffRecord {
   taskId: string;
@@ -64,11 +66,51 @@ export interface DayOffRecord {
   createdAt: string;
 }
 
+export type SupervisorTaskPriority = 'normal' | 'high' | 'urgent';
+
+export interface SupervisorTask {
+  id: string;
+  title: string;
+  details: string;
+  priority: SupervisorTaskPriority;
+  status: TaskStatus;
+  dueAt: string | null;
+  supervisorUserId: string | null;
+  completionNote: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export type PageManagerMediaType = 'video' | 'file' | 'folder' | 'design';
+
+export interface PageManagerFileItem {
+  id: string;
+  title: string;
+  description: string;
+  driveUrl: string;
+  mediaType: PageManagerMediaType;
+  targetUserId: string | null;
+  senderName: string;
+  senderRole: 'principal' | 'supervisor';
+  createdBy: string | null;
+  createdAt: string;
+}
+
 /** Today's YYYY-MM-DD in Jordan time (Asia/Amman), so a day-off notice expires automatically tomorrow. */
 export const todayAmman = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Amman' });
 
 export const isDayOffTaskRow = (t: Pick<TeamTask, 'title' | 'extra_requirements'>) =>
   Boolean(t.extra_requirements?.includes(DAY_OFF_TAG) || t.title.startsWith(DAY_OFF_TITLE_PREFIX));
+
+export const isSupervisorTaskRow = (t: Pick<TeamTask, 'extra_requirements'>) =>
+  Boolean(t.extra_requirements?.includes(SUPERVISOR_TASK_TAG));
+
+export const isPageManagerFileRow = (t: Pick<TeamTask, 'extra_requirements'>) =>
+  Boolean(t.extra_requirements?.includes(PAGE_MANAGER_FILE_TAG));
+
+export const isSpecialTeamTaskRow = (t: Pick<TeamTask, 'title' | 'extra_requirements'>) =>
+  isDayOffTaskRow(t) || isSupervisorTaskRow(t) || isPageManagerFileRow(t);
 
 export const isLeadRole = (roles: TeamRole[]) => roles.includes('principal') || roles.includes('supervisor');
 
@@ -241,7 +283,7 @@ export function useTeamTasks() {
 
   const reload = useCallback(async () => {
     const { data } = await supabase.from('team_tasks').select('*').order('created_at', { ascending: false });
-    setTasks((data ?? []).filter((t) => !isDayOffTaskRow(t)));
+    setTasks((data ?? []).filter((t) => !isSpecialTeamTaskRow(t)));
     setLoading(false);
   }, []);
 
@@ -432,3 +474,275 @@ export const completeTask = async (taskId: string, input: CompletionInput) => {
 
 export const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('ar-JO', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+
+// ---------------------------------------------------------------- Supervisor Tasks (Principal -> Supervisor)
+interface SupervisorTaskPayload {
+  details?: string;
+  priority?: SupervisorTaskPriority;
+  completionNote?: string | null;
+}
+
+const parseSupervisorPayload = (raw: string | null): SupervisorTaskPayload => {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && ('details' in parsed || 'priority' in parsed || 'completionNote' in parsed)) {
+      return parsed as SupervisorTaskPayload;
+    }
+  } catch {
+    // Plain text fallback
+  }
+  return { details: raw };
+};
+
+export function useSupervisorTasks() {
+  const [tasks, setTasks] = useState<SupervisorTask[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    const { data } = await supabase
+      .from('team_tasks')
+      .select('*')
+      .contains('extra_requirements', [SUPERVISOR_TASK_TAG])
+      .order('created_at', { ascending: false });
+
+    const mapped: SupervisorTask[] = (data ?? []).map((row) => {
+      const payload = parseSupervisorPayload(row.details);
+      return {
+        id: row.id,
+        title: row.title,
+        details: payload.details ?? '',
+        priority: payload.priority ?? 'normal',
+        status: (row.status as TaskStatus) || 'todo',
+        dueAt: row.due_at,
+        supervisorUserId: row.assignee_user_id,
+        completionNote: payload.completionNote ?? null,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        completedAt: row.completed_at,
+      };
+    });
+    setTasks(mapped);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+    const channel = supabase
+      .channel(`supervisor-tasks-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_tasks' }, () => reload())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reload]);
+
+  return { tasks, loading, reload };
+}
+
+export const createSupervisorTask = async (input: {
+  title: string;
+  details?: string;
+  supervisorUserId: string | null;
+  priority?: SupervisorTaskPriority;
+  dueAt?: string | null;
+}) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('سجّل الدخول أولاً');
+
+  const payload: SupervisorTaskPayload = {
+    details: input.details?.trim() || '',
+    priority: input.priority ?? 'normal',
+    completionNote: null,
+  };
+
+  const { error } = await supabase.from('team_tasks').insert({
+    title: input.title.trim(),
+    details: JSON.stringify(payload),
+    assignee_role: 'file_manager',
+    assignee_user_id: input.supervisorUserId,
+    status: 'todo',
+    due_at: input.dueAt ? new Date(input.dueAt).toISOString() : null,
+    extra_requirements: [SUPERVISOR_TASK_TAG],
+    created_by: session.user.id,
+  });
+  if (error) throw error;
+};
+
+export const updateSupervisorTaskStatus = async (
+  task: SupervisorTask,
+  nextStatus: TaskStatus,
+  completionNote?: string,
+) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('سجّل الدخول أولاً');
+
+  const payload: SupervisorTaskPayload = {
+    details: task.details,
+    priority: task.priority,
+    completionNote: completionNote !== undefined ? completionNote.trim() || null : task.completionNote,
+  };
+
+  const { error } = await supabase
+    .from('team_tasks')
+    .update({
+      status: nextStatus,
+      details: JSON.stringify(payload),
+      completed_at: nextStatus === 'done' ? new Date().toISOString() : null,
+      completed_by: nextStatus === 'done' ? session.user.id : null,
+    })
+    .eq('id', task.id);
+  if (error) throw error;
+};
+
+export const deleteSupervisorTask = async (taskId: string) => {
+  const { error } = await supabase.from('team_tasks').delete().eq('id', taskId);
+  if (error) throw error;
+};
+
+// ---------------------------------------------------------------- Page Manager Files & Videos (Google Drive Hub)
+interface PageManagerFilePayload {
+  description: string;
+  driveUrl: string;
+  mediaType: PageManagerMediaType;
+  senderName: string;
+  senderRole: 'principal' | 'supervisor';
+}
+
+const parsePageFilePayload = (raw: string | null): PageManagerFilePayload => {
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && 'driveUrl' in parsed) {
+        return {
+          description: String(parsed.description ?? ''),
+          driveUrl: String(parsed.driveUrl ?? ''),
+          mediaType: (parsed.mediaType as PageManagerMediaType) || 'file',
+          senderName: String(parsed.senderName ?? 'الإدارة'),
+          senderRole: parsed.senderRole === 'supervisor' ? 'supervisor' : 'principal',
+        };
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return {
+    description: raw ?? '',
+    driveUrl: '',
+    mediaType: 'file',
+    senderName: 'الإدارة',
+    senderRole: 'principal',
+  };
+};
+
+export function usePageManagerFiles() {
+  const [files, setFiles] = useState<PageManagerFileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const reload = useCallback(async () => {
+    const { data } = await supabase
+      .from('team_tasks')
+      .select('*')
+      .contains('extra_requirements', [PAGE_MANAGER_FILE_TAG])
+      .order('created_at', { ascending: false });
+
+    const mapped: PageManagerFileItem[] = (data ?? []).map((row) => {
+      const payload = parsePageFilePayload(row.details);
+      return {
+        id: row.id,
+        title: row.title,
+        description: payload.description,
+        driveUrl: payload.driveUrl,
+        mediaType: payload.mediaType,
+        targetUserId: row.assignee_user_id,
+        senderName: payload.senderName,
+        senderRole: payload.senderRole,
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+      };
+    });
+    setFiles(mapped);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    reload();
+    const channel = supabase
+      .channel(`page-manager-files-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_tasks' }, () => reload())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reload]);
+
+  return { files, loading, reload };
+}
+
+export const createPageManagerFile = async (input: {
+  title: string;
+  description: string;
+  driveUrl: string;
+  mediaType: PageManagerMediaType;
+  targetUserId: string | null;
+  senderName: string;
+  senderRole: 'principal' | 'supervisor';
+}) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('سجّل الدخول أولاً');
+
+  const payload: PageManagerFilePayload = {
+    description: input.description.trim(),
+    driveUrl: input.driveUrl.trim(),
+    mediaType: input.mediaType,
+    senderName: input.senderName,
+    senderRole: input.senderRole,
+  };
+
+  const { error } = await supabase.from('team_tasks').insert({
+    title: input.title.trim(),
+    details: JSON.stringify(payload),
+    assignee_role: 'page_manager',
+    assignee_user_id: input.targetUserId,
+    status: 'done',
+    extra_requirements: [PAGE_MANAGER_FILE_TAG],
+    created_by: session.user.id,
+  });
+  if (error) throw error;
+};
+
+export const updatePageManagerFile = async (
+  id: string,
+  input: {
+    title: string;
+    description: string;
+    driveUrl: string;
+    mediaType: PageManagerMediaType;
+    targetUserId: string | null;
+    senderName: string;
+    senderRole: 'principal' | 'supervisor';
+  },
+) => {
+  const payload: PageManagerFilePayload = {
+    description: input.description.trim(),
+    driveUrl: input.driveUrl.trim(),
+    mediaType: input.mediaType,
+    senderName: input.senderName,
+    senderRole: input.senderRole,
+  };
+
+  const { error } = await supabase
+    .from('team_tasks')
+    .update({
+      title: input.title.trim(),
+      details: JSON.stringify(payload),
+      assignee_user_id: input.targetUserId,
+    })
+    .eq('id', id);
+  if (error) throw error;
+};
+
+export const deletePageManagerFile = async (id: string) => {
+  const { error } = await supabase.from('team_tasks').delete().eq('id', id);
+  if (error) throw error;
+};

@@ -31,11 +31,12 @@ interface Props {
   placeholder?: string;
   /** height of the message list, e.g. "h-[420px]" */
   listHeight?: string;
+  className?: string;
   footer?: React.ReactNode;
 }
 
 export function ChatPanel({
-  title, subtitle, messages, busy, onSend, onConfirm, onReset, suggestions = [], placeholder, listHeight = 'h-[420px]', footer,
+  title, subtitle, messages, busy, onSend, onConfirm, onReset, suggestions = [], placeholder, listHeight = 'h-[420px]', className, footer,
 }: Props) {
   const [text, setText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
@@ -67,7 +68,7 @@ export function ChatPanel({
   const onlyGreeting = messages.filter((m) => m.role === 'user').length === 0;
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card" dir="rtl">
+    <div className={cn('flex flex-col overflow-hidden rounded-2xl border border-border bg-card', className)} dir="rtl">
       {/* header */}
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">

@@ -24,7 +24,13 @@ const SUGGESTIONS = [
 
 const nowTime = () => new Date().toLocaleTimeString('ar-JO', { hour: '2-digit', minute: '2-digit' });
 
-export function CentralTaskChat() {
+export function CentralTaskChat({
+  listHeight = 'h-[460px]',
+  className,
+}: {
+  listHeight?: string;
+  className?: string;
+} = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [busy, setBusy] = useState(false);
 
@@ -72,7 +78,8 @@ export function CentralTaskChat() {
       onReset={() => setMessages([GREETING])}
       suggestions={SUGGESTIONS}
       placeholder="اكتب طلبك أو الصق مواصفات المشروع… (Shift+Enter لسطر جديد)"
-      listHeight="h-[460px]"
+      listHeight={listHeight}
+      className={className}
     />
   );
 }

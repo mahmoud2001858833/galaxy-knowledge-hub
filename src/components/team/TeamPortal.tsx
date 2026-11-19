@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import { Crown, Loader2, TerminalSquare } from 'lucide-react';
+import { Crown, FolderOpen, Loader2, TerminalSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { RoleWorkspace } from './RoleWorkspace';
 import { EmployeesControlCenter } from './EmployeesControlCenter';
+import { PageManagerFilesHub } from './PageManagerFilesHub';
 import { DayOffMemberNotice } from './DayOffControls';
 import {
   ROLE_LABELS,
@@ -23,6 +24,7 @@ const TerminalWorkspace = lazy(() => import('@/pages/terminal/TerminalPage').the
 export const teamTabsFor = (roles: TeamRole[], terminal = false) => [
   ...(isLeadRole(roles) ? [{ id: 'control', label: 'لوحة تحكم الموظفين' }] : []),
   ...WORKER_ROLES.filter((r) => roles.includes(r)).map((r) => ({ id: r, label: `لوحة ${ROLE_LABELS[r]}` })),
+  ...(roles.includes('page_manager') ? [{ id: 'page-files', label: 'مكان الملفات' }] : []),
   ...(terminal || roles.includes('principal') ? [{ id: 'terminal', label: 'الطرفية' }] : []),
 ];
 
@@ -77,6 +79,8 @@ export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[
       <DayOffMemberNotice me={me} roles={roles} members={members} windowKey={tab} />
       {tab === 'control' ? (
         <EmployeesControlCenter />
+      ) : tab === 'page-files' ? (
+        <PageManagerFilesHub />
       ) : tab === 'terminal' ? (
         <Suspense fallback={<Loader2 className="mx-auto my-16 h-6 w-6 animate-spin text-muted-foreground" />}>
           <TerminalWorkspace />
@@ -117,6 +121,7 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
             }`}
           >
             {t.id === 'control' && <Crown className="h-4 w-4" aria-hidden />}
+            {t.id === 'page-files' && <FolderOpen className="h-4 w-4" aria-hidden />}
             {t.id === 'terminal' && <TerminalSquare className="h-4 w-4" aria-hidden />}
             {t.label}
           </button>

@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Inbox, MessagesSquare } from 'lucide-react';
+import { Bell, ClipboardList, FolderOpen, Inbox, MessagesSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskBoard, TaskDialog } from './TaskBoard';
 import { TeamChat } from './TeamChat';
+import { PageManagerFilesHub } from './PageManagerFilesHub';
 import {
   ROLE_LABELS,
   ROLE_PROOF,
   formatDate,
   isOverdue,
   isScheduled,
+  usePageManagerFiles,
   type TeamMember,
   type TeamNotification,
   type TeamTask,
@@ -48,6 +50,9 @@ const TaskRow: React.FC<{ task: TeamTask; onOpen: () => void; note?: string }> =
  */
 export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, members, tasks, notifications, reloadTasks }) => {
   const [open, setOpen] = useState<TeamTask | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('inbox');
+  const { files: pageFiles } = usePageManagerFiles();
+  const isPageManager = role === 'page_manager';
 
   const myTasks = useMemo(
     // leads can read scheduled tasks early; as a worker they get them at publish_at like everyone else
@@ -61,12 +66,25 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
   const canWork = (t: TeamTask) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me);
 
   return (
-    <Tabs defaultValue="inbox" dir="rtl" className="w-full">
-      <TabsList className="mb-4 flex h-auto flex-wrap justify-start gap-1 rounded-2xl bg-muted p-1">
+    <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="w-full">
+      <TabsList className="mb-4 flex h-auto flex-wrap justify-start gap-1.5 rounded-2xl bg-muted p-1.5">
         <TabsTrigger value="inbox" className="gap-1.5 rounded-xl">
           <Inbox className="h-4 w-4" /> قسم المسؤول
           {inbox.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{inbox.length}</span>}
         </TabsTrigger>
+        {isPageManager && (
+          <TabsTrigger
+            value="files"
+            className="gap-1.5 rounded-xl font-bold data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
+            <FolderOpen className="h-4 w-4" /> مكان الملفات
+            {pageFiles.length > 0 && (
+              <span className="rounded-full bg-blue-600/15 px-1.5 text-[10px] font-black text-blue-700 dark:text-blue-300">
+                {pageFiles.length}
+              </span>
+            )}
+          </TabsTrigger>
+        )}
         <TabsTrigger value="board" className="gap-1.5 rounded-xl">
           <ClipboardList className="h-4 w-4" /> تنفيذ المهام
         </TabsTrigger>
@@ -76,6 +94,29 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
       </TabsList>
 
       <TabsContent value="inbox" className="space-y-6">
+        {isPageManager && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('files')}
+            className="flex w-full items-center justify-between gap-3 rounded-3xl border border-blue-200 dark:border-blue-900/60 bg-gradient-to-l from-blue-600 to-indigo-600 p-4 text-right text-white shadow-md transition hover:opacity-95 active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
+                <FolderOpen className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm sm:text-base font-black">مكان الملفات والفيديوهات (Google Drive)</div>
+                <div className="text-xs text-blue-100">
+                  لديك {pageFiles.length} ملف وفيديو جاهز — اضغط هنا لفتح الوصف وروابط Google Drive
+                </div>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-xl bg-white px-3 py-1.5 text-xs font-black text-blue-700">
+              افتح الآن
+            </span>
+          </button>
+        )}
+
         <p className="rounded-2xl bg-accent p-4 text-sm text-accent-foreground">
           <span className="font-bold">{ROLE_LABELS[role]}: </span>
           لإغلاق أي مهمة يلزمك {ROLE_PROOF[role]}.
@@ -110,6 +151,12 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
           )}
         </section>
       </TabsContent>
+
+      {isPageManager && (
+        <TabsContent value="files">
+          <PageManagerFilesHub />
+        </TabsContent>
+      )}
 
       <TabsContent value="board">
         <TaskBoard tasks={myTasks} members={members} canWork={canWork} onChanged={reloadTasks} />

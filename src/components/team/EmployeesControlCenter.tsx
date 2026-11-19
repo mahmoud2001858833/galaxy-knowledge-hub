@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Coffee, Crown, Eye, Loader2, MessagesSquare, Plus, Trash2, UserCog, X } from 'lucide-react';
+import { Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TaskBoard } from './TaskBoard';
 import { TeamChat } from './TeamChat';
 import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
+import { SupervisorCommHub } from './SupervisorCommHub';
+import { PageManagerFilesHub } from './PageManagerFilesHub';
 import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -417,8 +419,14 @@ export const EmployeesControlCenter: React.FC = () => {
         </span>
       </div>
 
-      <Tabs defaultValue="roles" dir="rtl">
+      <Tabs defaultValue={roles.includes('principal') ? 'roles' : 'supervisor-hub'} dir="rtl">
         <TabsList className="mb-4 flex h-auto flex-wrap justify-start gap-1 rounded-2xl bg-muted p-1">
+          <TabsTrigger value="supervisor-hub" className="gap-1.5 rounded-xl">
+            <UserCheck className="h-4 w-4" /> {roles.includes('principal') ? 'التواصل مع المشرف' : 'التواصل مع الرئيس والمهام'}
+          </TabsTrigger>
+          <TabsTrigger value="page-files" className="gap-1.5 rounded-xl">
+            <FolderOpen className="h-4 w-4" /> مكان الملفات
+          </TabsTrigger>
           <TabsTrigger value="roles" className="gap-1.5 rounded-xl">
             <UserCog className="h-4 w-4" /> الأدوار والإيميلات
           </TabsTrigger>
@@ -440,6 +448,14 @@ export const EmployeesControlCenter: React.FC = () => {
             </TabsTrigger>
           )}
         </TabsList>
+
+        <TabsContent value="supervisor-hub">
+          <SupervisorCommHub />
+        </TabsContent>
+
+        <TabsContent value="page-files">
+          <PageManagerFilesHub />
+        </TabsContent>
 
         <TabsContent value="roles" className="space-y-4">
           <p className="text-sm text-muted-foreground">

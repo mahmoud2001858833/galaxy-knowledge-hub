@@ -43,6 +43,8 @@ import {
   Copy,
   Wifi,
   ShieldCheck,
+  FolderOpen,
+  UserCheck,
   Database,
   HardDrive,
   Cpu,
@@ -74,6 +76,8 @@ import { PlatformCopilotWindow } from '@/components/admin/PlatformCopilotWindow'
 import ExamLibraryAdmin from '@/components/admin/ExamLibraryAdmin';
 import SchoolContentModeration from '@/components/admin/SchoolContentModeration';
 import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
+import SupervisorCommHub from '@/components/team/SupervisorCommHub';
+import PageManagerFilesHub from '@/components/team/PageManagerFilesHub';
 import DayOffAdminPanel from '@/components/team/DayOffControls';
 import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
 import { ExecutiveOverviewTab } from '@/components/admin/lcm/ExecutiveOverviewTab';
@@ -93,6 +97,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type AdminTab = 
   | 'overview'
+  | 'supervisor-hub'
+  | 'page-files'
   | 'tasks-hub'
   | 'collective-tasks'
   | 'exam-library'
@@ -628,6 +634,8 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
+        { id: 'supervisor-hub', label: 'لوحة التواصل مع المشرف', icon: UserCheck, badge: 'مباشر', description: 'شات مباشر مع المشرف، مهام المشرف، والذكاء الاصطناعي المسؤول عن المهام' },
+        { id: 'page-files', label: 'مكان الملفات (مسؤول الصفحة)', icon: FolderOpen, badge: 'Drive', description: 'إعطاء الملفات والفيديوهات لمسؤول الصفحة بالوصف ورابط Google Drive (بصلاحية للمشرف أيضاً)' },
         { id: 'collective-tasks', label: 'المهام الجماعية', icon: Users, badge: 'جديد', description: 'مهمة كبيرة لفريق كامل: خطة يومية بالذكاء الاصطناعي وإرسال مجدول' },
         { id: 'tasks-hub', label: 'المهام والمدققين ونقاط AI', icon: CheckSquare, badge: 'جديد', description: 'فلترة المهام المنجزة للمدققين والذكاء الاصطناعي واحتساب النقاط' },
         { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
@@ -1029,8 +1037,8 @@ export const SuperAdminControlHub: React.FC = () => {
         </aside>
 
         {/* 3. Main Workspace Body with SafeBoundary isolation */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8">
-          <div className="max-w-7xl mx-auto space-y-8">
+        <main className={`flex-1 overflow-y-auto ${currentTab === 'supervisor-hub' || currentTab === 'page-files' ? 'p-3 sm:p-5' : 'p-4 sm:p-8'}`}>
+          <div className={currentTab === 'supervisor-hub' || currentTab === 'page-files' ? 'w-full max-w-none space-y-5' : 'max-w-7xl mx-auto space-y-8'}>
 
             {/* 0. Executive 360° Overview & Platform Digest */}
             {currentTab === 'overview' && (
@@ -1047,6 +1055,18 @@ export const SuperAdminControlHub: React.FC = () => {
                     baseSolvedPuzzles={48}
                   />
                 </div>
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'supervisor-hub' && (
+              <SafeBoundary name="SupervisorCommHub">
+                <SupervisorCommHub />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'page-files' && (
+              <SafeBoundary name="PageManagerFilesHub">
+                <PageManagerFilesHub />
               </SafeBoundary>
             )}
 
