@@ -14,6 +14,7 @@ import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
 import { SupervisorCommHub } from './SupervisorCommHub';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
 import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
+import { roleBasePoints, usePointsSettings } from '@/components/admin/points/pointsApi';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -152,6 +153,10 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
   const [reqs, setReqs] = useState<string[]>([]);
   const [req, setReq] = useState('');
   const [saving, setSaving] = useState(false);
+  // task value; empty = the role's base points from «نظام النقاط»
+  const [points, setPoints] = useState('');
+  const { settings: pointsSettings } = usePointsSettings();
+  const basePoints = roleBasePoints(pointsSettings, role);
 
   const candidates = members.filter((m) => m.role === role);
 
@@ -176,6 +181,7 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       due_at: due ? new Date(due).toISOString() : null,
       publish_at: scheduled ? publish.toISOString() : null,
       extra_requirements: reqs,
+      points: points.trim() === '' ? basePoints : Math.max(0, Math.min(1000, Math.round(Number(points) || 0))),
       created_by: session?.user.id,
     }).select('id').single();
     setSaving(false);
@@ -191,6 +197,7 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
       setDue('');
       setPublishAt('');
       setReqs([]);
+      setPoints('');
       onCreated();
     }
   };
@@ -262,6 +269,24 @@ const NewTaskForm: React.FC<{ members: TeamMember[]; onCreated: () => void }> = 
         <div className="space-y-1.5">
           <Label>موعد التسليم (اختياري)</Label>
           <Input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="new-task-points">النقاط</Label>
+          <Input
+            id="new-task-points"
+            type="number"
+            min={0}
+            max={1000}
+            inputMode="numeric"
+            value={points}
+            onChange={(e) => setPoints(e.target.value)}
+            placeholder={String(basePoints)}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            {points.trim() === ''
+              ? `افتراضياً ${basePoints} نقطة (نقاط ${ROLE_LABELS[role]}). +${pointsSettings.on_time} في الموعد، −${pointsSettings.late_per_day} لكل يوم تأخير.`
+              : 'قيمة مخصّصة لهذه المهمة.'}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label>متطلبات إضافية لإغلاق المهمة</Label>

@@ -4887,7 +4887,12 @@ export type Database = {
           emailed_at: string | null
           extra_requirements: string[]
           id: string
+          points: number | null
           publish_at: string | null
+          quality_at: string | null
+          quality_by: string | null
+          quality_note: string | null
+          quality_status: string | null
           source_task_id: string | null
           status: string
           title: string
@@ -4905,7 +4910,12 @@ export type Database = {
           emailed_at?: string | null
           extra_requirements?: string[]
           id?: string
+          points?: number | null
           publish_at?: string | null
+          quality_at?: string | null
+          quality_by?: string | null
+          quality_note?: string | null
+          quality_status?: string | null
           source_task_id?: string | null
           status?: string
           title: string
@@ -4923,7 +4933,12 @@ export type Database = {
           emailed_at?: string | null
           extra_requirements?: string[]
           id?: string
+          points?: number | null
           publish_at?: string | null
+          quality_at?: string | null
+          quality_by?: string | null
+          quality_note?: string | null
+          quality_status?: string | null
           source_task_id?: string | null
           status?: string
           title?: string
