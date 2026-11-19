@@ -3,6 +3,7 @@ import { Bell, ClipboardList, FolderOpen, Inbox, MessagesSquare } from 'lucide-r
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskBoard, TaskDialog } from './TaskBoard';
 import { TeamChat } from './TeamChat';
+import { TaskCountdown } from './TaskCountdown';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
 import {
   ROLE_LABELS,
@@ -39,6 +40,7 @@ const TaskRow: React.FC<{ task: TeamTask; onOpen: () => void; note?: string }> =
         {note ?? formatDate(task.publish_at ?? task.created_at)}
         {task.due_at && ` · التسليم ${formatDate(task.due_at)}`}
       </span>
+      <span className="mt-1.5 block"><TaskCountdown task={task} compact /></span>
     </span>
     {isOverdue(task) && <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-bold text-destructive">متأخرة</span>}
   </button>

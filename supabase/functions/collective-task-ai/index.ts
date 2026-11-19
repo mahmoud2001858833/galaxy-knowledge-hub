@@ -300,13 +300,13 @@ type SubRow = {
   id: string; position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null;
   day_from: number; day_to: number; depends_on: number[]; covers: string[]; effort_hours: number | null; status: string;
   team_task_id: string | null; delivered_at: string | null; due_at: string | null; completed_at: string | null;
-  on_time: boolean | null; postponed_at: string | null; postponed_count: number;
+  on_time: boolean | null; postponed_at: string | null; postponed_count: number; postponed_reason?: string | null;
 };
 type MemberRow = { id: string; email: string; work_start: string; work_end: string; work_days: number[] };
 type Person = { user_id: string; role: string; name: string | null };
 
 const WORKER_ROLES = new Set(["speaker", "page_manager", "auditor", "ai_manager", "file_manager"]);
-const SUB_COLS = "id,position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status,team_task_id,delivered_at,due_at,completed_at,on_time,postponed_at,postponed_count";
+const SUB_COLS = "id,position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status,team_task_id,delivered_at,due_at,completed_at,on_time,postponed_at,postponed_count,postponed_reason";
 
 // ---------------------------------------------------------------- Amman clock and work windows
 const DOW: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -864,6 +864,141 @@ async function confirmAction(p: any) {
   throw new UserError("نوع تأكيد غير معروف");
 }
 
+// ---------------------------------------------------------------- schedule AI: the programmers' timetable assistant
+const WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+/** A plain-text picture of the whole timetable right now, for the AI (real data only). */
+async function scheduleSnapshot(taskId: string) {
+  const { task } = await loadTask(taskId);
+  const [{ data: subs }, { data: members }] = await Promise.all([
+    service.from("collective_subtasks").select(SUB_COLS).eq("task_id", taskId).order("position"),
+    service.from("collective_task_members").select("id,email,focus,work_start,work_end,work_days").eq("task_id", taskId).order("work_start"),
+  ]);
+  const rows = (subs ?? []) as SubRow[];
+  const mems = (members ?? []) as (MemberRow & { focus: string | null })[];
+  const { data: team } = mems.length
+    ? await service.from("team_members").select("email,display_name").in("email", mems.map((m) => m.email))
+    : { data: [] };
+  const nameBy = new Map((team ?? []).map((p: any) => [String(p.email).toLowerCase(), p.display_name as string]));
+  const name = (e: string | null) => (e ? nameBy.get(e.toLowerCase()) ?? e : "—");
+  const now = new Date();
+  const day = task.send_at ? currentDay(task) : 0;
+  const { data: pts } = await service.from("points_settings").select("on_time,late_per_day,role_base").maybeSingle();
+  const state = (s: SubRow) => {
+    if (s.status === "done") return `منجزة ${s.completed_at ? fmtTime(s.completed_at) : ""} ${s.on_time === false ? "(متأخرة)" : "(بالموعد)"}`;
+    if (s.delivered_at) {
+      const late = s.due_at && new Date(s.due_at) < now;
+      return `وصلت ${fmtTime(s.delivered_at)} · الموعد ${s.due_at ? fmtTime(s.due_at) : "—"}${late ? " · متأخرة الآن!" : ""}`;
+    }
+    if (s.postponed_reason) return `مؤجّلة: ${s.postponed_reason}`;
+    return s.day_from > day ? "لم يحن يومها" : "بانتظار نافذة صاحبها/اعتمادها";
+  };
+  const text = `المهمة: «${task.title}» · الحالة ${task.status} · اليوم ${day} من ${task.duration_days ?? "?"} (اليوم 1 = ${task.send_at ? fmtTime(task.send_at) : "—"})
+سياسة التأجيل: ${task.postpone_policy === "immediate" ? "تُسلَّم فور إنجاز الاعتماد" : "تنتظر نافذة صاحبها التالية"}
+النقاط: نقاط المهمة حسب الدور (${JSON.stringify(pts?.role_base ?? {})}) + ${pts?.on_time ?? 5} إضافية إذا سلّم قبل الموعد، و−${pts?.late_per_day ?? 5} عن كل يوم تأخير.
+
+المبرمجون وأوقاتهم (توقيت عمّان):
+${mems.map((m) => `- ${name(m.email)} <${m.email}>: ${hhmm(m.work_start)}–${hhmm(m.work_end)} · ${m.work_days.length === 7 ? "كل الأيام" : m.work_days.map((d) => WD[d]).join("، ")}${m.focus ? ` · ${m.focus}` : ""}${inWindow(m, now) ? " · ← في وقت عمله الآن" : ""}`).join("\n")}
+
+المهام بالترتيب (#رقم · يوم · صاحبها · يعتمد على · الحالة):
+${rows.map((s) => `#${s.position} · يوم ${s.day_from} · ${name(s.assignee_email)} · ${s.depends_on.length ? s.depends_on.map((d) => `#${d}`).join(" ") : "—"} · ${s.title} → ${state(s)}`).join("\n")}`;
+  return { task, rows, mems, text };
+}
+
+const SCHEDULE_TOOLS = [
+  tool("update_window", "Change one programmer's work window (Amman time).", {
+    email: { type: "string" }, start: { type: "string", description: "HH:mm" }, end: { type: "string", description: "HH:mm, after start; use 23:59 for midnight" },
+    days: { type: "array", items: { type: "integer" }, description: "0=Sunday … 6=Saturday" },
+  }, ["email", "start", "end"]),
+  tool("update_subtask", "Change one subtask by its #position: title, detail, day, owner email, or what it depends on.", {
+    position: { type: "integer" }, title: { type: "string" }, detail: { type: "string" }, day: { type: "integer" },
+    assignee_email: { type: "string" }, depends_on: { type: "array", items: { type: "integer" } },
+  }, ["position"]),
+  tool("remind", "Send the owner of subtask #position a reminder (dashboard notice + email).", { position: { type: "integer" } }, ["position"]),
+  tool("run_scheduler", "Run the scheduler for this task now (delivers whatever is due, sends postponement notices)."),
+];
+
+async function scheduleTool(taskId: string, name: string, a: any): Promise<unknown> {
+  const hm = (v: unknown) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v ?? "")) ? String(v) : null);
+  switch (name) {
+    case "update_window": {
+      const start = hm(a?.start), end = hm(a?.end);
+      if (!start || !end || end <= start) return { error: "وقت غير صالح (HH:mm، والنهاية بعد البداية)" };
+      const patch: Record<string, unknown> = { work_start: start, work_end: end };
+      if (Array.isArray(a?.days)) patch.work_days = [...new Set(a.days.map(Number).filter((d: number) => d >= 0 && d <= 6))].sort();
+      const { data, error } = await service.from("collective_task_members").update(patch)
+        .eq("task_id", taskId).ilike("email", String(a?.email ?? "").trim()).select("email");
+      if (error) return { error: error.message };
+      return data?.length ? { ok: true, updated: data[0].email, ...patch } : { error: "هذا البريد ليس في المهمة" };
+    }
+    case "update_subtask": {
+      const patch: Record<string, unknown> = {};
+      if (typeof a?.title === "string" && a.title.trim()) patch.title = a.title.trim().slice(0, 200);
+      if (typeof a?.detail === "string") patch.detail = a.detail.slice(0, 8000);
+      if (Number.isInteger(a?.day) && a.day >= 1) { patch.day_from = a.day; patch.day_to = a.day; }
+      if (typeof a?.assignee_email === "string" && a.assignee_email.includes("@")) patch.assignee_email = a.assignee_email.trim().toLowerCase();
+      if (Array.isArray(a?.depends_on)) patch.depends_on = a.depends_on.map(Number).filter((n: number) => Number.isInteger(n) && n > 0 && n !== a.position);
+      if (!Object.keys(patch).length) return { error: "لا يوجد تغيير" };
+      const { data, error } = await service.from("collective_subtasks").update(patch)
+        .eq("task_id", taskId).eq("position", Number(a?.position)).is("delivered_at", null).select("position");
+      if (error) return { error: error.message };
+      return data?.length ? { ok: true, position: data[0].position, ...patch } : { error: "المهمة غير موجودة أو وصلت لصاحبها (لا تُعدّل بعد التسليم)" };
+    }
+    case "remind": {
+      const { task } = await loadTask(taskId);
+      const { data: s } = await service.from("collective_subtasks").select(SUB_COLS).eq("task_id", taskId).eq("position", Number(a?.position)).maybeSingle();
+      if (!s?.assignee_email) return { error: "المهمة غير موجودة" };
+      const sub = s as SubRow;
+      const { data: p } = await service.from("team_members").select("user_id,role,display_name").ilike("email", sub.assignee_email!).limit(1).maybeSingle();
+      await notifyPerson(p ? { user_id: p.user_id, role: p.role, name: p.display_name } : undefined,
+        `تذكير من الأدمن: #${sub.position} «${sub.title}»${sub.due_at ? ` — الموعد ${fmtTime(sub.due_at)}` : ""}`, sub.team_task_id);
+      const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
+      const reqs = new Map((task.plan?.requirements ?? []).map((r) => [r.id, r.text]));
+      const res = await sendEmail(sub.assignee_email!, `تذكير: ${sub.title}`, mailHtml(task, sub.assignee_email!, "تذكير بمهمتك",
+        card(sub, reqs, sub.due_at ? `الموعد ${fmtTime(sub.due_at)}` : "قريباً", !!sub.due_at && new Date(sub.due_at) < new Date()), site));
+      return { ok: true, email: res.ok ? "ok" : res.reason };
+    }
+    case "run_scheduler": {
+      const { task } = await loadTask(taskId);
+      if (task.status !== "active") return { error: "المهمة ليست قيد التنفيذ" };
+      return { ok: true, report: await tickTask(task) };
+    }
+  }
+  return { error: `unknown tool ${name}` };
+}
+
+async function scheduleAi(taskId: string, body: any) {
+  const snap = await scheduleSnapshot(taskId);
+  const system = `أنت مساعد "جدول المبرمجين" في منصة "ذروة العلم"، تتحدث مع الأدمن فقط بالعربية (يفهم العامية الأردنية).
+تعرف سير العمل: كل مبرمج له نافذة عمل؛ المهمة تصله فقط داخل نافذته وبعد أن يُنهي من قبله ما تعتمد عليه؛
+موعد تسليمها نهاية نافذته؛ إذا تأخر من قبله يصله «مؤجّلة» ويستلمها تلقائياً بعد الإنجاز؛ ويأخذ نقاطاً إضافية إذا سلّم بالموعد.
+- اعتمد فقط على البيانات أدناه ونتائج الأدوات؛ لا تخترع.
+- عند السؤال "طمّني": من في وقته الآن، ما المسلَّم وما المتأخر وما المؤجّل ولماذا، وما التالي ومتى.
+- عند طلب تعديل: نفّذه بالأدوات ثم قل بالضبط ما تغيّر. المهام التي وصلت لأصحابها لا تُعدّل.
+- إذا كان التعديل يكسر الترتيب (مثلاً مهمة تعتمد على مهمة بيوم لاحق) نبّه الأدمن.
+- ردود قصيرة منظمة بنقاط.
+الوقت الآن في عمّان: ${ammanNow()}
+
+${snap.text}`;
+  const messages: any[] = [{ role: "system", content: system }, ...cleanHistory(body?.messages)];
+  let changed = false;
+  for (let round = 0; round < 6; round++) {
+    const msg = await geminiChat({ messages, tools: SCHEDULE_TOOLS, tool_choice: "auto", temperature: 0.2, max_tokens: 2500 });
+    const calls: any[] = msg.tool_calls ?? [];
+    messages.push({ role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) });
+    if (!calls.length) return { reply: String(msg.content ?? "").trim(), changed };
+    for (const c of calls) {
+      let args: any = {};
+      try { args = JSON.parse(c.function?.arguments || "{}"); } catch { /* empty */ }
+      let out: unknown;
+      try { out = await scheduleTool(taskId, c.function?.name, args); } catch (e) { out = { error: String((e as Error)?.message ?? e).slice(0, 200) }; }
+      if ((out as any)?.ok) changed = true;
+      messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 6000) });
+    }
+  }
+  return { reply: "الطلب طويل؛ قسّمه لخطوات أصغر من فضلك.", changed };
+}
+
 // ---------------------------------------------------------------- entry
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -883,6 +1018,7 @@ Deno.serve(async (req) => {
     if (action === "plan") return await plan(taskId);
     if (action === "send_now") return await sendNow(taskId);
     if (action === "resend_day") return json(await resendToday(taskId));
+    if (action === "schedule_ai") return json(await scheduleAi(taskId, body));
     return json({ error: "unknown action" }, 400);
   } catch (e) {
     if (e instanceof UserError) return json({ error: e.message }, e.status);

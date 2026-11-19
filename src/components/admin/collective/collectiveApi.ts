@@ -283,3 +283,7 @@ export const commandAi = (messages: ChatTurn[]) =>
   callAi({ action: 'command', messages }) as Promise<CommandResult>;
 export const confirmPending = (pending: PendingAction) =>
   callAi({ action: 'confirm', pending }) as Promise<{ ok: boolean; reply: string }>;
+
+/** The programmers' timetable assistant: knows the live schedule, answers, and edits windows/subtasks. */
+export const scheduleAi = (taskId: string, messages: ChatTurn[]) =>
+  callAi({ action: 'schedule_ai', task_id: taskId, messages }) as Promise<{ reply: string; changed: boolean }>;

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ImagePicker, TeamImage } from './TeamImages';
 import { TaskPointsActions } from './TaskPointsActions';
+import { TaskCountdown } from './TaskCountdown';
 import {
   ROLE_LABELS,
   ROLE_PROOF,
@@ -295,8 +296,8 @@ export const TaskDialog: React.FC<{
             {isScheduled(task) && ` · مجدولة: تصل للعضو ${formatDate(task.publish_at)}`}
             {task.due_at && ` · التسليم: ${formatDate(task.due_at)}`}
             {isOverdue(task) && ' · متأخرة'}
-            {task.points !== null && ` · ${task.points} نقطة`}
           </DialogDescription>
+          <div className="pt-1"><TaskCountdown task={task} /></div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -371,9 +372,9 @@ const TaskCard: React.FC<{ task: TeamTask; members: TeamMember[]; onOpen: () => 
       {isScheduled(task) && <span className="font-semibold text-primary">· تُرسل {formatDate(task.publish_at)}</span>}
       {task.due_at && <span>· {formatDate(task.due_at)}</span>}
       {task.source_task_id && <span className="text-primary">· من المدقق</span>}
-      {task.points !== null && <span className="font-semibold text-primary">· {task.points} نقطة</span>}
       {task.quality_status === 'no_remarks' && <span className="text-success">· جودة ✓</span>}
     </div>
+    <div className="mt-1.5"><TaskCountdown task={task} compact /></div>
   </button>
 );
 
