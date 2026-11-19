@@ -59,11 +59,18 @@ const RoleEmails: React.FC<{
       toast.error('اكتب إيميلاً صحيحاً');
       return;
     }
+    if (/@(gmil|gmial|gamil|gmai|gnail|hotmial|yaho)\./i.test(value) && !window.confirm(`الإيميل ${value} يبدو فيه خطأ إملائي (مثل gmil بدل gmail). أضيفه كما هو؟`)) return;
     setBusy(true);
     // user_id is resolved from the email by a database trigger
     const { error } = await supabase.from('team_members').insert({ email: value, role } as never);
     setBusy(false);
-    if (error) toast.error(error.code === '23505' ? 'هذا الإيميل مضاف لهذا الدور مسبقاً' : errorMessage(error));
+    if (error) {
+      toast.error(
+        error.code === '23505' ? 'هذا الإيميل مضاف لهذا الدور مسبقاً'
+          : /TEAM_ROLE_FULL/.test(error.message) ? 'هذا الدور ممتلئ حسب «إدارة الفريق ← الإعدادات». ارفع الحد أو احذف عضواً أولاً.'
+          : errorMessage(error),
+      );
+    }
     else {
       setEmail('');
       toast.success('أضيف العضو');

@@ -93,12 +93,20 @@ import { AIAgentsManagementHub } from '@/components/admin/AIAgentsManagementHub'
 import { AdminTasksAuditorsHub } from '@/components/admin/AdminTasksAuditorsHub';
 import CollectiveTasksPanel from '@/components/admin/collective/CollectiveTasksPanel';
 import PointsSystemPanel from '@/components/admin/points/PointsSystemPanel';
+import TeamHub, { type TeamSection } from '@/components/admin/teamHub/TeamHub';
+
+/** Old team tabs now live inside «إدارة الفريق»; old links (?tab=terminal …) open the matching section. */
+const TEAM_TAB_SECTION: Partial<Record<string, TeamSection>> = {
+  employees: 'members', 'supervisor-hub': 'members', 'page-files': 'members', 'no-tasks': 'members',
+  'collective-tasks': 'collective', points: 'points', terminal: 'terminal',
+};
 import SafeBoundary from '@/components/common/SafeBoundary';
 import StudentMasteryPassportCard from '@/components/profile/StudentMasteryPassportCard';
 import { supabase } from '@/integrations/supabase/client';
 
 export type AdminTab = 
   | 'overview'
+  | 'team'
   | 'supervisor-hub'
   | 'page-files'
   | 'tasks-hub'
@@ -241,6 +249,14 @@ export const SuperAdminControlHub: React.FC = () => {
     try {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get('tab') as AdminTab;
+      const section = tabParam ? TEAM_TAB_SECTION[tabParam] : undefined;
+      if (section) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', 'team');
+        url.searchParams.set('section', section);
+        window.history.replaceState({}, '', url.toString());
+        return 'team';
+      }
       if (tabParam) return tabParam;
     } catch {}
     return 'overview';
@@ -637,14 +653,7 @@ export const SuperAdminControlHub: React.FC = () => {
     {
       title: 'الرؤية والقيادة والمؤشرات الحية',
       tabs: [
-        { id: 'supervisor-hub', label: 'لوحة التواصل مع المشرف', icon: UserCheck, badge: 'مباشر', description: 'شات مباشر مع المشرف، مهام المشرف، والذكاء الاصطناعي المسؤول عن المهام' },
-        { id: 'page-files', label: 'مكان الملفات (مسؤول الصفحة)', icon: FolderOpen, badge: 'Drive', description: 'إعطاء الملفات والفيديوهات لمسؤول الصفحة بالوصف ورابط Google Drive (بصلاحية للمشرف أيضاً)' },
-        { id: 'collective-tasks', label: 'المهام الجماعية', icon: Users, badge: 'جديد', description: 'مهمة كبيرة لفريق كامل: خطة يومية بالذكاء الاصطناعي وإرسال مجدول' },
-        { id: 'points', label: 'نظام النقاط', icon: Trophy, badge: 'عادل', description: 'احتساب تلقائي لنقاط الفريق، ترتيب بمؤشر الأداء، السجل والتعديل اليدوي' },
-        { id: 'tasks-hub', label: 'المهام والمدققين ونقاط AI', icon: CheckSquare, badge: 'جديد', description: 'فلترة المهام المنجزة للمدققين والذكاء الاصطناعي واحتساب النقاط' },
-        { id: 'terminal', label: 'الطرفية والصلاحيات', icon: Terminal, badge: 'Kill', description: 'من يستخدم الطرفية، حصص الأوامر، الجلسات النشطة وزر الإيقاف الفوري' },
-        { id: 'employees', label: 'لوحة تحكم الموظفين', icon: Users, badge: 'الفريق', description: 'أدوار فريق المسابقة، إسناد المهام، الإنجازات، ومراقبة المحادثات' },
-        { id: 'no-tasks', label: 'عدم وجود مهام', icon: Coffee, badge: 'راحة اليوم', description: 'عرض جميع أعضاء الفريق ومسمياتهم وتفعيل نافذة الراحة الخضراء لليوم' },
+        { id: 'team', label: 'إدارة الفريق', icon: Users, badge: 'الكل', description: 'الأعضاء والمهام اليومية، المهام الجماعية المُوقّتة، الموافقات، النقاط، الطرفية والجلسات، وإعدادات الفريق في مكان واحد' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
         { id: 'audit', label: 'سجل النشاط والأمان ("اعرف الإبرة")', icon: ShieldAlert, badge: `${auditLogs.length}`, description: 'رصد كل حركة وتعديل بالثانية مع التفاصيل' },
@@ -1048,7 +1057,16 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'overview' && (
               <SafeBoundary name="ExecutiveOverviewTab">
                 <div className="space-y-8">
-                  <ExecutiveOverviewTab onNavigateTab={(tab) => setCurrentTab(tab as AdminTab)} />
+                  <ExecutiveOverviewTab onNavigateTab={(tab) => {
+                  const section = TEAM_TAB_SECTION[tab];
+                  if (section) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', 'team');
+                    url.searchParams.set('section', section);
+                    window.history.replaceState({}, '', url.toString());
+                    setCurrentTab('team');
+                  } else setCurrentTab(tab as AdminTab);
+                }} />
                   <StudentMasteryPassportCard
                     studentName="سجل بطاقة الإتقان الأكاديمي الموحدة للمدرسة"
                     schoolName="مدرسة عنبه الثانوية الشاملة للبنين"
@@ -1059,6 +1077,12 @@ export const SuperAdminControlHub: React.FC = () => {
                     baseSolvedPuzzles={48}
                   />
                 </div>
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'team' && (
+              <SafeBoundary name="TeamHub">
+                <TeamHub />
               </SafeBoundary>
             )}
 
