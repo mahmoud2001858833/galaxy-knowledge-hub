@@ -674,6 +674,36 @@ serve(async (req) => {
         }
         // AI agents: each has its own permission, daily messages and daily tokens (one message is counted here)
         let agentUse: Record<string, any> | null = null;
+        if ((kind === 'claude' || kind === 'antigravity' || kind === 'auto') && !begin.is_principal) {
+          // one agent job at a time per member: a job keeps running after they leave the page, and
+          // /terminal re-attaches to it, so a second one would only compete for the same computer.
+          // (queued rows older than 2 minutes are dropped by the bridge and do not count)
+          const { data: open } = await service
+            .from('bridge_jobs')
+            .select('id, kind, status, created_at')
+            .eq('user_id', user.id)
+            .in('kind', ['claude', 'antigravity'])
+            .or(`status.eq.running,and(status.eq.queued,created_at.gt.${new Date(Date.now() - 120_000).toISOString()})`)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (open) {
+            const msg = `${open.kind === 'antigravity' ? 'Antigravity' : 'Claude'} is still working on your previous task. Wait for it to finish (or stop it with Ctrl+C), then send the next one.`;
+            out(c.yellow(msg));
+            await service.rpc('terminal_finish_command', { p_log_id: begin.log_id, p_status: 'error', p_preview: `agent_busy: ${msg}`, p_duration_ms: 0 });
+            send({
+              t: 'end',
+              status: 'denied',
+              reason: 'agent_busy',
+              detail: 'الذكاء الاصطناعي ما زال يعمل على مهمتك السابقة. انتظر حتى ينتهي ثم أرسل المهمة التالية.',
+              job_id: open.id,
+              job_kind: open.kind,
+              quota: begin.quota ?? null,
+            });
+            controller.close();
+            return;
+          }
+        }
         if (kind === 'claude' || kind === 'antigravity' || kind === 'auto') {
           const { data: ab, error: abError } = await service.rpc('terminal_agent_begin', { p_user_id: user.id, p_agent: kind });
           if (abError || !ab) return fail(`agent: ${abError?.message ?? 'check failed'}`);

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Ban, KeyRound, Laptop, Loader2, Pencil, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, UserPlus, Users } from 'lucide-react';
+import { Activity, Ban, Clock, KeyRound, Laptop, Loader2, Pencil, Power, RotateCcw, ScrollText, ShieldCheck, Square, TerminalSquare, Trash2, UserPlus, Users } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
 import { BridgeProjectsCard } from '@/components/admin/BridgeProjectsCard';
@@ -238,6 +238,153 @@ const BridgeCard: React.FC = () => {
   );
 };
 
+/** Remaining time of a session, refreshed every second (null = no limit). */
+const useNow = (ms = 1000) => {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), ms);
+    return () => window.clearInterval(id);
+  }, [ms]);
+  return now;
+};
+const leftText = (iso: string, now: number) => {
+  const left = new Date(iso).getTime() - now;
+  if (left <= 0) return 'انتهى الوقت';
+  const m = Math.floor(left / 60000);
+  const sec = Math.floor((left % 60000) / 1000);
+  return m >= 60 ? `${Math.floor(m / 60)} س ${m % 60} د` : `${m}:${String(sec).padStart(2, '0')}`;
+};
+
+/**
+ * «الجلسات النشطة»: who has the terminal open, since when and until when, whether an agent job of
+ * theirs is running, and buttons to add time or end the session (terminal_extend_session /
+ * terminal_admin_end_session, principal only).
+ */
+const ActiveSessionsCard: React.FC<{ sessions: Session[]; onChanged: () => void; onBan: (userId: string) => void }> = ({ sessions, onChanged, onBan }) => {
+  const now = useNow();
+  const [jobs, setJobs] = useState<Pick<BridgeJob, 'id' | 'user_id' | 'kind' | 'status' | 'created_at'>[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const loadJobs = useCallback(async () => {
+    const { data } = await supabase.from('bridge_jobs').select('id, user_id, kind, status, created_at').in('status', ['queued', 'running']).order('created_at', { ascending: false });
+    setJobs(data ?? []);
+  }, []);
+  useEffect(() => {
+    loadJobs();
+    const ch = supabase
+      .channel(`terminal-active-jobs-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bridge_jobs' }, loadJobs)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [loadJobs]);
+
+  const extend = async (s: Session, minutes: number) => {
+    setBusy(`${s.id}-${minutes}`);
+    const { error } = await supabase.rpc('terminal_extend_session' as never, { p_session_id: s.id, p_minutes: minutes } as never);
+    setBusy(null);
+    if (error) toast.error(errText(error));
+    else {
+      toast.success(`أُضيفت ${minutes} دقيقة لجلسة ${s.email}`);
+      onChanged();
+    }
+  };
+
+  const end = async (s: Session) => {
+    const reason = window.prompt(`إنهاء جلسة ${s.email}؟ اكتب سبباً (اختياري):`, '');
+    if (reason === null) return;
+    setBusy(`${s.id}-end`);
+    const { data, error } = await supabase.rpc('terminal_admin_end_session' as never, { p_session_id: s.id, p_reason: reason || null } as never);
+    setBusy(null);
+    if (error) toast.error(errText(error));
+    else {
+      toast.success(data ? 'أُنهيت الجلسة' : 'الجلسة منتهية أصلاً');
+      onChanged();
+    }
+  };
+
+  return (
+    <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
+      <h3 className="flex items-center gap-2 font-bold">
+        <Activity className="h-4 w-4 text-success" /> الجلسات النشطة
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        مدّد وقت جلسة عضو أو أنهِها؛ يرى العضو العدّاد يتحدّث فوراً. خروج العضو من الصفحة لا يوقف مهمة الذكاء الاصطناعي الجارية، أما «إنهاء الجلسة» من هنا فيوقفها.
+      </p>
+      {sessions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">لا توجد جلسات نشطة.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground">
+              <tr className="text-right">
+                <th className="p-2">المستخدم</th>
+                <th className="p-2">بدأت</th>
+                <th className="p-2">تنتهي</th>
+                <th className="p-2">المتبقي</th>
+                <th className="p-2">الأوامر</th>
+                <th className="p-2">مهمة الذكاء الاصطناعي</th>
+                <th className="p-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((s) => {
+                const job = jobs.find((j) => j.user_id === s.user_id);
+                const lowTime = !!s.expires_at && new Date(s.expires_at).getTime() - now <= 5 * 60000;
+                return (
+                  <tr key={s.id} className="border-t border-border align-middle">
+                    <td className="p-2 font-semibold" dir="ltr">
+                      {s.email} {s.is_principal && <ShieldCheck className="inline h-3.5 w-3.5 text-primary" />}
+                    </td>
+                    <td className="p-2 text-xs">
+                      {fmt(s.started_at)}
+                      <div className="text-muted-foreground">منذ {minutesSince(s.started_at)} د</div>
+                    </td>
+                    <td className="p-2 text-xs">{s.expires_at ? fmt(s.expires_at) : 'بلا حد'}</td>
+                    <td className={`p-2 text-xs font-bold ${lowTime ? 'text-warning' : ''}`}>
+                      {s.expires_at ? <span dir="ltr">{leftText(s.expires_at, now)}</span> : <span className="text-primary">بلا حدود</span>}
+                    </td>
+                    <td className="p-2">{s.commands_count}</td>
+                    <td className="p-2 text-xs">
+                      {job ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-bold text-primary">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          {job.kind} · {job.status === 'running' ? 'يعمل' : 'بالانتظار'}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">لا يوجد</span>
+                      )}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        {s.expires_at &&
+                          [15, 30, 60].map((m) => (
+                            <Button key={m} size="sm" variant="outline" className="h-8 gap-1 px-2" disabled={!!busy} onClick={() => extend(s, m)}>
+                              {busy === `${s.id}-${m}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5" />}+{m} د
+                            </Button>
+                          ))}
+                        <Button size="sm" variant="outline" className="h-8 gap-1" disabled={!!busy} onClick={() => end(s)}>
+                          {busy === `${s.id}-end` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />} إنهاء الجلسة
+                        </Button>
+                        {!s.is_principal && (
+                          <Button size="sm" variant="destructive" className="h-8 gap-1" disabled={!!busy} onClick={() => onBan(s.user_id)}>
+                            <Ban className="h-3.5 w-3.5" /> إنهاء وحظر
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+};
+
 export const TerminalAdminPanel: React.FC = () => {
   const { loading, roles } = useTeamRoles();
   const { quotas, sessions, logs, loadQuotas, loadSessions } = useLive();
@@ -328,53 +475,8 @@ export const TerminalAdminPanel: React.FC = () => {
 
       <PlanUsageCard />
 
-      {/* active sessions + kill switch */}
-      <section className="space-y-3 rounded-3xl border border-border bg-card p-5">
-        <h3 className="flex items-center gap-2 font-bold">
-          <Activity className="h-4 w-4 text-success" /> الجلسات النشطة الآن
-        </h3>
-        {active.length === 0 ? (
-          <p className="text-sm text-muted-foreground">لا توجد جلسات نشطة.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-muted-foreground">
-                <tr className="text-right">
-                  <th className="p-2">المستخدم</th>
-                  <th className="p-2">بدأت</th>
-                  <th className="p-2">المدة</th>
-                  <th className="p-2">الأوامر</th>
-                  <th className="p-2">تنتهي</th>
-                  <th className="p-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {active.map((s) => (
-                  <tr key={s.id} className="border-t border-border">
-                    <td className="p-2 font-semibold" dir="ltr">
-                      {s.email} {s.is_principal && <ShieldCheck className="inline h-3.5 w-3.5 text-primary" />}
-                    </td>
-                    <td className="p-2 text-xs">{fmt(s.started_at)}</td>
-                    <td className="p-2 text-xs">{minutesSince(s.started_at)} د</td>
-                    <td className="p-2">{s.commands_count}</td>
-                    <td className="p-2 text-xs">{s.expires_at ? fmt(s.expires_at) : 'بلا حد'}</td>
-                    <td className="flex justify-end gap-2 p-2">
-                      <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => kill({ sessionId: s.id })}>
-                        <Power className="h-3.5 w-3.5" /> إنهاء
-                      </Button>
-                      {!s.is_principal && (
-                        <Button size="sm" variant="destructive" className="h-8 gap-1" onClick={() => kill({ userId: s.user_id, ban: true })}>
-                          <Ban className="h-3.5 w-3.5" /> إنهاء وحظر
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      {/* active sessions: time control + kill switch */}
+      <ActiveSessionsCard sessions={active} onChanged={loadSessions} onBan={(userId) => kill({ userId, ban: true })} />
 
       {/* access & quotas */}
       <section className="space-y-4 rounded-3xl border border-border bg-card p-5">

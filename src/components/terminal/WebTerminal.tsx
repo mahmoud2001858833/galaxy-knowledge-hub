@@ -49,7 +49,22 @@ interface Props {
   active?: boolean;
   /** Project on the principal's computer: 'main' (ذروة العلم) or a bridge_projects slug. */
   project?: string;
+  /**
+   * An agent job of this user that is still running from an earlier visit (any session): this terminal
+   * follows its output live and keeps input locked until it finishes.
+   */
+  attachJob?: AttachJob | null;
+  /** The attached job finished (or could not be followed). */
+  onAttachDone?: () => void;
 }
+
+export type JobKind = 'claude' | 'antigravity' | 'shell' | 'submit';
+export interface AttachJob {
+  id: string;
+  kind: JobKind;
+  created_at: string;
+}
+
 
 const FIXED_INTRO: Record<Exclude<Mode, 'cloud'>, string> = {
   claude: "\x1b[1;35mClaude Code\x1b[0m \x1b[2m— on the principal's computer. Type your request and press Enter; every line is a message. /new starts a new conversation.\x1b[0m",
@@ -114,7 +129,7 @@ const modeFor = (word: string): Exclude<Mode, 'cloud'> | null => {
   return null;
 };
 
-export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true, project = 'main' }) => {
+export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedMode, primary = true, active = true, project = 'main', attachJob = null, onAttachDone }) => {
   const projectRef = useRef(project);
   const hostRef = useRef<HTMLDivElement>(null);
   // Phones/tablets: the on-screen keyboard (suggestions, composition) re-sends words to xterm and the
@@ -137,7 +152,8 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
     claudeSession: null as string | null,
     agentSession: null as string | null, // Antigravity conversation id
     asking: false, // the running job's agent asked a question: Enter sends the line as the answer
-    job: null as { id: string; stop: () => void } | null,
+    // stop = cancel the job on the computer; detach = stop following it here (it keeps running)
+    job: null as { id: string; stop: () => void; detach: () => void } | null,
   });
   const feedRef = useRef<(data: string) => void>(() => {});
   // prints a line above the input line without disturbing what the user is typing
@@ -184,7 +200,10 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       if (s.ended) return;
       s.ended = true;
       s.abort?.abort();
-      s.job?.stop();
+      // only the principal's kill switch stops the work; a closed or timed-out session leaves the
+      // agent running on the computer (the next visit to /terminal re-attaches to it)
+      if (end.kind === 'terminated') s.job?.stop();
+      else s.job?.detach();
       termRef.current?.write(`\r\n\r\n\x1b[1;31m■ ${message}\x1b[0m\r\n`);
       termRef.current?.options && (termRef.current.options.cursorBlink = false);
       onEnded(end);
@@ -198,7 +217,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
    * through realtime. Resolves when the job is finished, stopped or the session is locked.
    */
   const followJob = useCallback(
-    (jobId: string, kind: 'claude' | 'antigravity' | 'shell' | 'submit') =>
+    (jobId: string, kind: JobKind) =>
       new Promise<void>((resolveJob) => {
         const term = termRef.current!;
         const s = state.current;
@@ -240,6 +259,15 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
           stop: () => {
             callTerminal({ action: 'cancel', job_id: jobId }).catch(() => {});
             if (s.ended) finish({ status: 'cancelled', exit_code: null, error: null, claude_session: null, cost_usd: null });
+          },
+          detach: () => {
+            if (finished) return;
+            finished = true;
+            window.clearTimeout(waitHint);
+            term.write("\r\n\x1b[2m■ The agent keeps working on the principal's computer; open the terminal again to follow it.\x1b[0m");
+            supabase.removeChannel(channel);
+            s.job = null;
+            resolveJob();
           },
         };
         const channel = supabase
@@ -353,6 +381,14 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
                 await followJob(msg.job_id, msg.kind);
               } else if (msg.t === 'end') {
                 if (msg.quota !== undefined) onQuota(msg.quota);
+                if (msg.reason === 'agent_busy') {
+                  toast.warning(msg.detail ?? 'الذكاء الاصطناعي ما زال يعمل على مهمتك السابقة.');
+                  // follow the job that is still running, so its output shows here and Ctrl+C can stop it
+                  if (msg.job_id && !s.job) {
+                    term.write('\r\n\x1b[1;35m🤖 Following your running task…\x1b[0m');
+                    await followJob(msg.job_id, msg.job_kind === 'antigravity' ? 'antigravity' : 'claude');
+                  }
+                }
                 if (msg.session_ended) {
                   s.busy = false;
                   lockWith({ kind: msg.reason === 'session_expired' ? 'expired' : 'terminated', reason: msg.detail ?? null }, 'Session ended.');
@@ -378,6 +414,30 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lockWith, onQuota, prompt, session.session_id],
   );
+
+  // Re-attach to an agent job that is still running from an earlier visit: stream it, lock input.
+  const attachedRef = useRef<string | null>(null);
+  const onAttachDoneRef = useRef(onAttachDone);
+  onAttachDoneRef.current = onAttachDone;
+  useEffect(() => {
+    if (!ready || !attachJob || attachedRef.current === attachJob.id) return;
+    attachedRef.current = attachJob.id;
+    const s = state.current;
+    const term = termRef.current;
+    if (!term || s.ended || s.busy) return void onAttachDoneRef.current?.();
+    s.busy = true;
+    const since = new Date(attachJob.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    term.write(`\r\n\x1b[1;35m🤖 AI is working on your task\x1b[0m \x1b[2m(started ${since}). Input is locked until it finishes; Ctrl+C stops it.\x1b[0m`);
+    followJob(attachJob.id, attachJob.kind).finally(() => {
+      s.busy = false;
+      onAttachDoneRef.current?.();
+      if (!s.ended) {
+        prompt();
+        const queued = s.pending.splice(0);
+        for (const d of queued) feedRef.current(d);
+      }
+    });
+  }, [ready, attachJob, followJob, prompt]);
 
   // Create the terminal once per session
   useEffect(() => {
