@@ -487,6 +487,31 @@ function reportSubmitted(out, sub) {
   );
 }
 
+// The scheduler asked for one combined approval request for a batched project (the team finished the day).
+async function processBatches(baseCfg, rpc) {
+  let claims;
+  try {
+    claims = (await rpc('bridge_batch_claim', {})) ?? [];
+  } catch {
+    return; // migration not applied yet
+  }
+  for (const c of claims) {
+    try {
+      const cfg = projectCfg(baseCfg, c.slug);
+      const note = String(c.note ?? '').trim();
+      const sub = await submitChanges(cfg, rpc, {
+        prompt: note,
+        message: `Team day: ${note.split('\n')[0] || 'collective work'}`.slice(0, 72),
+        reply: note ? `SUMMARY: ${note.split('\n')[0]}\nDETAILS:\n${note}` : null,
+      });
+      log(`batch ${c.slug}: ${sub ? `${sub.paths.length} file(s) sent for approval` : 'no changes'}`);
+      await rpc('bridge_batch_done', { p_project: c.slug });
+    } catch (e) {
+      log(`batch ${c.slug} failed:`, e.message); // claimed; retried after 10 minutes
+    }
+  }
+}
+
 // Carries out the principal's decisions: approved → commit + push the reviewed files; rejected → restore them.
 async function processDecisions(baseCfg, rpc) {
   for (;;) {
@@ -1357,7 +1382,12 @@ async function handle(baseCfg, rpc, job, state) {
   if (before) {
     try {
       const changed = changedSince(cfg, before);
-      if (changed.length) {
+      // batched projects (collective work): changes stay here and go in ONE request at the end of the day
+      const batched = changed.length && job.project && job.project !== 'main'
+        && (await rpc('bridge_project_mode', { p_project: job.project }).catch(() => 'per_job')) === 'batched';
+      if (batched) {
+        out.push('sys', `\n\x1b[33m● ${changed.length} changed file(s) saved in the project (live preview). They go to the admin in one combined approval request when the team finishes today's tasks.\x1b[0m\n`);
+      } else if (changed.length) {
         const message = job.kind === 'shell' ? commitMessageFor('', changed) : null;
         reportSubmitted(out, await submitChanges(cfg, rpc, { jobId: job.id, prompt: job.input, paths: changed, message, reply: r.reply ?? null }));
       }
@@ -1451,6 +1481,7 @@ async function main() {
       state.first = false;
       delay = 5000;
       await processDecisions(cfg, rpc);
+      await processBatches(cfg, rpc);
       try {
         await setupProjects(cfg, rpc);
         info.projects = Object.keys(cfg.projects ?? {});

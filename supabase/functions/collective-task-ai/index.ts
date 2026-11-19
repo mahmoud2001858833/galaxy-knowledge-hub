@@ -39,6 +39,7 @@ const PLAN_MODELS = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1
 type Task = {
   id: string; title: string; goals: string; final_vision: string; duration_days: number;
   send_at: string | null; status: string; plan: Plan | null; planner_notes?: string | null;
+  postpone_policy?: string; project_slug?: string | null; batch_through?: string | null;
 };
 type Member = { id: string; email: string; focus: string | null; work_start?: string; work_end?: string; work_days?: number[] };
 type PlanSubtask = {
@@ -427,7 +428,7 @@ async function deliverSubtask(task: Task, s: SubRow, m: MemberRow, person: Perso
  *   owner, and one "a colleague is waiting for you" notice to whoever is late.
  * When everything is done the task moves to review.
  */
-async function tickTask(task: Task & { postpone_policy?: string }) {
+async function tickTask(task: Task) {
   const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
   const [{ data: subs }, { data: members }] = await Promise.all([
     service.from("collective_subtasks").select(SUB_COLS).eq("task_id", task.id).order("position"),
@@ -447,9 +448,10 @@ async function tickTask(task: Task & { postpone_policy?: string }) {
   const day = currentDay(task);
   const done: unknown[] = [];
 
+  const batch = await maybeRequestBatch(task, rows, personBy, day);
   if (rows.every((r) => r.status === "done")) {
     await service.from("collective_tasks").update({ status: "review" }).eq("id", task.id).eq("status", "active");
-    return { closed: "all subtasks done -> review" };
+    return { closed: "all subtasks done -> review", batch };
   }
 
   for (const s of rows) {
@@ -486,6 +488,39 @@ async function tickTask(task: Task & { postpone_policy?: string }) {
     done.push({ postponed: s.position, reason });
   }
   return done;
+}
+
+/**
+ * Batched approval: when every subtask due so far (day_from <= today) is done and some finished since the
+ * last batch, ask the project's bridge for ONE approval request with all the changes, naming tasks and people.
+ */
+async function maybeRequestBatch(task: Task, rows: SubRow[], personBy: Map<string, Person>, day: number) {
+  if (!task.project_slug) return null;
+  const due = rows.filter((r) => r.day_from <= day);
+  if (!due.length || due.some((r) => r.status !== "done")) return null;
+  const since = task.batch_through ? new Date(task.batch_through).getTime() : 0;
+  const fresh = due.filter((r) => r.completed_at && new Date(r.completed_at).getTime() > since);
+  if (!fresh.length) return null;
+  const through = new Date(Math.max(...fresh.map((r) => new Date(r.completed_at!).getTime()))).toISOString();
+  // claim this batch once (two scheduler runs must not both request it)
+  let claim = service.from("collective_tasks").update({ batch_through: through }).eq("id", task.id);
+  claim = task.batch_through ? claim.eq("batch_through", task.batch_through) : claim.is("batch_through", null);
+  const { data: claimed } = await claim.select("id");
+  if (!claimed?.length) return null;
+  const lines = fresh.map((r) => {
+    const who = personBy.get((r.assignee_email ?? "").toLowerCase())?.name ?? r.assignee_email ?? "—";
+    return `• #${r.position} ${r.title} — ${who}${r.on_time === false ? " (متأخرة)" : ""}`;
+  });
+  const head = `«${task.title}» — اليوم ${day}: أنهى الفريق ${fresh.length} مهمة`;
+  const { data: proj } = await service.from("bridge_projects").select("batch_note,batch_requested_at").eq("slug", task.project_slug).maybeSingle();
+  const prev = (proj as any)?.batch_requested_at ? String((proj as any)?.batch_note ?? "") : "";
+  const note = [prev, `${head}\n${lines.join("\n")}`].filter(Boolean).join("\n\n").slice(0, 4000);
+  await service.from("bridge_projects").update({ batch_requested_at: new Date().toISOString(), batch_note: note }).eq("slug", task.project_slug);
+  await service.from("team_notifications").insert({
+    recipient_role: "lead", task_id: null,
+    message: `${head}. أُرسل طلب موافقة واحد بكل التعديلات لمشروع ${task.project_slug} — راجعه من المعاينة الحيّة ثم وافق.`.slice(0, 500),
+  });
+  return { batch: fresh.length };
 }
 
 async function dispatchDue() {

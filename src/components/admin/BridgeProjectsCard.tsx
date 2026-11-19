@@ -216,7 +216,7 @@ const ProjectRow: React.FC<{ p: Project; grants: Grant[]; people: Person[]; relo
     reload();
   };
   // newer columns (migration 20261116120000) are not in the generated types yet
-  const extra = p as Project & { agent_only?: string | null; preview_enabled?: boolean; preview_url?: string | null; preview_status?: string | null };
+  const extra = p as Project & { agent_only?: string | null; preview_enabled?: boolean; preview_url?: string | null; preview_status?: string | null; approval_mode?: string; batch_requested_at?: string | null };
   const setOption = async (patch: Record<string, unknown>, ok: string) => {
     const { error } = await supabase.from('bridge_projects').update(patch as never).eq('id', p.id);
     if (error) return toast.error(errText(error));
@@ -297,6 +297,15 @@ const ProjectRow: React.FC<{ p: Project; grants: Grant[]; people: Person[]; relo
               e.target.checked ? 'المعاينة الحيّة تشتغل خلال دقيقة على جهازك' : 'أُوقفت المعاينة الحيّة')} />
           <span>معاينة حيّة (Local View) للفريق</span>
         </label>
+        <label className="flex cursor-pointer items-center gap-2">
+          <input type="checkbox" className="h-4 w-4 accent-primary" checked={extra.approval_mode === 'batched'}
+            onChange={(e) => setOption({ approval_mode: e.target.checked ? 'batched' : 'per_job' },
+              e.target.checked ? 'موافقة جماعية: طلب واحد عندما يُنهي الفريق مهام اليوم' : 'رجعت الموافقة بعد كل مهمة')} />
+          <span>موافقة جماعية (طلب واحد آخر اليوم)</span>
+        </label>
+        {extra.approval_mode === 'batched' && extra.batch_requested_at && (
+          <span className="text-muted-foreground">طلب الدفعة قيد الإرسال من جهازك…</span>
+        )}
         {extra.preview_enabled && (
           extra.preview_url
             ? <a href={extra.preview_url} target="_blank" rel="noreferrer" dir="ltr" className="truncate text-primary underline">{extra.preview_url.replace('https://', '')}</a>

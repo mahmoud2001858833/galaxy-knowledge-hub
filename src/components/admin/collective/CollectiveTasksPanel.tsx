@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   APPROVAL_LABEL, STATUS_LABEL, addSubtask, cancelTask, deleteSubtask, deleteTask, generatePlan, isEditable, listTasks,
-  loadTask, resendToday, parseEmails, saveTask, schedule, sendNow, setMembers, setPostponePolicy, teamEmails, timingOf, unschedule,
+  listProjects, loadTask, resendToday, setTaskProject, parseEmails, saveTask, schedule, sendNow, setMembers, setPostponePolicy, teamEmails, timingOf, unschedule,
   updateMemberWindow, updateSubtask, WEEKDAYS,
   type ApprovalRule, type CollectiveMember, type CollectiveTask, type PostponePolicy, type Subtask, type TaskDraft, type TickReport,
 } from './collectiveApi';
@@ -697,6 +697,9 @@ function WorkWindows({ task, members, team, onChanged }: {
   const names = useMemo(() => new Map(team.map((t) => [t.email, t.name])), [team]);
   const [policy, setPolicy] = useState<PostponePolicy>(task.postpone_policy ?? 'next_window');
   useEffect(() => setPolicy(task.postpone_policy ?? 'next_window'), [task.postpone_policy]);
+  const [projects, setProjects] = useState<{ slug: string; name: string; approval_mode: string }[]>([]);
+  useEffect(() => { listProjects().then(setProjects).catch(() => undefined); }, []);
+  const linked = projects.find((p) => p.slug === task.project_slug);
 
   return (
     <div className="space-y-3 rounded-xl border border-border bg-background p-4">
@@ -717,6 +720,19 @@ function WorkWindows({ task, members, team, onChanged }: {
             <option value="immediate">سلّمها فور إنجاز الزميل</option>
           </select>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Label className="text-xs">المشروع الذي يبنيه الفريق:</Label>
+        <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={task.project_slug ?? ''}
+          onChange={async (e) => {
+            try { await setTaskProject(task.id, e.target.value || null); toast.success('تم ربط المشروع'); await onChanged(); } catch (err) { toast.error(errText(err)); }
+          }}>
+          <option value="">— بلا مشروع —</option>
+          {projects.map((p) => <option key={p.slug} value={p.slug}>{p.name}</option>)}
+        </select>
+        {linked && (linked.approval_mode === 'batched'
+          ? <span className="text-muted-foreground">موافقة جماعية مفعّلة: طلب واحد بكل التعديلات حين يُنهي آخر شخص مهام اليوم.</span>
+          : <span className="text-destructive">المشروع على «موافقة بعد كل مهمة» — فعّل «موافقة جماعية» من الطرفية ← المشاريع.</span>)}
       </div>
       <div className="divide-y divide-border">
         {members.map((m) => <WindowRow key={m.id} m={m} name={names.get(m.email.toLowerCase()) ?? null} onChanged={onChanged} />)}

@@ -35,6 +35,8 @@ export interface CollectiveTask {
   approval_rule: ApprovalRule;
   /** when a dependency is late: wait for the owner's next window, or deliver as soon as it is done */
   postpone_policy: PostponePolicy;
+  /** the bridge project this team work builds (batched approval goes there) */
+  project_slug: string | null;
   planner_notes: string | null;
   plan: Plan | null;
   plan_generated_at: string | null;
@@ -171,6 +173,14 @@ export async function updateMemberWindow(id: string, w: { work_start: string; wo
   if (w.work_end <= w.work_start) throw new Error('نهاية وقت العمل يجب أن تكون بعد بدايته');
   if (!w.work_days.length) throw new Error('اختر يوم عمل واحداً على الأقل');
   fail((await db.from('collective_task_members').update(w).eq('id', id)).error);
+}
+
+export async function setTaskProject(taskId: string, slug: string | null) {
+  fail((await db.from('collective_tasks').update({ project_slug: slug }).eq('id', taskId)).error);
+}
+export async function listProjects(): Promise<{ slug: string; name: string; approval_mode: string }[]> {
+  const { data } = await db.from('bridge_projects').select('slug,name,approval_mode').order('created_at');
+  return (data ?? []) as { slug: string; name: string; approval_mode: string }[];
 }
 
 export async function setPostponePolicy(taskId: string, policy: PostponePolicy) {
