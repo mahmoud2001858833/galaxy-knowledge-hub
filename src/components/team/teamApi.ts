@@ -206,8 +206,21 @@ export function useTeamRoles() {
         if (active) setState({ loading: false, userId: null, roles: [] });
         return;
       }
-      const { data } = await supabase.rpc('team_my_roles');
-      if (active) setState({ loading: false, userId, roles: ((data as string[] | null) ?? []) as TeamRole[] });
+      const { data, error } = await supabase.rpc('team_my_roles');
+      if (!active) return;
+      // A failed re-check (network blip, token refresh) must not drop the member out of their dashboard:
+      // keep what we had and try again on the next check.
+      if (error) {
+        setState((prev) => (prev.loading ? { loading: false, userId, roles: [] } : prev));
+        return;
+      }
+      const roles = ((data as string[] | null) ?? []) as TeamRole[];
+      // same user and roles: keep the same state object so nothing below re-renders or remounts
+      setState((prev) =>
+        !prev.loading && prev.userId === userId && prev.roles.length === roles.length && prev.roles.every((r, i) => r === roles[i])
+          ? prev
+          : { loading: false, userId, roles },
+      );
     };
     load();
     // Deferred: awaiting Supabase calls inside this callback can deadlock the auth client
@@ -282,8 +295,9 @@ export function useTeamTasks() {
   const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
-    const { data } = await supabase.from('team_tasks').select('*').order('created_at', { ascending: false });
-    setTasks((data ?? []).filter((t) => !isSpecialTeamTaskRow(t)));
+    const { data, error } = await supabase.from('team_tasks').select('*').order('created_at', { ascending: false });
+    // a failed refresh keeps the tasks on screen instead of emptying the dashboard
+    if (!error) setTasks((data ?? []).filter((t) => !isSpecialTeamTaskRow(t)));
     setLoading(false);
   }, []);
 

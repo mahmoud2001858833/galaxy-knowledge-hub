@@ -39,11 +39,12 @@ export function useTerminalAccess(me: string) {
         .select('enabled, banned')
         .eq('user_id', me)
         .maybeSingle()
-        .then(({ data }) => setHas(!!data && data.enabled && !data.banned));
+        // on an error keep the current answer: a blip must not close the member's terminal
+        .then(({ data, error }) => !error && setHas(!!data && data.enabled && !data.banned));
     load();
     const ch = supabase
       .channel(`team-terminal-access-${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'usage_quotas' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'usage_quotas', filter: `user_id=eq.${me}` }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
@@ -107,6 +108,11 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
     if (!tabs.some((t) => t.id === tab)) setTab(tabs[0]?.id);
   }, [tabs, tab]);
 
+  const [terminalOpened, setTerminalOpened] = useState(false);
+  useEffect(() => {
+    if (tab === 'terminal') setTerminalOpened(true);
+  }, [tab]);
+
   if (!tab) return null;
 
   return (
@@ -129,7 +135,14 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
         ))}
         <MyPointsBadge me={me} />
       </div>
-      <TeamDashboard tab={tab} me={me} roles={roles} />
+      {tab !== 'terminal' && <TeamDashboard tab={tab} me={me} roles={roles} />}
+      {/* The terminal stays mounted once opened: leaving its tab only hides it, so the session (and a
+          running AI job's live output) is not closed and restarted every time the member switches tabs. */}
+      {terminalOpened && tabs.some((t) => t.id === 'terminal') && (
+        <div className={tab === 'terminal' ? '' : 'hidden'}>
+          <TeamDashboard tab="terminal" me={me} roles={roles} />
+        </div>
+      )}
     </div>
   );
 };
