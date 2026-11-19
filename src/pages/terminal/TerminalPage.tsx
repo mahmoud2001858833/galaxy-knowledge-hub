@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Ban, Bot, Clock, Cloud, ExternalLink, FolderGit2, Gauge, Laptop, Loader2, Lock, Maximize2, Minimize2, MonitorSmartphone, RefreshCw, ShieldCheck, Sparkles, SquareTerminal, TerminalSquare } from 'lucide-react';
 import { useBridgeStatus } from '@/components/terminal/useBridgeStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { SEO } from '@/components/SEO';
 import { PageHeader, PageShell } from '@/components/layout/PageShell';
 import { Button } from '@/components/ui/button';
-import { WebTerminal, callTerminal, type Mode, type QuotaInfo, type SessionEnd, type SessionInfo } from '@/components/terminal/WebTerminal';
+import { WebTerminal, callTerminal, type AttachJob, type Mode, type QuotaInfo, type SessionEnd, type SessionInfo } from '@/components/terminal/WebTerminal';
+import { findOpenAgentJob } from '@/components/terminal/openAgentJob';
 import { fmtTokens, usageToday, type AgentKey, type AgentUsageRow } from '@/components/terminal/agentUsage';
 
 type Quota = QuotaInfo & Partial<AgentUsageRow> & { allow_shell?: boolean; email?: string };
@@ -175,6 +177,8 @@ const END_TEXT: Record<SessionEnd['kind'], string> = {
   denied: 'رُفضت الجلسة.',
 };
 
+const WARN_MS = 5 * 60 * 1000;
+
 const useCountdown = (iso: string | null) => {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -183,10 +187,43 @@ const useCountdown = (iso: string | null) => {
     return () => window.clearInterval(id);
   }, [iso]);
   if (!iso) return null;
-  const left = Math.max(0, new Date(iso).getTime() - now);
-  const m = Math.floor(left / 60000);
-  const s = Math.floor((left % 60000) / 1000);
-  return `${m}:${String(s).padStart(2, '0')}`;
+  const leftMs = Math.max(0, new Date(iso).getTime() - now);
+  const h = Math.floor(leftMs / 3600000);
+  const m = Math.floor((leftMs % 3600000) / 60000);
+  const s = Math.floor((leftMs % 60000) / 1000);
+  const text = h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+  return { text, leftMs };
+};
+
+/**
+ * The session's end time, live: the principal can extend a session from the admin panel, so the row is
+ * watched through realtime (plus a slow refresh in case a realtime message is missed).
+ */
+const useLiveExpiry = (sessionId: string | null, initial: string | null) => {
+  const [expiresAt, setExpiresAt] = useState<string | null>(initial);
+  useEffect(() => setExpiresAt(initial), [sessionId, initial]);
+  useEffect(() => {
+    if (!sessionId) return;
+    const load = () =>
+      supabase
+        .from('user_terminal_sessions')
+        .select('expires_at')
+        .eq('id', sessionId)
+        .maybeSingle()
+        .then(({ data }) => data && setExpiresAt(data.expires_at));
+    const ch = supabase
+      .channel(`terminal-expiry-${sessionId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_terminal_sessions', filter: `id=eq.${sessionId}` }, (p) =>
+        setExpiresAt((p.new as { expires_at: string | null }).expires_at),
+      )
+      .subscribe();
+    const id = window.setInterval(load, 60000);
+    return () => {
+      supabase.removeChannel(ch);
+      window.clearInterval(id);
+    };
+  }, [sessionId]);
+  return expiresAt;
 };
 
 /** The terminal itself (session, tabs, terminals); used by /terminal and by the employees dashboard. */
@@ -259,7 +296,36 @@ export const TerminalWorkspace: React.FC = () => {
   }, [userEmail, isPrincipal]);
 
   const { status: bridge } = useBridgeStatus(state.kind === 'ready');
-  const countdown = useCountdown(state.kind === 'ready' && !ended ? state.session.expires_at : null);
+  const sessionId = state.kind === 'ready' ? state.session.session_id : null;
+  const expiresAt = useLiveExpiry(sessionId, state.kind === 'ready' ? state.session.expires_at : null);
+  const countdown = useCountdown(state.kind === 'ready' && !ended ? expiresAt : null);
+  const warnShown = useRef<string | null>(null);
+  const warning = !!countdown && countdown.leftMs > 0 && countdown.leftMs <= WARN_MS;
+  useEffect(() => {
+    // one toast per end time: an extension past the warning window re-arms it
+    if (warning && expiresAt && warnShown.current !== expiresAt) {
+      warnShown.current = expiresAt;
+      toast.warning('تبقّى أقل من 5 دقائق على انتهاء جلسة الطرفية. احفظ عملك أو اطلب تمديد الوقت من الأدمن.');
+    }
+  }, [warning, expiresAt]);
+
+  // An agent job still running from an earlier visit (the member left the page or lost the connection):
+  // follow it in its agent's tab instead of letting a second one start.
+  const [attachJob, setAttachJob] = useState<AttachJob | null>(null);
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+    supabase.auth.getSession().then(async ({ data }) => {
+      const uid = data.session?.user.id;
+      if (!uid) return;
+      const job = await findOpenAgentJob(uid);
+      if (!cancelled) setAttachJob(job);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
+  const onAttachDone = useCallback(() => setAttachJob(null), []);
   const onEnded = useCallback((e: SessionEnd) => setEnded(e), []);
   const onQuota = useCallback((q: QuotaInfo | null) => q && setQuota((prev) => ({ ...(prev ?? {}), ...q }) as Quota), []);
 
@@ -288,6 +354,17 @@ export const TerminalWorkspace: React.FC = () => {
     if (lockedAgent && current !== lockedAgent && tabs.some((t) => t.id === lockedAgent)) pick(lockedAgent);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lockedAgent, project, tabs.length]);
+  // the terminal that follows the running job: its agent's tab when the user has it, else the platform tab
+  // decided once per job, after the member's quota (which tabs they have) has loaded
+  const attachPick = useRef<{ job: string; tab: Mode } | null>(null);
+  if (attachJob && (isPrincipal || quota) && attachPick.current?.job !== attachJob.id) {
+    attachPick.current = { job: attachJob.id, tab: tabs.some((t) => t.id === attachJob.kind) ? (attachJob.kind as Mode) : 'cloud' };
+  }
+  const attachTab: Mode | null = attachJob && attachPick.current?.job === attachJob.id ? attachPick.current.tab : null;
+  useEffect(() => {
+    if (attachTab && attachTab !== current) pick(attachTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachTab]);
 
   return (
     <div className="space-y-4" dir="rtl">
@@ -356,11 +433,6 @@ export const TerminalWorkspace: React.FC = () => {
                   {bridge.online ? `الجسر متصل${bridge.host ? ` · ${bridge.host}` : ''}` : 'الجسر غير متصل'}
                 </span>
               )}
-                            {countdown && (
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" /> متبقٍ {countdown}
-                </span>
-              )}
               {isPrincipal && (
                 <Link to="/admin?tab=terminal" className="font-semibold text-primary hover:underline">
                   إدارة الصلاحيات والحصص
@@ -372,6 +444,35 @@ export const TerminalWorkspace: React.FC = () => {
                 <span className="h-3 w-3 rounded-full bg-success/70" />
               </span>
             </div>
+            {!ended && (
+              <div
+                role="timer"
+                aria-live="polite"
+                className={`flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-sm ${warning ? 'bg-warning/10 text-warning' : 'bg-muted/20'}`}
+              >
+                <Clock className="h-4 w-4" aria-hidden />
+                <span className="font-semibold">وقت الجلسة المتبقي:</span>
+                {isPrincipal || !expiresAt ? (
+                  <span className="font-bold text-primary">بلا حدود</span>
+                ) : countdown && countdown.leftMs > 0 ? (
+                  <span className="font-mono font-bold" dir="ltr">
+                    {countdown.text}
+                  </span>
+                ) : (
+                  <span className="font-bold text-destructive">انتهى الوقت</span>
+                )}
+                {warning && <span className="text-xs">أقل من 5 دقائق — احفظ عملك أو اطلب التمديد من الأدمن.</span>}
+              </div>
+            )}
+            {attachJob && !ended && (
+              <div className="flex flex-wrap items-center gap-2 border-b border-border bg-primary/10 px-4 py-2 text-sm" role="status" aria-live="polite">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
+                <span className="font-bold">🤖 الذكاء الاصطناعي يعمل على مهمتك…</span>
+                <span className="text-xs text-muted-foreground">
+                  بدأت المهمة في زيارة سابقة وما زالت تعمل. تُعرض مخرجاتها هنا مباشرة، والكتابة مقفلة حتى تنتهي (أو أوقفها بـ Ctrl+C / زر إيقاف).
+                </span>
+              </div>
+            )}
             <div role="tablist" aria-label="نوع الطرفية" className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/30 px-2 pt-2">
               {tabs.map((t) => {
                 const on = t.id === current;
@@ -437,6 +538,8 @@ export const TerminalWorkspace: React.FC = () => {
                     primary={t.id === 'cloud'}
                     active={t.id === current}
                     project={project}
+                    attachJob={attachTab === t.id ? attachJob : null}
+                    onAttachDone={onAttachDone}
                   />
                 </div>
               ))}
