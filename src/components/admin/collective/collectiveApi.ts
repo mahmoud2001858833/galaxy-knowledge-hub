@@ -33,6 +33,8 @@ export interface CollectiveTask {
   send_at: string | null;
   status: CollectiveStatus;
   approval_rule: ApprovalRule;
+  /** when a dependency is late: wait for the owner's next window, or deliver as soon as it is done */
+  postpone_policy: PostponePolicy;
   planner_notes: string | null;
   plan: Plan | null;
   plan_generated_at: string | null;
@@ -40,7 +42,13 @@ export interface CollectiveTask {
   email_report: Record<string, { ok: boolean; reason?: string; portal?: number; skipped?: string }> | null;
   created_at: string;
 }
-export interface CollectiveMember { id: string; task_id: string; email: string; focus: string | null; emailed_at: string | null }
+export type PostponePolicy = 'next_window' | 'immediate';
+export interface CollectiveMember {
+  id: string; task_id: string; email: string; focus: string | null; emailed_at: string | null;
+  /** the person's work window, Amman time ("08:00:00") and weekdays (0 = Sunday … 6 = Saturday) */
+  work_start: string; work_end: string; work_days: number[];
+}
+export const WEEKDAYS = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 export interface Subtask {
   id: string;
   task_id: string;
@@ -55,13 +63,24 @@ export interface Subtask {
   covers: string[];
   effort_hours: number | null;
   status: 'todo' | 'in_progress' | 'done';
+  delivered_at: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  on_time: boolean | null;
+  postponed_at: string | null;
+  postponed_count: number;
+  postponed_reason: string | null;
 }
 
-export interface DailySend { task_id: string; day: number; sent_at: string; report: Record<string, { ok: boolean; reason?: string; skipped?: string }> | null }
-export async function listDailySends(taskId: string): Promise<DailySend[]> {
-  const { data, error } = await db.from('collective_daily_sends').select('*').eq('task_id', taskId).order('day');
-  if (error) return [];
-  return (data ?? []) as DailySend[];
+/** Where a subtask stands in the timed delivery. */
+export function timingOf(s: Subtask): { label: string; tone: 'ok' | 'late' | 'wait' | 'work' | 'idle' } {
+  if (s.status === 'done') return s.on_time === false ? { label: 'أُنجزت متأخرة', tone: 'late' } : { label: 'أُنجزت بالموعد', tone: 'ok' };
+  if (s.delivered_at) {
+    if (s.due_at && new Date(s.due_at) < new Date()) return { label: 'متأخرة', tone: 'late' };
+    return { label: 'وصلت لصاحبها', tone: 'work' };
+  }
+  if (s.postponed_count > 0) return { label: `مؤجّلة (${s.postponed_count})`, tone: 'wait' };
+  return { label: 'لم تصل بعد', tone: 'idle' };
 }
 
 export const STATUS_LABEL: Record<CollectiveStatus, string> = {
@@ -131,13 +150,31 @@ export async function saveTask(id: string | null, draft: TaskDraft): Promise<str
   return (data as { id: string }).id;
 }
 
-/** Replaces the member list with these emails (keeps the focus note of emails that stay). */
+/** Sets the member list to these emails: removes the others, keeps each remaining person's work window. */
 export async function setMembers(taskId: string, people: { email: string; focus: string | null }[]) {
-  const { error: delErr } = await db.from('collective_task_members').delete().eq('task_id', taskId);
-  fail(delErr);
-  if (!people.length) return;
-  const { error } = await db.from('collective_task_members').insert(people.map((p) => ({ task_id: taskId, ...p })));
-  fail(error);
+  const { data, error: readErr } = await db.from('collective_task_members').select('id,email').eq('task_id', taskId);
+  fail(readErr);
+  const existing = new Map(((data ?? []) as { id: string; email: string }[]).map((m) => [m.email.toLowerCase(), m.id]));
+  const keep = new Set(people.map((p) => p.email.toLowerCase()));
+  const gone = [...existing.entries()].filter(([e]) => !keep.has(e)).map(([, id]) => id);
+  if (gone.length) fail((await db.from('collective_task_members').delete().in('id', gone)).error);
+  for (const p of people) {
+    const id = existing.get(p.email.toLowerCase());
+    if (id) fail((await db.from('collective_task_members').update({ focus: p.focus }).eq('id', id)).error);
+  }
+  const fresh = people.filter((p) => !existing.has(p.email.toLowerCase()));
+  if (fresh.length) fail((await db.from('collective_task_members').insert(fresh.map((p) => ({ task_id: taskId, ...p })))).error);
+}
+
+/** The admin can change anyone's work window at any time, also while the task runs. */
+export async function updateMemberWindow(id: string, w: { work_start: string; work_end: string; work_days: number[] }) {
+  if (w.work_end <= w.work_start) throw new Error('نهاية وقت العمل يجب أن تكون بعد بدايته');
+  if (!w.work_days.length) throw new Error('اختر يوم عمل واحداً على الأقل');
+  fail((await db.from('collective_task_members').update(w).eq('id', id)).error);
+}
+
+export async function setPostponePolicy(taskId: string, policy: PostponePolicy) {
+  fail((await db.from('collective_tasks').update({ postpone_policy: policy }).eq('id', taskId)).error);
 }
 
 export async function updateSubtask(id: string, patch: Partial<Omit<Subtask, 'id' | 'task_id'>>) {
@@ -198,11 +235,14 @@ async function callAi(body: Record<string, unknown>) {
 
 export const generatePlan = (taskId: string) =>
   callAi({ action: 'plan', task_id: taskId }) as Promise<{ ok: boolean; model: string; subtasks: number }>;
-/** Sends today's tasks again: retries emails and adds anything missing to the staff dashboard. */
+/** What one scheduler run did: delivered or postponed subtasks. */
+export type TickReport = ({ delivered: number; email: string } | { postponed: number; reason: string })[] | Record<string, unknown>;
+/** Runs the scheduler for this task now and emails a reminder for every delivered task not done yet. */
 export const resendToday = (taskId: string) =>
-  callAi({ action: 'resend_day', task_id: taskId }) as Promise<{ ok: boolean; day: number; report: Record<string, { ok: boolean; reason?: string; portal?: number }> }>;
+  callAi({ action: 'resend_day', task_id: taskId }) as Promise<{ ok: boolean; report: Record<string, unknown> & { tick: TickReport } }>;
+/** Starts the task now: everything whose owner is inside their window and has no open dependency is delivered. */
 export const sendNow = (taskId: string) =>
-  callAi({ action: 'send_now', task_id: taskId }) as Promise<{ ok: boolean; report: Record<string, { ok: boolean; reason?: string }> }>;
+  callAi({ action: 'send_now', task_id: taskId }) as Promise<{ ok: boolean; report: TickReport }>;
 
 // ------------------------------------------------------------------ AI: describe / command / confirm
 export interface ChatTurn { role: 'user' | 'assistant'; content: string }

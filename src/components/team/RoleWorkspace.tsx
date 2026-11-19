@@ -61,7 +61,11 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
   );
   const inbox = myTasks.filter((t) => t.status !== 'done');
   // Finished work goes to the principal and supervisor only; no hand-over between roles.
-  const myNotifications = notifications.filter((n) => n.recipient_role === role);
+  // A notice for one person (recipient_user_id) reaches only them; role-wide notices reach the role.
+  const myNotifications = notifications.filter((n) => {
+    const to = (n as TeamNotification & { recipient_user_id?: string | null }).recipient_user_id ?? null;
+    return to ? to === me : n.recipient_role === role;
+  });
 
   const canWork = (t: TeamTask) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me);
 

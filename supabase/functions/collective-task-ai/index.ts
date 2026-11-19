@@ -40,7 +40,7 @@ type Task = {
   id: string; title: string; goals: string; final_vision: string; duration_days: number;
   send_at: string | null; status: string; plan: Plan | null; planner_notes?: string | null;
 };
-type Member = { id: string; email: string; focus: string | null };
+type Member = { id: string; email: string; focus: string | null; work_start?: string; work_end?: string; work_days?: number[] };
 type PlanSubtask = {
   title: string; detail: string; assignee_email: string; day_from: number; day_to: number;
   acceptance: string[]; depends_on: number[]; covers: string[]; effort_hours: number;
@@ -173,7 +173,12 @@ const SYSTEM = `أنت مدير مشاريع تقني خبير ودقيق جدا
 - وزّع العمل بعدل وحسب "التركيز" المكتوب بجانب كل شخص.
 - العمل متوازٍ: كل شخص لديه عمل في كل يوم من أيام المهمة (إلا إذا قالت تعليمات الأدمن غير ذلك)،
   ولا تترك أحداً بلا مهمة بينما يعمل غيره. اهدف إلى (عدد الأشخاص × عدد الأيام) مهمة فرعية على الأقل.
-- الترتيب المنطقي: الأساس والهوية البصرية أولاً، ثم الأقسام، ثم الربط والتفاعل، ثم التجاوب والاختبار، ثم المراجعة النهائية.
+- الأولوية التقنية إلزامية: البيانات والباك إند (الجداول، الصلاحيات، الدوال، الواجهات البرمجية) أولاً، ثم الأساس
+  والهوية البصرية، ثم الفرونت إند (الأقسام والمكونات)، ثم الربط بين الواجهة والبيانات والتفاعل، ثم التجاوب والاختبار، ثم المراجعة النهائية.
+  كل مهمة فرونت إند تستعمل بيانات أو دالة يجب أن تعتمد (depends_on) على مهمة الباك إند التي تبنيها.
+- التسليم آلي ومُوقّت: كل مهمة تصل لصاحبها فقط داخل "وقت عمله" المكتوب بجانبه، وفقط بعد اكتمال كل ما تعتمد عليه؛
+  وإلا تتأجل ويُبلَّغ بالسبب. لذلك: اجعل الاعتماديات حقيقية وضرورية فقط (لا تربط مهاماً مستقلة)، وضع المهام التي
+  يعتمد عليها الآخرون عند أشخاص وقتهم مبكر في اليوم، ولا تعطِ أي شخص في اليوم أكثر من ساعات وقته.
 - day_from وday_to بين 1 وعدد الأيام، وday_to >= day_from. اترك آخر يوم (أو آخر 20% من المدة) للاختبار والمراجعة والدمج.
 - depends_on: أرقام ترتيب (تبدأ من 0) لمهام يجب أن تنتهي قبلها فقط (لا تعتمد مهمة على نفسها أو على ما بعدها).
 
@@ -186,7 +191,12 @@ const SYSTEM = `أنت مدير مشاريع تقني خبير ودقيق جدا
 اكتب بالعربية الفصحى الواضحة والمختصرة.`;
 
 function buildPrompt(t: Task, members: Member[]) {
-  const people = members.map((m) => `- ${m.email}${m.focus ? ` (التركيز: ${m.focus})` : ""}`).join("\n");
+  const DAYS = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+  const people = members.map((m) => {
+    const hours = m.work_start && m.work_end ? ` · وقت العمل ${m.work_start.slice(0, 5)}–${m.work_end.slice(0, 5)} (${((toMin(m.work_end) - toMin(m.work_start)) / 60).toFixed(1)} ساعة)` : "";
+    const days = m.work_days && m.work_days.length < 7 ? ` · أيامه: ${m.work_days.map((d) => DAYS[d]).join("، ")}` : "";
+    return `- ${m.email}${m.focus ? ` (التركيز: ${m.focus})` : ""}${hours}${days}`;
+  }).join("\n");
   return `المهمة: ${t.title}
 عدد الأيام: ${t.duration_days}
 
@@ -245,7 +255,7 @@ function cleanPlan(raw: Plan, t: Task, members: Member[]): Plan {
 async function loadTask(id: string) {
   const { data: t, error } = await service.from("collective_tasks").select("*").eq("id", id).maybeSingle();
   if (error || !t) throw new Error("المهمة غير موجودة");
-  const { data: members } = await service.from("collective_task_members").select("id,email,focus").eq("task_id", id).order("created_at");
+  const { data: members } = await service.from("collective_task_members").select("id,email,focus,work_start,work_end,work_days").eq("task_id", id).order("created_at");
   return { task: t as Task, members: (members ?? []) as Member[] };
 }
 
@@ -283,101 +293,71 @@ async function planCore(taskId: string) {
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const nl = (s: string) => esc(s).replace(/\n/g, "<br>");
 
+const AMMAN_OFFSET = "+03:00"; // Jordan stays on UTC+3 all year
+
 type SubRow = {
   id: string; position: number; title: string; detail: string | null; acceptance: string[]; assignee_email: string | null;
   day_from: number; day_to: number; depends_on: number[]; covers: string[]; effort_hours: number | null; status: string;
-  team_task_id: string | null;
+  team_task_id: string | null; delivered_at: string | null; due_at: string | null; completed_at: string | null;
+  on_time: boolean | null; postponed_at: string | null; postponed_count: number;
 };
+type MemberRow = { id: string; email: string; work_start: string; work_end: string; work_days: number[] };
+type Person = { user_id: string; role: string; name: string | null };
 
 const WORKER_ROLES = new Set(["speaker", "page_manager", "auditor", "ai_manager", "file_manager"]);
+const SUB_COLS = "id,position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status,team_task_id,delivered_at,due_at,completed_at,on_time,postponed_at,postponed_count";
 
-/** End of day N of the task, Amman time (23:59), as ISO. */
-function dayEndIso(t: Task, d: number) {
-  const start = new Date(t.send_at ?? Date.now());
-  const day = new Date(start.getTime() + (d - 1) * 86_400_000);
-  const ymd = day.toLocaleDateString("en-CA", { timeZone: "Asia/Amman" }); // YYYY-MM-DD
-  return new Date(`${ymd}T23:59:00+03:00`).toISOString();
+// ---------------------------------------------------------------- Amman clock and work windows
+const DOW: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+function amman(d = new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Amman", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short", hourCycle: "h23",
+  }).formatToParts(d).map((p) => [p.type, p.value]));
+  return { ymd: `${parts.year}-${parts.month}-${parts.day}`, dow: DOW[parts.weekday] ?? 0, minutes: Number(parts.hour) * 60 + Number(parts.minute) };
 }
+const hhmm = (t: string) => t.slice(0, 5);
+const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+const atAmman = (ymd: string, t: string) => new Date(`${ymd}T${hhmm(t)}:00${AMMAN_OFFSET}`);
+const fmtTime = (iso: string) => new Date(iso).toLocaleString("ar-JO", { timeZone: "Asia/Amman", weekday: "long", hour: "2-digit", minute: "2-digit" });
 
-/**
- * Puts a person's due subtasks into the staff dashboard (team_tasks + a notification), once each.
- * Only for team members with a worker role; returns how many were created.
- */
-async function deliverToPortal(task: Task, person: { user_id: string; role: string } | undefined, due: SubRow[], reqs: Map<string, string>) {
-  if (!person || !WORKER_ROLES.has(person.role)) return 0;
-  let made = 0;
-  for (const s of due.filter((x) => !x.team_task_id && x.status !== "done")) {
-    const covers = s.covers.filter((c) => reqs.has(c)).map((c) => `${c}: ${reqs.get(c)}`);
-    const details = [
-      `مهمة جماعية: «${task.title}» — اليوم ${s.day_from}${s.day_to > s.day_from ? `–${s.day_to}` : ""} من ${task.duration_days}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}`,
-      s.detail ?? "",
-      s.acceptance.length ? `تُعتبر منجزة عندما:\n${s.acceptance.map((a) => `• ${a}`).join("\n")}` : "",
-      covers.length ? `من المواصفات:\n${covers.map((c) => `• ${c}`).join("\n")}` : "",
-    ].filter(Boolean).join("\n\n").slice(0, 8000);
-    const { data: tt, error } = await service.from("team_tasks").insert({
-      title: `[جماعية] ${s.title}`.slice(0, 200),
-      details,
-      assignee_role: person.role,
-      assignee_user_id: person.user_id,
-      due_at: dayEndIso(task, s.day_to),
-      emailed_at: new Date().toISOString(), // the collective email covers it; stops team-task-email from sending again
-      created_by: null,
-    }).select("id").single();
-    if (error || !tt) { console.error("team_tasks insert", error); continue; }
-    await service.from("collective_subtasks").update({ team_task_id: (tt as any).id }).eq("id", s.id);
-    await service.from("team_notifications").insert({
-      recipient_role: person.role, task_id: (tt as any).id,
-      message: `مهمة جماعية جديدة لك: ${s.title} (حتى اليوم ${s.day_to})`.slice(0, 500),
-    });
-    made++;
+function inWindow(m: MemberRow, now = new Date()) {
+  const a = amman(now);
+  return m.work_days.includes(a.dow) && a.minutes >= toMin(m.work_start) && a.minutes < toMin(m.work_end);
+}
+/** The person's current window (if inside one) or their next one, as { start, end }. */
+function windowFor(m: MemberRow, now = new Date()) {
+  for (let i = 0; i < 8; i++) {
+    const a = amman(new Date(now.getTime() + i * 86_400_000));
+    if (!m.work_days.includes(a.dow)) continue;
+    const start = atAmman(a.ymd, m.work_start), end = atAmman(a.ymd, m.work_end);
+    if (end.getTime() > now.getTime()) return { start, end };
   }
-  return made;
+  return null;
 }
+const currentDay = (t: Task) => Math.floor((Date.now() - new Date(t.send_at!).getTime()) / 86_400_000) + 1;
 
-const dayDate = (t: Task, d: number) =>
-  new Date(new Date(t.send_at ?? Date.now()).getTime() + (d - 1) * 86_400_000)
-    .toLocaleDateString("ar-JO", { timeZone: "Asia/Amman", weekday: "long", day: "numeric", month: "long" });
-
-function card(s: SubRow, day: number, reqs: Map<string, string>) {
-  const tag = s.day_from === day && s.day_to === day ? "تبدأ وتنتهي اليوم"
-    : s.day_from === day ? `تبدأ اليوم · حتى اليوم ${s.day_to}`
-    : s.day_to === day ? "آخر يوم لها — يجب أن تكتمل اليوم"
-    : `مستمرة (اليوم ${s.day_from}–${s.day_to})`;
-  const urgent = s.day_to === day;
+// ---------------------------------------------------------------- one task card (email)
+function card(s: SubRow, reqs: Map<string, string>, note: string, urgent: boolean) {
   const covers = s.covers.filter((c) => reqs.has(c));
   return `
     <div style="border:1px solid ${urgent ? "#fca5a5" : "#e2e8f0"};border-radius:12px;padding:14px 16px;margin:10px 0">
-      <div style="font-size:12px;color:${urgent ? "#dc2626" : "#2563eb"};font-weight:bold">${esc(tag)}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}</div>
+      <div style="font-size:12px;color:${urgent ? "#dc2626" : "#2563eb"};font-weight:bold">${esc(note)}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}</div>
       <div style="font-size:15px;font-weight:bold;margin:4px 0">#${s.position} ${esc(s.title)}</div>
       ${s.detail ? `<div style="color:#334155;line-height:1.8;font-size:14px">${nl(s.detail)}</div>` : ""}
       ${s.acceptance.length ? `<div style="margin-top:8px;font-size:13px;color:#475569">تُعتبر منجزة عندما:</div><ul style="margin:4px 0 0;padding-right:18px;color:#334155;font-size:13px">${s.acceptance.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
       ${covers.length ? `<div style="margin-top:8px;font-size:12px;color:#64748b">من المواصفات: ${covers.map((c) => `<b>${esc(c)}</b> ${esc((reqs.get(c) ?? "").slice(0, 140))}`).join(" · ")}</div>` : ""}
     </div>`;
 }
-
-function dailyHtml(t: Task, to: string, day: number, today: SubRow[], tomorrow: SubRow[], waiting: string[], mineAll: SubRow[], site: string, reqs: Map<string, string>) {
-  const first = day === 1;
-  const last = day === t.duration_days;
-  const schedule = first && mineAll.length
-    ? `<h3 style="margin:22px 0 6px;font-size:15px">جدولك الكامل</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${mineAll.map((s) => `<li>اليوم ${s.day_from}${s.day_to > s.day_from ? `–${s.day_to}` : ""}: ${esc(s.title)}</li>`).join("")}</ul>`
-    : "";
+function mailHtml(t: Task, to: string, heading: string, body: string, site: string) {
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${esc(t.title)}</title></head>
 <body style="margin:0;background:#f1f5f9;padding:24px;font-family:'Segoe UI',Tahoma,Arial,sans-serif;color:#0f172a">
   <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0">
     <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:22px 24px;color:#fff">
       <div style="font-size:13px;opacity:.9">ذروة العلم · مهمة جماعية · ${esc(to)}</div>
       <h1 style="margin:6px 0 0;font-size:21px;line-height:1.5">${esc(t.title)}</h1>
-      <div style="font-size:14px;margin-top:6px">اليوم ${day} من ${t.duration_days} · ${esc(dayDate(t, day))}${last ? " · اليوم الأخير" : ""}</div>
+      <div style="font-size:14px;margin-top:6px">${esc(heading)}</div>
     </div>
-    <div style="padding:24px">
-      ${first ? `<h3 style="margin:0 0 6px;font-size:15px">الأهداف</h3><div style="line-height:1.9;color:#334155">${nl(t.goals)}</div>
-      ${t.plan?.summary ? `<h3 style="margin:18px 0 6px;font-size:15px">ملخص الخطة</h3><div style="line-height:1.9;color:#334155">${nl(t.plan.summary)}</div>` : ""}` : ""}
-      <h3 style="margin:${first ? "22px" : "0"} 0 4px;font-size:16px">مهامك اليوم (${today.length})</h3>
-      ${today.length ? today.map((s) => card(s, day, reqs)).join("") : '<div style="color:#64748b;font-size:14px">لا مهام جديدة لك اليوم؛ راجع ما سبق وساعد الفريق.</div>'}
-      ${waiting.length ? `<h3 style="margin:20px 0 6px;font-size:15px">تنتظر من زملائك</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${waiting.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
-      ${tomorrow.length ? `<h3 style="margin:20px 0 6px;font-size:15px">غداً</h3><ul style="margin:0;padding-right:18px;color:#334155;font-size:13px;line-height:1.9">${tomorrow.map((s) => `<li>${esc(s.title)}</li>`).join("")}</ul>` : ""}
-      ${schedule}
-      ${last ? `<div style="margin-top:20px;padding:12px 14px;border-radius:12px;background:#fef3c7;color:#92400e;font-size:14px">اليوم الأخير: أكمل مهامك وجهّز عملك للمراجعة النهائية مقابل التصور النهائي.</div>` : ""}
+    <div style="padding:24px">${body}
       <div style="margin-top:26px;text-align:center">
         <a href="${site}/team" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-weight:bold;padding:12px 28px;border-radius:12px">فتح لوحة الفريق</a>
       </div>
@@ -400,87 +380,148 @@ async function sendEmail(to: string, subject: string, html: string) {
   return { ok: false, reason: /testing emails|verify a domain|domain is not verified/i.test(text) ? "domain_unverified" : "send_failed", detail: text.slice(0, 200) };
 }
 
-/** Emails every person their tasks for one day of the task. Skips people with nothing today/tomorrow (except day 1). */
-async function sendDay(task: Task, day: number) {
+/** A notification for ONE person (only they and the leads see it). */
+async function notifyPerson(person: Person | undefined, message: string, taskId: string | null = null) {
+  if (!person) return;
+  await service.from("team_notifications").insert({
+    recipient_role: person.role, recipient_user_id: person.user_id, task_id: taskId, message: message.slice(0, 500),
+  });
+}
+
+// ---------------------------------------------------------------- delivery of one subtask
+async function deliverSubtask(task: Task, s: SubRow, m: MemberRow, person: Person | undefined, dueIso: string, reqs: Map<string, string>, site: string) {
+  const covers = s.covers.filter((c) => reqs.has(c)).map((c) => `${c}: ${reqs.get(c)}`);
+  let teamTaskId: string | null = null;
+  if (person && WORKER_ROLES.has(person.role)) {
+    const details = [
+      `مهمة جماعية: «${task.title}» — سلّمها قبل ${fmtTime(dueIso)}${s.effort_hours ? ` · نحو ${s.effort_hours} ساعة` : ""}`,
+      s.detail ?? "",
+      s.acceptance.length ? `تُعتبر منجزة عندما:\n${s.acceptance.map((a) => `• ${a}`).join("\n")}` : "",
+      covers.length ? `من المواصفات:\n${covers.map((c) => `• ${c}`).join("\n")}` : "",
+    ].filter(Boolean).join("\n\n").slice(0, 8000);
+    const { data: tt, error } = await service.from("team_tasks").insert({
+      title: `[جماعية] ${s.title}`.slice(0, 200),
+      details,
+      assignee_role: person.role,
+      assignee_user_id: person.user_id,
+      due_at: dueIso,
+      emailed_at: new Date().toISOString(), // our own email covers it; team-task-email must not send again
+      created_by: null,
+    }).select("id").single();
+    if (error) console.error("team_tasks insert", error);
+    teamTaskId = (tt as any)?.id ?? null;
+    await notifyPerson(person, `مهمة جديدة لك الآن: #${s.position} ${s.title} — سلّمها قبل ${fmtTime(dueIso)}`, teamTaskId);
+  }
+  await service.from("collective_subtasks")
+    .update({ delivered_at: new Date().toISOString(), due_at: dueIso, team_task_id: teamTaskId })
+    .eq("id", s.id).is("delivered_at", null);
+  const res = await sendEmail(m.email, `مهمة جديدة لك الآن: ${s.title}`,
+    mailHtml(task, m.email, `مهمة جديدة — سلّمها قبل ${fmtTime(dueIso)}`, card(s, reqs, `ابدأ الآن · الموعد ${fmtTime(dueIso)}`, false), site));
+  return { delivered: s.position, email: res.ok ? "ok" : res.reason };
+}
+
+/**
+ * The scheduler for one active task, run every minute. For each subtask not yet delivered, in order:
+ *   dependencies done + inside the owner's window (or policy "immediate") -> deliver, due at the window's end;
+ *   dependencies NOT done while the owner's window is open -> one "postponed" notice per window to the
+ *   owner, and one "a colleague is waiting for you" notice to whoever is late.
+ * When everything is done the task moves to review.
+ */
+async function tickTask(task: Task & { postpone_policy?: string }) {
   const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
-  const { data: members } = await service.from("collective_task_members").select("id,email").eq("task_id", task.id);
-  const { data: subs } = await service.from("collective_subtasks")
-    .select("id,position,title,detail,acceptance,assignee_email,day_from,day_to,depends_on,covers,effort_hours,status,team_task_id")
-    .eq("task_id", task.id).order("position");
-  const emails = (members ?? []).map((m: any) => String(m.email).toLowerCase());
-  const { data: team } = emails.length
-    ? await service.from("team_members").select("email,user_id,role").in("email", emails)
-    : { data: [] };
-  const teamBy = new Map((team ?? []).map((p: any) => [String(p.email).toLowerCase(), { user_id: p.user_id, role: p.role }]));
+  const [{ data: subs }, { data: members }] = await Promise.all([
+    service.from("collective_subtasks").select(SUB_COLS).eq("task_id", task.id).order("position"),
+    service.from("collective_task_members").select("id,email,work_start,work_end,work_days").eq("task_id", task.id),
+  ]);
   const rows = (subs ?? []) as SubRow[];
+  if (!rows.length) return { note: "no subtasks" };
+  const memberBy = new Map(((members ?? []) as MemberRow[]).map((m) => [m.email.toLowerCase(), m]));
+  const emails = [...memberBy.keys()];
+  const { data: team } = emails.length
+    ? await service.from("team_members").select("email,user_id,role,display_name").in("email", emails)
+    : { data: [] };
+  const personBy = new Map((team ?? []).map((p: any) => [String(p.email).toLowerCase(), { user_id: p.user_id, role: p.role, name: p.display_name } as Person]));
   const byPos = new Map(rows.map((r) => [r.position, r]));
   const reqs = new Map((task.plan?.requirements ?? []).map((r) => [r.id, r.text]));
-  const report: Record<string, unknown> = {};
-  for (const m of members ?? []) {
-    const mine = rows.filter((s) => (s.assignee_email ?? "").toLowerCase() === m.email.toLowerCase());
-    const today = mine.filter((s) => s.day_from <= day && day <= s.day_to && s.status !== "done");
-    const tomorrow = day < task.duration_days ? mine.filter((s) => s.day_from === day + 1) : [];
-    const waiting = [...new Set(today.flatMap((s) => s.depends_on)
-      .map((p) => byPos.get(p))
-      .filter((d): d is SubRow => !!d && d.status !== "done" && (d.assignee_email ?? "").toLowerCase() !== m.email.toLowerCase())
-      .map((d) => `#${d.position} ${d.title} — ${d.assignee_email}`))];
-    // in the platform first: everything due up to today that is not in their task board yet
-    const portal = await deliverToPortal(task, teamBy.get(m.email.toLowerCase()), mine.filter((s) => s.day_from <= day), reqs);
-    if (day > 1 && !today.length && !tomorrow.length) { report[m.email] = { ok: true, skipped: "no tasks", portal }; continue; }
-    const subject = day === 1
-      ? `انطلاق المهمة الجماعية «${task.title}» — مهامك لليوم 1`
-      : `اليوم ${day} من ${task.duration_days}: مهامك في «${task.title}»`;
-    const res = await sendEmail(m.email, subject, dailyHtml(task, m.email, day, today, tomorrow, waiting, mine, site, reqs));
-    report[m.email] = { ...res, portal };
-    if (res.ok) await service.from("collective_task_members").update({ emailed_at: new Date().toISOString() }).eq("id", m.id);
+  const now = new Date();
+  const day = currentDay(task);
+  const done: unknown[] = [];
+
+  if (rows.every((r) => r.status === "done")) {
+    await service.from("collective_tasks").update({ status: "review" }).eq("id", task.id).eq("status", "active");
+    return { closed: "all subtasks done -> review" };
   }
-  await service.from("collective_daily_sends").update({ report }).eq("task_id", task.id).eq("day", day);
-  await service.from("collective_tasks").update({ email_report: report }).eq("id", task.id);
-  return report;
-}
 
-/** Claims (task, day) once; returns true if this call owns sending that day. */
-async function claimDay(taskId: string, day: number) {
-  const { data, error } = await service.from("collective_daily_sends")
-    .upsert({ task_id: taskId, day }, { onConflict: "task_id,day", ignoreDuplicates: true })
-    .select("day");
-  if (error) throw error;
-  return (data ?? []).length > 0;
+  for (const s of rows) {
+    if (s.delivered_at || s.status === "done" || s.day_from > day) continue;
+    const owner = (s.assignee_email ?? "").toLowerCase();
+    const m = memberBy.get(owner);
+    if (!m) continue;
+    const person = personBy.get(owner);
+    const blockers = s.depends_on.map((p) => byPos.get(p)).filter((d): d is SubRow => !!d && d.status !== "done");
+    const open = inWindow(m, now);
+    if (!blockers.length) {
+      const w = windowFor(m, now);
+      if (!w) continue;
+      if (open) done.push(await deliverSubtask(task, s, m, person, w.end.toISOString(), reqs, site));
+      else if (task.postpone_policy === "immediate" && (s.postponed_count > 0)) done.push(await deliverSubtask(task, s, m, person, w.end.toISOString(), reqs, site));
+      continue;
+    }
+    // blocked: tell the owner once per window, and the late colleague(s)
+    const w = windowFor(m, now);
+    if (!open || !w) continue;
+    if (s.postponed_at && new Date(s.postponed_at).getTime() >= w.start.getTime()) continue;
+    const who = blockers.map((b) => `${personBy.get((b.assignee_email ?? "").toLowerCase())?.name ?? b.assignee_email} (#${b.position} ${b.title})`).join("، ");
+    const reason = `بانتظار أن يُنهي ${who}`;
+    await service.from("collective_subtasks").update({
+      postponed_at: now.toISOString(), postponed_count: s.postponed_count + 1, postponed_reason: reason.slice(0, 500),
+    }).eq("id", s.id);
+    await notifyPerson(person, `مهمتك #${s.position} «${s.title}» مؤجّلة: ${reason}. ستصلك تلقائياً فور إنجازها ضمن وقتك.`);
+    await sendEmail(m.email, `مهمتك مؤجّلة قليلاً: ${s.title}`, mailHtml(task, m.email, "مهمتك مؤجّلة قليلاً",
+      `<p style="line-height:1.9">مهمتك <b>#${s.position} ${esc(s.title)}</b> تعتمد على عمل زميل لم يكتمل بعد: ${esc(who)}.<br>ستصلك تلقائياً فور إنجازه، ضمن وقت عملك.</p>`, site));
+    for (const b of blockers) {
+      const bp = personBy.get((b.assignee_email ?? "").toLowerCase());
+      await notifyPerson(bp, `${person?.name ?? m.email} بانتظار إنهائك #${b.position} «${b.title}» حتى يبدأ مهمته.`, b.team_task_id);
+    }
+    done.push({ postponed: s.position, reason });
+  }
+  return done;
 }
-
-const currentDay = (t: Task) => Math.floor((Date.now() - new Date(t.send_at!).getTime()) / 86_400_000) + 1;
 
 async function dispatchDue() {
   // 1) scheduled tasks whose time came -> active (claim with one UPDATE so it happens once)
   await service.from("collective_tasks")
     .update({ emailed_at: new Date().toISOString(), status: "active" })
     .eq("status", "scheduled").is("emailed_at", null).lte("send_at", new Date().toISOString());
-  // 2) every active task: send today's emails once, or close it when its days are over
+  // 2) every active task: deliver / postpone what is due right now
   const { data } = await service.from("collective_tasks").select("*").eq("status", "active").lte("send_at", new Date().toISOString());
-  const sent: Record<string, unknown> = {};
+  const out: Record<string, unknown> = {};
   for (const t of (data ?? []) as Task[]) {
-    const day = currentDay(t);
-    if (day > t.duration_days) {
-      await service.from("collective_tasks").update({ status: "review" }).eq("id", t.id).eq("status", "active");
-      sent[t.id] = "moved to review";
-      continue;
-    }
-    if (day >= 1 && await claimDay(t.id, day)) sent[`${t.id}#${day}`] = await sendDay(t, day);
+    try { out[t.id] = await tickTask(t); } catch (e) { console.error("tick", t.id, e); out[t.id] = String((e as Error)?.message ?? e); }
   }
-  return json({ ok: true, sent });
+  return json({ ok: true, out });
 }
 
 async function sendNow(taskId: string) {
   return json(await sendNowCore(taskId));
 }
 
-/** Admin: send today's tasks again (emails retried; anything missing is added to the staff dashboard). */
+/** Admin: run the scheduler for this task now, and email again the delivered tasks that are not done yet. */
 async function resendToday(taskId: string) {
   const { task } = await loadTask(taskId);
   if (task.status !== "active" || !task.send_at) throw new UserError("المهمة ليست قيد التنفيذ", 409);
-  const day = Math.min(Math.max(currentDay(task), 1), task.duration_days);
-  await claimDay(taskId, day);
-  return { ok: true, day, report: await sendDay(task, day) };
+  const site = (Deno.env.get("SITE_URL") ?? "https://althrow.com").replace(/\/$/, "");
+  const report: Record<string, unknown> = { tick: await tickTask(task) };
+  const { data: open } = await service.from("collective_subtasks").select(SUB_COLS).eq("task_id", taskId)
+    .not("delivered_at", "is", null).neq("status", "done").order("position");
+  const reqs = new Map((task.plan?.requirements ?? []).map((r) => [r.id, r.text]));
+  for (const s of (open ?? []) as SubRow[]) {
+    if (!s.assignee_email) continue;
+    const res = await sendEmail(s.assignee_email, `تذكير: ${s.title}`,
+      mailHtml(task, s.assignee_email, "تذكير بمهمتك", card(s, reqs, s.due_at ? `الموعد ${fmtTime(s.due_at)}` : "قيد العمل", !!s.due_at && new Date(s.due_at) < new Date()), site));
+    report[`#${s.position}`] = res.ok ? "ok" : res.reason;
+  }
+  return { ok: true, report };
 }
 
 async function sendNowCore(taskId: string) {
@@ -491,8 +532,7 @@ async function sendNowCore(taskId: string) {
     .select("*").maybeSingle();
   if (error) throw error;
   if (!data) throw new UserError("المهمة أُرسلت من قبل أو ليست جاهزة (اطلب الخطة أولاً)", 409);
-  const report = (await claimDay(taskId, 1)) ? await sendDay(data as Task, 1) : {};
-  return { ok: true, report };
+  return { ok: true, report: await tickTask(data as Task) };
 }
 
 async function scheduleCore(taskId: string, sendAtIso: string) {
@@ -508,7 +548,6 @@ async function scheduleCore(taskId: string, sendAtIso: string) {
 }
 
 // ---------------------------------------------------------------- shared context for the AI
-const AMMAN_OFFSET = "+03:00"; // Jordan stays on UTC+3 all year
 
 function ammanNow() {
   return new Date().toLocaleString("ar-JO", { timeZone: "Asia/Amman", dateStyle: "full", timeStyle: "short" });
@@ -699,8 +738,13 @@ async function commandTool(name: string, a: any, pending: any[]): Promise<unknow
       }
       if (Array.isArray(a?.emails)) {
         const emails = [...new Set(a.emails.map((e: unknown) => String(e).trim().toLowerCase()).filter((e: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)))];
-        await service.from("collective_task_members").delete().eq("task_id", taskId);
-        if (emails.length) await service.from("collective_task_members").insert(emails.map((email) => ({ task_id: taskId, email })));
+        // keep the people who stay (and their work windows); drop the others; add the new ones
+        const { data: cur } = await service.from("collective_task_members").select("id,email").eq("task_id", taskId);
+        const have = new Map((cur ?? []).map((m: any) => [String(m.email).toLowerCase(), m.id as string]));
+        const gone = [...have.entries()].filter(([e]) => !emails.includes(e)).map(([, mid]) => mid);
+        if (gone.length) await service.from("collective_task_members").delete().in("id", gone);
+        const fresh = emails.filter((e) => !have.has(e as string));
+        if (fresh.length) await service.from("collective_task_members").insert(fresh.map((email) => ({ task_id: taskId, email })));
       }
       return { ok: true, task_id: taskId, status: name === "create_collective_task" ? "draft" : "updated" };
     }

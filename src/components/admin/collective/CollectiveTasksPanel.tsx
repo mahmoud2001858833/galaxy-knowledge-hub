@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   APPROVAL_LABEL, STATUS_LABEL, addSubtask, cancelTask, deleteSubtask, deleteTask, generatePlan, isEditable, listTasks,
-  listDailySends, loadTask, resendToday, parseEmails, saveTask, schedule, sendNow, setMembers, teamEmails, unschedule, updateSubtask,
-  type ApprovalRule, type CollectiveMember, type CollectiveTask, type DailySend, type Subtask, type TaskDraft,
+  loadTask, resendToday, parseEmails, saveTask, schedule, sendNow, setMembers, setPostponePolicy, teamEmails, timingOf, unschedule,
+  updateMemberWindow, updateSubtask, WEEKDAYS,
+  type ApprovalRule, type CollectiveMember, type CollectiveTask, type PostponePolicy, type Subtask, type TaskDraft, type TickReport,
 } from './collectiveApi';
 import { AssistBox } from './AssistBox';
 
@@ -111,7 +112,6 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
   const [team, setTeam] = useState<{ email: string; role: string; name: string | null }[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [sendAt, setSendAt] = useState(() => toLocalInput(new Date(Date.now() + 60 * 60_000)));
-  const [daily, setDaily] = useState<DailySend[]>([]);
 
   const reload = useCallback(async () => {
     if (!taskId) return;
@@ -127,7 +127,6 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
     setEmailsText(r.members.map((m) => m.email).join('\n'));
     setFocus(Object.fromEntries(r.members.map((m) => [m.email, m.focus ?? ''])));
     if (r.task.send_at) setSendAt(toLocalInput(new Date(r.task.send_at)));
-    setDaily(await listDailySends(taskId));
   }, [taskId]);
 
   useEffect(() => { reload().catch((e) => toast.error(errText(e))); }, [reload]);
@@ -187,18 +186,15 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
   const doSendNow = () => run('send', async () => {
     if (!task) return;
     const r = await sendNow(task.id);
-    const failed = Object.entries(r.report).filter(([, v]) => !v.ok);
-    if (failed.length) toast.warning(`أُرسلت، لكن فشل ${failed.length}: ${failed.map(([e, v]) => `${e} (${v.reason})`).join('، ')}`);
-    else toast.success('بدأت المهمة: وصلت مهام اليوم الأول لكل شخص، والباقي يصل يومياً');
+    toast.success(`بدأت المهمة: ${tickSummary(r.report)}. الباقي يصل تلقائياً لكل شخص في وقته وحسب الترتيب.`);
     await reload();
   });
 
   const doResend = () => run('resend', async () => {
     if (!task) return;
     const r = await resendToday(task.id);
-    const portal = Object.values(r.report).reduce((n, v) => n + (v.portal ?? 0), 0);
-    const mailed = Object.values(r.report).filter((v) => v.ok).length;
-    toast.success(`اليوم ${r.day}: أُضيفت ${portal} مهمة للوحة الموظفين، ووصل البريد لـ ${mailed} شخص`);
+    const reminders = Object.entries(r.report).filter(([k]) => k.startsWith('#'));
+    toast.success(`${tickSummary(r.report.tick)} · تذكير بالبريد لـ ${reminders.length} مهمة مفتوحة`);
     await reload();
   });
 
@@ -328,6 +324,9 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
             )}
           </div>
         </div>
+        {task && members.length > 0 && (
+          <WorkWindows task={task} members={members} team={team} onChanged={reload} />
+        )}
         {editable && (
           <div className="flex flex-wrap gap-2">
             <Button onClick={save} disabled={!!busy}>
@@ -484,7 +483,7 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
           {task.status === 'planned' || task.status === 'scheduled' ? (
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1.5">
-                <Label>موعد البدء (وساعة الإرسال اليومية)</Label>
+                <Label>موعد البدء</Label>
                 <Input type="datetime-local" value={sendAt} onChange={(e) => setSendAt(e.target.value)} className="w-60" />
               </div>
               <Button onClick={doSchedule} disabled={!!busy}>
@@ -501,34 +500,23 @@ function TaskEditor({ taskId, onBack, onCreated }: { taskId: string | null; onBa
               )}
               <p className="w-full text-sm text-muted-foreground">
                 {task.status === 'scheduled' ? `مجدولة: تبدأ ${fmt(task.send_at)}. ` : ''}
-                كل يوم من الأيام الـ{task.duration_days}، وبنفس الساعة، يصل كل شخص بريد بمهام يومه هو فقط: ما يبدأ اليوم، وما يجب أن يكتمل اليوم،
-                وما ينتظره من زملائه، وما ينتظره غداً.{task.status === 'scheduled' ? ' لتعديل الخطة ألغِ الجدولة أولاً.' : ''}
+                من موعد البدء، تصل كل مهمة لصاحبها وحده داخل وقت عمله، وبالترتيب: لا تصل مهمة قبل أن تكتمل المهام التي تعتمد عليها،
+                وإن تأخّر زميل يصل لصاحبها «مؤجّلة» مع السبب، وتصله تلقائياً فور الإنجاز. موعد تسليم كل مهمة نهاية وقت عمل صاحبها.
+                {task.status === 'scheduled' ? ' لتعديل الخطة ألغِ الجدولة أولاً.' : ''}
               </p>
             </div>
           ) : (
             <div className="space-y-2 text-sm">
-              <div>بدأت {fmt(task.send_at)} · {task.status === 'active' ? 'تُرسل مهام كل يوم تلقائياً' : STATUS_LABEL[task.status]}</div>
-              {daily.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {Array.from({ length: task.duration_days }, (_, k) => k + 1).map((d) => {
-                    const sent = daily.find((x) => x.day === d);
-                    const failed = sent?.report && Object.values(sent.report).some((r) => !r.ok);
-                    return (
-                      <Badge key={d} variant={sent ? (failed ? 'destructive' : 'default') : 'outline'} title={sent ? fmt(sent.sent_at) : 'لم يُرسل بعد'}>
-                        يوم {d}{sent ? ' ✓' : ''}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
+              <div>بدأت {fmt(task.send_at)} · {task.status === 'active' ? 'المجدول يعمل كل دقيقة: يسلّم كل مهمة في وقت صاحبها وبالترتيب' : STATUS_LABEL[task.status]}</div>
+              <TimingBoard subtasks={subtasks} />
               {task.status === 'active' && (
                 <Button size="sm" variant="secondary" onClick={doResend} disabled={!!busy}>
                   {busy === 'resend' ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Send className="ml-1 h-4 w-4" />}
-                  أعد إرسال مهام اليوم (البريد + لوحة الموظفين)
+                  شغّل المجدول الآن + ذكّر بالمهام المفتوحة
                 </Button>
               )}
               <p className="text-xs text-muted-foreground">
-                تصل المهام لكل عضو في الفريق داخل «لوحة الموظفين ← المهام» يومياً، وبالبريد أيضاً. عندما يُنهيها هناك تُحسب منجزة هنا.
+                تصل المهام لكل عضو وحده داخل «لوحة الموظفين ← المهام»، وبالبريد أيضاً. عندما يُنهيها هناك تُحسب منجزة هنا (بالموعد أو متأخرة)، وتنطلق المهام التي تنتظرها.
               </p>
               <div className="text-xs text-muted-foreground">آخر إرسال:</div>
               {task.email_report && (
@@ -609,6 +597,7 @@ function SubtaskRow({ s, editable, people, days, onChanged }: {
             {s.effort_hours ? <span className="text-xs text-muted-foreground">≈ {s.effort_hours} س</span> : null}
             {s.covers?.map((c) => <Badge key={c} variant="secondary" className="text-[10px]">{c}</Badge>)}
             <Badge variant="outline">اليوم {s.day_from}{s.day_to > s.day_from ? `–${s.day_to}` : ''}</Badge>
+            {!editable && <TimingBadge s={s} />}
             {editable && <Button size="sm" variant="ghost" onClick={() => setEdit(true)}>تعديل</Button>}
           </div>
         </div>
@@ -619,6 +608,13 @@ function SubtaskRow({ s, editable, people, days, onChanged }: {
           </ul>
         )}
         {s.depends_on.length > 0 && <div className="text-xs text-muted-foreground">بعد: {s.depends_on.map((d) => `#${d}`).join('، ')}</div>}
+        {!editable && (s.due_at || s.postponed_reason) && (
+          <div className="text-xs text-muted-foreground">
+            {s.due_at && <>التسليم {fmt(s.due_at)}</>}
+            {s.completed_at && <> · أُنجزت {fmt(s.completed_at)}</>}
+            {!s.delivered_at && s.postponed_reason && <> · {s.postponed_reason}</>}
+          </div>
+        )}
       </div>
     );
   }
@@ -644,6 +640,130 @@ function SubtaskRow({ s, editable, people, days, onChanged }: {
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ timing
+const TONE: Record<ReturnType<typeof timingOf>['tone'], string> = {
+  ok: 'bg-primary/10 text-primary',
+  late: 'bg-destructive/10 text-destructive',
+  wait: 'bg-secondary text-secondary-foreground',
+  work: 'bg-accent text-accent-foreground',
+  idle: 'bg-muted text-muted-foreground',
+};
+function TimingBadge({ s }: { s: Subtask }) {
+  const t = timingOf(s);
+  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${TONE[t.tone]}`}>{t.label}</span>;
+}
+
+function tickSummary(r: TickReport) {
+  if (!Array.isArray(r)) return 'لا شيء مستحق الآن';
+  const delivered = r.filter((x) => 'delivered' in x).length;
+  const postponed = r.filter((x) => 'postponed' in x).length;
+  if (!delivered && !postponed) return 'لا شيء مستحق الآن (خارج أوقات العمل أو بانتظار مهام سابقة)';
+  return `سُلّمت ${delivered} مهمة${postponed ? ` وأُجّلت ${postponed}` : ''}`;
+}
+
+/** Live progress of the timed delivery: counts by state. */
+function TimingBoard({ subtasks }: { subtasks: Subtask[] }) {
+  const counts = new Map<string, { n: number; tone: ReturnType<typeof timingOf>['tone'] }>();
+  for (const s of subtasks) {
+    const t = timingOf(s);
+    counts.set(t.label, { n: (counts.get(t.label)?.n ?? 0) + 1, tone: t.tone });
+  }
+  const done = subtasks.filter((s) => s.status === 'done');
+  const onTime = done.filter((s) => s.on_time !== false).length;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        {[...counts.entries()].map(([label, { n, tone }]) => (
+          <span key={label} className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${TONE[tone]}`}>{label}: {n}</span>
+        ))}
+      </div>
+      {done.length > 0 && (
+        <div className="text-xs text-muted-foreground">
+          الإنجاز {done.length}/{subtasks.length} · بالموعد {Math.round((onTime / done.length) * 100)}٪
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Each person's work window (Amman time) and the policy for late dependencies; editable at any time. */
+function WorkWindows({ task, members, team, onChanged }: {
+  task: CollectiveTask; members: CollectiveMember[]; team: { email: string; name: string | null }[]; onChanged: () => Promise<void>;
+}) {
+  const names = useMemo(() => new Map(team.map((t) => [t.email, t.name])), [team]);
+  const [policy, setPolicy] = useState<PostponePolicy>(task.postpone_policy ?? 'next_window');
+  useEffect(() => setPolicy(task.postpone_policy ?? 'next_window'), [task.postpone_policy]);
+
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-background p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 font-bold text-foreground"><CalendarClock className="h-4 w-4" /> أوقات العمل (بتوقيت عمّان)</div>
+          <p className="text-xs text-muted-foreground">لا تصل لأي شخص مهمة خارج وقته، وموعد تسليمها نهاية وقته. تقدر تغيّرها في أي وقت، حتى أثناء التنفيذ.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Label className="text-xs">إذا تأخّر زميل:</Label>
+          <select className="h-9 rounded-md border border-input bg-background px-2 text-sm" value={policy}
+            onChange={async (e) => {
+              const p = e.target.value as PostponePolicy;
+              setPolicy(p);
+              try { await setPostponePolicy(task.id, p); toast.success('تم'); await onChanged(); } catch (err) { toast.error(errText(err)); }
+            }}>
+            <option value="next_window">انتظر وقت صاحب المهمة التالي</option>
+            <option value="immediate">سلّمها فور إنجاز الزميل</option>
+          </select>
+        </div>
+      </div>
+      <div className="divide-y divide-border">
+        {members.map((m) => <WindowRow key={m.id} m={m} name={names.get(m.email.toLowerCase()) ?? null} onChanged={onChanged} />)}
+      </div>
+    </div>
+  );
+}
+
+function WindowRow({ m, name, onChanged }: { m: CollectiveMember; name: string | null; onChanged: () => Promise<void> }) {
+  const [from, setFrom] = useState((m.work_start ?? '08:00').slice(0, 5));
+  const [to, setTo] = useState((m.work_end ?? '16:00').slice(0, 5));
+  const [days, setDays] = useState<number[]>(m.work_days ?? [0, 1, 2, 3, 4, 5, 6]);
+  const [saving, setSaving] = useState(false);
+  const dirty = from !== (m.work_start ?? '').slice(0, 5) || to !== (m.work_end ?? '').slice(0, 5)
+    || [...days].sort().join() !== [...(m.work_days ?? [])].sort().join();
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateMemberWindow(m.id, { work_start: from, work_end: to, work_days: [...days].sort() });
+      toast.success(`حُفظ وقت ${name ?? m.email}`);
+      await onChanged();
+    } catch (e) { toast.error(errText(e)); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-2">
+      <span className="w-44 shrink-0 truncate text-sm font-medium text-foreground" title={m.email}>{name ?? m.email.split('@')[0]}</span>
+      <Label className="text-xs">من</Label>
+      <Input type="time" className="h-8 w-28" value={from} onChange={(e) => setFrom(e.target.value)} />
+      <Label className="text-xs">إلى</Label>
+      <Input type="time" className="h-8 w-28" value={to} onChange={(e) => setTo(e.target.value)} />
+      <div className="flex flex-wrap gap-1">
+        {WEEKDAYS.map((d, i) => {
+          const on = days.includes(i);
+          return (
+            <button key={d} type="button"
+              onClick={() => setDays(on ? days.filter((x) => x !== i) : [...days, i])}
+              className={`rounded-full border px-2 py-0.5 text-[11px] ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}>
+              {d}
+            </button>
+          );
+        })}
+      </div>
+      {dirty && (
+        <Button size="sm" onClick={save} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ الوقت'}</Button>
+      )}
     </div>
   );
 }
