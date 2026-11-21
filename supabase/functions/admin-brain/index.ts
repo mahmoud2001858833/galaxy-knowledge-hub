@@ -206,6 +206,234 @@ const SERVER_TOOLS: Record<string, (a: any) => Promise<unknown>> = {
   },
 };
 
+// ---------- what the AI costs ----------
+// Approximate list prices in USD per 1M tokens [input, output]. Groq's free tier costs nothing, so for
+// Groq this is the most it could cost. TTS is priced per character.
+const PRICES: [RegExp, number, number][] = [
+  [/gpt-oss-120b/, 0.15, 0.6], [/gpt-oss-20b/, 0.075, 0.3], [/llama-4-scout/, 0.27, 0.85],
+  [/flash-lite/, 0.1, 0.4], [/gemini.*flash/, 0.3, 2.5], [/gemini.*pro/, 1.25, 10],
+];
+const TTS_PER_CHAR: Record<string, number> = { openai: 0.000015, groq: 0.00002, gemini: 0.00002 };
+let CURRENT_USER: string | null = null;
+
+function logUsage(row: { kind: string; provider?: string; model?: string; tokens_in?: number; tokens_out?: number; chars?: number; cost_usd: number }) {
+  // never slows or breaks an answer
+  service.from("ai_usage_log").insert({ fn: "admin-brain", user_id: CURRENT_USER, ...row }).then(({ error }) => {
+    if (error) console.warn("ai_usage_log", error.message);
+  });
+}
+function chatCost(model: string, tin: number, tout: number) {
+  const p = PRICES.find(([re]) => re.test(model));
+  return p ? (tin * p[1] + tout * p[2]) / 1e6 : 0;
+}
+
+// ---------- team, schedule, bridge: the whole operation in one place ----------
+const AMMAN = "Asia/Amman";
+const ammanNow = () => new Date().toLocaleString("ar-JO", { timeZone: AMMAN, weekday: "long", hour: "2-digit", minute: "2-digit", day: "numeric", month: "numeric" });
+const ago = (iso?: string | null) => {
+  if (!iso) return "أبداً";
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  return m < 1 ? "الآن" : m < 60 ? `قبل ${m} د` : m < 1440 ? `قبل ${Math.round(m / 60)} س` : `قبل ${Math.round(m / 1440)} يوم`;
+};
+
+async function memberNames() {
+  const { data } = await service.from("team_members").select("user_id, email, display_name, role");
+  const byId = new Map<string, { name: string; email: string; roles: string[] }>();
+  for (const m of data ?? []) {
+    const cur = byId.get(m.user_id);
+    if (cur) cur.roles.push(m.role);
+    else byId.set(m.user_id, { name: m.display_name || m.email.split("@")[0], email: m.email, roles: [m.role] });
+  }
+  return byId;
+}
+
+/** Everything that needs the admin's attention right now. Cheap: no AI involved. */
+async function health() {
+  const issues: { level: "red" | "amber"; area: string; text: string }[] = [];
+  const now = Date.now();
+  const [{ data: devices }, { data: projects }, { data: jobs }, { data: late }, { count: deploys }, names] = await Promise.all([
+    service.from("bridge_devices").select("id, name, last_seen_at").eq("revoked", false),
+    service.from("bridge_projects").select("slug, name, preview_enabled, preview_url, preview_status, status"),
+    service.from("bridge_jobs").select("kind, status, exit_code, error, created_at")
+      .gte("created_at", new Date(now - 24 * 3600_000).toISOString()).order("created_at", { ascending: false }).limit(200),
+    service.from("team_tasks").select("id, title, assignee_user_id, due_at, status").neq("status", "done")
+      .lt("due_at", new Date(now).toISOString()).gte("due_at", new Date(now - 7 * 86400_000).toISOString()).limit(30),
+    service.from("terminal_deploy_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    memberNames(),
+  ]);
+
+  const online = (devices ?? []).filter((d: any) => d.last_seen_at && now - new Date(d.last_seen_at).getTime() < 3 * 60_000);
+  const lastSeen = (devices ?? []).map((d: any) => d.last_seen_at).filter(Boolean).sort().pop();
+  if (!devices?.length) issues.push({ level: "red", area: "الجسر", text: "ما في جهاز مربوط بالجسر؛ مهام المبرمجين ما رح تنفّذ." });
+  else if (!online.length) issues.push({ level: "red", area: "الجسر", text: `جهاز الماك غير متصل (آخر ظهور ${ago(lastSeen)}). مهام Antigravity وClaude واقفة.` });
+
+  for (const p of projects ?? []) {
+    if (p.preview_enabled && p.status === "ready" && (!p.preview_url || p.preview_status !== "يعمل")) {
+      issues.push({ level: "amber", area: "المعاينة", text: `معاينة «${p.name || p.slug}» مش شغالة: ${p.preview_status ?? "بلا حالة"}.` });
+    }
+  }
+  const failed = (jobs ?? []).filter((j: any) => j.status === "rejected" || (j.exit_code !== null && j.exit_code !== 0));
+  const sig = failed.filter((j: any) => /signature/i.test(j.error ?? ""));
+  if (sig.length) issues.push({ level: "red", area: "الجسر", text: `${sig.length} مهمة رُفضت بسبب التوقيع (bad signature): لازم إعادة ربط الجهاز.` });
+  const otherFails = failed.length - sig.length;
+  if (otherFails >= 2) issues.push({ level: "amber", area: "الوكلاء", text: `${otherFails} مهمة وكيل فشلت أو انتهى وقتها خلال 24 ساعة؛ غالباً الطلب كبير على مهمة وحدة.` });
+
+  for (const t of late ?? []) {
+    const who = names.get(t.assignee_user_id)?.name ?? "بلا مسند";
+    issues.push({ level: "amber", area: "المهام", text: `${who} متأخر بـ «${String(t.title).replace(/^\[جماعية\]\s*/, "").slice(0, 60)}» (الموعد ${ago(t.due_at)}).` });
+  }
+  if ((deploys ?? 0) > 0) issues.push({ level: "amber", area: "الموافقات", text: `${deploys} طلب نشر بانتظار موافقتك.` });
+
+  return {
+    at: ammanNow(),
+    issues,
+    bridge: { devices: devices?.length ?? 0, online: online.length, last_seen: ago(lastSeen) },
+    agent_jobs_24h: { total: jobs?.length ?? 0, failed: failed.length },
+  };
+}
+
+async function teamStatus() {
+  const names = await memberNames();
+  const since = new Date(Date.now() - 36 * 3600_000).toISOString();
+  const [{ data: open }, { data: doneRecent }, { data: board }, { data: sessions }] = await Promise.all([
+    service.from("team_tasks").select("title, assignee_user_id, assignee_role, due_at, points, status").neq("status", "done").order("due_at", { ascending: true }).limit(40),
+    service.from("team_tasks").select("title, assignee_user_id, completed_at, due_at").eq("status", "done").gte("completed_at", since).limit(40),
+    service.rpc("points_leaderboard"),
+    service.from("user_terminal_sessions").select("email, started_at, expires_at, last_activity_at").eq("status", "active"),
+  ]);
+  const who = (id: string | null, role?: string) => (id && names.get(id)?.name) || role || "—";
+  const strip = (s: string) => String(s).replace(/^\[جماعية\]\s*/, "").slice(0, 70);
+  const time = (iso: string) => new Date(iso).toLocaleString("ar-JO", { timeZone: AMMAN, hour: "2-digit", minute: "2-digit", weekday: "short" });
+  return {
+    now: ammanNow(),
+    open_tasks: (open ?? []).map((t: any) => ({
+      who: who(t.assignee_user_id, t.assignee_role), task: strip(t.title), points: t.points,
+      due: t.due_at ? time(t.due_at) : null, late: !!t.due_at && new Date(t.due_at).getTime() < Date.now(),
+    })),
+    done_last_36h: (doneRecent ?? []).map((t: any) => ({
+      who: who(t.assignee_user_id), task: strip(t.title),
+      on_time: !t.due_at || new Date(t.completed_at).getTime() <= new Date(t.due_at).getTime(),
+    })),
+    points: (board ?? []).slice(0, 15).map((r: any) => ({ who: r.display_name, total: r.total, perf_index: r.perf_index, rank: r.rank })),
+    terminal_sessions_now: (sessions ?? []).map((s: any) => ({ who: String(s.email).split("@")[0], last_active: ago(s.last_activity_at), ends: s.expires_at ? time(s.expires_at) : "بلا حد" })),
+  };
+}
+
+/** Start of today in Amman (UTC+3, no DST). */
+const ammanDayStart = () => {
+  const d = new Date(Date.now() + 3 * 3600_000);
+  d.setUTCHours(0, 0, 0, 0);
+  return new Date(d.getTime() - 3 * 3600_000);
+};
+
+async function spend() {
+  const day = ammanDayStart();
+  const month = new Date(Date.now() - 30 * 86400_000);
+  const [{ data: rows }, { data: jobs }] = await Promise.all([
+    service.from("ai_usage_log").select("kind, provider, tokens_in, tokens_out, chars, cost_usd, created_at").gte("created_at", month.toISOString()).limit(20000),
+    service.from("bridge_jobs").select("kind, tokens_in, tokens_out, cost_usd, created_at").gte("created_at", month.toISOString()).limit(5000),
+  ]);
+  type S = { calls: number; tokens: number; usd: number };
+  const add = (s: S, r: any) => { s.calls++; s.tokens += (r.tokens_in ?? 0) + (r.tokens_out ?? 0); s.usd += Number(r.cost_usd ?? 0); return s; };
+  const blank = (): S => ({ calls: 0, tokens: 0, usd: 0 });
+  const r4 = (s: S) => ({ ...s, usd: Math.round(s.usd * 10000) / 10000 });
+  const today = blank(), total = blank(), todayAgents = blank();
+  const byProvider: Record<string, S> = {}, agents: Record<string, S> = {};
+  for (const r of rows ?? []) {
+    add(total, r);
+    if (new Date(r.created_at) >= day) add(today, r);
+    add(byProvider[`${r.kind}:${r.provider ?? "?"}`] ??= blank(), r);
+  }
+  for (const j of jobs ?? []) {
+    add(agents[j.kind] ??= blank(), j);
+    if (new Date(j.created_at) >= day) add(todayAgents, j);
+  }
+  const map = (o: Record<string, S>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, r4(v)]));
+  return {
+    brain_today: r4(today),
+    brain_30d: r4(total),
+    brain_by_provider_30d: map(byProvider),
+    agents_today: r4(todayAgents),
+    agents_30d: map(agents),
+    note: "العقل: تقدير بأسعار القائمة (Groq المجاني فعلياً صفر). الوكلاء: Antigravity على اشتراك الجهاز، وClaude يسجّل تكلفته الفعلية.",
+  };
+}
+
+async function memories() {
+  const { data } = await service.from("admin_brain_memory").select("fact").order("created_at", { ascending: false }).limit(30);
+  return (data ?? []).map((d: any) => d.fact as string);
+}
+
+Object.assign(SERVER_TOOLS, {
+  async system_health() { return await health(); },
+  async team_status() { return await teamStatus(); },
+  async ai_spend() { return await spend(); },
+  async schedule_assistant({ request }: { request?: string }) {
+    const { data: tasks } = await service.from("collective_tasks").select("id, title").eq("status", "active").order("created_at", { ascending: false }).limit(1);
+    const task = tasks?.[0];
+    if (!task) return { error: "ما في مهمة جماعية فعّالة الآن" };
+    const r: any = await collectiveCall({ action: "schedule_ai", task_id: task.id, messages: [{ role: "user", content: String(request ?? "") }] });
+    return { task: task.title, ...r };
+  },
+  async remember({ fact }: { fact?: string }) {
+    const f = String(fact ?? "").trim().slice(0, 500);
+    if (f.length < 2) return { error: "empty" };
+    const { error } = await service.from("admin_brain_memory").insert({ fact: f, created_by: CURRENT_USER });
+    return error ? { error: error.message } : { ok: true, remembered: f };
+  },
+  async forget({ text }: { text?: string }) {
+    const w = String(text ?? "").trim();
+    if (w.length < 2) return { error: "empty" };
+    const { data, error } = await service.from("admin_brain_memory").delete().ilike("fact", `%${w}%`).select("fact");
+    return error ? { error: error.message } : { ok: true, forgot: (data ?? []).map((d: any) => d.fact) };
+  },
+});
+
+// ---------- actions the admin confirms on screen; run with the admin's own token ----------
+async function execute(kind: string, a: any) {
+  const asAdmin = createClient(SB_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: `Bearer ${ADMIN_TOKEN}` } }, auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const w = normAr(String(a?.member ?? "").trim());
+  let m: { id: string; name: string; email: string; roles: string[] } | null = null;
+  if (w.length >= 2) for (const [id, x] of await memberNames()) if (normAr(x.name).includes(w) || x.email.toLowerCase().includes(w)) { m = { id, ...x }; break; }
+  if (!m) return { ok: false, error: `ما لقيت عضو بالفريق باسم ${a?.member ?? ""}` };
+
+  switch (kind) {
+    case "remind": {
+      const text = String(a?.text ?? "").trim().slice(0, 500);
+      if (!text) return { ok: false, error: "empty message" };
+      const { error } = await service.from("team_notifications").insert({ recipient_user_id: m.id, recipient_role: m.roles[0], message: `🔔 من المدير: ${text}` });
+      return error ? { ok: false, error: error.message } : { ok: true, notified: m.name };
+    }
+    case "adjust_points": {
+      const { data, error } = await asAdmin.rpc("points_adjust", { p_user: m.id, p_points: Math.round(Number(a?.points)), p_reason: String(a?.reason ?? "") });
+      return error ? { ok: false, error: error.message } : { ok: true, entry: data, who: m.name, points: a?.points };
+    }
+    case "extend_session": {
+      const { data: s } = await service.from("user_terminal_sessions").select("id").eq("user_id", m.id).eq("status", "active").order("started_at", { ascending: false }).limit(1);
+      if (!s?.[0]) return { ok: false, error: `${m.name} ما عنده جلسة طرفية مفتوحة الآن` };
+      const { error } = await asAdmin.rpc("terminal_extend_session", { p_session_id: s[0].id, p_minutes: Math.round(Number(a?.minutes) || 60) });
+      return error ? { ok: false, error: error.message } : { ok: true, extended: m.name, minutes: a?.minutes };
+    }
+    case "assign_task": {
+      const title = String(a?.title ?? "").trim().slice(0, 200);
+      if (!title) return { ok: false, error: "no title" };
+      const due = a?.due_at && !Number.isNaN(Date.parse(a.due_at)) ? new Date(a.due_at).toISOString() : null;
+      const pts = a?.points !== undefined && Number.isFinite(Number(a.points)) ? { points: Math.round(Number(a.points)) } : {};
+      const { data, error } = await asAdmin.from("team_tasks").insert({
+        title, details: String(a?.details ?? "").slice(0, 4000) || null, assignee_user_id: m.id, assignee_role: m.roles[0],
+        due_at: due, created_by: CURRENT_USER, ...pts,
+      }).select("id").single();
+      if (error) return { ok: false, error: error.message };
+      await service.from("team_notifications").insert({ recipient_user_id: m.id, recipient_role: m.roles[0], task_id: data.id, message: `📌 مهمة جديدة من المدير: ${title}` });
+      return { ok: true, task_id: data.id, assigned_to: m.name };
+    }
+    default:
+      return { ok: false, error: `unknown action ${kind}` };
+  }
+}
+
 const fn = (name: string, description: string, properties: Record<string, unknown> = {}, required: string[] = []) => ({
   type: "function",
   function: { name, description, parameters: { type: "object", properties, required } },
@@ -249,13 +477,27 @@ const TOOLS = [
     experiment: { type: "string", enum: ["projectile", "pendulum", "free_fall_drag", "ohms_law", "radioactive_decay", "ideal_gas", "spring_oscillator", "titration", "population_growth", "galvanic_cell"] },
     params: { type: "object", description: "Optional numeric parameters, e.g. {v0:20, angle:45} for projectile; {length:1} pendulum; {mass:70, drag:0.25} free_fall_drag; {voltage:12, resistance:10} ohms_law; {half_life:5, n0:1000} radioactive_decay; {moles:1, volume:0.0224} ideal_gas; {k:50, mass:2, amplitude:0.1, damping:0.3} spring_oscillator; {acid_conc:0.1, acid_volume:25, base_conc:0.1} titration; {r:0.4, K:1000, n0:10} population_growth; {anode:'Zn', cathode:'Cu', anode_conc:1, cathode_conc:1, temperature:298} galvanic_cell (electrochemical/chemical cell; metals: Li,K,Mg,Al,Zn,Fe,Ni,Sn,Pb,Cu,Ag,Au)" },
   }, ["experiment"]),
+  // the whole operation (server, read-only)
+  fn("system_health", "Is everything OK right now: Mac bridge online, live preview, failed/rejected agent jobs, late team tasks, pending deploy approvals. Use it for any 'is everything ok / reassure me / what's wrong' question and to start a briefing."),
+  fn("team_status", "The team right now: open tasks per person with due time and points, what was finished in the last 36h (on time or late), points leaderboard with performance index, who has the terminal open."),
+  fn("schedule_assistant", "The programmers' day-by-day schedule of the active collective task (who works when, what each one gets today, what waits for whom). Can also CHANGE it: work hours of a person, a subtask's day/owner/text before delivery, remind someone, run the scheduler. Pass the admin's request in Arabic.", { request: { type: "string" } }, ["request"]),
+  fn("ai_spend", "What the AI costs: the central brain today and last 30 days (calls, tokens, estimated USD per provider) and the coding agents (Antigravity, Claude) on the bridge."),
+  fn("remember", "Save a lasting fact or preference the admin wants you to remember across conversations.", { fact: { type: "string" } }, ["fact"]),
+  fn("forget", "Delete remembered facts that contain this text.", { text: { type: "string" } }, ["text"]),
+  // actions: shown to the admin with a confirm button, run only after he confirms
+  fn("admin_action", "Do something for a team member after the admin confirms on screen. kind: remind (args: member, text), adjust_points (member, points (+/-), reason), extend_session (member, minutes), assign_task (member, title, details, due_at ISO with +03:00, points).", {
+    kind: { type: "string", enum: ["remind", "adjust_points", "extend_session", "assign_task"] },
+    member: { type: "string", description: "name or email of the team member" },
+    args: { type: "object", description: "text / points / reason / minutes / title / details / due_at" },
+    label: { type: "string", description: "one short Arabic sentence describing exactly what will happen" },
+  }, ["kind", "member", "label"]),
 ];
 const CLIENT_TOOLS = new Set([
-  "navigate_to", "go_back", "scroll_page", "read_screen", "click_element", "type_into", "run_experiment",
+  "admin_action", "navigate_to", "go_back", "scroll_page", "read_screen", "click_element", "type_into", "run_experiment",
   "read_controls", "set_control", "read_page_text", "send_team_message", "terminal_run", "terminal_read",
 ]);
 
-function systemPrompt(pages: { title: string; path: string }[], current: string) {
+function systemPrompt(pages: { title: string; path: string }[], current: string, memory: string[] = []) {
   // Groq's free tier allows 8k tokens/minute, so the prompt stays small: only the main sections here,
   // every other page (≈260, incl. 70 experiments) is found with the find_page tool.
   const list = pages.filter((p) => !p.title.startsWith("تجربة:")).slice(0, 25).map((p) => `${p.title} ${p.path}`).join(" | ");
@@ -271,6 +513,14 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
 - تجارب محسوبة بسرعة مع رسم: run_experiment.
 - رسائل الفريق: send_team_message (للمجموعة كلها أو لعضو). لا تحاولي الكتابة في صفحات أخرى لإرسال رسائل.
 - المهام الجماعية ومهام الفريق: collective_tasks (أنشئ، خطّط، تابع، حلّل) بنقل طلب المدير كاملاً. إذا رجعت needs_confirmation اسأله بجملة واحدة، وإذا قال نعم استعمل collective_confirm بنفس كائن pending.
+- إدارة الفريق والعمل كله (أنتِ العقل الواحد لكل هذا):
+  * "طمّنّي / كل شي تمام؟ / شو المشاكل؟" ← system_health أولاً، وابدئي بالأحمر ثم البرتقالي، واقترحي الحل لكل مشكلة.
+  * "مين متأخر / شو صار اليوم / النقاط" ← team_status.
+  * جدول المبرمجين وأوقاتهم ومين يستنى مين، وتعديله ← schedule_assistant بنقل الطلب كما هو.
+  * "قديش بصرف" ← ai_spend، واذكري أن العقل تقديري والوكلاء فعلي.
+  * تذكير عضو، تعديل نقاط، تمديد جلسة طرفية، إسناد مهمة ← admin_action مع label واضح؛ يظهر للمدير زر تأكيد ولا يُنفّذ قبله.
+  * إذا قال "تذكّري/احفظي" ← remember، و"انسي" ← forget.
+  * "ملخص اليوم" ← system_health ثم team_status ثم ملخص قصير: الوضع، المشاكل، ومين عليه شو اليوم.
 - الطرفية: terminal_run يكتب الأمر في الطرفية الحقيقية بصلاحيات المدير. أوامرها: help، stats، users، sessions، db health|tables|migrations، logs، quota؛ و "antigravity <المهمة بالتفصيل>" لتكليف Antigravity، و "claude <المهمة>" لتكليف Claude، و "sh <أمر>" لأوامر الجهاز. بعد تكليف وكيل استعملي terminal_read لمتابعة رده. أي تعديل كود يحتاج موافقة المدير من /admin?tab=terminal قبل أن يُرفع.
 
 قواعد مهمة:
@@ -279,7 +529,8 @@ function systemPrompt(pages: { title: string; path: string }[], current: string)
 - لا ترفضي طلبات المدير العادية (صور، نصوص، مواضيع عامة)؛ أنت مساعدته الكاملة. الرفض فقط لما يضر أحداً.
 - لا تكشفي كلمات مرور أو مفاتيح.
 
-الصفحة الحالية: ${current}
+الوقت الآن في عمّان: ${ammanNow()}
+${memory.length ? `ما طلب المدير أن تتذكريه:\n- ${memory.join("\n- ")}\n` : ""}الصفحة الحالية: ${current}
 صفحات رئيسية: ${list}
 لأي صفحة أو تجربة أخرى استعملي find_page أولاً (مثلاً find_page("موجات") ثم navigate_to).
 جداول مهمة (read_table): ${tables}`;
@@ -335,7 +586,7 @@ async function gateway(messages: unknown[]) {
       method: "POST",
       headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 500, temperature: 0.6,
+        model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 900, temperature: 0.6,
         // gpt-oss on Groq: little hidden reasoning = answers in well under a second
         ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
       }),
@@ -354,6 +605,8 @@ async function gateway(messages: unknown[]) {
     if (!msg) return { error: `${p.name}: رد فاضي` };
     timing.provider = p.name;
     timing.ms.push(Date.now() - t);
+    const tin = Number(j?.usage?.prompt_tokens ?? 0), tout = Number(j?.usage?.completion_tokens ?? 0);
+    logUsage({ kind: "chat", provider: p.name, model: p.model, tokens_in: tin, tokens_out: tout, cost_usd: chatCost(p.model, tin, tout) });
     return { msg };
   };
 
@@ -410,13 +663,14 @@ async function chat(body: any) {
   PAGES = pages.slice(0, 400);
   const history: any[] = trim(Array.isArray(body?.messages) ? body.messages : []);
   const added: any[] = [];
+  const memory = await memories().catch(() => [] as string[]);
 
   const t0 = Date.now();
   timing.ms = [];
   timing.provider = undefined;
   const took = () => ({ provider: timing.provider, model_ms: timing.ms, total_ms: Date.now() - t0 });
   for (let round = 0; round < 8 && Date.now() - t0 < 120_000; round++) {
-    const msg = await gateway([{ role: "system", content: systemPrompt(pages, current) }, ...history, ...added]);
+    const msg = await gateway([{ role: "system", content: systemPrompt(pages, current, memory) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
     const assistant = { role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) };
@@ -525,7 +779,11 @@ async function speak(text: string) {
   const errors: string[] = [];
   for (const [name, fn] of [["openai", speakOpenAI], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
     if ((ttsSkip.get(name) ?? 0) > Date.now()) continue;
-    try { return await fn(text); } catch (e) {
+    try {
+      const audio = await fn(text);
+      logUsage({ kind: "tts", provider: name, chars: text.length, cost_usd: text.length * (TTS_PER_CHAR[name] ?? 0) });
+      return audio;
+    } catch (e) {
       errors.push(`${name}: ${String(e).slice(0, 120)}`);
       ttsSkip.set(name, Date.now() + (/402|terms|quota|429/.test(String(e)) ? 15 * 60_000 : 30_000));
     }
@@ -542,6 +800,7 @@ Deno.serve(async (req) => {
     ADMIN_TOKEN = token;
     const { data: u, error: uErr } = await service.auth.getUser(token);
     if (uErr || !u?.user) return json({ error: "not signed in" }, 401);
+    CURRENT_USER = u.user.id;
     const { data: isAdmin, error: aErr } = await service.rpc("is_platform_admin", { _user_id: u.user.id });
     if (aErr || isAdmin !== true) return json({ error: "admins only" }, 403);
 
@@ -550,8 +809,15 @@ Deno.serve(async (req) => {
       const text = typeof body.text === "string" ? body.text.trim().slice(0, 400) : "";
       if (!text) return json({ error: "no text" }, 400);
       const audio = await speak(text);
-      return new Response(audio, { headers: { ...cors, "Content-Type": "audio/wav" } });
+      return new Response(audio as unknown as BodyInit, { headers: { ...cors, "Content-Type": "audio/wav" } });
     }
+    // cheap, no AI: the orb polls this for its alert badge and spend meter
+    if (body?.action === "pulse") {
+      const [h, s] = await Promise.all([health(), spend()]);
+      return json({ health: h, spend: { brain_today: s.brain_today, brain_30d: s.brain_30d, agents_today: s.agents_today } });
+    }
+    // an admin_action the admin just confirmed on screen
+    if (body?.action === "execute") return json(await execute(String(body.kind ?? ""), { ...(body.args ?? {}), member: body.member }));
     return json(await chat(body));
   } catch (e) {
     console.error("admin-brain", e);

@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, Check, Send, Sparkles, Activity, MessagesSquare, FlaskConical, Compass, ShieldAlert } from 'lucide-react';
+import { X, Check, Send, Sparkles, Activity, ShieldAlert, ShieldCheck, Users, CalendarClock, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { CORE_SECTIONS } from '@/config/platformSections';
 import { VoiceBrain, type BrainStatus } from './voiceBrain';
@@ -14,6 +14,7 @@ import ExperimentPanel from './ExperimentPanel';
 import BrainVisual from './BrainVisual';
 import { RISKY, click, findClickable, isNo, isYes, readControls, readPageText, readScreen, scrollPage, setControl, typeInto } from './screenControl';
 import { SIMULATION_PAGES } from './simulationPages';
+import { InsightsBar, useBrainPulse } from './BrainInsights';
 
 type Mode = 'corner' | 'center' | 'docked';
 
@@ -101,6 +102,9 @@ function Orb() {
   const listEnd = useRef<HTMLDivElement>(null);
   const [arrivals, setArrivals] = useState(0); // bumps each time she lands in the centre (shockwave)
   const getLevel = useCallback(() => brainRef.current?.level() ?? 0, []);
+  const { pulse, loading: pulseLoading, refresh: refreshPulse } = useBrainPulse();
+  const alerts = pulse?.health.issues.length ?? 0;
+  const redAlerts = pulse?.health.issues.some((i) => i.level === 'red') ?? false;
 
   // geometry for each mode
   // wide screens: orb on the left, the conversation beside it on the right; phones: orb on top
@@ -142,6 +146,22 @@ function Orb() {
 
   const onTool = useCallback(async (name: string, args: Record<string, unknown>) => {
     switch (name) {
+      case 'admin_action': {
+        // team actions (remind, points, session time, assign a task) run only after the admin confirms
+        const kind = String(args.kind ?? '');
+        const member = String(args.member ?? '');
+        const label = String(args.label ?? '').slice(0, 160) || `${kind} — ${member}`;
+        setMode('center');
+        setPendingAction({
+          label,
+          run: async () => {
+            const { data, error } = await supabase.functions.invoke('admin-brain', { body: { action: 'execute', kind, member, args: args.args ?? {} } });
+            void refreshPulse();
+            return error ? { ok: false, error: error.message } : data;
+          },
+        });
+        return { needs_confirmation: true, action: label };
+      }
       case 'navigate_to': {
         const path = String(args.path ?? '');
         if (!path.startsWith('/')) return { ok: false, error: 'invalid path' };
@@ -255,7 +275,7 @@ function Orb() {
       default:
         return { ok: false, error: `unknown tool ${name}` };
     }
-  }, [navigate]);
+  }, [navigate, refreshPulse]);
 
   const start = useCallback(async () => {
     setError(null);
@@ -408,6 +428,15 @@ function Orb() {
           </>
         )}
         <BrainVisual status={status} getLevel={getLevel} calm={mode === 'corner'} />
+        {mode !== 'center' && alerts > 0 && (
+          <motion.span
+            initial={{ scale: 0 }} animate={{ scale: 1 }}
+            className={`absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border-2 border-background px-1 text-[10px] font-bold ${redAlerts ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}
+            aria-label={`${alerts} تنبيه`}
+          >
+            {alerts}
+          </motion.span>
+        )}
       </motion.button>
 
       {/* centre: the conversation panel, beside the orb (not under it) */}
@@ -438,6 +467,8 @@ function Orb() {
                 <X className="h-3.5 w-3.5" /> إنهاء
               </button>
             </div>
+
+            <InsightsBar pulse={pulse} loading={pulseLoading} onRefresh={() => void refreshPulse()} onAsk={(t) => suggest(t)} />
 
             {/* conversation */}
             <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
@@ -538,11 +569,12 @@ function Orb() {
 }
 
 const SUGGESTIONS = [
+  { icon: Sparkles, text: 'ملخص اليوم' },
+  { icon: ShieldCheck, text: 'طمّنّي، كل شي تمام؟' },
+  { icon: Users, text: 'مين متأخر ومين خلّص؟' },
+  { icon: CalendarClock, text: 'شو جدول المبرمجين اليوم؟' },
+  { icon: Coins, text: 'قديش صرفنا ذكاء اصطناعي؟' },
   { icon: Activity, text: 'شو صار بالمنصة اليوم؟' },
-  { icon: MessagesSquare, text: 'شو آخر المحادثات؟' },
-  { icon: FlaskConical, text: 'اعمليلي تجربة خلية خارصين ونحاس' },
-  { icon: Compass, text: 'وديني على التجارب' },
-  { icon: Sparkles, text: 'مين سجّل جديد هالأسبوع؟' },
 ];
 
 // fixed pseudo-random motes so they don't jump on re-render
