@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bot, CalendarDays, CheckCircle2, Clock, Hourglass, Link2, Loader2, Lock, Pencil, RefreshCw, Send, Sparkles, X,
+  Bot, CalendarDays, CheckCircle2, Clock, Hourglass, Link2, ListChecks, Loader2, Lock, Pencil, RefreshCw, Send, Sparkles, X,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,6 +130,7 @@ export default function ProgrammersSchedule() {
           <DaysGrid
             task={task} people={people} subtasks={subtasks} days={days} today={today} now={now} nameOf={nameOf} onChanged={reload}
           />
+          <AllTasks subtasks={subtasks} start={start} nameOf={nameOf} />
           <HoursEditor people={people} nameOf={nameOf} onChanged={reload} />
         </div>
         <ScheduleAssistant taskId={task.id} onChanged={reload} />
@@ -208,6 +210,7 @@ function DaysGrid({ task, people, subtasks, days, today, now, nameOf, onChanged 
   nameOf: (e: string | null) => string; onChanged: () => void;
 }) {
   const [editing, setEditing] = useState<Subtask | null>(null);
+  const [viewing, setViewing] = useState<Subtask | null>(null);
   const start = task.send_at ? new Date(task.send_at).getTime() : null;
   const byPos = useMemo(() => new Map(subtasks.map((s) => [s.position, s])), [subtasks]);
   const done = subtasks.filter((s) => s.status === 'done').length;
@@ -247,7 +250,7 @@ function DaysGrid({ task, people, subtasks, days, today, now, nameOf, onChanged 
                     <td key={d} className={`align-top ${d === today ? 'rounded-xl bg-primary/5' : ''}`}>
                       {cell.length === 0 && <div className="py-3 text-center text-[11px] text-muted-foreground">—</div>}
                       {cell.map((s) => (
-                        <SubCard key={s.id} s={s} byPos={byPos} now={now} nameOf={nameOf} onEdit={() => setEditing(s)} />
+                        <SubCard key={s.id} s={s} byPos={byPos} now={now} nameOf={nameOf} onEdit={() => setEditing(s)} onOpen={() => setViewing(s)} />
                       ))}
                     </td>
                   );
@@ -257,6 +260,7 @@ function DaysGrid({ task, people, subtasks, days, today, now, nameOf, onChanged 
           </tbody>
         </table>
       </div>
+      <SubtaskView s={viewing} start={start} nameOf={nameOf} onClose={() => setViewing(null)} />
       {editing && (
         <SubtaskEditor
           s={editing} people={people} days={days} nameOf={nameOf}
@@ -267,8 +271,8 @@ function DaysGrid({ task, people, subtasks, days, today, now, nameOf, onChanged 
   );
 }
 
-function SubCard({ s, byPos, now, nameOf, onEdit }: {
-  s: Subtask; byPos: Map<number, Subtask>; now: number; nameOf: (e: string | null) => string; onEdit: () => void;
+function SubCard({ s, byPos, now, nameOf, onEdit, onOpen }: {
+  s: Subtask; byPos: Map<number, Subtask>; now: number; nameOf: (e: string | null) => string; onEdit: () => void; onOpen: () => void;
 }) {
   const t = timingOf(s);
   const open = s.delivered_at && s.status !== 'done' && s.due_at;
@@ -278,7 +282,9 @@ function SubCard({ s, byPos, now, nameOf, onEdit }: {
     <div className={`mb-1.5 rounded-xl border p-2 text-[11px] leading-relaxed ${TONE[t.tone]}`}>
       <div className="flex items-start gap-1">
         <span className="font-bold text-foreground">#{s.position}</span>
-        <span className="flex-1 font-semibold text-foreground">{s.title}</span>
+        <button type="button" onClick={onOpen} className="flex-1 text-start font-semibold text-foreground underline-offset-2 hover:underline">
+          {s.title}
+        </button>
         {!s.delivered_at && (
           <button type="button" onClick={onEdit} className="rounded p-0.5 text-muted-foreground hover:bg-accent" aria-label={`تعديل #${s.position}`}>
             <Pencil className="h-3 w-3" />
@@ -301,6 +307,112 @@ function SubCard({ s, byPos, now, nameOf, onEdit }: {
         </div>
       )}
     </div>
+  );
+}
+
+/** Everything a programmer received for one task: the full text, checks, timing — also for past days. */
+function SubtaskView({ s, start, nameOf, onClose }: {
+  s: Subtask | null; start: number | null; nameOf: (e: string | null) => string; onClose: () => void;
+}) {
+  if (!s) return null;
+  const t = timingOf(s);
+  const date = start ? dayLabel(new Date(start + (s.day_from - 1) * DAY_MS)) : '';
+  const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ar-JO', { timeZone: 'Asia/Amman', dateStyle: 'medium', timeStyle: 'short' }) : '—');
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto rounded-3xl text-right" dir="rtl">
+        <DialogHeader className="text-right">
+          <DialogTitle>#{s.position} {s.title}</DialogTitle>
+          <DialogDescription className="text-right">
+            {nameOf(s.assignee_email)} · اليوم {s.day_from.toLocaleString('ar')}{date ? ` (${date})` : ''}
+            {s.effort_hours ? ` · نحو ${s.effort_hours.toLocaleString('ar')} ساعة` : ''}
+            {s.depends_on.length ? ` · بعد ${s.depends_on.map((p) => `#${p}`).join(' ')}` : ''}
+          </DialogDescription>
+        </DialogHeader>
+        <div className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${TONE[t.tone]}`}>{t.label}</div>
+        <dl className="grid grid-cols-3 gap-2 text-xs">
+          <div className="rounded-xl bg-muted p-2"><dt className="text-muted-foreground">وصلت</dt><dd className="font-semibold">{when(s.delivered_at)}</dd></div>
+          <div className="rounded-xl bg-muted p-2"><dt className="text-muted-foreground">الموعد</dt><dd className="font-semibold">{when(s.due_at)}</dd></div>
+          <div className="rounded-xl bg-muted p-2"><dt className="text-muted-foreground">أُنجزت</dt><dd className="font-semibold">{when(s.completed_at)}</dd></div>
+        </dl>
+        {s.postponed_reason && s.status !== 'done' && (
+          <p className="rounded-xl border border-border bg-card p-2 text-xs text-muted-foreground">مؤجّلة: {s.postponed_reason}</p>
+        )}
+        {s.detail && <div className="whitespace-pre-wrap rounded-2xl bg-muted/60 p-4 text-sm leading-relaxed">{s.detail}</div>}
+        {s.acceptance.length > 0 && (
+          <div>
+            <h4 className="mb-1.5 text-sm font-bold">تُعتبر منجزة عندما</h4>
+            <ul className="space-y-1 text-sm">
+              {s.acceptance.map((a) => (
+                <li key={a} className="flex gap-2"><CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${s.status === 'done' ? 'text-success' : 'text-muted-foreground'}`} aria-hidden />{a}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Every task of the collective work in one list, day by day: what was sent, to whom, and how it went. */
+function AllTasks({ subtasks, start, nameOf }: { subtasks: Subtask[]; start: number | null; nameOf: (e: string | null) => string }) {
+  const [filter, setFilter] = useState<'all' | 'sent' | 'coming'>('all');
+  const [viewing, setViewing] = useState<Subtask | null>(null);
+  const rows = [...subtasks]
+    .sort((a, b) => a.day_from - b.day_from || a.position - b.position)
+    .filter((s) => (filter === 'all' ? true : filter === 'sent' ? !!s.delivered_at : !s.delivered_at));
+  const sent = subtasks.filter((s) => s.delivered_at).length;
+  const short = (iso: string | null) => (iso ? new Date(iso).toLocaleString('ar-JO', { timeZone: 'Asia/Amman', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
+  return (
+    <section className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <h3 className="flex items-center gap-2 font-bold"><ListChecks className="h-4 w-4 text-primary" aria-hidden /> كل المهام</h3>
+        <span className="text-xs text-muted-foreground">وصل منها {sent.toLocaleString('ar')} من {subtasks.length.toLocaleString('ar')} · اكبس أي مهمة لتشوف نصها كامل</span>
+        <div className="ms-auto flex gap-1 rounded-xl bg-muted p-1 text-xs">
+          {([['all', 'الكل'], ['sent', 'المرسلة'], ['coming', 'القادمة']] as const).map(([k, l]) => (
+            <button key={k} type="button" onClick={() => setFilter(k)} aria-pressed={filter === k}
+              className={`rounded-lg px-3 py-1 font-semibold ${filter === k ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}>{l}</button>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-right text-sm">
+          <thead className="text-xs text-muted-foreground">
+            <tr className="border-b border-border">
+              <th className="p-2 font-semibold">#</th>
+              <th className="p-2 font-semibold">اليوم</th>
+              <th className="p-2 font-semibold">المبرمج</th>
+              <th className="p-2 font-semibold">المهمة</th>
+              <th className="p-2 font-semibold">الحالة</th>
+              <th className="p-2 font-semibold">وصلت</th>
+              <th className="p-2 font-semibold">أُنجزت</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((s) => {
+              const t = timingOf(s);
+              return (
+                <tr key={s.id} onClick={() => setViewing(s)} className="cursor-pointer border-b border-border/60 hover:bg-accent/50">
+                  <td className="p-2 tabular-nums text-muted-foreground">{s.position}</td>
+                  <td className="whitespace-nowrap p-2 text-xs">
+                    اليوم {s.day_from.toLocaleString('ar')}
+                    {start && <span className="block text-[10px] text-muted-foreground">{dayLabel(new Date(start + (s.day_from - 1) * DAY_MS))}</span>}
+                  </td>
+                  <td className="whitespace-nowrap p-2">{nameOf(s.assignee_email)}</td>
+                  <td className="p-2">
+                    <button type="button" className="text-start font-semibold underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); setViewing(s); }}>{s.title}</button>
+                  </td>
+                  <td className="p-2"><span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold ${TONE[t.tone]}`}>{t.label}</span></td>
+                  <td className="whitespace-nowrap p-2 text-xs tabular-nums text-muted-foreground">{short(s.delivered_at)}</td>
+                  <td className="whitespace-nowrap p-2 text-xs tabular-nums text-muted-foreground">{short(s.completed_at)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <SubtaskView s={viewing} start={start} nameOf={nameOf} onClose={() => setViewing(null)} />
+    </section>
   );
 }
 

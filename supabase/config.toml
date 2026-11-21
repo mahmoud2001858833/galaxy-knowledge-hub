@@ -299,3 +299,6 @@ verify_jwt = true
 
 [functions.collective-task-ai]
 verify_jwt = true
+
+[functions.volunteer-initiatives]
+verify_jwt = false
