@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, Clock, GitPullRequest, LayoutDashboard, Loader2, Mail,
   RefreshCw, Settings2, Terminal, Trophy, Users, UsersRound,
+  CalendarRange,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import PointsSystemPanel from '@/components/admin/points/PointsSystemPanel';
 import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
 import { DeployApprovalsCard } from '@/components/admin/DeployApprovalsCard';
 import ProgrammersSchedule from './ProgrammersSchedule';
+import GrandPlan from './GrandPlan';
 import { useLeaderboard } from '@/components/admin/points/pointsApi';
 import { ROLE_LABELS, type TeamRole } from '@/components/team/teamApi';
 import { WEEKDAYS } from '@/components/admin/collective/collectiveApi';
@@ -26,10 +28,11 @@ import {
  * «الإعدادات» holds the team-wide controls (how many people per role, default work hours).
  */
 
-export type TeamSection = 'overview' | 'schedule' | 'members' | 'collective' | 'approvals' | 'points' | 'terminal' | 'settings';
+export type TeamSection = 'overview' | 'grand' | 'schedule' | 'members' | 'collective' | 'approvals' | 'points' | 'terminal' | 'settings';
 
 const SECTIONS: { id: TeamSection; label: string; icon: React.ElementType; hint: string }[] = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, hint: 'ما يحتاج قرارك الآن' },
+  { id: 'grand', label: 'المهام الكبرى', icon: CalendarRange, hint: 'خطة الفريق كاملة يوماً بيوم: كل مهمة لكل دور وشخص، مع مساعد ذكي يعدّلها' },
   { id: 'schedule', label: 'جدول المبرمجين', icon: CalendarClock, hint: 'من يعمل متى، مهمة كل يوم بالترتيب، عدّادات حية، ومساعد ذكي يطمّنك ويعدّل' },
   { id: 'members', label: 'الأعضاء والمهام اليومية', icon: Users, hint: 'الأدوار، الإسناد، الراحة، الإشعارات، المحادثة، المشرف، الملفات' },
   { id: 'collective', label: 'المهام الجماعية', icon: UsersRound, hint: 'خطط الفريق المُوقّتة بالأولوية والاعتماد' },
@@ -119,6 +122,7 @@ export default function TeamHub({ initialSection }: { initialSection?: TeamSecti
       </nav>
 
       {section === 'overview' && <Overview snap={snap} settings={settings} go={go} onRefresh={reload} />}
+      {section === 'grand' && <GrandPlan />}
       {section === 'schedule' && <ProgrammersSchedule />}
       {section === 'members' && <EmployeesControlCenter />}
       {section === 'collective' && <CollectiveTasksPanel />}
