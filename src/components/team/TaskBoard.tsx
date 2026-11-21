@@ -166,9 +166,21 @@ const CompletionForm: React.FC<{ task: TeamTask; onDone: () => void }> = ({ task
   );
 };
 
+/** Lead marks a member's task done for them (they finished but forgot to close it). The member stays the
+ *  completer, so the points, the on-time bonus and the collective schedule all credit them, not the lead. */
+const markDoneForMember = (task: TeamTask, at?: Date) =>
+  supabase
+    .from('team_tasks')
+    .update({ status: 'done', completed_at: (at ?? new Date()).toISOString(), completed_by: task.assignee_user_id })
+    .eq('id', task.id)
+    .neq('status', 'done');
+
+const toLocalInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+
 /** Principal/supervisor controls: add a closing requirement, reopen, delete. */
 const LeadActions: React.FC<{ task: TeamTask; onChanged: () => void; onClose: () => void }> = ({ task, onChanged, onClose }) => {
   const [req, setReq] = useState('');
+  const [doneAt, setDoneAt] = useState(() => toLocalInput(new Date()));
   const run = async (fn: () => PromiseLike<{ error: unknown }>, ok: string, close = false) => {
     const { error } = await fn();
     if (error) toast.error(errorMessage(error));
@@ -182,6 +194,34 @@ const LeadActions: React.FC<{ task: TeamTask; onChanged: () => void; onClose: ()
   return (
     <div className="space-y-3 rounded-2xl border border-dashed border-border p-4">
       <h4 className="text-sm font-bold">تحكم المشرف</h4>
+      {task.status !== 'done' && !isScheduled(task) && (
+        <div className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
+          <p className="text-xs text-muted-foreground">
+            أنجز العضو المهمة ونسي يغلقها؟ أغلقها عنه: النقاط ومكافأة الموعد تُحسب له{task.assignee_user_id ? '' : ' (المهمة غير مسندة لشخص محدد فلا تُحسب نقاط)'}.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor={`done-at-${task.id}`} className="text-xs">وقت الإنجاز</Label>
+            <Input
+              id={`done-at-${task.id}`}
+              type="datetime-local"
+              value={doneAt}
+              max={toLocalInput(new Date())}
+              onChange={(e) => setDoneAt(e.target.value)}
+              className="h-9 w-auto"
+            />
+            <Button
+              size="sm"
+              className="gap-1"
+              onClick={() => {
+                const at = doneAt ? new Date(doneAt) : new Date();
+                run(() => markDoneForMember(task, at > new Date() ? new Date() : at), 'أُغلقت المهمة كمنجزة باسم العضو', true);
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4" /> تم الإنجاز
+            </Button>
+          </div>
+        </div>
+      )}
       {task.status !== 'done' && (
         <div className="flex gap-2">
           <Input value={req} onChange={(e) => setReq(e.target.value)} placeholder="متطلب إضافي لإغلاق المهمة" />
@@ -359,23 +399,36 @@ export const TaskDialog: React.FC<{
   );
 };
 
-const TaskCard: React.FC<{ task: TeamTask; members: TeamMember[]; onOpen: () => void }> = ({ task, members, onOpen }) => (
-  <button
-    type="button"
-    onClick={onOpen}
-    className="w-full rounded-2xl border border-border bg-card p-3 text-right shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-  >
-    <div className="font-semibold text-card-foreground">{task.title}</div>
-    <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
-      <span>{ROLE_LABELS[task.assignee_role as WorkerRole]}</span>
-      {task.assignee_user_id && <span>· {nameOf(members, task.assignee_user_id)}</span>}
-      {isScheduled(task) && <span className="font-semibold text-primary">· تُرسل {formatDate(task.publish_at)}</span>}
-      {task.due_at && <span>· {formatDate(task.due_at)}</span>}
-      {task.source_task_id && <span className="text-primary">· من المدقق</span>}
-      {task.quality_status === 'no_remarks' && <span className="text-success">· جودة ✓</span>}
-    </div>
-    <div className="mt-1.5"><TaskCountdown task={task} compact /></div>
-  </button>
+const TaskCard: React.FC<{ task: TeamTask; members: TeamMember[]; onOpen: () => void; onQuickDone?: () => void }> = ({ task, members, onOpen, onQuickDone }) => (
+  <div className="relative">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full rounded-2xl border border-border bg-card p-3 text-right shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className={`font-semibold text-card-foreground ${onQuickDone ? 'pl-9' : ''}`}>{task.title}</div>
+      <div className="mt-1 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
+        <span>{ROLE_LABELS[task.assignee_role as WorkerRole]}</span>
+        {task.assignee_user_id && <span>· {nameOf(members, task.assignee_user_id)}</span>}
+        {isScheduled(task) && <span className="font-semibold text-primary">· تُرسل {formatDate(task.publish_at)}</span>}
+        {task.due_at && <span>· {formatDate(task.due_at)}</span>}
+        {task.source_task_id && <span className="text-primary">· من المدقق</span>}
+        {task.quality_status === 'no_remarks' && <span className="text-success">· جودة ✓</span>}
+      </div>
+      <div className="mt-1.5"><TaskCountdown task={task} compact /></div>
+    </button>
+    {onQuickDone && (
+      <button
+        type="button"
+        onClick={onQuickDone}
+        title="تم الإنجاز (باسم العضو)"
+        aria-label={`تعليم «${task.title}» كمنجزة باسم العضو`}
+        className="absolute left-2 top-2 rounded-full border border-border bg-background p-1.5 text-muted-foreground transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <CheckCircle2 className="h-4 w-4" />
+      </button>
+    )}
+  </div>
 );
 
 /** Four-column task execution board: required / in progress / overdue / done. */
@@ -388,6 +441,16 @@ export const TaskBoard: React.FC<{
   isLead?: boolean;
 }> = ({ tasks, members, canWork, onChanged, emptyText = 'لا توجد مهام', isLead = false }) => {
   const [open, setOpen] = useState<TeamTask | null>(null);
+  const quickDone = async (t: TeamTask) => {
+    const who = t.assignee_user_id ? nameOf(members, t.assignee_user_id) : 'العضو';
+    if (!window.confirm(`إغلاق «${t.title}» كمنجزة الآن باسم ${who}؟ النقاط تُحسب له.`)) return;
+    const { error } = await markDoneForMember(t);
+    if (error) toast.error(errorMessage(error));
+    else {
+      toast.success(`أُغلقت المهمة باسم ${who}`);
+      onChanged();
+    }
+  };
   const columns = COLUMNS.filter((c) => !c.leadOnly || isLead);
   const grouped = useMemo(() => {
     const g: Record<string, TeamTask[]> = { scheduled: [], todo: [], in_progress: [], overdue: [], done: [] };
@@ -410,7 +473,15 @@ export const TaskBoard: React.FC<{
             {grouped[id].length === 0 ? (
               <p className="px-1 py-4 text-center text-xs text-muted-foreground">{emptyText}</p>
             ) : (
-              grouped[id].map((t) => <TaskCard key={t.id} task={t} members={members} onOpen={() => setOpen(t)} />)
+              grouped[id].map((t) => (
+                <TaskCard
+                  key={t.id}
+                  task={t}
+                  members={members}
+                  onOpen={() => setOpen(t)}
+                  onQuickDone={isLead && t.status !== 'done' && !isScheduled(t) ? () => quickDone(t) : undefined}
+                />
+              ))
             )}
           </div>
         ))}
