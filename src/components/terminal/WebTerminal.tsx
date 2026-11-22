@@ -80,6 +80,17 @@ const endpoint = () => {
   return { url: `${String(client.supabaseUrl).replace(/\/$/, '')}/functions/v1/${FN}`, key: client.supabaseKey };
 };
 
+/**
+ * Messages travel base64-encoded: some antivirus / network filters drop requests whose body
+ * contains plain links (https://…), which showed up as "Failed to fetch" in the terminal.
+ */
+const toBase64 = (text: string) => {
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+};
+
 export const callTerminal = async (body: Record<string, unknown>, signal?: AbortSignal, keepalive = false) => {
   const { data } = await supabase.auth.getSession();
   const { url, key } = endpoint();
@@ -354,7 +365,7 @@ export const WebTerminal: React.FC<Props> = ({ session, onEnded, onQuota, fixedM
       term.write('\r\n');
       let first = true;
       try {
-        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command: wire, resume_session: resume, project: projectRef.current }, abort.signal);
+        const res = await callTerminal({ action: 'exec', session_id: session.session_id, command_b64: toBase64(wire), resume_session: resume, project: projectRef.current }, abort.signal);
         if (!res.ok || !res.body) {
           const text = await res.text();
           term.write(`\x1b[31merror: ${res.status} ${text.slice(0, 200)}\x1b[0m`);
