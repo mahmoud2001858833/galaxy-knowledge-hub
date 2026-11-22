@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import PlanConstellation from './PlanConstellation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 /**
@@ -222,6 +223,15 @@ export default function GrandPlan() {
           ))}
         </dl>
       </header>
+
+      <PlanConstellation
+        items={items}
+        groups={GROUPS}
+        days={PLAN_DAYS}
+        today={today}
+        dayLabel={(d) => ({ wd: weekday(dayDate(d)), dm: dm(dayDate(d)) })}
+        onOpen={(id) => setOpen(items.find((i) => i.id === id) ?? null)}
+      />
 
       {/* legend */}
       <div className="flex flex-wrap items-center gap-2 text-xs">

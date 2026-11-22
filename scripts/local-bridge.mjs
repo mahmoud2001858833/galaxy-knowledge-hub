@@ -111,7 +111,7 @@ function pair(code) {
       othersMode: 'ask',
     },
     shell: old.shell ?? { bin: process.env.SHELL || '/bin/zsh', allowOthers: false },
-    maxMinutes: old.maxMinutes ?? { principal: 30, others: 5 },
+    maxMinutes: old.maxMinutes ?? { principal: 60, others: 45 }, // Antigravity needs minutes, not seconds: at 5 it was cut off mid-task ("User cancelled")
     projectsRoot: old.projectsRoot ?? join(homedir(), 'zarwa-projects'),
     projects: old.projects ?? {},
   };
