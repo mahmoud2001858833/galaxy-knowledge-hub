@@ -184,6 +184,9 @@ const Navbar = () => {
   ];
   const isNavActive = (path: string) =>
     location.pathname === path || findSectionByPath(location.pathname)?.path === path;
+  // The idea competition is the one item meant to catch the eye: warm gradient + soft glow.
+  const isCompetition = (path: string) => path === IDEA_COMPETITION.path;
+  const competitionClass = 'bg-gradient-to-l from-warning to-[hsl(var(--chart-5))] text-white shadow-md shadow-warning/40 ring-2 ring-warning/30';
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all w-full max-w-full">
@@ -238,15 +241,20 @@ const Navbar = () => {
                 to={item.path}
                 className={cn(
                   "relative px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5",
-                  active 
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-bold" 
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  isCompetition(item.path)
+                    ? cn(competitionClass, "whitespace-nowrap font-black hover:scale-105", active && "ring-4")
+                    : active
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-bold"
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80"
                 )}
               >
-                {Icon && <Icon className="w-3.5 h-3.5 opacity-80" />}
-                <span>{item.label}</span>
+                {isCompetition(item.path) && (
+                  <span className="pointer-events-none absolute inset-0 rounded-full bg-warning/40 motion-safe:animate-ping [animation-duration:2.5s]" />
+                )}
+                {Icon && <Icon className={cn("relative w-3.5 h-3.5", isCompetition(item.path) ? "opacity-100" : "opacity-80")} />}
+                <span className="relative">{item.label}</span>
                 {item.badge && (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 dark:bg-cyan-500/20 dark:text-cyan-300 font-bold">
+                  <span className={cn("relative text-[9px] px-1.5 py-0.2 rounded-full font-bold", isCompetition(item.path) ? "bg-white/25 text-white" : "bg-blue-100 text-blue-800 dark:bg-cyan-500/20 dark:text-cyan-300")}>
                     {item.badge}
                   </span>
                 )}
@@ -395,14 +403,14 @@ const Navbar = () => {
           <Link
             to={IDEA_COMPETITION.path}
             className={cn(
-              "flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-black shadow-sm transition",
-              isNavActive(IDEA_COMPETITION.path)
-                ? "bg-primary text-primary-foreground"
-                : "bg-gradient-to-l from-brand-from to-brand-to text-primary-foreground"
+              "relative flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-black transition",
+              competitionClass,
+              isNavActive(IDEA_COMPETITION.path) && "ring-4"
             )}
           >
-            <Trophy className="h-3.5 w-3.5" />
-            <span>المسابقة</span>
+            <span className="pointer-events-none absolute inset-0 rounded-full bg-warning/40 motion-safe:animate-ping [animation-duration:2.5s]" />
+            <Trophy className="relative h-3.5 w-3.5" />
+            <span className="relative">المسابقة</span>
           </Link>
           {/* Mobile Accessibility Button */}
           <button
@@ -461,7 +469,9 @@ const Navbar = () => {
                       to={item.path} 
                       className={cn(
                         "px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between",
-                        isNavActive(item.path)
+                        isCompetition(item.path)
+                          ? cn(competitionClass, "font-black")
+                          : isNavActive(item.path)
                           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-sm"
                           : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                       )}
