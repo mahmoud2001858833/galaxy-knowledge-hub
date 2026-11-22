@@ -79,6 +79,7 @@ import SchoolContentModeration from '@/components/admin/SchoolContentModeration'
 import EmployeesControlCenter from '@/components/team/EmployeesControlCenter';
 import SupervisorCommHub from '@/components/team/SupervisorCommHub';
 import PageManagerFilesHub from '@/components/team/PageManagerFilesHub';
+import IdeaCompetitionAdmin from '@/components/admin/IdeaCompetitionAdmin';
 import RoleTasksIntelligenceHub from '@/components/team/RoleTasksIntelligenceHub';
 import DayOffAdminPanel from '@/components/team/DayOffControls';
 import TerminalAdminPanel from '@/components/admin/TerminalAdminPanel';
@@ -111,6 +112,7 @@ export type AdminTab =
   | 'supervisor-hub'
   | 'role-tasks-ai'
   | 'page-files'
+  | 'idea-competition'
   | 'tasks-hub'
   | 'collective-tasks'
   | 'points'
@@ -658,6 +660,7 @@ export const SuperAdminControlHub: React.FC = () => {
         { id: 'role-tasks-ai', label: 'المهام حسب المسمى الوظيفي + AI', icon: Layers, badge: 'AI شامل', description: 'كل المهام مقسّمة على المسميات الوظيفية والأشخاص بالتفصيل + شات AI عبقري للتقييم والمتابعة' },
         { id: 'supervisor-hub', label: 'لوحة التواصل مع المشرف', icon: UserCheck, badge: 'مباشر', description: 'شات مباشر مع المشرف، مهام المشرف، والذكاء الاصطناعي المسؤول عن المهام' },
         { id: 'page-files', label: 'مكان الملفات (مسؤول الصفحة)', icon: FolderOpen, badge: 'Drive', description: 'إعطاء الملفات والفيديوهات لمسؤول الصفحة بالوصف ورابط Google Drive (بصلاحية للمشرف أيضاً)' },
+        { id: 'idea-competition', label: 'مسابقة الأفكار', icon: Trophy, badge: 'جديد', description: 'الأفكار المسجّلة بمسابقة أفضل فكرة: حسب المجال والمدرسة، والتأهيل والفوز' },
         { id: 'team', label: 'إدارة الفريق', icon: Users, badge: 'الكل', description: 'الأعضاء والمهام اليومية، المهام الجماعية المُوقّتة، الموافقات، النقاط، الطرفية والجلسات، وإعدادات الفريق في مكان واحد' },
         { id: 'overview', label: 'الرؤية العامة والملخص الشامل', icon: Sparkles, badge: '360°', description: 'لوحة القيادة الأكاديمية والموجز الذكي' },
         { id: 'dashboard', label: 'المؤشرات الحية وقياس الأداء', icon: LayoutDashboard, badge: 'Telemetry', description: 'مراقبة زمن الاستجابة، الخوادم، وجاهزية النظام' },
@@ -1100,6 +1103,12 @@ export const SuperAdminControlHub: React.FC = () => {
             {currentTab === 'supervisor-hub' && (
               <SafeBoundary name="SupervisorCommHub">
                 <SupervisorCommHub />
+              </SafeBoundary>
+            )}
+
+            {currentTab === 'idea-competition' && (
+              <SafeBoundary name="IdeaCompetitionAdmin">
+                <IdeaCompetitionAdmin />
               </SafeBoundary>
             )}
 

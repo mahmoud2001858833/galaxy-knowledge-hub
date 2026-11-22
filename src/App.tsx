@@ -51,6 +51,7 @@ const StudyScheduleCreator = wrap(lazy(() => import("./pages/StudyScheduleCreato
 const StudentProgress = wrap(lazy(() => import("./pages/StudentProgress")));
 const NotFound = wrap(lazy(() => import("./pages/NotFound")));
 const SectionHubPage = wrap(lazy(() => import("./pages/sections/SectionHubPage")));
+const IdeaCompetition = wrap(lazy(() => import("./pages/IdeaCompetition")));
 const FutureProjectsPage = wrap(lazy(() => import("./pages/sections/FutureProjectsPage")));
 const TeamPage = wrap(lazy(() => import("./pages/team/TeamPage")));
 const TerminalPage = wrap(lazy(() => import("./pages/terminal/TerminalPage")));
@@ -447,6 +448,10 @@ const router = createBrowserRouter([
       {
         path: 'exams',
         element: <PublicRoute><SectionHubPage sectionId="exams" /></PublicRoute>,
+      },
+      {
+        path: 'idea-competition',
+        element: <PublicRoute><IdeaCompetition /></PublicRoute>,
       },
       {
         path: 'labs',

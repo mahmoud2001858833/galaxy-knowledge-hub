@@ -1,4 +1,4 @@
-import { Recycle, Lightbulb, Briefcase } from 'lucide-react';
+import { Recycle, Lightbulb, Briefcase, Trophy } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { CORE_SECTIONS, FUTURE_PROJECTS_PATH, findSectionByPath } from '@/config/platformSections';
+import { IDEA_COMPETITION } from '@/config/ideaCompetition';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import PlatformVideosModal from '@/components/videos/PlatformVideosModal';
@@ -173,7 +174,12 @@ const Navbar = () => {
 
   // Main navigation comes from the platform sections config (src/config/platformSections.ts)
   const navLinks: { label: string; path: string; icon: React.ElementType; badge?: string }[] = [
-    ...CORE_SECTIONS.map((section) => ({ label: section.navLabel, path: section.path, icon: section.icon })),
+    // «مسابقة الأفكار» takes the exams slot in the top bar; /exams stays reachable from the home page and footer.
+    ...CORE_SECTIONS.map((section) =>
+      section.id === 'exams'
+        ? { label: IDEA_COMPETITION.navLabel, path: IDEA_COMPETITION.path, icon: Trophy, badge: 'جديد' }
+        : { label: section.navLabel, path: section.path, icon: section.icon },
+    ),
     { label: 'ذكاء المنصة', path: FUTURE_PROJECTS_PATH, icon: Sparkles },
   ];
   const isNavActive = (path: string) =>
@@ -189,7 +195,7 @@ const Navbar = () => {
             <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm group-hover:scale-105 transition-transform duration-300">
               <img src="/logo.png" alt="ذروة العلم" className="h-full w-full object-contain" />
             </div>
-            <div className="flex flex-col">
+            <div className="hidden min-[400px]:flex flex-col">
               <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-300 transition-colors tracking-tight">
                 ذروة العلم
               </span>
@@ -384,12 +390,25 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu drawer */}
-        <div className="lg:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-1.5 sm:gap-2">
+          {/* The competition stays visible in the phone top bar, not only inside the menu */}
+          <Link
+            to={IDEA_COMPETITION.path}
+            className={cn(
+              "flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-black shadow-sm transition",
+              isNavActive(IDEA_COMPETITION.path)
+                ? "bg-primary text-primary-foreground"
+                : "bg-gradient-to-l from-brand-from to-brand-to text-primary-foreground"
+            )}
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            <span>المسابقة</span>
+          </Link>
           {/* Mobile Accessibility Button */}
           <button
             onClick={openAccessibilityModal}
             className={cn(
-              "relative p-1.5 rounded-lg border transition-all",
+              "relative hidden sm:block p-1.5 rounded-lg border transition-all",
               activeFeaturesCount > 0
                 ? "bg-cyan-500/20 text-cyan-400 border-cyan-400/50 shadow-sm"
                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800"
