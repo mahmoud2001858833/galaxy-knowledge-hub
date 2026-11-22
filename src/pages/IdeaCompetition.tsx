@@ -148,6 +148,11 @@ const IdeaCompetition: React.FC = () => {
                       onClick={() => {
                         setCategory(c.id);
                         setErrors((e) => ({ ...e, category: undefined }));
+                        // Take them straight to writing the idea.
+                        setTimeout(() => {
+                          document.getElementById('f-idea-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          document.getElementById('title')?.focus({ preventScroll: true });
+                        }, 150);
                       }}
                       className={cn(
                         'flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-2 py-3 text-center transition active:scale-[0.97]',
@@ -169,8 +174,15 @@ const IdeaCompetition: React.FC = () => {
             </section>
 
             {/* Idea */}
-            <section className="space-y-4 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-              <h2 className="text-base font-black text-foreground">٢. فكرتك</h2>
+            <section id="f-idea-section" className="scroll-mt-20 space-y-4 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
+              <h2 className="text-base font-black text-foreground">
+                ٢. فكرتك
+                {category && (
+                  <span className="mr-2 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+                    {ideaCategoryLabel(category)}
+                  </span>
+                )}
+              </h2>
               <div id="f-title">
                 <label htmlFor="title" className="mb-1.5 block text-sm font-bold text-foreground">عنوان الفكرة</label>
                 <Input
