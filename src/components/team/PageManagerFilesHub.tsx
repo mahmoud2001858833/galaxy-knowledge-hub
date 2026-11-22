@@ -37,6 +37,7 @@ import {
   type PageManagerFileItem,
   type PageManagerMediaType,
 } from './teamApi';
+import { PageManagerDayPlan, type PageManagerDayTask } from './PageManagerDayPlan';
 
 const MEDIA_META: Record<
   PageManagerMediaType,
@@ -112,6 +113,9 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
   const [mediaType, setMediaType] = useState<PageManagerMediaType>('video');
   const [targetUserId, setTargetUserId] = useState<string>('all');
   const [saving, setSaving] = useState(false);
+  // Day-by-day view (leads): a new file can be tied to one day's page-manager task.
+  const [view, setView] = useState<'days' | 'all'>('days');
+  const [linkTo, setLinkTo] = useState<{ taskId: string; forDay: string; label: string } | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -128,11 +132,26 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
       return;
     }
     setEditingId(null);
+    setLinkTo(null);
     setTitle('');
     setDescription('');
     setDriveUrl('');
     setMediaType('video');
     setTargetUserId('all');
+    setEditorOpen(true);
+  };
+
+  const openCreateForDay = (task: PageManagerDayTask) => {
+    if (!canManage) return;
+    const d = new Date(`${task.day}T12:00:00Z`);
+    const label = `${d.toLocaleDateString('ar-JO', { weekday: 'long', timeZone: 'UTC' })} ${d.getUTCDate()}/${d.getUTCMonth() + 1}`;
+    setEditingId(null);
+    setLinkTo({ taskId: task.id, forDay: task.day, label });
+    setTitle('');
+    setDescription('');
+    setDriveUrl('');
+    setMediaType('video');
+    setTargetUserId(task.assigneeUserId ?? 'all');
     setEditorOpen(true);
   };
 
@@ -147,6 +166,7 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
     setDriveUrl(item.driveUrl);
     setMediaType(item.mediaType);
     setTargetUserId(item.targetUserId ?? 'all');
+    setLinkTo(item.taskId && item.forDay ? { taskId: item.taskId, forDay: item.forDay, label: item.forDay } : null);
     setSelected(null);
     setEditorOpen(true);
   };
@@ -184,6 +204,8 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
         targetUserId: targetUserId === 'all' ? null : targetUserId,
         senderName,
         senderRole,
+        taskId: linkTo?.taskId ?? null,
+        forDay: linkTo?.forDay ?? null,
       };
       if (editingId) {
         await updatePageManagerFile(editingId, payload);
@@ -320,8 +342,38 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
         </div>
       </div>
 
-      {/* Cards Grid (1 col mobile, 2 col tablet, 3 col desktop) */}
-      {filtered.length === 0 ? (
+      {canManage && (
+        <div className="inline-flex rounded-2xl border border-border bg-card p-1">
+          {([
+            ['days', 'يوماً بيوم'],
+            ['all', 'كل الملفات'],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setView(key)}
+              className={`h-9 rounded-xl px-4 text-xs font-black transition ${
+                view === key ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {canManage && view === 'days' ? (
+        <PageManagerDayPlan
+          files={files}
+          memberName={(uid) => (uid ? members.find((m) => m.user_id === uid)?.display_name ?? null : null)}
+          onUpload={openCreateForDay}
+          onOpenFile={(f) => {
+            setSelected(f);
+            setCopied(false);
+          }}
+        />
+      ) : /* Cards Grid (1 col mobile, 2 col tablet, 3 col desktop) */
+      filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-card p-10 text-center">
           <FolderOpen className="mb-3 h-12 w-12 text-muted-foreground/40" />
           <p className="text-base font-bold text-foreground">لا توجد ملفات أو فيديوهات بعد</p>
@@ -375,6 +427,11 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
                       <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                         {item.senderRole === 'principal' ? 'من الرئيس' : 'من المشرف'}
                       </span>
+                      {item.forDay && (
+                        <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary">
+                          ليوم {Number(item.forDay.slice(8))}/{Number(item.forDay.slice(5, 7))}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -534,7 +591,9 @@ export const PageManagerFilesHub: React.FC<{ readOnly?: boolean }> = ({ readOnly
               {editingId ? 'تعديل الملف / الفيديو' : 'إعطاء ملف أو فيديو لمسؤول الصفحة'}
             </DialogTitle>
             <DialogDescription className="text-xs">
-              أدخل العنوان والوصف ورابط Google Drive، وسيظهر فوراً في مكان الملفات عند مسؤول الصفحة والمشرف.
+              {linkTo
+                ? `هاد الملف لمهمة يوم ${linkTo.label}، وبيظهر لمسؤول الصفحة مربوط بهاد اليوم.`
+                : 'أدخل العنوان والوصف ورابط Google Drive، وسيظهر فوراً في مكان الملفات عند مسؤول الصفحة والمشرف.'}
             </DialogDescription>
           </DialogHeader>
 

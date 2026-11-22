@@ -93,6 +93,10 @@ export interface PageManagerFileItem {
   targetUserId: string | null;
   senderName: string;
   senderRole: 'principal' | 'supervisor';
+  /** The page-manager task (day) this file belongs to, when sent from the day-by-day view. */
+  taskId: string | null;
+  /** YYYY-MM-DD (Amman) of that day. */
+  forDay: string | null;
   createdBy: string | null;
   createdAt: string;
 }
@@ -649,6 +653,8 @@ interface PageManagerFilePayload {
   mediaType: PageManagerMediaType;
   senderName: string;
   senderRole: 'principal' | 'supervisor';
+  taskId?: string | null;
+  forDay?: string | null;
 }
 
 const parsePageFilePayload = (raw: string | null): PageManagerFilePayload => {
@@ -662,6 +668,8 @@ const parsePageFilePayload = (raw: string | null): PageManagerFilePayload => {
           mediaType: (parsed.mediaType as PageManagerMediaType) || 'file',
           senderName: String(parsed.senderName ?? 'الإدارة'),
           senderRole: parsed.senderRole === 'supervisor' ? 'supervisor' : 'principal',
+          taskId: typeof parsed.taskId === 'string' ? parsed.taskId : null,
+          forDay: typeof parsed.forDay === 'string' ? parsed.forDay : null,
         };
       }
     } catch {
@@ -699,6 +707,8 @@ export function usePageManagerFiles() {
         targetUserId: row.assignee_user_id,
         senderName: payload.senderName,
         senderRole: payload.senderRole,
+        taskId: payload.taskId ?? null,
+        forDay: payload.forDay ?? null,
         createdBy: row.created_by,
         createdAt: row.created_at,
       };
@@ -729,6 +739,8 @@ export const createPageManagerFile = async (input: {
   targetUserId: string | null;
   senderName: string;
   senderRole: 'principal' | 'supervisor';
+  taskId?: string | null;
+  forDay?: string | null;
 }) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('سجّل الدخول أولاً');
@@ -739,6 +751,8 @@ export const createPageManagerFile = async (input: {
     mediaType: input.mediaType,
     senderName: input.senderName,
     senderRole: input.senderRole,
+    taskId: input.taskId ?? null,
+    forDay: input.forDay ?? null,
   };
 
   const { error } = await supabase.from('team_tasks').insert({
@@ -763,6 +777,8 @@ export const updatePageManagerFile = async (
     targetUserId: string | null;
     senderName: string;
     senderRole: 'principal' | 'supervisor';
+    taskId?: string | null;
+    forDay?: string | null;
   },
 ) => {
   const payload: PageManagerFilePayload = {
@@ -771,6 +787,8 @@ export const updatePageManagerFile = async (
     mediaType: input.mediaType,
     senderName: input.senderName,
     senderRole: input.senderRole,
+    taskId: input.taskId ?? null,
+    forDay: input.forDay ?? null,
   };
 
   const { error } = await supabase
