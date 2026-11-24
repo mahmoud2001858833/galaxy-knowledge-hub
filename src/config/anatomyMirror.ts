@@ -25,11 +25,14 @@ export type AnatomyPartId =
   | 'lowerTeeth'
   | 'masseter'
   | 'temporalis'
-  | 'orbicularis';
+  | 'orbicularis'
+  | 'brain'
+  | 'temporalArtery'
+  | 'facialArtery';
 
 export interface AnatomyPart {
   name: string;
-  kind: 'bone' | 'muscle';
+  kind: 'bone' | 'muscle' | 'organ' | 'vessel';
   region: 'hand' | 'head';
   about: string;
   fact: string;
@@ -175,5 +178,26 @@ export const ANATOMY_PARTS: Record<AnatomyPartId, AnatomyPart> = {
     region: 'head',
     about: 'عضلة دائرية حوالين الشفايف، بتسكّر الفم وبتعمل حركة البوسة والصفير.',
     fact: 'بتشتغل بكل كلمة بتحكيها، خصوصاً الحروف مثل الباء والميم.',
+  },
+  brain: {
+    name: 'الدماغ',
+    kind: 'organ',
+    region: 'head',
+    about: 'العضو اللي بيتحكم بكل شي: تفكيرك، حواسك، وحركة عضلاتك. محمي بالكامل داخل الجمجمة.',
+    fact: 'وزن الدماغ حوالي 1.3 كغم بس، ومع هيك بياخذ خُمس الأكسجين اللي بتتنفسه.',
+  },
+  temporalArtery: {
+    name: 'الشريان الصدغي',
+    kind: 'vessel',
+    region: 'head',
+    about: 'شريان بينقل الدم للصدغ وفروة الراس، وهو السبب إنك بتحس نبضك إذا حطيت إصبعك قدام أذنك.',
+    fact: 'الأطباء قديماً كانوا يحسبوا النبض من هون قبل ما تصير أجهزة القياس.',
+  },
+  facialArtery: {
+    name: 'الشريان الوجهي',
+    kind: 'vessel',
+    region: 'head',
+    about: 'شريان بيلف من تحت الفك طالع عالخد لحد جنب الأنف، وبيغذّي عضلات الوجه والشفايف.',
+    fact: 'بتحس نبضه إذا حطيت إصبعك على حافة الفك، تحت زاوية الفم بشوي.',
   },
 };

@@ -75,11 +75,21 @@ interface Frame {
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 
+const KIND_LABEL = { bone: 'عظم', muscle: 'عضلة', vessel: 'وعاء دموي', organ: 'عضو' } as const;
+const KIND_DOT = { bone: 'bg-warning', muscle: 'bg-destructive', vessel: 'bg-destructive', organ: 'bg-primary' } as const;
+const KIND_BADGE = {
+  bone: 'bg-warning/15 text-warning',
+  muscle: 'bg-destructive/10 text-destructive',
+  vessel: 'bg-destructive/10 text-destructive',
+  organ: 'bg-primary/10 text-primary',
+} as const;
+
 const AnatomyMirror: React.FC = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<Target>('both');
   const [muscles, setMuscles] = useState(false);
+  const [organs, setOrgans] = useState(false);
   const [frozen, setFrozen] = useState(false);
   const [facing, setFacing] = useState<'user' | 'environment'>('user');
   const [found, setFound] = useState<AnatomyPartId[]>([]);
@@ -97,9 +107,10 @@ const AnatomyMirror: React.FC = () => {
   const frameRef = useRef<Frame>({ hands: [], face: null });
   const hitsRef = useRef<LabelHit[]>([]);
   const foundKey = useRef('');
-  const opts = useRef({ target, muscles, frozen, mirror: true, highlight: null as AnatomyPartId | null });
+  const opts = useRef({ target, muscles, organs, frozen, mirror: true, highlight: null as AnatomyPartId | null });
   opts.current.target = target;
   opts.current.muscles = muscles;
+  opts.current.organs = organs;
   opts.current.frozen = frozen;
   opts.current.highlight = card?.id ?? null;
 
@@ -109,11 +120,11 @@ const AnatomyMirror: React.FC = () => {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const { target: t, muscles: m, highlight } = opts.current;
+    const { target: t, muscles: m, organs: o, highlight } = opts.current;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const { hands, face } = frameRef.current;
     let anchors: LabelAnchor[] = [];
-    if (face && t !== 'hand') anchors = drawFace(ctx, face, { muscles: m });
+    if (face && t !== 'hand') anchors = drawFace(ctx, face, { muscles: m, organs: o });
     if (t !== 'face') {
       // label one hand only (the biggest, i.e. the nearest), and only when the face is not labelled
       const inside = (h: Pt[]) => h.filter((p) => p.x > 0 && p.y > 0 && p.x < canvas.width && p.y < canvas.height).length / h.length;
@@ -170,7 +181,7 @@ const AnatomyMirror: React.FC = () => {
   // re-draw a frozen frame or a photo when the options change
   useEffect(() => {
     if (frozen || status === 'photo') render();
-  }, [target, muscles, frozen, status, card, render]);
+  }, [target, muscles, organs, frozen, status, card, render]);
 
   // ---------------------------------------------------------------- camera
   const stopCamera = useCallback(() => {
@@ -485,6 +496,18 @@ const AnatomyMirror: React.FC = () => {
           <span className={cn('h-2.5 w-2.5 rounded-full', muscles ? 'bg-destructive' : 'bg-muted-foreground/40')} />
           عضلات الوجه
         </button>
+        <button
+          type="button"
+          onClick={() => setOrgans((o) => !o)}
+          aria-pressed={organs}
+          className={cn(
+            'inline-flex h-11 items-center gap-1.5 rounded-2xl border px-3 text-xs font-bold transition',
+            organs ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground',
+          )}
+        >
+          <span className={cn('h-2.5 w-2.5 rounded-full', organs ? 'bg-primary' : 'bg-muted-foreground/40')} />
+          الدماغ والشرايين
+        </button>
       </div>
 
       {/* Stage */}
@@ -606,7 +629,7 @@ const AnatomyMirror: React.FC = () => {
                 onClick={() => openPart(id)}
                 className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-bold text-foreground transition hover:border-primary/50"
               >
-                <span className={cn('h-2 w-2 rounded-full', ANATOMY_PARTS[id].kind === 'muscle' ? 'bg-destructive' : 'bg-warning')} />
+                <span className={cn('h-2 w-2 rounded-full', KIND_DOT[ANATOMY_PARTS[id].kind])} />
                 {ANATOMY_PARTS[id].name}
               </button>
             ))}
@@ -626,13 +649,8 @@ const AnatomyMirror: React.FC = () => {
               <DialogHeader className="text-right">
                 <DialogTitle className="flex items-center gap-2 text-xl font-black">
                   {part.name}
-                  <span
-                    className={cn(
-                      'rounded-full px-2.5 py-0.5 text-xs font-bold',
-                      part.kind === 'muscle' ? 'bg-destructive/10 text-destructive' : 'bg-warning/15 text-warning',
-                    )}
-                  >
-                    {part.kind === 'muscle' ? 'عضلة' : 'عظم'}
+                  <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-bold', KIND_BADGE[part.kind])}>
+                    {KIND_LABEL[part.kind]}
                   </span>
                 </DialogTitle>
                 <DialogDescription className="text-sm leading-relaxed text-foreground">{part.about}</DialogDescription>

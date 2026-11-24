@@ -152,6 +152,9 @@ function blob(ctx: CanvasRenderingContext2D, c: Pt, rx: number, ry: number, angl
  * flat, raised bone needs more presence than a plain stroke.
  */
 function ridge(ctx: CanvasRenderingContext2D, a: Pt, m: Pt, b: Pt, width: number) {
+  // a turned head can collapse the far side's landmarks onto the near side — skip rather than
+  // draw a squashed, overlapping shape
+  if (dist(a, b) < width * 0.4) return;
   const d = norm(sub(b, a));
   const n = perp(d);
   ctx.save();
@@ -315,6 +318,80 @@ function muscleFill(ctx: CanvasRenderingContext2D, from: Pt, to: Pt) {
 }
 
 const MUSCLE_OUTLINE = 'rgba(62, 8, 12, 0.85)';
+const ARTERY_MID = '#9c0f26';
+const ARTERY_LIGHT = '#e8384f';
+const ARTERY_OUTLINE = 'rgba(42, 4, 10, 0.88)';
+const BRAIN_LIGHT = '#e9bcc5';
+const BRAIN_MID = '#c988a0';
+const BRAIN_DARK = '#9b5570';
+
+/**
+ * A tapering, outlined blood-vessel line through a few points — drawn as three passes (dark
+ * outline, coloured body, a thin pale sheen) so it reads as a glossy opaque tube, not a flat
+ * stroke, and sits consistently with the bone/muscle rendering.
+ */
+function vessel(ctx: CanvasRenderingContext2D, pts: Pt[], width: number) {
+  if (pts.length < 2 || dist(pts[0], pts[pts.length - 1]) < width * 0.3) return;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+  ctx.shadowBlur = width * 0.45;
+  ctx.shadowOffsetY = width * 0.18;
+  ctx.strokeStyle = ARTERY_OUTLINE;
+  ctx.lineWidth = width * 1.3;
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+  ctx.stroke();
+  ctx.shadowColor = 'transparent';
+  const g = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y);
+  g.addColorStop(0, ARTERY_MID);
+  g.addColorStop(1, ARTERY_LIGHT);
+  ctx.strokeStyle = g;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.lineWidth = Math.max(1, width * 0.3);
+  ctx.beginPath();
+  pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * A round "window" cut into the skull revealing the brain: a bone rim, a shaded brain fill and a
+ * few wavy gyrus lines (reusing `suture`'s zigzag walk along a two-point line).
+ */
+function brainWindow(ctx: CanvasRenderingContext2D, c: Pt, fx: Pt, fy: Pt, rx: number, ry: number, roll: number) {
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = rx * 0.25;
+  ctx.fillStyle = BONE_EDGE;
+  ctx.beginPath();
+  ctx.ellipse(c.x, c.y, rx * 1.14, ry * 1.14, roll, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  const g = ctx.createRadialGradient(c.x - rx * 0.3, c.y - ry * 0.3, rx * 0.1, c.x, c.y, rx * 1.05);
+  g.addColorStop(0, BRAIN_LIGHT);
+  g.addColorStop(0.6, BRAIN_MID);
+  g.addColorStop(1, BRAIN_DARK);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(c.x, c.y, rx, ry, roll, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, rx * 0.06);
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
+  const at2 = (u: number, v: number) => add(c, add(mul(fx, u * rx), mul(fy, v * ry)));
+  const amp = rx * 0.045;
+  suture(ctx, [at2(-0.75, -0.35), at2(0.75, -0.35)], amp);
+  suture(ctx, [at2(-0.8, 0.02), at2(0.8, 0.02)], amp);
+  suture(ctx, [at2(-0.7, 0.42), at2(0.7, 0.42)], amp);
+  suture(ctx, [at2(0, -0.85), at2(0, 0.85)], amp * 0.8);
+  ctx.restore();
+}
 
 /** Striations: lines between two edges of a muscle. */
 function fibres(ctx: CanvasRenderingContext2D, edgeA: [Pt, Pt], edgeB: [Pt, Pt], n: number, w: number) {
@@ -336,7 +413,7 @@ function fibres(ctx: CanvasRenderingContext2D, edgeA: [Pt, Pt], edgeB: [Pt, Pt],
 export function drawFace(
   ctx: CanvasRenderingContext2D,
   lm: Pt[],
-  opts: { muscles: boolean },
+  opts: { muscles: boolean; organs: boolean },
 ): LabelAnchor[] {
   const P = (i: number) => lm[i];
   const Wd = dist(P(234), P(454));
@@ -352,8 +429,8 @@ export function drawFace(
 
   // cranium ellipse in the face frame
   const cc = at(0, -0.14);
-  const crx = Wd * 0.56;
-  const cry = H * 0.56;
+  const crx = Wd * 0.6;
+  const cry = H * 0.6;
   const brow = 0.1; // cranium stops below the brow line
 
   // 1) muscles drawn first (temporalis at the temple) so the opaque skull sits cleanly over them
@@ -480,9 +557,16 @@ export function drawFace(
     ridge(ctx, a, m, b, ew * 0.26);
   }
 
-  // 7) eye sockets: just the bone rim, opaque — the real eye stays visible inside it
+  // 7) eye sockets: just the bone rim, opaque — the real eye stays visible inside it.
+  // A turned head brings both eyes close together in the 2D projection; drawing two rings
+  // then reads as a muddled "glasses" shape, so past that point only the near eye gets one.
   const eyes = [avg(P(33), P(133)), avg(P(263), P(362))];
-  for (const c of eyes) {
+  const eyeGap = dist(eyes[0], eyes[1]);
+  const showBothEyes = eyeGap > ew * 1.15;
+  const eyeTargets = showBothEyes ? eyes : [avg(eyes[0], eyes[1])];
+  const orbitRx = ew * (showBothEyes ? 0.8 : 0.95);
+  const orbitRy = ew * (showBothEyes ? 0.68 : 0.8);
+  for (const c of eyeTargets) {
     ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
     ctx.shadowBlur = ew * 0.18;
@@ -492,7 +576,7 @@ export function drawFace(
     ctx.strokeStyle = og;
     ctx.lineWidth = ew * 0.17;
     ctx.beginPath();
-    ctx.ellipse(c.x, c.y - ew * 0.04, ew * 0.8, ew * 0.68, roll, 0, Math.PI * 2);
+    ctx.ellipse(c.x, c.y - ew * 0.04, orbitRx, orbitRy, roll, 0, Math.PI * 2);
     ctx.stroke();
     ctx.shadowColor = 'transparent';
     ctx.strokeStyle = BONE_OUTLINE;
@@ -609,11 +693,45 @@ export function drawFace(
     }
   }
 
+  // 12) organs & vessels: a brain window through the skull, plus the two classic palpable
+  // arteries of the head — drawn last so they sit cleanly on top of the bone/muscle layers
+  let brainAt: Pt | null = null;
+  let temporalArteryAt: Pt | null = null;
+  let facialArteryAt: Pt | null = null;
+  if (opts.organs) {
+    const bc = at(0, -0.36);
+    brainWindow(ctx, bc, fx, fy, Wd * 0.3, H * 0.26, roll);
+    brainAt = bc;
+
+    for (const [eyeP, sideP, jawAngle, mouthCorner, s] of [
+      [33, 234, 172, 61, -1],
+      [263, 454, 397, 291, 1],
+    ] as const) {
+      // superficial temporal artery: up from in front of the ear, forking over the temple
+      const base = add(lerp(P(eyeP), P(sideP), 0.1), mul(fy, ew * 0.5));
+      const mid = at(s * 0.5, -0.3);
+      const frontalTip = at(s * 0.36, -0.58);
+      const parietalTip = at(s * 0.6, -0.46);
+      vessel(ctx, [base, mid, frontalTip], ew * 0.09);
+      vessel(ctx, [mid, parietalTip], ew * 0.065);
+      if (s === 1) temporalArteryAt = lerp(base, mid, 0.55);
+
+      // facial artery: from the jaw angle, over the jaw border, across the cheek to the
+      // corner of the mouth, then up beside the nose
+      const p0 = lerp(P(jawAngle), P(152), 0.3);
+      const p1 = at(s * 0.4, 0.14);
+      const p2 = lerp(P(mouthCorner), p1, 0.4);
+      const p3 = at(s * 0.16, -0.1);
+      vessel(ctx, [p0, p1, p2, p3], ew * 0.075);
+      if (s === 1) facialArteryAt = p2;
+    }
+  }
+
   const anchors: LabelAnchor[] = [
     { id: 'parietal', at: at(0.22, -0.62), side: 1 },
     { id: 'frontal', at: at(-0.12, -0.3), side: -1 },
     { id: 'temporal', at: at(-0.47, -0.08), side: -1 },
-    { id: 'orbit', at: add(eyes[1], mul(fx, ew * 0.55)), side: 1 },
+    { id: 'orbit', at: add(eyeTargets[eyeTargets.length - 1], mul(fx, orbitRx * 0.7)), side: 1 },
     { id: 'nasal', at: lerp(nTop, nb, 0.55), side: -1 },
     { id: 'zygomatic', at: add(lerp(P(263), P(454), 0.55), mul(fy, ew * 0.75)), side: 1 },
     { id: 'maxilla', at: lerp(P(205), P(61), 0.4), side: -1 },
@@ -627,6 +745,11 @@ export function drawFace(
       { id: 'orbicularis', at: lerp(P(291), P(375), 0.5), side: 1 },
     );
     if (masseterAt) anchors.push({ id: 'masseter', at: masseterAt, side: 1 });
+  }
+  if (opts.organs) {
+    if (brainAt) anchors.push({ id: 'brain', at: add(brainAt, mul(fy, -H * 0.18)), side: 0 });
+    if (temporalArteryAt) anchors.push({ id: 'temporalArtery', at: temporalArteryAt, side: -1 });
+    if (facialArteryAt) anchors.push({ id: 'facialArtery', at: facialArteryAt, side: 1 });
   }
   return anchors;
 }
