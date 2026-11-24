@@ -1,4 +1,4 @@
-// reference-books-upload-url: يسجّل كتاباً جديداً ويعيد رابط رفع موقّعاً مباشراً إلى Cloudflare R2 (لموظفي رفع الملفات والقيادة).
+// reference-books-upload-url: يسجّل كتاباً جديداً ويعيد رابط رفع موقّعاً مباشراً إلى Cloudflare R2 (لفريق رفع الملفات والقيادة).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, jsonResponse } from "../_shared/exam-common.ts";
 import { BOOK_MIME_BY_EXT, getCaller, MAX_BOOK_BYTES, presignR2, serviceClient } from "../_shared/reference-books.ts";
