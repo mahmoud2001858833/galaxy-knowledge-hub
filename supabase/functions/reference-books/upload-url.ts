@@ -1,16 +1,14 @@
-// reference-books-upload-url: يسجّل كتاباً جديداً ويعيد رابط رفع موقّعاً مباشراً إلى Cloudflare R2 (لفريق رفع الملفات والقيادة).
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, jsonResponse } from "../_shared/exam-common.ts";
+// upload-url: يسجّل كتاباً جديداً ويعيد رابط رفع موقّعاً مباشراً إلى Cloudflare R2 (لفريق رفع الملفات والقيادة).
+import { jsonResponse } from "../_shared/exam-common.ts";
 import { BOOK_MIME_BY_EXT, getCaller, MAX_BOOK_BYTES, presignR2, serviceClient } from "../_shared/reference-books.ts";
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+export async function handleUploadUrl(req: Request, body: any): Promise<Response> {
   try {
     const caller = await getCaller(req);
     if (!caller) return jsonResponse({ error: "سجّل الدخول أولاً" }, 401);
     if (!caller.isUploader && !caller.isLead) return jsonResponse({ error: "رفع الكتب لفريق رفع الملفات فقط" }, 403);
 
-    const { filename, sizeBytes, title } = await req.json();
+    const { filename, sizeBytes, title } = body;
     const name = String(filename ?? "").trim();
     const ext = name.split(".").pop()?.toLowerCase() ?? "";
     const mime = BOOK_MIME_BY_EXT[ext];
@@ -34,8 +32,9 @@ serve(async (req) => {
 
     const uploadUrl = await presignR2("PUT", key, 3600);
     return jsonResponse({ bookId: data.id, uploadUrl, mimeType: mime });
+
   } catch (e: any) {
-    console.error("reference-books-upload-url error:", e);
+    console.error("reference-books upload-url error:", e);
     return jsonResponse({ error: e?.message || "حدث خطأ أثناء تجهيز الرفع" }, 500);
   }
-});
+}

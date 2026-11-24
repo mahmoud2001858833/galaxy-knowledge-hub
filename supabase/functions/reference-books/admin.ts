@@ -1,16 +1,14 @@
-// reference-books-admin: تنزيل الكتاب الأصلي وحذفه (للقيادة فقط) — رابط موقّع مؤقت من R2 أو حذف من R2 وقاعدة البيانات.
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, jsonResponse } from "../_shared/exam-common.ts";
+// admin: تنزيل الكتاب الأصلي وحذفه (للقيادة فقط) — رابط موقّع مؤقت من R2 أو حذف من R2 وقاعدة البيانات.
+import { jsonResponse } from "../_shared/exam-common.ts";
 import { deleteR2Object, getCaller, presignR2, serviceClient } from "../_shared/reference-books.ts";
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+export async function handleAdmin(req: Request, body: any): Promise<Response> {
   try {
     const caller = await getCaller(req);
     if (!caller) return jsonResponse({ error: "سجّل الدخول أولاً" }, 401);
     if (!caller.isLead) return jsonResponse({ error: "هذه العملية للقيادة فقط" }, 403);
 
-    const { action, bookId } = await req.json();
+    const { action, bookId } = body;
     const db = serviceClient();
     const { data: book } = await db
       .from("reference_books").select("id, storage_key, original_filename").eq("id", String(bookId ?? "")).maybeSingle();
@@ -30,8 +28,9 @@ serve(async (req) => {
       return jsonResponse({ ok: true });
     }
     return jsonResponse({ error: "إجراء غير معروف" }, 400);
+
   } catch (e: any) {
-    console.error("reference-books-admin error:", e);
+    console.error("reference-books admin error:", e);
     return jsonResponse({ error: e?.message || "حدث خطأ" }, 500);
   }
-});
+}

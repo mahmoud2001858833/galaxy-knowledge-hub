@@ -42,8 +42,8 @@ const booksTable = () =>
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function invoke<T>(name: string, body: unknown): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body });
+async function invoke<T>(action: string, body: object = {}): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('reference-books', { body: { action, ...body } });
   if (error) {
     let msg = error.message;
     try {
@@ -65,11 +65,11 @@ export async function listReferenceBooks(): Promise<ReferenceBook[]> {
 }
 
 export async function downloadReferenceBook(bookId: string): Promise<string> {
-  return (await invoke<{ url: string }>('reference-books-admin', { action: 'download', bookId })).url;
+  return (await invoke<{ url: string }>('download', { bookId })).url;
 }
 
 export async function deleteReferenceBook(bookId: string): Promise<void> {
-  await invoke('reference-books-admin', { action: 'delete', bookId });
+  await invoke('delete', { bookId });
 }
 
 function putToR2(url: string, file: File, onProgress: (fraction: number) => void): Promise<void> {
@@ -98,7 +98,7 @@ export async function ingestBook(
   if (invalid) throw new Error(invalid);
 
   onProgress({ phase: 'تجهيز الرفع...', fraction: 0 });
-  const { bookId, uploadUrl } = await invoke<{ bookId: string; uploadUrl: string }>('reference-books-upload-url', {
+  const { bookId, uploadUrl } = await invoke<{ bookId: string; uploadUrl: string }>('upload-url', {
     filename: file.name,
     sizeBytes: file.size,
     title,
@@ -110,7 +110,7 @@ export async function ingestBook(
     return bookId;
   } catch (e) {
     const message = e instanceof Error ? e.message : 'فشلت المعالجة';
-    await invoke('reference-books-ingest', { bookId, error: message }).catch(() => undefined);
+    await invoke('ingest', { bookId, error: message }).catch(() => undefined);
     throw e;
   }
 }
@@ -118,7 +118,7 @@ export async function ingestBook(
 async function saveChunks(bookId: string, chunks: Chunk[], extra: Record<string, unknown> = {}) {
   for (let i = 0; i < Math.max(1, chunks.length); i += INGEST_BATCH_CHUNKS) {
     const last = i + INGEST_BATCH_CHUNKS >= chunks.length;
-    await invoke('reference-books-ingest', {
+    await invoke('ingest', {
       bookId,
       chunks: chunks.slice(i, i + INGEST_BATCH_CHUNKS),
       ...(last ? extra : {}),
@@ -129,7 +129,7 @@ async function saveChunks(bookId: string, chunks: Chunk[], extra: Record<string,
 async function ocrBatch(bookId: string, pages: OcrPage[]): Promise<{ page: number; text: string }[]> {
   for (let attempt = 1; ; attempt++) {
     try {
-      return (await invoke<{ pages: { page: number; text: string }[] }>('reference-books-ocr', { bookId, pages })).pages;
+      return (await invoke<{ pages: { page: number; text: string }[] }>('ocr', { bookId, pages })).pages;
     } catch (e) {
       if (attempt >= OCR_BATCH_RETRIES) throw e;
       await sleep(4000 * attempt);

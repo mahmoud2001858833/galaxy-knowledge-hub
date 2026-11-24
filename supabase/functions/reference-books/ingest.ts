@@ -1,18 +1,15 @@
-// reference-books-ingest: يستقبل مقاطع النص المستخرجة من الكتاب (دفعات) ويغلق المعالجة بنجاح أو بفشل.
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, jsonResponse } from "../_shared/exam-common.ts";
+// ingest: يستقبل مقاطع النص المستخرجة من الكتاب (دفعات) ويغلق المعالجة بنجاح أو بفشل.
+import { jsonResponse } from "../_shared/exam-common.ts";
 import { getCaller, serviceClient } from "../_shared/reference-books.ts";
 
 const MAX_CHUNKS_PER_CALL = 300;
 const METHODS = ["text_layer", "docx", "ocr", "mixed"];
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+export async function handleIngest(req: Request, body: any): Promise<Response> {
   try {
     const caller = await getCaller(req);
     if (!caller) return jsonResponse({ error: "سجّل الدخول أولاً" }, 401);
 
-    const body = await req.json();
     const bookId = String(body?.bookId ?? "");
     const db = serviceClient();
     const { data: book } = await db.from("reference_books").select("id, uploaded_by, status").eq("id", bookId).maybeSingle();
@@ -59,8 +56,9 @@ serve(async (req) => {
     }
     await db.from("reference_books").update(patch).eq("id", bookId);
     return jsonResponse({ ok: true });
+
   } catch (e: any) {
-    console.error("reference-books-ingest error:", e);
+    console.error("reference-books ingest error:", e);
     return jsonResponse({ error: e?.message || "حدث خطأ أثناء حفظ النص المستخرج" }, 500);
   }
-});
+}
