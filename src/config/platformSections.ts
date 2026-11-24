@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Atom,
+  Bone,
   BookOpen,
   BookMarked,
   Brain,
@@ -110,6 +111,7 @@ export const CORE_SECTIONS: PlatformSection[] = [
     icon: Atom,
     pages: [
       { title: 'المختبرات ثلاثية الأبعاد', description: 'كل المحاكاة مصنفة حسب المادة', path: '/experiments-section', icon: Atom },
+      { title: 'مرآة التشريح', description: 'شوف عظام إيدك وجمجمتك تتحرك معك بالكاميرا', path: '/anatomy-mirror', icon: Bone },
       { title: 'مركز المحاكاة العلمية', description: 'ابحث في المحاكاة وشغّلها مع مساعد ذكي', path: '/scientific-simulations-hub', icon: FlaskConical },
       { title: 'الدوال ثلاثية الأبعاد', description: 'ارسم وحرّك الدوال في الفضاء', path: '/3d-function-visualizer', icon: LineChart },
       { title: 'رسم الدوال', description: 'رسم بياني تفاعلي للدوال', path: '/mathematics/graph-visualizer', icon: Sigma },
