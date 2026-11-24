@@ -16,6 +16,7 @@ import { loadProfile, saveProfile } from "@/lib/examCreator/teacherProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { mergeUnitLists, sanitizeCachedUnits } from "@/lib/examCreator/mergeUnits";
 import type { AnalyzeResponse, Catalog, ExamDiagnostics, GeneratedExam, UnitInfo } from "@/lib/examCreator/types";
+import { getBookText, listReadyBooks, type LibraryBook } from "@/lib/referenceBooks/api";
 import StepUpload, { type Source } from "./StepUpload";
 import StepUnits from "./StepUnits";
 import StepSettings, { DEFAULT_SETTINGS, type SettingsState } from "./StepSettings";
@@ -24,7 +25,7 @@ import StepPublish from "./StepPublish";
 import BankView from "./BankView";
 import MyExamsPanel from "./MyExamsPanel";
 
-const srcName = (s: Source) => (s.kind === "library" ? s.row.title : s.file.name);
+const srcName = (s: Source) => (s.kind === "library" ? s.row.title : s.kind === "reference" ? s.book.title : s.file.name);
 
 /** وضع الوكيل المقفل: الملفات ملفات الوكيل فقط (لا رفع ولا مكتبة)، وقد يصل طلب جاهز من المحادثة. */
 export interface LockedSources { files: LibraryRow[]; subject?: string; grade?: string; request?: string; label?: string }
@@ -35,6 +36,7 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
   const [sources, setSources] = useState<Source[]>(() => (locked ? locked.files.map((row) => ({ key: `l:${row.id}`, kind: "library" as const, row })) : []));
   const [library, setLibrary] = useState<LibraryRow[] | null>(null);
   const [libraryError, setLibraryError] = useState("");
+  const [refBooks, setRefBooks] = useState<LibraryBook[] | null>(null);
   const [prepared, setPrepared] = useState<PreparedFile[]>([]);
   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -54,6 +56,7 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
 
   useEffect(() => {
     if (locked) { setLibrary([]); return; }
+    listReadyBooks().then(setRefBooks).catch(() => setRefBooks([]));
     listLibrary().then((r) => setLibrary(r.filter((x) => x.is_published))).catch((e) => { setLibraryError(e.message); setLibrary([]); });
   }, []);
 
@@ -104,6 +107,22 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
     resetDerived();
   };
 
+  const toggleReference = (book: LibraryBook) => {
+    if (sources.some((s) => s.kind === "reference" && s.book.id === book.id)) setSources(sources.filter((s) => !(s.kind === "reference" && s.book.id === book.id)));
+    else if (room()) setSources([...sources, { key: `r:${book.id}`, kind: "reference", book }]);
+    resetDerived();
+  };
+
+  /** كتاب من مكتبة المراجع: نصه محفوظ مسبقاً، نبنيه ملفاً نصياً بعلامات [صفحة N] دون قراءة أو OCR جديد. */
+  const prepareReference = async (book: LibraryBook): Promise<PreparedFile> => {
+    setStage(`جلب نص «${book.title}» من المكتبة...`);
+    const r = await getBookText(book.id);
+    const text = r.pages.map((p) => (p.page ? `[صفحة ${p.page}]\n${p.text}` : p.text)).join("\n\n");
+    if (text.trim().length < 80) throw new Error(`لا يوجد نص كافٍ في «${book.title}»`);
+    if (r.truncated) toast({ title: `ℹ️ ${book.title}`, description: "الكتاب كبير جداً فأُخذ الجزء الأول من نصه فقط." });
+    return { name: book.title, size: text.length, kind: "text", source: new File([text], `${book.title}.txt`, { type: "text/plain" }), figurable: false, payload: { name: book.title, text } };
+  };
+
   const analyze = async () => {
     setBusy(true);
     try {
@@ -111,7 +130,9 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
       const cached = new Map<number, UnitInfo[]>();
       for (let i = 0; i < sources.length; i++) {
         const s = sources[i];
-        if (s.kind === "library") {
+        if (s.kind === "reference") {
+          prep.push(await prepareReference(s.book));
+        } else if (s.kind === "library") {
           setStage(`تنزيل «${s.row.title}»...`);
           const f = await downloadLibraryFile(s.row, (p) => setStage(`تنزيل «${s.row.title}» ${p}%`));
           prep.push(await prepareFile(f, setStage));
@@ -150,7 +171,19 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
   };
 
   const historySources = (): HistorySource[] =>
-    sources.map((s) => (s.kind === "library" ? { kind: "library", id: s.row.id, title: s.row.title } : { kind: "upload", name: s.file.name, size: s.file.size }));
+    sources.map((s): HistorySource =>
+      s.kind === "library" ? { kind: "library", id: s.row.id, title: s.row.title }
+        : s.kind === "reference" ? { kind: "reference", id: s.book.id, title: s.book.title }
+        : { kind: "upload", name: s.file.name, size: s.file.size });
+
+  /** الكتاب المرجعي الذي أُخذ منه سؤال (من وحدته)، ليُعرض نص صفحة مصدره. */
+  const referenceOf = (q: { unit?: string }) => {
+    const refs = sources.filter((s): s is Extract<Source, { kind: "reference" }> => s.kind === "reference");
+    if (!refs.length) return null;
+    const fi = analysis?.units.find((u) => u.title === q.unit)?.fileIndex;
+    const src = fi !== undefined ? sources[fi] : sources.length === 1 ? sources[0] : undefined;
+    return src && src.kind === "reference" ? { bookId: src.book.id, title: src.book.title } : null;
+  };
 
   const generate = async () => {
     if (!analysis) return;
@@ -334,7 +367,7 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
       {step === 0 && !locked && (
         <>
           <StepUpload sources={sources} library={library} libraryError={libraryError} busy={busy} stage={stage}
-            onAddFiles={addFiles} onToggleLibrary={toggleLibrary}
+            onAddFiles={addFiles} onToggleLibrary={toggleLibrary} refBooks={refBooks} onToggleReference={toggleReference}
             onRemove={(key) => { setSources(sources.filter((s) => s.key !== key)); resetDerived(); }} onAnalyze={analyze} />
           <MyExamsPanel onOpenBank={openBank} />
         </>
@@ -369,7 +402,7 @@ export default function ExamCreatorWizard({ locked }: { locked?: LockedSources }
       {step === 3 && view3 === "review" && exam && gen && (
         <StepReview exam={exam} requested={gen.requested} dropped={gen.dropped} warnings={gen.warnings} diagnostics={diag}
           backLabel={bank ? "العودة إلى البنك" : "تعديل الإعدادات وإعادة التوليد"}
-          showAnswers={showAnswers} onShowAnswers={setShowAnswers} onChange={setExam}
+          showAnswers={showAnswers} onShowAnswers={setShowAnswers} onChange={setExam} referenceOf={referenceOf}
           onBack={() => { if (bank) setView3("bank"); else setStep(2); }}
           onNext={() => { updateHistory(historyId, exam); setStep(4); }} />
       )}

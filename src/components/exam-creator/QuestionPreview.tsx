@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, ImageOff, Pencil, Check, Trash2, FileSearch } from "lucide-react";
+import { ReferenceSourceDialog } from "@/components/referenceBooks/ReferenceSourceDialog";
 import { DIFFICULTY_AR, LETTERS, QTYPE_LABEL, type ExamQuestion, type TableData } from "@/lib/examCreator/types";
 
 export function TableView({ table }: { table: TableData }) {
@@ -33,10 +34,13 @@ interface Props {
   showAnswer: boolean;
   onChange: (q: ExamQuestion) => void;
   onDelete: () => void;
+  reference?: { bookId: string; title: string } | null;
 }
 
-export default function QuestionPreview({ q, index, showAnswer, onChange, onDelete }: Props) {
+export default function QuestionPreview({ q, index, showAnswer, onChange, onDelete, reference }: Props) {
   const [editing, setEditing] = useState(false);
+  const [viewPage, setViewPage] = useState(false);
+  const refPage = reference && q.location ? Number(q.location.match(/صفحة\s*(\d+)/)?.[1] ?? q.location.match(/(\d+)\s*$/)?.[1]) || null : null;
   const [draft, setDraft] = useState<ExamQuestion>(q);
 
   const start = () => { setDraft(q); setEditing(true); };
@@ -140,8 +144,13 @@ export default function QuestionPreview({ q, index, showAnswer, onChange, onDele
             <p className="rounded bg-green-100 px-2 py-1 text-green-900 dark:bg-green-900/30 dark:text-green-200"><b>الإجابة:</b> {q.answer}</p>
           )}
           {q.explanation && <p className="text-muted-foreground"><b>الشرح:</b> {q.explanation}</p>}
-          <p className="text-xs text-muted-foreground"><b>الدليل من الملف:</b> «{q.evidence}»{q.location ? ` — ${q.location}` : ""}</p>
+          <p className="text-xs text-muted-foreground"><b>الدليل من الملف:</b> «{q.evidence}»{q.location ? ` — ${q.location}` : ""}
+            {refPage && <Button type="button" size="sm" variant="outline" className="mr-2 h-6 px-2 text-xs" onClick={() => setViewPage(true)}>عرض صفحة المصدر {refPage}</Button>}
+          </p>
         </div>
+      )}
+      {refPage && reference && (
+        <ReferenceSourceDialog source={viewPage ? { bookId: reference.bookId, bookTitle: reference.title, pageNumber: refPage, content: q.evidence } : null} onClose={() => setViewPage(false)} />
       )}
     </Card>
   );
