@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { formatReferenceContext, searchReferenceBooks } from "../_shared/reference-knowledge.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,6 +79,8 @@ serve(async (req) => {
 
 اكتب إجابة واحدة متكاملة ومفصلة (على الأقل 200 كلمة) تتضمن جميع النقاط أعلاه بأسلوب واضح ومتسلسل وسلس.`;
     }
+
+    analysisPrompt += formatReferenceContext(await searchReferenceBooks(String(message ?? '')));
 
     console.log('🤖 Calling Lovable AI Gateway...');
 
