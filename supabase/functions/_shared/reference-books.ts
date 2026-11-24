@@ -29,7 +29,7 @@ export async function getCaller(req: Request): Promise<Caller | null> {
     global: { headers: { Authorization: auth } },
     auth: { persistSession: false },
   });
-  const { data: u, error } = await userClient.auth.getUser();
+  const { data: u, error } = await userClient.auth.getUser(auth.slice(7));
   if (error || !u?.user?.id) return null;
   const [lead, uploader] = await Promise.all([
     userClient.rpc("team_is_lead"),
