@@ -39,10 +39,12 @@ export async function getCaller(req: Request): Promise<Caller | null> {
 }
 
 function r2Config() {
-  const accountId = Deno.env.get("R2_ACCOUNT_ID");
-  const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
-  const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
-  const bucket = Deno.env.get("R2_BUCKET_NAME");
+  // أسرار R2 تُنسخ كثيراً مع مسافة أو سطر جديد زائد فيفسد التوقيع، فننظّفها.
+  const env = (k: string) => (Deno.env.get(k) ?? "").replace(/\s+/g, "");
+  const accountId = env("R2_ACCOUNT_ID");
+  const accessKeyId = env("R2_ACCESS_KEY_ID");
+  const secretAccessKey = env("R2_SECRET_ACCESS_KEY");
+  const bucket = env("R2_BUCKET_NAME");
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
     throw new Error("تخزين Cloudflare R2 غير مُعدّ بعد: أضف R2_ACCOUNT_ID وR2_ACCESS_KEY_ID وR2_SECRET_ACCESS_KEY وR2_BUCKET_NAME في أسرار دوال Supabase");
   }
