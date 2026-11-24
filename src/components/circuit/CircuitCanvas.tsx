@@ -9,6 +9,11 @@ export interface CircuitComponent {
   rotation: number;
   value?: number;
   isOn?: boolean;
+  color?: string;
+  label?: string;
+  voltageAcross?: number;
+  currentThrough?: number;
+  chargePercent?: number;
   connections: { positive: string | null; negative: string | null };
 }
 
@@ -33,397 +38,547 @@ interface CircuitCanvasProps {
   onComponentSelect: (id: string | null) => void;
   onTerminalClick: (componentId: string, terminal: 'positive' | 'negative') => void;
   onCanvasClick: (x: number, y: number) => void;
+  onCanvasMouseMove?: (x: number, y: number) => void;
+  onSwitchToggle?: (id: string) => void;
   isSimulating: boolean;
   measurements: { voltage: number; current: number; power: number };
 }
 
-const COMPONENT_ICONS: Record<string, { draw: (ctx: CanvasRenderingContext2D, x: number, y: number, rotation: number, isOn?: boolean, value?: number) => void; width: number; height: number }> = {
+interface ComponentIconSpec {
+  width: number;
+  height: number;
+  terminals: {
+    positive: { x: number; y: number };
+    negative: { x: number; y: number };
+  };
+  draw: (ctx: CanvasRenderingContext2D, comp: CircuitComponent, isSimulating: boolean) => void;
+}
+
+function getOffLedColor(hexColor: string): string {
+  const normalized = hexColor.toLowerCase();
+  if (normalized === '#ef4444' || normalized === '#ff0000') return '#5c1818';
+  if (normalized === '#facc15' || normalized === '#eab308') return '#5e4b10';
+  return '#144524';
+}
+
+const COMPONENT_ICONS: Record<string, ComponentIconSpec> = {
   battery: {
-    width: 60,
-    height: 40,
-    draw: (ctx, x, y, rotation, isOn, value = 9) => {
+    width: 68,
+    height: 44,
+    terminals: { positive: { x: 30, y: 0 }, negative: { x: -30, y: 0 } },
+    draw: (ctx, comp) => {
+      const value = comp.value ?? 9;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
       // Battery body
-      ctx.fillStyle = '#333';
-      ctx.fillRect(-25, -15, 50, 30);
-      
-      // Positive terminal
-      ctx.fillStyle = '#ff4444';
-      ctx.fillRect(25, -8, 8, 16);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 10px Arial';
-      ctx.fillText('+', 27, 4);
-      
-      // Negative terminal
-      ctx.fillStyle = '#4444ff';
-      ctx.fillRect(-33, -8, 8, 16);
-      ctx.fillStyle = '#fff';
-      ctx.fillText('-', -31, 4);
-      
+      ctx.fillStyle = '#27272a';
+      ctx.strokeStyle = '#52525b';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-25, -16, 50, 32);
+      ctx.strokeRect(-25, -16, 50, 32);
+
+      // Positive terminal (+ on right)
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(25, -9, 10, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', 30, 4);
+
+      // Negative terminal (- on left)
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(-35, -9, 10, 18);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('-', -30, 4);
+
       // Voltage label
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Arial';
+      ctx.fillStyle = '#fde047';
+      ctx.font = 'bold 12px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(`${value}V`, 0, 5);
-      
+
       ctx.restore();
-    }
+    },
   },
   resistor: {
-    width: 70,
-    height: 30,
-    draw: (ctx, x, y, rotation, isOn, value = 100) => {
+    width: 72,
+    height: 36,
+    terminals: { positive: { x: -30, y: 0 }, negative: { x: 30, y: 0 } },
+    draw: (ctx, comp) => {
+      const value = comp.value ?? 100;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
-      // Zigzag pattern
-      ctx.strokeStyle = '#d4a574';
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
+      ctx.strokeStyle = '#e5b887';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(-30, 0);
       ctx.lineTo(-20, 0);
       for (let i = 0; i < 4; i++) {
-        ctx.lineTo(-15 + i * 10, i % 2 === 0 ? -8 : 8);
+        ctx.lineTo(-15 + i * 10, i % 2 === 0 ? -9 : 9);
       }
       ctx.lineTo(20, 0);
       ctx.lineTo(30, 0);
       ctx.stroke();
-      
+
       // Value label
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px Arial';
+      const label = value >= 1000 ? `${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}kΩ` : `${value}Ω`;
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${value}Ω`, 0, 20);
-      
+      ctx.fillText(label, 0, 22);
+
       // Terminals
-      ctx.fillStyle = '#888';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(-30, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
       ctx.arc(30, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
-    }
+    },
   },
   led: {
-    width: 50,
-    height: 40,
-    draw: (ctx, x, y, rotation, isOn) => {
+    width: 54,
+    height: 48,
+    terminals: { positive: { x: -22, y: 0 }, negative: { x: 22, y: 0 } },
+    draw: (ctx, comp) => {
+      const activeColor = comp.color || '#22c55e';
+      const offColor = getOffLedColor(activeColor);
+      const isOn = Boolean(comp.isOn);
+
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
-      // LED body (triangle)
-      ctx.fillStyle = isOn ? '#00ff00' : '#004400';
-      ctx.beginPath();
-      ctx.moveTo(-15, -12);
-      ctx.lineTo(-15, 12);
-      ctx.lineTo(10, 0);
-      ctx.closePath();
-      ctx.fill();
-      
-      // Line (cathode)
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(10, -12);
-      ctx.lineTo(10, 12);
-      ctx.stroke();
-      
-      // Glow effect when on
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
+      // Glow halo when ON
       if (isOn) {
-        ctx.shadowColor = '#00ff00';
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = '#00ff00';
+        const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 26);
+        grad.addColorStop(0, activeColor);
+        grad.addColorStop(0.5, `${activeColor}88`);
+        grad.addColorStop(1, `${activeColor}00`);
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.arc(0, 0, 26, 0, Math.PI * 2);
         ctx.fill();
       }
-      
-      // Terminals
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#ff4444';
+
+      // LED housing circle
+      ctx.fillStyle = isOn ? activeColor : offColor;
+      ctx.strokeStyle = isOn ? '#ffffff' : '#64748b';
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(-20, 0, 5, 0, Math.PI * 2);
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.stroke();
+
+      // Diode triangle inside
+      ctx.fillStyle = isOn ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.28)';
       ctx.beginPath();
-      ctx.arc(20, 0, 5, 0, Math.PI * 2);
+      ctx.moveTo(-7, -7);
+      ctx.lineTo(-7, 7);
+      ctx.lineTo(6, 0);
+      ctx.closePath();
       ctx.fill();
-      
+
+      // Cathode bar
+      ctx.strokeStyle = isOn ? '#ffffff' : '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(6, -7);
+      ctx.lineTo(6, 7);
+      ctx.stroke();
+
+      // Leads & Terminals
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-22, 0);
+      ctx.lineTo(-14, 0);
+      ctx.moveTo(14, 0);
+      ctx.lineTo(22, 0);
+      ctx.stroke();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(-22, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.arc(22, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (comp.label) {
+        ctx.fillStyle = isOn ? activeColor : '#cbd5e1';
+        ctx.font = 'bold 11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(comp.label, 0, 27);
+      }
+
       ctx.restore();
-    }
+    },
   },
   switch: {
-    width: 60,
-    height: 30,
-    draw: (ctx, x, y, rotation, isOn) => {
+    width: 64,
+    height: 44,
+    terminals: { positive: { x: -25, y: 0 }, negative: { x: 25, y: 0 } },
+    draw: (ctx, comp) => {
+      const isOn = Boolean(comp.isOn);
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
-      // Base line
-      ctx.strokeStyle = '#888';
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
+      // Base contacts
+      ctx.strokeStyle = '#94a3b8';
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(-25, 0);
-      ctx.lineTo(-10, 0);
-      ctx.moveTo(10, 0);
+      ctx.lineTo(-11, 0);
+      ctx.moveTo(11, 0);
       ctx.lineTo(25, 0);
       ctx.stroke();
-      
+
+      // Pivot dots
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(-11, 0, 3.5, 0, Math.PI * 2);
+      ctx.arc(11, 0, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
       // Switch lever
-      ctx.strokeStyle = isOn ? '#00ff00' : '#ff0000';
+      ctx.strokeStyle = isOn ? '#22c55e' : '#ef4444';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.moveTo(-10, 0);
+      ctx.moveTo(-11, 0);
       if (isOn) {
-        ctx.lineTo(10, 0);
+        ctx.lineTo(11, 0);
       } else {
-        ctx.lineTo(5, -15);
+        ctx.lineTo(8, -16);
       }
       ctx.stroke();
-      
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.arc(-25, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
       ctx.arc(25, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Status
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px Arial';
+
+      // Status & optional label
+      ctx.fillStyle = isOn ? '#4ade80' : '#f87171';
+      ctx.font = 'bold 10px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(isOn ? 'ON' : 'OFF', 0, 20);
-      
+      ctx.fillText(comp.label ? `${comp.label} (${isOn ? 'ON' : 'OFF'})` : isOn ? 'ON' : 'OFF', 0, 21);
+
       ctx.restore();
-    }
+    },
   },
   bulb: {
-    width: 50,
-    height: 50,
-    draw: (ctx, x, y, rotation, isOn) => {
+    width: 56,
+    height: 58,
+    terminals: { positive: { x: -16, y: 16 }, negative: { x: 16, y: 16 } },
+    draw: (ctx, comp) => {
+      const isOn = Boolean(comp.isOn);
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
-      // Bulb glass
-      ctx.fillStyle = isOn ? '#ffff00' : '#444';
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
       if (isOn) {
-        ctx.shadowColor = '#ffff00';
-        ctx.shadowBlur = 30;
+        const grad = ctx.createRadialGradient(0, -5, 2, 0, -5, 34);
+        grad.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
+        grad.addColorStop(0.5, 'rgba(250, 204, 21, 0.45)');
+        grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, -5, 34, 0, Math.PI * 2);
+        ctx.fill();
       }
-      ctx.beginPath();
-      ctx.arc(0, -5, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Bulb base
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = '#666';
-      ctx.fillRect(-8, 8, 16, 12);
-      
-      // Filament
-      ctx.strokeStyle = isOn ? '#ff8800' : '#555';
+
+      // Bulb glass
+      ctx.fillStyle = isOn ? '#fde047' : '#3f3f46';
+      ctx.strokeStyle = isOn ? '#facc15' : '#71717a';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(-5, -5);
-      ctx.quadraticCurveTo(0, -15, 5, -5);
+      ctx.arc(0, -5, 16, 0, Math.PI * 2);
+      ctx.fill();
       ctx.stroke();
-      
+
+      // Bulb base
+      ctx.fillStyle = '#71717a';
+      ctx.fillRect(-8, 9, 16, 11);
+
+      // Filament
+      ctx.strokeStyle = isOn ? '#ea580c' : '#71717a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -3);
+      ctx.quadraticCurveTo(0, -16, 6, -3);
+      ctx.stroke();
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(-15, 15, 5, 0, Math.PI * 2);
+      ctx.arc(-16, 16, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(15, 15, 5, 0, Math.PI * 2);
+      ctx.arc(16, 16, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
+      if (comp.voltageAcross && Math.abs(comp.voltageAcross) > 0.05) {
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${Math.abs(comp.voltageAcross).toFixed(2)}V`, 0, 32);
+      }
+
       ctx.restore();
-    }
+    },
   },
   capacitor: {
-    width: 50,
-    height: 40,
-    draw: (ctx, x, y, rotation, isOn, value = 100) => {
+    width: 60,
+    height: 54,
+    terminals: { positive: { x: -22, y: 0 }, negative: { x: 22, y: 0 } },
+    draw: (ctx, comp, isSimulating) => {
+      const value = comp.value ?? 100;
+      const chargePct = Math.max(0, Math.min(100, comp.chargePercent ?? 0));
+      const vCap = Math.abs(comp.voltageAcross ?? 0);
+
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
+      // Charge field glow between plates when charged
+      if (chargePct > 2) {
+        ctx.fillStyle = `rgba(34, 211, 238, ${0.15 + (chargePct / 100) * 0.45})`;
+        ctx.fillRect(-5, -13, 10, 26);
+      }
+
       // Plates
-      ctx.strokeStyle = '#888';
+      ctx.strokeStyle = chargePct > 10 ? '#22d3ee' : '#94a3b8';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(-20, 0);
-      ctx.lineTo(-5, 0);
-      ctx.moveTo(-5, -12);
-      ctx.lineTo(-5, 12);
-      ctx.moveTo(5, -12);
-      ctx.lineTo(5, 12);
-      ctx.moveTo(5, 0);
-      ctx.lineTo(20, 0);
+      ctx.moveTo(-22, 0);
+      ctx.lineTo(-6, 0);
+      ctx.moveTo(-6, -14);
+      ctx.lineTo(-6, 14);
+      ctx.moveTo(6, -14);
+      ctx.lineTo(6, 14);
+      ctx.moveTo(6, 0);
+      ctx.lineTo(22, 0);
       ctx.stroke();
-      
-      // Value
-      ctx.fillStyle = '#fff';
-      ctx.font = '10px Arial';
+
+      // Value label
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 10px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${value}µF`, 0, 25);
-      
+      ctx.fillText(`${value}µF`, 0, -19);
+
+      // Live charge progress bar & voltage readout
+      if (isSimulating || chargePct > 0.5) {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-20, 17, 40, 6);
+        ctx.fillStyle = chargePct >= 95 ? '#22c55e' : '#06b6d4';
+        ctx.fillRect(-20, 17, (40 * chargePct) / 100, 6);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-20, 17, 40, 6);
+
+        ctx.fillStyle = '#67e8f9';
+        ctx.font = 'bold 10px Arial';
+        ctx.fillText(`${vCap.toFixed(2)}V (${Math.round(chargePct)}%)`, 0, 34);
+      }
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(-20, 0, 5, 0, Math.PI * 2);
+      ctx.arc(-22, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(20, 0, 5, 0, Math.PI * 2);
+      ctx.arc(22, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
-    }
+    },
   },
   motor: {
     width: 60,
     height: 60,
-    draw: (ctx, x, y, rotation, isOn) => {
+    terminals: { positive: { x: -26, y: 0 }, negative: { x: 26, y: 0 } },
+    draw: (ctx, comp) => {
+      const isOn = Boolean(comp.isOn);
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
       // Motor body
-      ctx.fillStyle = '#555';
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = isOn ? '#a855f7' : '#64748b';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.arc(0, 0, 21, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Motor label
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 14px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('M', 0, 5);
-      
-      // Spinning indicator
+      ctx.stroke();
+
+      // Spinning blades when ON
       if (isOn) {
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 2;
-        const spinAngle = Date.now() / 100;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        const spinAngle = Date.now() / 80;
         for (let i = 0; i < 4; i++) {
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(
-            Math.cos(spinAngle + i * Math.PI / 2) * 15,
-            Math.sin(spinAngle + i * Math.PI / 2) * 15
+            Math.cos(spinAngle + (i * Math.PI) / 2) * 16,
+            Math.sin(spinAngle + (i * Math.PI) / 2) * 16,
           );
           ctx.stroke();
         }
       }
-      
+
+      // Motor label
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('M', 0, 5);
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(-25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(-26, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(26, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
-    }
+    },
   },
   ammeter: {
-    width: 50,
-    height: 50,
-    draw: (ctx, x, y, rotation, isOn, value = 0) => {
+    width: 64,
+    height: 56,
+    terminals: { positive: { x: -28, y: 0 }, negative: { x: 28, y: 0 } },
+    draw: (ctx, comp) => {
+      const readingMa = comp.value ?? 0;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
       // Meter body
-      ctx.fillStyle = '#222';
-      ctx.strokeStyle = '#666';
-      ctx.lineWidth = 2;
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.arc(0, 0, 23, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      
+
       // Label
-      ctx.fillStyle = '#ff0';
-      ctx.font = 'bold 16px Arial';
+      ctx.fillStyle = '#fb923c';
+      ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('A', 0, 6);
-      
+      ctx.fillText('A', 0, -5);
+
       // Reading
-      ctx.fillStyle = '#0f0';
-      ctx.font = '10px Arial';
-      ctx.fillText(`${(value || 0).toFixed(2)}`, 0, -8);
-      
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(`${readingMa.toFixed(1)}mA`, 0, 11);
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(-25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(-28, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(28, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
-    }
+    },
   },
   voltmeter: {
-    width: 50,
-    height: 50,
-    draw: (ctx, x, y, rotation, isOn, value = 0) => {
+    width: 64,
+    height: 56,
+    terminals: { positive: { x: -28, y: 0 }, negative: { x: 28, y: 0 } },
+    draw: (ctx, comp) => {
+      const readingV = comp.value ?? 0;
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation * Math.PI / 180);
-      
+      ctx.translate(comp.x, comp.y);
+      ctx.rotate((comp.rotation * Math.PI) / 180);
+
       // Meter body
-      ctx.fillStyle = '#222';
-      ctx.strokeStyle = '#666';
-      ctx.lineWidth = 2;
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#ec4899';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.arc(0, 0, 23, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      
+
       // Label
-      ctx.fillStyle = '#f00';
-      ctx.font = 'bold 16px Arial';
+      ctx.fillStyle = '#f472b6';
+      ctx.font = 'bold 14px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('V', 0, 6);
-      
+      ctx.fillText('V', 0, -5);
+
       // Reading
-      ctx.fillStyle = '#0f0';
-      ctx.font = '10px Arial';
-      ctx.fillText(`${(value || 0).toFixed(1)}`, 0, -8);
-      
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px monospace';
+      ctx.fillText(`${readingV.toFixed(2)}V`, 0, 11);
+
       // Terminals
-      ctx.fillStyle = '#ff4444';
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(-25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(-28, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#4444ff';
+      ctx.fillStyle = '#3b82f6';
       ctx.beginPath();
-      ctx.arc(25, 0, 5, 0, Math.PI * 2);
+      ctx.arc(28, 0, 5, 0, Math.PI * 2);
       ctx.fill();
-      
+
       ctx.restore();
-    }
-  }
+    },
+  },
 };
+
+function samplePolyline(pts: Array<{ x: number; y: number }>, t: number): { x: number; y: number } {
+  if (pts.length === 0) return { x: 0, y: 0 };
+  if (pts.length === 1) return pts[0];
+
+  const segLengths: number[] = [];
+  let totalLen = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const len = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y);
+    segLengths.push(len);
+    totalLen += len;
+  }
+  if (totalLen <= 0.001) return pts[0];
+
+  let target = Math.max(0, Math.min(1, t)) * totalLen;
+  for (let i = 0; i < segLengths.length; i++) {
+    if (target <= segLengths[i] || i === segLengths.length - 1) {
+      const localT = segLengths[i] > 0.001 ? target / segLengths[i] : 0;
+      return {
+        x: pts[i].x + (pts[i + 1].x - pts[i].x) * localT,
+        y: pts[i].y + (pts[i + 1].y - pts[i].y) * localT,
+      };
+    }
+    target -= segLengths[i];
+  }
+  return pts[pts.length - 1];
+}
 
 export default function CircuitCanvas({
   components,
@@ -436,107 +591,130 @@ export default function CircuitCanvas({
   onComponentSelect,
   onTerminalClick,
   onCanvasClick,
+  onCanvasMouseMove,
+  onSwitchToggle,
   isSimulating,
-  measurements
+  measurements,
 }: CircuitCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
 
   const getTerminalPosition = useCallback((component: CircuitComponent, terminal: 'positive' | 'negative') => {
     const iconData = COMPONENT_ICONS[component.type];
     if (!iconData) return { x: component.x, y: component.y };
-    
-    const angle = component.rotation * Math.PI / 180;
-    const offset = terminal === 'positive' ? -30 : 30;
-    
+
+    const local = iconData.terminals[terminal];
+    const angle = (component.rotation * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+
     return {
-      x: component.x + Math.cos(angle) * offset,
-      y: component.y + Math.sin(angle) * offset
+      x: component.x + local.x * cos - local.y * sin,
+      y: component.y + local.x * sin + local.y * cos,
     };
   }, []);
 
-  const draw = useCallback(() => {
+  const getScaledPoint = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return null;
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+    };
+  }, []);
+
+  const drawFrame = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid
-    ctx.strokeStyle = '#2a2a4e';
+    // Draw grid in a single batched path
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 20) {
-      ctx.beginPath();
+    ctx.beginPath();
+    for (let x = 0; x < canvas.width; x += 25) {
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
-      ctx.stroke();
     }
-    for (let y = 0; y < canvas.height; y += 20) {
-      ctx.beginPath();
+    for (let y = 0; y < canvas.height; y += 25) {
       ctx.moveTo(0, y);
       ctx.lineTo(canvas.width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
+
+    const compById = new Map(components.map((c) => [c.id, c]));
 
     // Draw wires
-    wires.forEach(wire => {
-      const startComp = components.find(c => c.id === wire.startComponentId);
-      const endComp = components.find(c => c.id === wire.endComponentId);
-      
-      if (startComp && endComp) {
-        const startPos = getTerminalPosition(startComp, wire.startTerminal);
-        const endPos = getTerminalPosition(endComp, wire.endTerminal);
-        
-        ctx.strokeStyle = isSimulating && wire.current ? '#00ff00' : '#888';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(startPos.x, startPos.y);
-        
-        // Draw through intermediate points
-        wire.points.forEach(point => {
-          ctx.lineTo(point.x, point.y);
-        });
-        
-        ctx.lineTo(endPos.x, endPos.y);
-        ctx.stroke();
+    wires.forEach((wire) => {
+      const startComp = compById.get(wire.startComponentId);
+      const endComp = compById.get(wire.endComponentId);
+      if (!startComp || !endComp) return;
 
-        // Draw electron flow animation
-        if (isSimulating && wire.current && wire.current > 0) {
-          const time = Date.now() / 500;
-          const numElectrons = Math.min(Math.floor(wire.current * 3), 10);
-          
-          for (let i = 0; i < numElectrons; i++) {
-            const t = ((time + i / numElectrons) % 1);
-            const electronX = startPos.x + (endPos.x - startPos.x) * t;
-            const electronY = startPos.y + (endPos.y - startPos.y) * t;
-            
-            ctx.fillStyle = '#00ffff';
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(electronX, electronY, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-          }
+      const startPos = getTerminalPosition(startComp, wire.startTerminal);
+      const endPos = getTerminalPosition(endComp, wire.endTerminal);
+      const poly = [startPos, ...(wire.points || []), endPos];
+
+      const isVoltmeterProbe = startComp.type === 'voltmeter' || endComp.type === 'voltmeter';
+      const signedCurrent = wire.current ?? 0;
+      const absCurrent = Math.abs(signedCurrent);
+      const hasFlow = isSimulating && absCurrent > 1e-4;
+
+      if (isVoltmeterProbe) {
+        ctx.strokeStyle = isSimulating ? '#f472b6' : '#9d4edd';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+      } else {
+        ctx.strokeStyle = hasFlow ? '#22c55e' : '#64748b';
+        ctx.lineWidth = hasFlow ? 3.5 : 2.5;
+        ctx.setLineDash([]);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(poly[0].x, poly[0].y);
+      for (let i = 1; i < poly.length; i++) {
+        ctx.lineTo(poly[i].x, poly[i].y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Animate moving charges along actual polyline path & signed direction
+      if (hasFlow && !isVoltmeterProbe) {
+        const speed = Math.max(0.25, Math.min(2.2, 0.35 + absCurrent * 8));
+        const time = (Date.now() / 1000) * speed;
+        const numElectrons = Math.max(2, Math.min(7, Math.round(2 + absCurrent * 25)));
+        const direction = signedCurrent >= 0 ? 1 : -1;
+
+        ctx.fillStyle = '#38bdf8';
+        for (let i = 0; i < numElectrons; i++) {
+          let t = (time + i / numElectrons) % 1;
+          if (direction < 0) t = 1 - t;
+          const pt = samplePolyline(poly, t);
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 3.8, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
     });
 
-    // Draw wire being drawn
+    // Draw wire preview while user is connecting terminals
     if (isDrawingWire && wireStart && currentMousePos) {
-      const startComp = components.find(c => c.id === wireStart.componentId);
+      const startComp = compById.get(wireStart.componentId);
       if (startComp) {
         const startPos = getTerminalPosition(startComp, wireStart.terminal);
-        
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 5]);
         ctx.beginPath();
         ctx.moveTo(startPos.x, startPos.y);
         ctx.lineTo(currentMousePos.x, currentMousePos.y);
@@ -546,92 +724,108 @@ export default function CircuitCanvas({
     }
 
     // Draw components
-    components.forEach(component => {
+    components.forEach((component) => {
       const iconData = COMPONENT_ICONS[component.type];
-      if (iconData) {
-        // Selection highlight
-        if (selectedComponent === component.id) {
-          ctx.strokeStyle = '#00ff00';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(
-            component.x - iconData.width / 2 - 5,
-            component.y - iconData.height / 2 - 5,
-            iconData.width + 10,
-            iconData.height + 10
-          );
-        }
-        
-        iconData.draw(ctx, component.x, component.y, component.rotation, component.isOn, component.value);
-      }
-    });
+      if (!iconData) return;
 
-    animationRef.current = requestAnimationFrame(draw);
+      if (selectedComponent === component.id) {
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(
+          component.x - iconData.width / 2 - 6,
+          component.y - iconData.height / 2 - 6,
+          iconData.width + 12,
+          iconData.height + 12,
+        );
+        ctx.setLineDash([]);
+      }
+
+      iconData.draw(ctx, component, isSimulating);
+    });
   }, [components, wires, selectedComponent, isDrawingWire, wireStart, currentMousePos, isSimulating, getTerminalPosition]);
 
+  // Run rAF only while animating live simulation; otherwise render on demand
   useEffect(() => {
-    animationRef.current = requestAnimationFrame(draw);
+    const needsLoop =
+      isSimulating &&
+      (wires.some((w) => Math.abs(w.current ?? 0) > 1e-4) ||
+        components.some((c) => c.type === 'motor' && c.isOn));
+
+    drawFrame();
+
+    if (!needsLoop) return;
+
+    let lastTime = 0;
+    const loop = (now: number) => {
+      if (!document.hidden && now - lastTime >= 30) {
+        drawFrame();
+        lastTime = now;
+      }
+      animationRef.current = requestAnimationFrame(loop);
+    };
+    animationRef.current = requestAnimationFrame(loop);
+
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== null) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
       }
     };
-  }, [draw]);
+  }, [drawFrame, isSimulating, wires, components]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pt = getScaledPoint(e);
+    if (!pt) return;
 
-    // Check if clicking on a terminal
+    // Check if clicking on a terminal first (generous 12px hit radius)
     for (const component of components) {
       const posPos = getTerminalPosition(component, 'positive');
       const negPos = getTerminalPosition(component, 'negative');
-      
-      if (Math.hypot(x - posPos.x, y - posPos.y) < 10) {
+
+      if (Math.hypot(pt.x - posPos.x, pt.y - posPos.y) < 12) {
         onTerminalClick(component.id, 'positive');
         return;
       }
-      if (Math.hypot(x - negPos.x, y - negPos.y) < 10) {
+      if (Math.hypot(pt.x - negPos.x, pt.y - negPos.y) < 12) {
         onTerminalClick(component.id, 'negative');
         return;
       }
     }
 
-    // Check if clicking on a component
+    // Check if clicking on a component body
     for (const component of components) {
       const iconData = COMPONENT_ICONS[component.type];
       if (!iconData) continue;
-      
+
       if (
-        x >= component.x - iconData.width / 2 &&
-        x <= component.x + iconData.width / 2 &&
-        y >= component.y - iconData.height / 2 &&
-        y <= component.y + iconData.height / 2
+        pt.x >= component.x - iconData.width / 2 &&
+        pt.x <= component.x + iconData.width / 2 &&
+        pt.y >= component.y - iconData.height / 2 &&
+        pt.y <= component.y + iconData.height / 2
       ) {
         setDragging(component.id);
-        setDragOffset({ x: x - component.x, y: y - component.y });
+        setDragOffset({ x: pt.x - component.x, y: pt.y - component.y });
         onComponentSelect(component.id);
         return;
       }
     }
 
     onComponentSelect(null);
-    onCanvasClick(x, y);
+    onCanvasClick(pt.x, pt.y);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pt = getScaledPoint(e);
+    if (!pt) return;
 
     if (dragging) {
-      onComponentMove(dragging, x - dragOffset.x, y - dragOffset.y);
+      const canvas = canvasRef.current;
+      const clampedX = canvas ? Math.max(40, Math.min(canvas.width - 40, pt.x - dragOffset.x)) : pt.x - dragOffset.x;
+      const clampedY = canvas ? Math.max(40, Math.min(canvas.height - 40, pt.y - dragOffset.y)) : pt.y - dragOffset.y;
+      onComponentMove(dragging, clampedX, clampedY);
+    } else if (isDrawingWire && onCanvasMouseMove) {
+      onCanvasMouseMove(pt.x, pt.y);
     }
   };
 
@@ -639,27 +833,22 @@ export default function CircuitCanvas({
     setDragging(null);
   };
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pt = getScaledPoint(e);
+    if (!pt) return;
 
-    // Toggle switch or rotate component
     for (const component of components) {
       const iconData = COMPONENT_ICONS[component.type];
       if (!iconData) continue;
-      
+
       if (
-        x >= component.x - iconData.width / 2 &&
-        x <= component.x + iconData.width / 2 &&
-        y >= component.y - iconData.height / 2 &&
-        y <= component.y + iconData.height / 2
+        pt.x >= component.x - iconData.width / 2 &&
+        pt.x <= component.x + iconData.width / 2 &&
+        pt.y >= component.y - iconData.height / 2 &&
+        pt.y <= component.y + iconData.height / 2
       ) {
-        if (component.type === 'switch') {
-          // Toggle handled externally
+        if (component.type === 'switch' && onSwitchToggle) {
+          onSwitchToggle(component.id);
         }
         return;
       }
@@ -667,29 +856,35 @@ export default function CircuitCanvas({
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="relative w-full h-full"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative w-full">
       <canvas
         ref={canvasRef}
         width={800}
-        height={600}
-        className="border border-gray-600 rounded-lg cursor-crosshair"
+        height={520}
+        className="w-full h-auto border border-slate-700 rounded-lg cursor-crosshair block"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
       />
-      
-      {/* Measurements overlay */}
+
+      {/* Live measurements overlay */}
       {isSimulating && (
-        <div className="absolute top-2 right-2 bg-black/80 p-3 rounded-lg text-sm">
-          <div className="text-green-400">⚡ الجهد: {measurements.voltage.toFixed(2)} V</div>
-          <div className="text-yellow-400">⚡ التيار: {measurements.current.toFixed(3)} A</div>
-          <div className="text-red-400">⚡ القدرة: {measurements.power.toFixed(3)} W</div>
+        <div
+          data-preserve-dark
+          className="absolute top-3 right-3 p-3 rounded-lg text-xs sm:text-sm border border-white/15 space-y-1 pointer-events-none"
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.88)' }}
+        >
+          <div style={{ color: '#4ade80' }} className="font-mono font-bold">
+            ⚡ الجهد: {measurements.voltage.toFixed(2)} V
+          </div>
+          <div style={{ color: '#facc15' }} className="font-mono font-bold">
+            ⚡ التيار: {(measurements.current * 1000).toFixed(2)} mA
+          </div>
+          <div style={{ color: '#f472b6' }} className="font-mono font-bold">
+            ⚡ القدرة: {(measurements.power * 1000).toFixed(1)} mW
+          </div>
         </div>
       )}
     </motion.div>

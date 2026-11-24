@@ -34,37 +34,66 @@ const FourierEpicycles3D: React.FC<{
   const timeRef = useRef(0);
   const penTrailRef = useRef<THREE.Vector3[]>([]);
   const trailLineRef = useRef<THREE.Line>(null);
-  const armsGroupRef = useRef<THREE.Group>(null);
+  const armLineRef = useRef<THREE.Line>(null);
+  const penSphereRef = useRef<THREE.Mesh>(null);
+  const ringRefs = useRef<Array<THREE.Mesh | null>>([]);
+
+  const activeCoeffs = useMemo(
+    () =>
+      coefficients.slice(0, Math.min(N, 10)).map((c) => {
+        const an = Number.isFinite(c.an) ? c.an : 0;
+        const bn = Number.isFinite(c.bn) ? c.bn : 0;
+        const radius = Math.min(2.2, Math.sqrt(an * an + bn * bn) * 0.65);
+        const phase = Math.atan2(bn, an);
+        return { n: c.n, radius, phase };
+      }),
+    [coefficients, N],
+  );
 
   useFrame((_, delta) => {
-    if (!isPlaying) return;
-    timeRef.current += delta * 1.4;
-
-    const t = timeRef.current;
-    let currX = 0;
-    let currY = (a0 / 2) * 0.5;
-
-    // Build chain of rotating arms for first min(N, 10) harmonics
-    const active = coefficients.slice(0, Math.min(N, 10));
-    active.forEach((c) => {
-      const radius = Math.sqrt(c.an * c.an + c.bn * c.bn) * 0.8;
-      const phase = Math.atan2(c.bn, c.an);
-      const angle = c.n * t + phase;
-      currX += radius * Math.cos(angle);
-      currY += radius * Math.sin(angle);
-    });
-
-    // Unroll wave along Z-axis into 3D space
-    penTrailRef.current.unshift(new THREE.Vector3(currX, currY, 0));
-    if (penTrailRef.current.length > 220) penTrailRef.current.pop();
-
-    for (let i = 0; i < penTrailRef.current.length; i++) {
-      penTrailRef.current[i].z = i * 0.045;
+    if (isPlaying) {
+      timeRef.current += Math.min(delta, 0.05) * 1.4;
     }
 
-    if (trailLineRef.current && penTrailRef.current.length > 2) {
-      trailLineRef.current.geometry.setFromPoints(penTrailRef.current);
-      trailLineRef.current.geometry.attributes.position.needsUpdate = true;
+    const t = timeRef.current;
+    const baseY = Number.isFinite(a0) ? Math.max(-1.5, Math.min(1.5, (a0 / 2) * 0.35)) : 0;
+    let currX = 0;
+    let currY = baseY;
+
+    const armPoints: THREE.Vector3[] = [new THREE.Vector3(currX, currY, 0)];
+
+    activeCoeffs.forEach((c, idx) => {
+      const ring = ringRefs.current[idx];
+      if (ring) {
+        ring.position.set(currX, currY, 0);
+      }
+      const angle = c.n * t + c.phase;
+      currX += c.radius * Math.cos(angle);
+      currY += c.radius * Math.sin(angle);
+      armPoints.push(new THREE.Vector3(currX, currY, 0));
+    });
+
+    if (penSphereRef.current) {
+      penSphereRef.current.position.set(currX, currY, 0);
+    }
+
+    if (armLineRef.current && armPoints.length >= 2) {
+      armLineRef.current.geometry.setFromPoints(armPoints);
+      armLineRef.current.geometry.attributes.position.needsUpdate = true;
+    }
+
+    if (isPlaying) {
+      penTrailRef.current.unshift(new THREE.Vector3(currX, currY, 0));
+      if (penTrailRef.current.length > 220) penTrailRef.current.pop();
+
+      for (let i = 0; i < penTrailRef.current.length; i++) {
+        penTrailRef.current[i].z = i * 0.045;
+      }
+
+      if (trailLineRef.current && penTrailRef.current.length > 2) {
+        trailLineRef.current.geometry.setFromPoints(penTrailRef.current);
+        trailLineRef.current.geometry.attributes.position.needsUpdate = true;
+      }
     }
   });
 
@@ -76,15 +105,41 @@ const FourierEpicycles3D: React.FC<{
         <meshStandardMaterial color="#475569" />
       </mesh>
 
+      {/* Rotating Epicycle Rings */}
+      {activeCoeffs.map((c, idx) =>
+        c.radius > 0.02 ? (
+          <mesh
+            key={`${c.n}-${idx}`}
+            ref={(el) => {
+              ringRefs.current[idx] = el;
+            }}
+          >
+            <ringGeometry args={[Math.max(0.005, c.radius - 0.02), c.radius, 48]} />
+            <meshBasicMaterial
+              color={idx % 2 === 0 ? '#a855f7' : '#22d3ee'}
+              transparent
+              opacity={0.55}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        ) : null,
+      )}
+
+      {/* Vector Arms Chain */}
+      <line ref={armLineRef as any}>
+        <bufferGeometry />
+        <lineBasicMaterial color="#facc15" linewidth={2} />
+      </line>
+
       {/* 3D Wave Trail Line */}
       <line ref={trailLineRef as any}>
         <bufferGeometry />
         <lineBasicMaterial color="#38bdf8" linewidth={3} />
       </line>
 
-      {/* Drawing Pen Tip Sphere */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
+      {/* Moving Drawing Pen Tip Sphere */}
+      <mesh ref={penSphereRef} position={[0, 0, 0]}>
+        <sphereGeometry args={[0.09, 16, 16]} />
         <meshBasicMaterial color="#f59e0b" />
       </mesh>
 
@@ -94,8 +149,12 @@ const FourierEpicycles3D: React.FC<{
         <meshBasicMaterial color="#0f172a" transparent opacity={0.6} />
       </mesh>
 
-      <Html position={[0, 2.2, 0]} center distanceFactor={10}>
-        <div className="bg-slate-900/90 text-cyan-300 font-mono text-xs px-2 py-1 rounded border border-cyan-500/50 shadow-lg whitespace-nowrap">
+      <Html position={[0, 2.2, 0]} center distanceFactor={10} zIndexRange={[10, 0]}>
+        <div
+          data-preserve-dark
+          className="font-mono text-xs px-2.5 py-1 rounded-full border border-cyan-500/50 shadow-lg whitespace-nowrap font-bold"
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#67e8f9' }}
+        >
           مركز التدوير الهارموني (3D Epicycles) • N = {N}
         </div>
       </Html>
@@ -312,20 +371,34 @@ export const FourierSeriesSimulation: React.FC = () => {
             {sessionStorage.getItem('gju_mode') === 'true' ? 'العودة لمستقبل التكنولوجيا' : 'العودة للتجارب العلمية'}
           </Button>
           <div className="flex gap-2">
-            <div className="flex bg-slate-900/80 p-1 rounded-xl border border-slate-700">
+            <div
+              data-preserve-dark
+              className="flex gap-1 p-1 rounded-xl border"
+              style={{ backgroundColor: '#0f172a', borderColor: '#334155' }}
+            >
               <Button
                 size="sm"
-                variant={viewMode === '2d' ? 'default' : 'ghost'}
+                variant="ghost"
                 onClick={() => setViewMode('2d')}
-                className="h-7 text-xs text-primary"
+                className="h-8 text-xs font-bold rounded-lg"
+                style={
+                  viewMode === '2d'
+                    ? { backgroundColor: '#4f46e5', color: '#ffffff' }
+                    : { backgroundColor: 'transparent', color: '#cbd5e1' }
+                }
               >
                 الرسوم الرياضية 2D
               </Button>
               <Button
                 size="sm"
-                variant={viewMode === '3d' ? 'default' : 'ghost'}
+                variant="ghost"
                 onClick={() => setViewMode('3d')}
-                className="h-7 text-xs text-cyan-300"
+                className="h-8 text-xs font-bold rounded-lg"
+                style={
+                  viewMode === '3d'
+                    ? { backgroundColor: '#0284c7', color: '#ffffff' }
+                    : { backgroundColor: 'transparent', color: '#cbd5e1' }
+                }
               >
                 دوائر التدوير 3D
               </Button>
@@ -359,7 +432,11 @@ export const FourierSeriesSimulation: React.FC = () => {
                 gibbsPoints={gibbsPoints}
               />
             ) : (
-              <div className="w-full h-[480px] bg-slate-950 relative overflow-hidden">
+              <div
+                data-preserve-dark
+                className="w-full h-[480px] relative overflow-hidden"
+                style={{ backgroundColor: '#020617' }}
+              >
                 <Canvas camera={{ position: [3.5, 3.0, 8.0], fov: 45 }}>
                   <ambientLight intensity={0.7} />
                   <pointLight position={[10, 10, 10]} intensity={1.2} />
@@ -427,26 +504,52 @@ export const FourierSeriesSimulation: React.FC = () => {
               }}
             />
 
-            {/* AI Lab CoPilot */}
+            {/* AI Lab CoPilot — works seamlessly for both 2D Graphs and 3D Epicycles */}
             <LiveAILabCoPilot
               experimentContext={{
-                title: 'سلسلة فورييه والتحليل التوافقي',
-                currentStep: `تحليل الدالة: ${expression} عند N = ${N} توافقيات`,
-                userAction: `مراقبة دقة التقريب والخطأ MSE = ${mseError} ونصف الدور L = ${L.toFixed(2)}`,
+                title:
+                  viewMode === '3d'
+                    ? 'سلسلة فورييه ودوائر التدوير الهارمونية (3D Epicycles)'
+                    : 'سلسلة فورييه وتحليل الإشارات والرسوم الرياضية (2D)',
+                currentStep:
+                  viewMode === '3d'
+                    ? `عرض دوائر التدوير 3D للدالة: ${expression} بعدد ${Math.min(N, 10)} دوائر نشطة من أصل N = ${N}`
+                    : `تحليل الدالة: ${expression} عند N = ${N} توافقيات`,
+                userAction:
+                  viewMode === '3d'
+                    ? `تتبّع دوران متجهات فورييه ورسم الموجة ثلاثية الأبعاد (${isAnimating ? 'الحركة نشطة' : 'متوقفة مؤقتاً'})`
+                    : `مراقبة دقة التقريب والخطأ MSE = ${mseError} ونصف الدور L = ${L.toFixed(2)}`,
                 activeMetrics: {
-                  expression: expression,
-                  harmonics: `${N} توافقيات`,
-                  halfPeriod: `${L.toFixed(2)} rad`,
-                  mseError: `${mseError}`,
-                  hasGibbs: discontinuities.length > 0 ? 'نعم (ظاهرة غيبس نشطة ~8.95%)' : 'دالة متصلة بدون قفزات',
-                }
+                  'وضع المشهد الحالي': viewMode === '3d' ? 'دوائر التدوير ثلاثية الأبعاد (3D Epicycles)' : 'الرسوم الرياضية ثنائية الأبعاد (2D)',
+                  'الدالة f(x)': expression,
+                  'عدد التوافقيات N': `${N} توافقيات`,
+                  'دوائر التدوير النشطة': `${Math.min(N, 10)} دوائر متصلة`,
+                  'نصف الدور L': `${L.toFixed(2)} rad`,
+                  'خطأ التقريب MSE': `${mseError}`,
+                  'حالة الحركة': isAnimating ? 'تعمل الآن' : 'متوقفة',
+                  'ظاهرة غيبس': discontinuities.length > 0 ? 'نعم (ظاهرة غيبس نشطة ~8.95%)' : 'دالة متصلة بدون قفزات',
+                },
               }}
-              suggestions={[
-                'لماذا تظل ظاهرة غيبس (القفزة بنسبة ~8.95%) موجودة مهما زاد عدد التوافقات N نحو المالانهاية؟',
-                'كيف يُفسر تعامد دوال الجيب وجيب التمام (Orthogonality) إمكانية عزل كل معامل هارموني بمفرده؟',
-                'ما الفرق بين سلسلة فورييه للدوال الدورية وتحويل فورييه السريع (FFT) للإشارات العامة؟',
-                'كيف تستخدم خوارزميات ضغط MP3 و JPEG تحويلات فورييه للتخلص من الترددات غير المسموعة؟',
-              ]}
+              liveHint={
+                viewMode === '3d'
+                  ? 'كل دائرة تدوير تمثل متجه توافقي بسرعة زاوية n·t ونصف قطر يساوي سعة المعامل التوافقي، ومجموعها يرسم الدالة الأصلية!'
+                  : 'جرّب زيادة عدد التوافقيات N أو التبديل إلى «دوائر التدوير 3D» لترى كيف تتراكب الترددات لرسم الموجة.'
+              }
+              suggestions={
+                viewMode === '3d'
+                  ? [
+                      'كيف تحول دوائر التدوير (Epicycles) مجموع المتجهات الدوارة إلى موجة دقيقة؟',
+                      'لماذا تدور الدوائر الأصغر بسرعة أكبر من الدائرة الأولى؟',
+                      'كيف تتغير أنصاف أقطار الدوائر عند تبديل الدالة من مربعة إلى سن المنشار؟',
+                      'كيف تُستخدم فكرة دوائر فورييه في ضغط الإشارات والصوت؟',
+                    ]
+                  : [
+                      'لماذا تظل ظاهرة غيبس (القفزة بنسبة ~8.95%) موجودة مهما زاد عدد التوافقات N نحو المالانهاية؟',
+                      'كيف يُفسر تعامد دوال الجيب وجيب التمام (Orthogonality) إمكانية عزل كل معامل هارموني بمفرده؟',
+                      'ما الفرق بين سلسلة فورييه للدوال الدورية وتحويل فورييه السريع (FFT) للإشارات العامة؟',
+                      'كيف تستخدم خوارزميات ضغط MP3 و JPEG تحويلات فورييه للتخلص من الترددات غير المسموعة؟',
+                    ]
+              }
             />
           </div>
 

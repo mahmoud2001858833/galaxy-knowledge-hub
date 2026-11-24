@@ -7,11 +7,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
+import { geminiRequest } from '@/services/geminiTransport';
 
 interface LiveAILabCoPilotProps {
   simName?: string;
   experimentName?: string;
-  currentParameters?: Record<string, string | number>;
+  currentParameters?: Record<string, string | number | boolean>;
   currentMetrics?: Record<string, string | number | boolean>;
   experimentContext?: { title?: string; currentStep?: string; userAction?: string; activeMetrics?: Record<string, string | number> };
   suggestions?: string[];
@@ -23,7 +24,12 @@ interface LiveAILabCoPilotProps {
 
 export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
   simName,
+  experimentName,
   currentParameters,
+  currentMetrics,
+  experimentContext,
+  suggestions,
+  hint,
   liveHint,
   defaultAnalysis,
   subject = 'physics'
@@ -35,34 +41,77 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
   const [customQuestion, setCustomQuestion] = useState('');
   const [isCustomMode, setIsCustomMode] = useState(false);
 
-  // Generate deep physical contextual analysis locally if offline
-  const getContextualOfflineAnalysis = (paramsList: string) => {
-    return `🔬 **تحليل المرشد المعملي الفوري لتجربة (${simName}):**\n` +
-      `• **الحالة الفيزيائية الراهنة:** بناءً على المدخلات (${paramsList})، النظام يعمل في نطاق الاستقرار الديناميكي المتوازن.\n` +
-      `• **القانون العلمي الحاكم:** تخضع المنظومة لقوانين الحفظ الفيزيائية (حفظ الطاقة، كمية الحركة، والاتزان).\n` +
-      `• **تحدي المرشد:** جرّب مضاعفة القيمة القصوى أو تقليلها إلى النصف لمشاهدة الاستجابة اللحظية للنظام وحساب نقطة التحول الحرجة!`;
+  const resolvedSimName = simName || experimentName || experimentContext?.title || 'المختبر العلمي التفاعلي';
+  const resolvedHint = liveHint || hint;
+
+  const getMergedParameters = (): Record<string, string | number | boolean> => {
+    const merged: Record<string, string | number | boolean> = {};
+    if (experimentContext?.currentStep) merged['الخطوة الحالية'] = experimentContext.currentStep;
+    if (experimentContext?.userAction) merged['إجراء المستخدم'] = experimentContext.userAction;
+    if (experimentContext?.activeMetrics) Object.assign(merged, experimentContext.activeMetrics);
+    if (currentParameters) Object.assign(merged, currentParameters);
+    if (currentMetrics) Object.assign(merged, currentMetrics);
+    return merged;
   };
 
-  // Request live deep analysis from Gemini AI via Supabase Edge Function
+  // Generate deep physical contextual analysis locally if offline
+  const getContextualOfflineAnalysis = (paramsList: string) => {
+    return `🔬 تحليل المرشد المعملي الفوري لتجربة (${resolvedSimName}):\n\n` +
+      `1. قراءة المشهد الراهن:\nبناءً على القيم الفعلية الحالية (${paramsList || 'الوضع الابتدائي للمحاكاة'})، يمكن ملاحظة تغير سلوك النظام مباشرةً عند تعديل معاملات الطاقة أو السرعة أو وضعية العرض.\n\n` +
+      `2. القانون العلمي الحاكم:\nتخضع المنظومة لقوانين الحفظ الفيزيائية الأساسية (حفظ الطاقة والزخم النسبوي والعلاقة E = γmc² في التصادمات عالية الطاقة).\n\n` +
+      `3. تجربة مقترحة الآن:\nجرّب تغيير الطاقة القصوى أو تفعيل التصادم وتبديل زاوية العرض لترصد الفرق اللحظي في المسارات والقراءات!`;
+  };
+
+  // Request live deep analysis from Gemini AI (gemini-proxy first, then ai-assistant, then contextual fallback)
   const handleRequestAnalysis = async (userQuestion?: string) => {
     setIsAnalyzing(true);
+    setIsExpanded(true);
+    const merged = getMergedParameters();
+    const paramsList = Object.entries(merged)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => `${k}: ${typeof v === 'boolean' ? (v ? 'نعم' : 'لا') : v}`)
+      .join(' | ');
+
     try {
-      const paramsList = Object.entries(currentParameters)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ');
-
       const prompt = userQuestion
-        ? `أنا طالب في مختبر محاكاة علمية تفاعلية لتجربة "${simName}".
-المعطيات والمدخلات الحالية هي: [${paramsList}].
+        ? `أنا طالب في مختبر محاكاة علمية تفاعلية لتجربة "${resolvedSimName}".
+المعطيات والحالة الحالية في المشهد هي: [${paramsList || 'الوضع الافتراضي'}].
 سؤالي المحدد هو: "${userQuestion}".
-أجبني بأسلوب علمي تربوي مشوق وموجز في 3 نقاط محددة مدعومة بالقوانين الفيزيائية.`
-        : `أنا طالب في مختبر محاكاة علمية تفاعلية لتجربة "${simName}".
-المعطيات والمدخلات الفيزيائية الحالية في التجربة هي: [${paramsList}].
-قم بتحليل المشهد العلمي الحالي للطالب بأسلوب تعليمي مشوق ومختصر (3 إلى 4 نقاط مركزة):
+أجبني باللغة العربية بأسلوب علمي تربوي مشوق وموجز في 3 نقاط محددة مدعومة بالقوانين العلمية.`
+        : `أنا طالب في مختبر محاكاة علمية تفاعلية لتجربة "${resolvedSimName}".
+المعطيات والحالة الحالية التي أراها الآن على الشاشة هي: [${paramsList || 'الوضع الافتراضي'}].
+حلّل المشهد العلمي الحالي للطالب باللغة العربية في 3 نقاط مركزة وواضحة:
 1. ماذا يحدث علمياً وفيزيائياً عند هذه القيم بالضبط؟
-2. ما الظاهرة أو القانون العلمي المتحكم هنا؟
-3. نصيحة أو تحدي لتغيير أحد المعاملات وملاحظة ما سيحدث.`;
+2. ما الظاهرة أو القانون العلمي المتحكم فيما أراه الآن؟
+3. خطوة عملية أو تحدٍ ممتع لتغيير أحد المعاملات وملاحظة أثره فوراً.`;
 
+      // 1) Primary: direct server-side Gemini proxy (reliable across all environments)
+      try {
+        const { url, headers } = await geminiRequest('gemini-3.1-flash-lite', { stream: false });
+        const res = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
+          }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const text = json?.candidates?.[0]?.content?.parts
+            ?.map((p: { text?: string }) => p.text ?? '')
+            .join('')
+            .trim();
+          if (text) {
+            setAiAnalysis(text);
+            return;
+          }
+        }
+      } catch {
+        // fall through to ai-assistant edge function
+      }
+
+      // 2) Secondary: Supabase ai-assistant edge function
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: { prompt, subject, useGemini: true }
       });
@@ -73,9 +122,6 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
         setAiAnalysis(getContextualOfflineAnalysis(paramsList));
       }
     } catch {
-      const paramsList = Object.entries(currentParameters)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(', ');
       setAiAnalysis(getContextualOfflineAnalysis(paramsList));
     } finally {
       setIsAnalyzing(false);
@@ -150,12 +196,12 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
             className="p-4 space-y-3"
           >
             {/* Live Observation Banner */}
-            {liveHint && (
+            {resolvedHint && (
               <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-200 dark:bg-cyan-950/30 dark:border-cyan-500/30 flex items-start gap-2.5 text-xs text-cyan-900 dark:text-cyan-200 leading-relaxed shadow-sm">
                 <Lightbulb className="w-4 h-4 text-cyan-600 dark:text-cyan-400 shrink-0 mt-0.5 animate-pulse" />
                 <div>
                   <span className="font-bold text-cyan-700 dark:text-cyan-300 ml-1">ملاحظة فورية:</span>
-                  <span>{liveHint}</span>
+                  <span>{resolvedHint}</span>
                 </div>
               </div>
             )}
@@ -201,6 +247,23 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
               </p>
             )}
 
+            {/* Optional Quick Suggestions */}
+            {suggestions && suggestions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {suggestions.map((s, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isAnalyzing}
+                    onClick={() => handleRequestAnalysis(s)}
+                    className="rounded-full border border-indigo-200 dark:border-indigo-700/60 bg-indigo-50/70 dark:bg-indigo-950/30 px-2.5 py-1 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition text-right disabled:opacity-50"
+                  >
+                    ✦ {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Custom Question Input Toggle */}
             {isCustomMode ? (
               <div className="flex items-center gap-1.5 pt-1">
@@ -239,16 +302,17 @@ export const LiveAILabCoPilot: React.FC<LiveAILabCoPilotProps> = ({
                   size="sm"
                   onClick={() => handleRequestAnalysis()}
                   disabled={isAnalyzing}
-                  className="flex-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-purple-500/20 border border-purple-400/30 flex items-center justify-center gap-2 h-8"
+                  className="flex-1 font-bold text-xs rounded-xl shadow-md border border-blue-400/40 flex items-center justify-center gap-2 h-9 cursor-pointer"
+                  style={{ backgroundImage: 'linear-gradient(135deg, #2563eb, #4f46e5)', color: '#ffffff' }}
                 >
                   {isAnalyzing ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-200" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-100" />
                       <span>جاري التحليل المعملي الذكي...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                      <Sparkles className="w-3.5 h-3.5 text-blue-100" />
                       <span>حلل ما أراه الآن بالذكاء الاصطناعي</span>
                     </>
                   )}
