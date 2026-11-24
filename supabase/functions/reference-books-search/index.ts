@@ -1,4 +1,4 @@
-// reference-books-search: بحث في نصوص مكتبة المراجع لأي مستخدم مسجّل (أو لأي دالة ذكاء اصطناعي تستدعيها).
+// reference-books-search: بحث في نصوص مكتبة المراجع لأي مستخدم مسجّل.
 // الدوال الأخرى على الخادم تستدعي searchReferenceBooks من _shared/reference-knowledge.ts مباشرة دون المرور بهذه الدالة.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, jsonResponse, requireUser } from "../_shared/exam-common.ts";

@@ -1,8 +1,9 @@
 // reference-books-ocr: يقرأ نص دفعة من صور صفحات ممسوحة ضوئياً (OCR بـ Gemini) ويعيده للمتصفح ليقسّمه ويحفظه.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
-  buildFileParts, callGeminiJson, corsHeaders, GeminiError, InPage, jsonResponse, MAX_INLINE_BYTES, MAX_PAGE_IMAGES,
+  buildFileParts, callGeminiJson, corsHeaders, GeminiError, jsonResponse, MAX_INLINE_BYTES, MAX_PAGE_IMAGES,
 } from "../_shared/exam-common.ts";
+import type { InPage } from "../_shared/exam-common.ts";
 import { getCaller, serviceClient } from "../_shared/reference-books.ts";
 
 const SCHEMA = {
