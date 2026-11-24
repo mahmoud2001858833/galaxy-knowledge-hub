@@ -8,7 +8,7 @@ export async function handleBooks(req: Request): Promise<Response> {
   if (!(await requireUser(req))) return jsonResponse({ error: "سجّل الدخول أولاً" }, 401);
   const { data, error } = await serviceClient()
     .from("reference_books")
-    .select("id, title, total_pages, extracted_chars, extraction_method")
+    .select("id, title, total_pages, extracted_chars, extraction_method, grade, subject, semester")
     .eq("status", "ready")
     .order("created_at", { ascending: false })
     .limit(300);
