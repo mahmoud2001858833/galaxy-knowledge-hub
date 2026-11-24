@@ -1,6 +1,7 @@
 /**
- * «مرآة التشريح» drawing engine: turns MediaPipe hand / face landmarks into an x-ray style
- * anatomy overlay (bones, teeth, a few facial muscles) plus labelled leader lines.
+ * «مرآة التشريح» drawing engine: turns MediaPipe hand / face landmarks into a solid, fully
+ * opaque illustrated anatomy overlay (bones, teeth, a few facial muscles) — like a textbook
+ * plate glued onto the live picture, not a translucent x-ray — plus labelled leader lines.
  * Pure canvas code, no React. Colours here are illustration content, not UI chrome.
  */
 import type { AnatomyPartId } from '@/config/anatomyMirror';
@@ -38,24 +39,30 @@ const norm = (a: Pt): Pt => {
 const perp = (a: Pt): Pt => ({ x: -a.y, y: a.x });
 const avg = (...ps: Pt[]): Pt => mul(ps.reduce(add, { x: 0, y: 0 }), 1 / ps.length);
 
-const BONE_LIGHT = '#fbf7ec';
-const BONE_MID = '#e9dfc6';
-const BONE_EDGE = '#b9a982';
-const XRAY = 'rgba(6, 18, 44, 0.58)';
-const CAVITY = 'rgba(8, 6, 4, 0.88)';
+// Solid, opaque bone / cavity palette. No alpha < 1 here — translucency is what made the first
+// version look hazy instead of like a crisp illustrated overlay.
+const BONE_LIGHT = '#fffaf0';
+const BONE_MID = '#ead9b5';
+const BONE_EDGE = '#b89a66';
+const BONE_OUTLINE = 'rgba(58, 42, 20, 0.9)';
+const CAVITY = '#0a0806';
 
 function boneFill(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, w: number) {
   const n = perp(norm(sub(b, a)));
   const m = lerp(a, b, 0.5);
   const g = ctx.createLinearGradient(m.x + n.x * w, m.y + n.y * w, m.x - n.x * w, m.y - n.y * w);
   g.addColorStop(0, BONE_EDGE);
-  g.addColorStop(0.35, BONE_LIGHT);
-  g.addColorStop(0.65, BONE_MID);
+  g.addColorStop(0.3, BONE_LIGHT);
+  g.addColorStop(0.68, BONE_MID);
   g.addColorStop(1, BONE_EDGE);
   return g;
 }
 
-/** A long bone: a waisted shaft with knobbly ends, from a to b (ends pulled in for the joint gap). */
+/**
+ * A long bone: a waisted shaft with knobbly ends, from a to b (ends pulled in for the joint
+ * gap). Fully opaque, with a dark contact shadow for grounding, a crisp outline and a glossy
+ * highlight streak — the look of a solid illustrated bone, not a glowing x-ray.
+ */
 function longBone(ctx: CanvasRenderingContext2D, a0: Pt, b0: Pt, w: number, tuft = false) {
   const d = norm(sub(b0, a0));
   const gap = w * 0.28;
@@ -67,9 +74,11 @@ function longBone(ctx: CanvasRenderingContext2D, a0: Pt, b0: Pt, w: number, tuft
   const end = w * 0.5;
   const waist = w * 0.32;
   ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+  ctx.shadowBlur = w * 0.3;
+  ctx.shadowOffsetX = n.x * w * 0.12;
+  ctx.shadowOffsetY = n.y * w * 0.12;
   ctx.fillStyle = boneFill(ctx, a, b, w);
-  ctx.shadowColor = 'rgba(255, 250, 230, 0.45)';
-  ctx.shadowBlur = w * 0.9;
   ctx.beginPath();
   ctx.moveTo(a.x + n.x * end, a.y + n.y * end);
   ctx.quadraticCurveTo(m.x + n.x * waist, m.y + n.y * waist, b.x + n.x * end, b.y + n.y * end);
@@ -77,19 +86,37 @@ function longBone(ctx: CanvasRenderingContext2D, a0: Pt, b0: Pt, w: number, tuft
   ctx.quadraticCurveTo(m.x - n.x * waist, m.y - n.y * waist, a.x - n.x * end, a.y - n.y * end);
   ctx.closePath();
   ctx.fill();
-  // condyles: two lobes at each end
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Math.max(1, w * 0.06);
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
+  // condyles: two lobes at each end, same bone colour, each with its own crisp edge
   for (const p of [a, b]) {
     for (const s of [-1, 1]) {
       const c = add(p, mul(n, s * w * 0.22));
       ctx.beginPath();
       ctx.arc(c.x, c.y, w * (p === b && tuft ? 0.34 : 0.4), 0, Math.PI * 2);
       ctx.fill();
+      ctx.lineWidth = Math.max(1, w * 0.05);
+      ctx.stroke();
     }
   }
-  ctx.shadowBlur = 0;
+  // glossy highlight streak down the shaft (ivory sheen)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.lineWidth = Math.max(1, w * 0.13);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(lerp(a, m, 0.25).x + n.x * end * 0.32, lerp(a, m, 0.25).y + n.y * end * 0.32);
+  ctx.quadraticCurveTo(
+    m.x + n.x * waist * 0.28,
+    m.y + n.y * waist * 0.28,
+    lerp(m, b, 0.75).x + n.x * end * 0.32,
+    lerp(m, b, 0.75).y + n.y * end * 0.32,
+  );
+  ctx.stroke();
   // marrow line
-  ctx.strokeStyle = 'rgba(160, 140, 100, 0.35)';
-  ctx.lineWidth = Math.max(1, w * 0.08);
+  ctx.strokeStyle = 'rgba(150, 120, 80, 0.5)';
+  ctx.lineWidth = Math.max(1, w * 0.07);
   ctx.beginPath();
   ctx.moveTo(lerp(a, b, 0.18).x, lerp(a, b, 0.18).y);
   ctx.lineTo(lerp(a, b, 0.82).x, lerp(a, b, 0.82).y);
@@ -97,25 +124,71 @@ function longBone(ctx: CanvasRenderingContext2D, a0: Pt, b0: Pt, w: number, tuft
   ctx.restore();
 }
 
+/** A short rounded bone (carpal, trapezium): opaque, shaded, with its own crisp edge so
+ * neighbouring bones read as separate pieces rather than one fused mass. */
 function blob(ctx: CanvasRenderingContext2D, c: Pt, rx: number, ry: number, angle: number) {
   ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = rx * 0.3;
+  ctx.shadowOffsetY = ry * 0.15;
   const g = ctx.createRadialGradient(c.x - rx * 0.3, c.y - ry * 0.3, 1, c.x, c.y, Math.max(rx, ry));
   g.addColorStop(0, BONE_LIGHT);
   g.addColorStop(0.7, BONE_MID);
   g.addColorStop(1, BONE_EDGE);
   ctx.fillStyle = g;
-  ctx.shadowColor = 'rgba(255, 250, 230, 0.4)';
-  ctx.shadowBlur = rx * 0.8;
   ctx.beginPath();
   ctx.ellipse(c.x, c.y, rx, ry, angle, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Math.max(1, rx * 0.14);
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
   ctx.restore();
 }
 
-function polyPath(ctx: CanvasRenderingContext2D, pts: Pt[]) {
+/**
+ * A short bowed bone bridge (zygomatic arch, brow ridge): a solid shaded ribbon from a to b
+ * bulging through control point m, with an outline and a glossy highlight — reused wherever a
+ * flat, raised bone needs more presence than a plain stroke.
+ */
+function ridge(ctx: CanvasRenderingContext2D, a: Pt, m: Pt, b: Pt, width: number) {
+  const d = norm(sub(b, a));
+  const n = perp(d);
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+  ctx.shadowBlur = width * 0.3;
+  ctx.shadowOffsetX = n.x * width * 0.14;
+  ctx.shadowOffsetY = n.y * width * 0.14;
+  const g = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+  g.addColorStop(0, BONE_EDGE);
+  g.addColorStop(0.5, BONE_LIGHT);
+  g.addColorStop(1, BONE_EDGE);
+  ctx.fillStyle = g;
+  ctx.lineJoin = 'round';
   ctx.beginPath();
-  pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+  ctx.moveTo(a.x + n.x * width * 0.5, a.y + n.y * width * 0.5);
+  ctx.quadraticCurveTo(m.x + n.x * width * 0.5, m.y + n.y * width * 0.5, b.x + n.x * width * 0.5, b.y + n.y * width * 0.5);
+  ctx.lineTo(b.x - n.x * width * 0.5, b.y - n.y * width * 0.5);
+  ctx.quadraticCurveTo(m.x - n.x * width * 0.5, m.y - n.y * width * 0.5, a.x - n.x * width * 0.5, a.y - n.y * width * 0.5);
   ctx.closePath();
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Math.max(1, width * 0.1);
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+  ctx.lineWidth = Math.max(1, width * 0.15);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(lerp(a, m, 0.3).x + n.x * width * 0.1, lerp(a, m, 0.3).y + n.y * width * 0.1);
+  ctx.quadraticCurveTo(
+    m.x + n.x * width * 0.1,
+    m.y + n.y * width * 0.1,
+    lerp(m, b, 0.7).x + n.x * width * 0.1,
+    lerp(m, b, 0.7).y + n.y * width * 0.1,
+  );
+  ctx.stroke();
+  ctx.restore();
 }
 
 /** Smooth closed curve through points (midpoint quadratic). */
@@ -148,35 +221,6 @@ export function drawHand(ctx: CanvasRenderingContext2D, lm: Pt[], canvasW: numbe
   const pw = dist(lm[5], lm[17]); // palm width
   const fore = norm(sub(W, lerp(lm[5], lm[17], 0.5))); // towards the elbow
   const thumbSide = norm(sub(lm[2], lm[17]));
-
-  // x-ray tint: hand + forearm silhouette
-  ctx.save();
-  ctx.fillStyle = XRAY;
-  ctx.strokeStyle = XRAY;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.shadowColor = 'rgba(6, 18, 44, 0.6)';
-  ctx.shadowBlur = pl * 0.15;
-  const armEnd = add(W, mul(fore, pl * 1.6));
-  polyPath(ctx, [
-    add(add(W, mul(thumbSide, pw * 0.42)), mul(fore, -pl * 0.05)),
-    lm[2],
-    lm[5],
-    lm[9],
-    lm[13],
-    lm[17],
-    add(W, mul(thumbSide, -pw * 0.45)),
-    add(armEnd, mul(thumbSide, -pw * 0.5)),
-    add(armEnd, mul(thumbSide, pw * 0.48)),
-  ]);
-  ctx.fill();
-  ctx.lineWidth = pl * 0.3;
-  for (const f of [[1, 2, 3, 4], ...FINGERS]) {
-    ctx.beginPath();
-    f.forEach((i, k) => (k ? ctx.lineTo(lm[i].x, lm[i].y) : ctx.moveTo(lm[i].x, lm[i].y)));
-    ctx.stroke();
-  }
-  ctx.restore();
 
   // forearm: radius (thumb side) and ulna
   const radA = add(W, mul(thumbSide, pw * 0.22));
@@ -220,7 +264,6 @@ export function drawHand(ctx: CanvasRenderingContext2D, lm: Pt[], canvasW: numbe
 }
 
 // ------------------------------------------------------------------ face / skull
-const OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
 const JAW_OUTER = [93, 132, 58, 172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288, 361, 323];
 const LOWER_LIP_OUTER = [291, 375, 321, 405, 314, 17, 84, 181, 91, 146, 61];
 const UPPER_LIP_OUTER = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291];
@@ -246,7 +289,7 @@ function along(pts: Pt[], t: number): Pt {
 
 function suture(ctx: CanvasRenderingContext2D, pts: Pt[], amp: number) {
   ctx.save();
-  ctx.strokeStyle = 'rgba(110, 90, 55, 0.7)';
+  ctx.strokeStyle = 'rgba(100, 78, 44, 0.8)';
   ctx.lineWidth = Math.max(1, amp * 0.35);
   ctx.beginPath();
   const steps = 40;
@@ -265,16 +308,18 @@ function suture(ctx: CanvasRenderingContext2D, pts: Pt[], amp: number) {
 
 function muscleFill(ctx: CanvasRenderingContext2D, from: Pt, to: Pt) {
   const g = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
-  g.addColorStop(0, 'rgba(214, 64, 69, 0.82)');
-  g.addColorStop(0.5, 'rgba(178, 34, 48, 0.85)');
-  g.addColorStop(1, 'rgba(214, 64, 69, 0.8)');
+  g.addColorStop(0, '#d8474c');
+  g.addColorStop(0.5, '#9c111f');
+  g.addColorStop(1, '#d8474c');
   return g;
 }
+
+const MUSCLE_OUTLINE = 'rgba(62, 8, 12, 0.85)';
 
 /** Striations: lines between two edges of a muscle. */
 function fibres(ctx: CanvasRenderingContext2D, edgeA: [Pt, Pt], edgeB: [Pt, Pt], n: number, w: number) {
   ctx.save();
-  ctx.strokeStyle = 'rgba(255, 190, 190, 0.45)';
+  ctx.strokeStyle = 'rgba(255, 190, 190, 0.5)';
   ctx.lineWidth = Math.max(1, w);
   for (let i = 1; i < n; i++) {
     const t = i / n;
@@ -311,25 +356,15 @@ export function drawFace(
   const cry = H * 0.56;
   const brow = 0.1; // cranium stops below the brow line
 
-  // 1) x-ray tint over the whole head
-  ctx.save();
-  ctx.fillStyle = XRAY;
-  ctx.shadowColor = XRAY;
-  ctx.shadowBlur = Wd * 0.06;
-  ctx.beginPath();
-  ctx.ellipse(cc.x, cc.y, crx * 1.04, cry * 1.04, roll, Math.PI, Math.PI * 2);
-  ctx.fill();
-  polyPath(ctx, OVAL.map(P));
-  ctx.fill();
-  ctx.restore();
-
-  // 2) muscles that sit under the bone outline (temporalis on the temple)
+  // 1) muscles drawn first (temporalis at the temple) so the opaque skull sits cleanly over them
   if (opts.muscles) {
     for (const s of [-1, 1]) {
       const top1 = at(s * 0.3, -0.5);
       const top2 = at(s * 0.52, -0.22);
       const coronoid = at(s * 0.33, 0.33);
       ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = Wd * 0.015;
       ctx.fillStyle = muscleFill(ctx, top1, coronoid);
       ctx.beginPath();
       ctx.moveTo(coronoid.x, coronoid.y);
@@ -338,12 +373,16 @@ export function drawFace(
       ctx.quadraticCurveTo(ctrl.x, ctrl.y, top2.x, top2.y);
       ctx.closePath();
       ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.lineWidth = Wd * 0.006;
+      ctx.strokeStyle = MUSCLE_OUTLINE;
+      ctx.stroke();
       fibres(ctx, [top1, top2], [coronoid, coronoid], 9, Wd * 0.004);
       ctx.restore();
     }
   }
 
-  // 3) cranium (clipped above the brow), then the sutures
+  // 2) cranium (clipped above the brow, fully opaque), then the sutures
   ctx.save();
   const clipA = at(-2, brow);
   const clipB = at(2, brow);
@@ -357,33 +396,23 @@ export function drawFace(
   ctx.clip();
   const g = ctx.createRadialGradient(cc.x - crx * 0.25, cc.y - cry * 0.35, crx * 0.1, cc.x, cc.y, crx * 1.1);
   g.addColorStop(0, BONE_LIGHT);
-  g.addColorStop(0.65, BONE_MID);
+  g.addColorStop(0.55, BONE_MID);
   g.addColorStop(1, BONE_EDGE);
   ctx.fillStyle = g;
-  ctx.globalAlpha = opts.muscles ? 0.78 : 0.9;
-  ctx.shadowColor = 'rgba(255, 250, 230, 0.35)';
-  ctx.shadowBlur = Wd * 0.05;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+  ctx.shadowBlur = Wd * 0.025;
   ctx.beginPath();
   ctx.ellipse(cc.x, cc.y, crx, cry, roll, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Wd * 0.012;
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
   ctx.restore();
-  suture(ctx, [at(-0.52, -0.26), at(-0.3, -0.5), at(0, -0.57), at(0.3, -0.5), at(0.52, -0.26)], Wd * 0.008);
-  suture(ctx, [at(0, -0.57), at(0, -0.7)], Wd * 0.007);
-  if (opts.muscles) {
-    // the temporalis shows through the thin temporal bone
-    for (const s of [-1, 1]) {
-      ctx.save();
-      ctx.globalAlpha = 0.45;
-      ctx.fillStyle = 'rgba(200, 50, 60, 1)';
-      ctx.beginPath();
-      const c = at(s * 0.42, -0.12);
-      ctx.ellipse(c.x, c.y, Wd * 0.1, H * 0.16, roll, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
+  suture(ctx, [at(-0.52, -0.26), at(-0.3, -0.5), at(0, -0.57), at(0.3, -0.5), at(0.52, -0.26)], Wd * 0.009);
+  suture(ctx, [at(0, -0.57), at(0, -0.7)], Wd * 0.008);
 
-  // 4) mid-face: brow ridge to the upper lip (maxilla + zygomatic region)
+  // 3) mid-face: brow ridge line down to the upper lip (maxilla + zygomatic region), opaque
   const tL = at(-0.5, brow);
   const tR = at(0.5, brow);
   ctx.save();
@@ -391,49 +420,48 @@ export function drawFace(
   mg.addColorStop(0, BONE_LIGHT);
   mg.addColorStop(1, BONE_MID);
   ctx.fillStyle = mg;
-  ctx.globalAlpha = 0.9;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.22)';
+  ctx.shadowBlur = Wd * 0.018;
   smoothPath(ctx, [tL, P(234), P(93), lerp(P(132), P(61), 0.35), ...UPPER_LIP_OUTER.map(P), lerp(P(361), P(291), 0.35), P(323), P(454), tR, at(0, brow - 0.02)]);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Wd * 0.01;
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
   ctx.restore();
-  // cheek hollows below the cheekbones
-  for (const [side, corner] of [
-    [132, 61],
-    [361, 291],
-  ] as const) {
-    const c = lerp(P(side), P(corner), 0.42);
-    ctx.save();
-    const hg = ctx.createRadialGradient(c.x, c.y, 1, c.x, c.y, Wd * 0.13);
-    hg.addColorStop(0, 'rgba(20, 14, 8, 0.6)');
-    hg.addColorStop(1, 'rgba(20, 14, 8, 0)');
-    ctx.fillStyle = hg;
-    ctx.beginPath();
-    ctx.arc(c.x, c.y, Wd * 0.13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
 
-  // 5) mandible (follows the jaw and the lower lip, so it opens with the mouth)
+  // 4) mandible (follows the jaw and the lower lip, so it opens with the mouth), opaque
   ctx.save();
   const jg = ctx.createLinearGradient(P(13).x, P(13).y, P(152).x, P(152).y);
   jg.addColorStop(0, BONE_LIGHT);
   jg.addColorStop(1, BONE_MID);
   ctx.fillStyle = jg;
-  ctx.globalAlpha = 0.93;
-  ctx.shadowColor = 'rgba(255, 250, 230, 0.35)';
-  ctx.shadowBlur = Wd * 0.03;
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.28)';
+  ctx.shadowBlur = Wd * 0.02;
   smoothPath(ctx, [...JAW_OUTER.map(P), lerp(P(323), P(291), 0.3), ...LOWER_LIP_OUTER.map(P), lerp(P(93), P(61), 0.3)]);
   ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.lineWidth = Wd * 0.01;
+  ctx.strokeStyle = BONE_OUTLINE;
+  ctx.stroke();
+  // midline suture (symphysis menti) + chin boss highlight
+  ctx.strokeStyle = 'rgba(100, 78, 44, 0.6)';
+  ctx.lineWidth = Math.max(1, Wd * 0.004);
+  ctx.beginPath();
+  ctx.moveTo(lerp(P(17), P(152), 0.15).x, lerp(P(17), P(152), 0.15).y);
+  ctx.lineTo(P(152).x, P(152).y);
+  ctx.stroke();
   ctx.restore();
   // mental foramina
   for (const i of [176, 400]) {
     const c = lerp(P(i), P(17), 0.45);
-    ctx.fillStyle = 'rgba(40, 30, 18, 0.6)';
+    ctx.fillStyle = 'rgba(35, 26, 14, 0.85)';
     ctx.beginPath();
     ctx.arc(c.x, c.y, Wd * 0.009, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // 6) cheekbones (zygomatic arch) as a raised ridge
+  // 5) cheekbones: a solid zygomatic arch bridge from the temple to the cheekbone
   for (const [eye, sideP] of [
     [33, 234],
     [263, 454],
@@ -441,39 +469,40 @@ export function drawFace(
     const a = add(lerp(P(eye), P(sideP), 0.05), mul(fy, ew * 0.55));
     const b = add(P(sideP), mul(fy, H * 0.04));
     const m = add(lerp(a, b, 0.5), mul(fy, ew * 0.25));
-    ctx.save();
-    ctx.strokeStyle = BONE_LIGHT;
-    ctx.lineCap = 'round';
-    ctx.lineWidth = ew * 0.3;
-    ctx.shadowColor = 'rgba(255, 250, 230, 0.6)';
-    ctx.shadowBlur = ew * 0.3;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.quadraticCurveTo(m.x, m.y, b.x, b.y);
-    ctx.stroke();
-    ctx.restore();
+    ridge(ctx, a, m, b, ew * 0.34);
   }
 
-  // 7) eye sockets
+  // 6) brow ridge (supraorbital ridge) above each eye socket
+  for (const s of [-1, 1] as const) {
+    const a = at(s * 0.1, -0.06);
+    const b = at(s * 0.48, 0.04);
+    const m = add(lerp(a, b, 0.5), mul(fy, -ew * 0.16));
+    ridge(ctx, a, m, b, ew * 0.26);
+  }
+
+  // 7) eye sockets: just the bone rim, opaque — the real eye stays visible inside it
   const eyes = [avg(P(33), P(133)), avg(P(263), P(362))];
   for (const c of eyes) {
     ctx.save();
-    const og = ctx.createRadialGradient(c.x, c.y, ew * 0.1, c.x, c.y, ew * 0.8);
-    og.addColorStop(0, 'rgba(3, 3, 6, 0.92)');
-    og.addColorStop(0.75, 'rgba(25, 18, 10, 0.85)');
-    og.addColorStop(1, 'rgba(60, 48, 30, 0.6)');
-    ctx.fillStyle = og;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+    ctx.shadowBlur = ew * 0.18;
+    const og = ctx.createLinearGradient(c.x - ew * 0.5, c.y - ew * 0.5, c.x + ew * 0.5, c.y + ew * 0.5);
+    og.addColorStop(0, BONE_LIGHT);
+    og.addColorStop(1, BONE_MID);
+    ctx.strokeStyle = og;
+    ctx.lineWidth = ew * 0.17;
     ctx.beginPath();
-    ctx.ellipse(c.x, c.y - ew * 0.06, ew * 0.78, ew * 0.66, roll, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = BONE_LIGHT;
-    ctx.lineWidth = ew * 0.12;
-    ctx.globalAlpha = 0.85;
+    ctx.ellipse(c.x, c.y - ew * 0.04, ew * 0.8, ew * 0.68, roll, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = BONE_OUTLINE;
+    ctx.lineWidth = Math.max(1, ew * 0.03);
     ctx.stroke();
     ctx.restore();
   }
 
-  // 8) nasal bones and the nasal cavity (pear-shaped opening)
+  // 8) nasal bones and the nasal cavity (the skull's actual opening, so a solid dark cavity
+  // with a visible septum is the anatomically correct look, not a transparency issue)
   const nTop = lerp(P(6), P(4), 0.42);
   const nW = dist(P(98), P(327));
   longBone(ctx, P(6), nTop, ew * 0.32);
@@ -490,7 +519,7 @@ export function drawFace(
   ctx.bezierCurveTo(nr.x, nr.y - fy.y * nW * 0.2, nTop.x + fx.x * nW * 0.35, nTop.y + fx.y * nW * 0.35, nTop.x, nTop.y);
   ctx.fill();
   // septum
-  ctx.strokeStyle = 'rgba(230, 220, 195, 0.7)';
+  ctx.strokeStyle = 'rgba(230, 220, 195, 0.75)';
   ctx.lineWidth = nW * 0.05;
   ctx.beginPath();
   const sTop = lerp(nTop, nb, 0.35);
@@ -499,17 +528,17 @@ export function drawFace(
   ctx.stroke();
   ctx.restore();
 
-  // 9) orbicularis oris (around the lips), drawn before the teeth
+  // 9) orbicularis oris (around the lips), drawn before the teeth, opaque
   const mw = dist(P(61), P(291));
   if (opts.muscles) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(200, 45, 58, 0.82)';
-    ctx.lineWidth = mw * 0.16;
+    ctx.strokeStyle = '#c8303c';
+    ctx.lineWidth = mw * 0.17;
     ctx.lineJoin = 'round';
     smoothPath(ctx, [...UPPER_LIP_OUTER.map(P), ...LOWER_LIP_OUTER.slice(1, -1).map(P)]);
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255, 190, 190, 0.35)';
-    ctx.lineWidth = Math.max(1, mw * 0.012);
+    ctx.strokeStyle = 'rgba(255, 190, 190, 0.45)';
+    ctx.lineWidth = Math.max(1, mw * 0.014);
     ctx.stroke();
     ctx.restore();
   }
@@ -529,12 +558,12 @@ export function drawFace(
       const tip = add(base, mul(fy, -dir * h * 0.15));
       const root = add(base, mul(fy, -dir * h));
       ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = w * 0.25;
       const tg = ctx.createLinearGradient(root.x, root.y, tip.x, tip.y);
       tg.addColorStop(0, '#e8dcc0');
       tg.addColorStop(1, '#fffdf6');
       ctx.fillStyle = tg;
-      ctx.strokeStyle = 'rgba(90, 70, 40, 0.55)';
-      ctx.lineWidth = Math.max(1, mw * 0.008);
       ctx.beginPath();
       const half = mul(fx, w / 2);
       ctx.moveTo(root.x - half.x, root.y - half.y);
@@ -543,6 +572,9 @@ export function drawFace(
       ctx.quadraticCurveTo(tip.x + mul(fy, dir * h * 0.15).x, tip.y + mul(fy, dir * h * 0.15).y, tip.x - half.x * 0.9, tip.y - half.y * 0.9);
       ctx.closePath();
       ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = 'rgba(90, 70, 40, 0.7)';
+      ctx.lineWidth = Math.max(1, mw * 0.01);
       ctx.stroke();
       ctx.restore();
     }
@@ -550,7 +582,7 @@ export function drawFace(
   drawRow(upper, 1);
   drawRow(lower, -1);
 
-  // 11) masseter over the jaw angle
+  // 11) masseter over the jaw angle, opaque
   let masseterAt: Pt | null = null;
   if (opts.muscles) {
     for (const [sideP, angleP, s] of [
@@ -562,9 +594,15 @@ export function drawFace(
       const bot2 = lerp(P(angleP), P(152), 0.18);
       const bot1 = lerp(P(angleP), P(sideP), 0.12);
       ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = Wd * 0.012;
       ctx.fillStyle = muscleFill(ctx, top1, bot2);
       smoothPath(ctx, [top1, lerp(top1, top2, 0.5), top2, lerp(top2, bot2, 0.5), bot2, lerp(bot2, bot1, 0.5), bot1, lerp(bot1, top1, 0.5)]);
       ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.lineWidth = Wd * 0.006;
+      ctx.strokeStyle = MUSCLE_OUTLINE;
+      ctx.stroke();
       fibres(ctx, [top1, top2], [bot1, bot2], 8, Wd * 0.003);
       ctx.restore();
       if (s === 1) masseterAt = avg(top1, top2, bot1, bot2);
