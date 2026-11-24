@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Layers, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
+import { BookOpen, Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Layers, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { TeamChat } from './TeamChat';
 import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
 import { SupervisorCommHub } from './SupervisorCommHub';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
+import { ReferenceLibraryPanel } from './ReferenceLibraryPanel';
 import { RoleTasksIntelligenceHub } from './RoleTasksIntelligenceHub';
 import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
 import { roleBasePoints, usePointsSettings } from '@/components/admin/points/pointsApi';
@@ -463,6 +464,9 @@ export const EmployeesControlCenter: React.FC = () => {
           <TabsTrigger value="page-files" className="gap-1.5 rounded-xl">
             <FolderOpen className="h-4 w-4" /> مكان الملفات
           </TabsTrigger>
+          <TabsTrigger value="reference-library" className="gap-1.5 rounded-xl">
+            <BookOpen className="h-4 w-4" /> مكتبة المراجع
+          </TabsTrigger>
           <TabsTrigger value="roles" className="gap-1.5 rounded-xl">
             <UserCog className="h-4 w-4" /> الأدوار والإيميلات
           </TabsTrigger>
@@ -495,6 +499,10 @@ export const EmployeesControlCenter: React.FC = () => {
 
         <TabsContent value="page-files">
           <PageManagerFilesHub />
+        </TabsContent>
+
+        <TabsContent value="reference-library">
+          <ReferenceLibraryPanel me={userId} isLead />
         </TabsContent>
 
         <TabsContent value="roles" className="space-y-4">
