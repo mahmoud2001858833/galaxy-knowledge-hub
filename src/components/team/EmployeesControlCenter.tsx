@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { BookOpen, Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Layers, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
+import { BookOpen, Bell, ClipboardList, Coffee, Crown, Eye, FolderOpen, Glasses, Layers, Loader2, MessagesSquare, Plus, Trash2, UserCheck, UserCog, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { DayOffAdminPanel, MemberDayOffQuickToggle } from './DayOffControls';
 import { SupervisorCommHub } from './SupervisorCommHub';
 import { PageManagerFilesHub } from './PageManagerFilesHub';
 import { ReferenceLibraryPanel } from './ReferenceLibraryPanel';
+import { PersonaPreviewPanel } from './PersonaPreview';
 import { RoleTasksIntelligenceHub } from './RoleTasksIntelligenceHub';
 import { ScreenWatchPanel } from '@/components/screenWatch/ScreenWatchPanel';
 import { roleBasePoints, usePointsSettings } from '@/components/admin/points/pointsApi';
@@ -470,6 +471,9 @@ export const EmployeesControlCenter: React.FC = () => {
           <TabsTrigger value="roles" className="gap-1.5 rounded-xl">
             <UserCog className="h-4 w-4" /> الأدوار والإيميلات
           </TabsTrigger>
+          <TabsTrigger value="persona-preview" className="gap-1.5 rounded-xl">
+            <Glasses className="h-4 w-4" /> معاينة لوحة موظف
+          </TabsTrigger>
           <TabsTrigger value="dayoff" className="gap-1.5 rounded-xl">
             <Coffee className="h-4 w-4" /> عدم وجود مهام ({dayOffMap.size})
           </TabsTrigger>
@@ -521,6 +525,10 @@ export const EmployeesControlCenter: React.FC = () => {
               />
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="persona-preview">
+          <PersonaPreviewPanel members={members} />
         </TabsContent>
 
         <TabsContent value="dayoff">

@@ -312,7 +312,15 @@ while [ $# -gt 0 ]; do
   esac
 done
 case " ${BLOCKED_GIT.join(' ')} " in *" $sub "*)
-  if [ "$sub" = branch ] && [ "$2" = --show-current ] && [ $# -eq 2 ]; then :; else ${refuse('git $sub').trim()}; fi;;
+  ro=0
+  if [ "$sub" = branch ]; then
+    # listing branches only reads: allow it (creating, deleting or renaming stays blocked)
+    ro=1
+    for a in "$@"; do
+      case "$a" in branch|-a|-r|-l|-v|-vv|--all|--remotes|--list|--show-current|--verbose|--no-color) ;; *) ro=0;; esac
+    done
+  fi
+  [ $ro = 1 ] || { ${refuse('git $sub').trim()}; };;
 esac
 exec ${JSON.stringify(REAL_GIT)} "$@"
 `,
@@ -1055,6 +1063,10 @@ async function uploadImage(cfg, api, jobId, file, out) {
     out.push('err', `Could not upload ${basename(real)}: ${e.message}\n`);
   }
 }
+// `git branch` that only lists (-a, --list, --show-current…) reads and is allowed; anything else stays blocked.
+const READONLY_GIT_BRANCH =
+  /(^|[;&|(\s])git\s+branch(?:\s+(?:-a|-r|-l|-v|-vv|--all|--remotes|--list|--show-current|--verbose|--no-color))*\s*(?=$|[;&|)])/g;
+const isBlockedCommand = (cmd) => BLOCKED_COMMAND.test(cmd.replace(READONLY_GIT_BRANCH, '$1'));
 const BLOCKED_COMMAND = new RegExp(`(^|[;&|(\\s])(git\\s+(${BLOCKED_GIT.filter((c) => c !== 'config').join('|')})\\b|(${BLOCKED_TOOLS.join('|')})\\s)`);
 
 // Prints one finished step; returns true for a step that ends the agent's turn.
@@ -1235,7 +1247,7 @@ async function runAntigravity(cfg, job, out, api) {
     }
     for (const step of steps) {
       const cmd = step.runCommand?.proposedCommandLine ?? step.runCommand?.commandLine ?? '';
-      if (cmd && BLOCKED_COMMAND.test(cmd)) {
+      if (cmd && isBlockedCommand(cmd)) {
         out.push('err', `Blocked: "${cmd.slice(0, 120)}" (no commit, push or deploy from the web terminal). The agent was stopped.\n`);
         stop = 'cancelled';
         break;

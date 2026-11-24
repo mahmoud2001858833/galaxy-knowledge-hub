@@ -55,11 +55,12 @@ export function useTerminalAccess(me: string) {
   return has;
 }
 
-const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean; members: TeamMember[] }> = ({
+const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean; members: TeamMember[]; previewOnly?: boolean }> = ({
   role,
   me,
   isLead,
   members,
+  previewOnly,
 }) => {
   const { tasks, loading, reload } = useTeamTasks();
   const notifications = useTeamNotifications();
@@ -71,12 +72,21 @@ const Workspace: React.FC<{ role: WorkerRole; me: string; isLead: boolean; membe
     );
   }
   return (
-    <RoleWorkspace role={role} me={me} isLead={isLead} members={members} tasks={tasks} notifications={notifications} reloadTasks={reload} />
+    <RoleWorkspace
+      role={role}
+      me={me}
+      isLead={isLead}
+      members={members}
+      tasks={tasks}
+      notifications={notifications}
+      reloadTasks={reload}
+      previewOnly={previewOnly}
+    />
   );
 };
 
 /** Renders the dashboard for one tab id from teamTabsFor(). */
-export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[] }> = ({ tab, me, roles }) => {
+export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[]; previewOnly?: boolean }> = ({ tab, me, roles, previewOnly }) => {
   const { members } = useTeamMembers();
   return (
     <div className="space-y-4" dir="rtl">
@@ -92,16 +102,22 @@ export const TeamDashboard: React.FC<{ tab: string; me: string; roles: TeamRole[
           <TerminalWorkspace />
         </Suspense>
       ) : (
-        <Workspace role={tab as WorkerRole} me={me} isLead={isLeadRole(roles)} members={members} />
+        <Workspace role={tab as WorkerRole} me={me} isLead={isLeadRole(roles)} members={members} previewOnly={previewOnly} />
       )}
     </div>
   );
 };
 
-/** Role tab bar + the selected dashboard. */
-export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: string }> = ({ me, roles, initialTab }) => {
+/** Role tab bar + the selected dashboard. Pass `previewOnly` to show someone else's panel without letting any action in it actually run. */
+export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: string; previewOnly?: boolean }> = ({
+  me,
+  roles,
+  initialTab,
+  previewOnly,
+}) => {
   const terminal = useTerminalAccess(me);
-  const tabs = teamTabsFor(roles, terminal);
+  // the terminal is a live session tied to whoever is really signed in, not to the previewed person — never show it in preview
+  const tabs = teamTabsFor(roles, terminal).filter((t) => !previewOnly || t.id !== 'terminal');
   const [tab, setTab] = useState(initialTab && tabs.some((t) => t.id === initialTab) ? initialTab : tabs[0]?.id);
 
   // terminal access arrives after the first render: honour ?tab=terminal once it does
@@ -140,7 +156,7 @@ export const TeamPortal: React.FC<{ me: string; roles: TeamRole[]; initialTab?: 
         ))}
         <MyPointsBadge me={me} />
       </div>
-      {tab !== 'terminal' && <TeamDashboard tab={tab} me={me} roles={roles} />}
+      {tab !== 'terminal' && <TeamDashboard tab={tab} me={me} roles={roles} previewOnly={previewOnly} />}
       {/* The terminal stays mounted once opened: leaving its tab only hides it, so the session (and a
           running AI job's live output) is not closed and restarted every time the member switches tabs. */}
       {terminalOpened && tabs.some((t) => t.id === 'terminal') && (

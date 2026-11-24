@@ -26,6 +26,8 @@ interface RoleWorkspaceProps {
   tasks: TeamTask[];
   notifications: TeamNotification[];
   reloadTasks: () => void;
+  /** Admin viewing this as someone else's panel: everything shows, but no action actually executes. */
+  previewOnly?: boolean;
 }
 
 const TaskRow: React.FC<{ task: TeamTask; onOpen: () => void; note?: string }> = ({ task, onOpen, note }) => (
@@ -50,7 +52,7 @@ const TaskRow: React.FC<{ task: TeamTask; onOpen: () => void; note?: string }> =
  * One role's dashboard: (أ) قسم المسؤول — tasks handed to this person and role-specific inputs,
  * (ب) the university group chat, (ج) the task execution board.
  */
-export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, members, tasks, notifications, reloadTasks }) => {
+export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, members, tasks, notifications, reloadTasks, previewOnly }) => {
   const [open, setOpen] = useState<TeamTask | null>(null);
   const [activeTab, setActiveTab] = useState<string>('inbox');
   const { files: pageFiles } = usePageManagerFiles();
@@ -69,7 +71,7 @@ export const RoleWorkspace: React.FC<RoleWorkspaceProps> = ({ role, me, isLead, 
     return to ? to === me : n.recipient_role === role;
   });
 
-  const canWork = (t: TeamTask) => t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me);
+  const canWork = (t: TeamTask) => !previewOnly && t.assignee_role === role && (t.assignee_user_id === null || t.assignee_user_id === me);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} dir="rtl" className="w-full">
