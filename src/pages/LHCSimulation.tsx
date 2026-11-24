@@ -348,32 +348,44 @@ const LHCSimulation = () => {
                   status={state.collisionActive ? 'danger' : state.beamsLaunched ? 'nominal' : 'idle'}
                 />
 
-                {/* Camera Angle Presets */}
-                <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
-                  <button
-                    onClick={() => setCameraPreset('overview')}
-                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'overview' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                  >
-                    المنظور العام
-                  </button>
-                  <button
-                    onClick={() => setCameraPreset('detector')}
-                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'detector' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                  >
-                    مقطع الكاشف
-                  </button>
-                  <button
-                    onClick={() => setCameraPreset('tunnel')}
-                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'tunnel' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                  >
-                    أنبوب الحزمة
-                  </button>
-                  <button
-                    onClick={() => setCameraPreset('collision')}
-                    className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'collision' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                  >
-                    نقطة التصادم
-                  </button>
+                {/* Camera Angle Presets — high-contrast in both Light & Dark modes */}
+                <div
+                  data-preserve-dark
+                  className="absolute top-3 right-3 flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl border text-xs z-20 shadow-lg backdrop-blur-md"
+                  style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: 'rgba(100, 116, 139, 0.55)' }}
+                >
+                  {([
+                    { id: 'overview', label: 'المنظور العام' },
+                    { id: 'detector', label: 'مقطع الكاشف' },
+                    { id: 'tunnel', label: 'أنبوب الحزمة' },
+                    { id: 'collision', label: 'نقطة التصادم' },
+                  ] as const).map((preset) => {
+                    const isActive = cameraPreset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setCameraPreset(preset.id)}
+                        className="px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer border"
+                        style={
+                          isActive
+                            ? {
+                                backgroundColor: '#0284c7',
+                                color: '#ffffff',
+                                borderColor: '#38bdf8',
+                                boxShadow: '0 0 12px rgba(56, 189, 248, 0.45)',
+                              }
+                            : {
+                                backgroundColor: '#1e293b',
+                                color: '#e2e8f0',
+                                borderColor: 'rgba(148, 163, 184, 0.35)',
+                              }
+                        }
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {/* Live Assistant Hint */}
@@ -417,15 +429,23 @@ const LHCSimulation = () => {
 
             {/* Live AI Lab CoPilot */}
             <LiveAILabCoPilot
-              experimentName="مصادم الهدرونات الكبير ومسارات الجسيمات"
+              experimentName="مصادم الهدرونات الكبير ومسارات الجسيمات (LHC)"
               currentMetrics={{
-                energyTeV: Number((state.beamEnergy / 1000).toFixed(2)),
-                speedRatio: Number((state.beamSpeed * 100).toFixed(3)),
-                lorentzGamma,
-                particleType: state.particleType,
-                beamsLaunched: state.beamsLaunched,
-                collisionActive: state.collisionActive,
-                luminosity: state.luminosity,
+                'زاوية الكاميرا الحالية':
+                  cameraPreset === 'overview'
+                    ? 'المنظور العام'
+                    : cameraPreset === 'detector'
+                    ? 'مقطع الكاشف ATLAS'
+                    : cameraPreset === 'tunnel'
+                    ? 'أنبوب الحزمة'
+                    : 'نقطة التصادم',
+                'طاقة الحزمة (TeV)': Number((state.beamEnergy / 1000).toFixed(2)),
+                'نسبة سرعة الضوء (%)': Number((state.beamSpeed * 100).toFixed(3)),
+                'معامل لورنتز (γ)': lorentzGamma,
+                'نوع الجسيم': state.particleType === 'lead-ion' ? 'أيونات الرصاص' : 'بروتونات',
+                'حالة الحزم': state.beamsLaunched ? 'مُطلَقة وتدور' : 'متوقفة',
+                'حالة التصادم': state.collisionActive ? 'تصادم نشط الآن' : 'لم يبدأ التصادم بعد',
+                'اللمعانية (Luminosity)': state.luminosity,
               }}
               hint="قم بزيادة طاقة الحزمة إلى 14 TeV لتوسيع فرص رصد قنوات اضمحلال بوزون هيغز والجسيمات الثقيلة."
             />

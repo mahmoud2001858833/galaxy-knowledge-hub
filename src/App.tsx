@@ -51,6 +51,8 @@ const StudyScheduleCreator = wrap(lazy(() => import("./pages/StudyScheduleCreato
 const StudentProgress = wrap(lazy(() => import("./pages/StudentProgress")));
 const NotFound = wrap(lazy(() => import("./pages/NotFound")));
 const SectionHubPage = wrap(lazy(() => import("./pages/sections/SectionHubPage")));
+const IdeaCompetition = wrap(lazy(() => import("./pages/IdeaCompetition")));
+const AnatomyMirror = wrap(lazy(() => import("./pages/AnatomyMirror")));
 const FutureProjectsPage = wrap(lazy(() => import("./pages/sections/FutureProjectsPage")));
 const TeamPage = wrap(lazy(() => import("./pages/team/TeamPage")));
 const TerminalPage = wrap(lazy(() => import("./pages/terminal/TerminalPage")));
@@ -449,6 +451,10 @@ const router = createBrowserRouter([
         element: <PublicRoute><SectionHubPage sectionId="exams" /></PublicRoute>,
       },
       {
+        path: 'idea-competition',
+        element: <PublicRoute><IdeaCompetition /></PublicRoute>,
+      },
+      {
         path: 'labs',
         element: <PublicRoute><SectionHubPage sectionId="labs" /></PublicRoute>,
       },
@@ -752,6 +758,10 @@ const router = createBrowserRouter([
       {
         path: 'scientific-simulations-hub',
         element: <PublicRoute><ScientificSimulationsHub /></PublicRoute>,
+      },
+      {
+        path: 'anatomy-mirror',
+        element: <PublicRoute><AnatomyMirror /></PublicRoute>,
       },
       {
         path: 'experiments-section',

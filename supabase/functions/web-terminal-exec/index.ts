@@ -509,12 +509,22 @@ serve(async (req) => {
 
   let body: {
     action?: string; session_id?: string; command?: string; resume_session?: string; job_id?: string; name?: string;
-    device_id?: string; auth_key?: string; content_type?: string; project?: string;
+    device_id?: string; auth_key?: string; content_type?: string; project?: string; command_b64?: string;
   };
   try {
     body = await req.json();
   } catch {
     return json({ error: 'bad request' }, 400);
+  }
+
+  // The page sends the command base64-encoded (filters on some networks drop bodies with plain links)
+  if (typeof body.command_b64 === 'string') {
+    try {
+      const bin = atob(body.command_b64);
+      body.command = new TextDecoder().decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0)));
+    } catch {
+      return json({ error: 'bad request' }, 400);
+    }
   }
 
   if (body.action === 'bridge-upload') {

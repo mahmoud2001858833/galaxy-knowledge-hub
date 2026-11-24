@@ -11,7 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, ReferenceLine } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  ReferenceLine,
+  ReferenceArea,
+  Tooltip,
+} from 'recharts';
 
 const BlackbodyRadiationSimulation = () => {
   const navigate = useNavigate();
@@ -40,12 +50,17 @@ const BlackbodyRadiationSimulation = () => {
   const c = 3e8; // Speed of light
   const k = 1.381e-23; // Boltzmann constant
 
-  // Planck's law function
+  // Planck's law function (clamped exponent to avoid Infinity/NaN artifacts at extreme T/λ)
   const planckFunction = (wavelength: number, temperature: number) => {
     const lambda = wavelength * 1e-9;
+    const exponent = (h * c) / (lambda * k * Math.max(temperature, 1));
+    if (!Number.isFinite(exponent) || exponent > 700) return 0;
+    const expMinusOne = Math.exp(exponent) - 1;
+    if (expMinusOne <= 0) return 0;
     const numerator = 2 * h * c * c;
-    const denominator = Math.pow(lambda, 5) * (Math.exp((h * c) / (lambda * k * temperature)) - 1);
-    return numerator / denominator;
+    const denominator = Math.pow(lambda, 5) * expMinusOne;
+    const val = numerator / denominator;
+    return Number.isFinite(val) && val > 0 ? val : 0;
   };
 
   // Wien's displacement law
@@ -280,13 +295,13 @@ const BlackbodyRadiationSimulation = () => {
                         value={[tempDisplayValue]}
                         onValueChange={handleTemperatureChange}
                         min={27}
-                        max={6000}
+                        max={10000}
                         step={1}
                         className="w-full"
                       />
-                      <div className="flex justify-between text-xs text-gray-400">
+                      <div className="flex justify-between text-xs text-gray-300">
                         <span>27°C</span>
-                        <span>6000°C</span>
+                        <span>10000°C</span>
                       </div>
                     </div>
 
@@ -360,99 +375,162 @@ const BlackbodyRadiationSimulation = () => {
               </div>
 
               {/* Main Graph Area */}
-              <div className="lg:col-span-3">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-[600px]">
-                  <CardHeader>
-                    <CardTitle className="text-blue-300 flex items-center justify-between">
-                      <span className="flex items-center">
-                        <Eye className="w-5 h-5 mr-2" />
+              <div className="lg:col-span-3 space-y-4">
+                <Card className="bg-white/10 backdrop-blur-md border-white/20 overflow-hidden flex flex-col">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-blue-200 flex flex-wrap items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <Eye className="w-5 h-5 shrink-0" />
                         منحنى بلانك للإشعاع
                       </span>
-                      <Badge variant="outline" className="text-blue-300 border-blue-300">
-                        T = {temperatureCelsius}°C
+                      <Badge variant="outline" className="text-blue-200 border-blue-300/60 bg-blue-950/30">
+                        T = {temperatureCelsius}°C ({temperatureKelvin.toFixed(0)} K)
                       </Badge>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="h-[calc(600px-70px)] p-4">
-                    <div className="relative h-full">
-                      <div className="h-full bg-gradient-to-br from-black/80 to-gray-900/80 rounded-lg p-4 border border-gray-600/30">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart 
-                            data={plotData} 
-                            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                            <XAxis 
-                              dataKey="wavelength" 
-                              stroke="white"
-                              label={{ 
-                                value: 'الطول الموجي (نانومتر)', 
-                                position: 'insideBottom', 
-                                offset: -10, 
-                                style: { textAnchor: 'middle', fill: 'white' } 
-                              }}
-                              tick={{ fill: 'white', fontSize: 12 }}
-                            />
-                            <YAxis 
-                              stroke="white"
-                              label={{ 
-                                value: 'الشدة النسبية', 
-                                angle: -90, 
-                                position: 'insideLeft', 
-                                style: { textAnchor: 'middle', fill: 'white' } 
-                              }}
-                              tick={{ fill: 'white', fontSize: 12 }}
-                            />
-                            
-                            {/* Peak wavelength indicator */}
-                            <ReferenceLine 
-                              x={wienDisplacement} 
-                              stroke="yellow" 
-                              strokeWidth={3} 
-                              strokeDasharray="5 5"
-                              label={{ value: `ذروة الإشعاع ${wienDisplacement.toFixed(0)} nm`, position: "top", style: { fill: 'yellow', fontWeight: 'bold' } }}
-                            />
-                            
-                            {/* Enhanced main curve */}
-                            <Line 
-                              type="monotone" 
-                              dataKey="intensity" 
-                              stroke="#00ff88"
-                              strokeWidth={4}
-                              dot={false}
-                              connectNulls={false}
-                              filter="url(#glow)"
-                            />
-                            
-                            <defs>
-                              <filter id="glow">
-                                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                <feMerge> 
-                                  <feMergeNode in="coloredBlur"/>
-                                  <feMergeNode in="SourceGraphic"/>
-                                </feMerge>
-                              </filter>
-                            </defs>
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                  <CardContent className="p-3 sm:p-5 pt-0 space-y-4">
+                    {/* Clean seamless chart surface — no harsh black corners or clipping artifacts */}
+                    <div className="w-full h-[320px] sm:h-[400px] lg:h-[450px] bg-slate-900/45 rounded-2xl p-2 sm:p-4 border border-white/15 overflow-hidden">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={plotData}
+                          margin={{ top: 24, right: 18, left: 10, bottom: 26 }}
+                        >
+                          <defs>
+                            <linearGradient id="planckCurveFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#34d399" stopOpacity={0.42} />
+                              <stop offset="85%" stopColor="#38bdf8" stopOpacity={0.08} />
+                              <stop offset="100%" stopColor="#38bdf8" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="visibleSpectrumBand" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.28} />
+                              <stop offset="22%" stopColor="#3b82f6" stopOpacity={0.28} />
+                              <stop offset="45%" stopColor="#22c55e" stopOpacity={0.28} />
+                              <stop offset="68%" stopColor="#eab308" stopOpacity={0.28} />
+                              <stop offset="85%" stopColor="#f97316" stopOpacity={0.28} />
+                              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.28} />
+                            </linearGradient>
+                          </defs>
 
-                      {/* Visible spectrum bar */}
-                      {showVisibleSpectrum && (
-                        <div className="absolute bottom-16 left-20 right-8 h-8 rounded-md overflow-hidden border-2 border-white/40">
-                          <div className="h-full bg-gradient-to-r from-purple-600 via-blue-500 via-green-500 via-yellow-500 via-orange-500 to-red-600"></div>
-                          <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-2">
-                            <span className="text-xs text-white font-bold bg-black/70 px-2 py-1 rounded">380nm</span>
-                            <span className="text-xs text-white font-bold bg-black/70 px-2 py-1 rounded">750nm</span>
-                          </div>
-                        </div>
-                      )}
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" vertical={true} />
+
+                          <XAxis
+                            dataKey="wavelength"
+                            type="number"
+                            domain={[100, 3000]}
+                            ticks={[100, 380, 750, 1200, 1800, 2400, 3000]}
+                            stroke="rgba(226,232,240,0.75)"
+                            tickLine={{ stroke: 'rgba(226,232,240,0.4)' }}
+                            axisLine={{ stroke: 'rgba(226,232,240,0.45)' }}
+                            tick={{ fill: '#e2e8f0', fontSize: 11 }}
+                            label={{
+                              value: 'الطول الموجي (نانومتر)',
+                              position: 'insideBottom',
+                              offset: -14,
+                              style: { textAnchor: 'middle', fill: '#cbd5e1', fontSize: 12, fontWeight: 600 },
+                            }}
+                          />
+                          <YAxis
+                            domain={[0, 'auto']}
+                            stroke="rgba(226,232,240,0.75)"
+                            tickLine={{ stroke: 'rgba(226,232,240,0.4)' }}
+                            axisLine={{ stroke: 'rgba(226,232,240,0.45)' }}
+                            tick={{ fill: '#e2e8f0', fontSize: 11 }}
+                            width={52}
+                            label={{
+                              value: 'الشدة النسبية',
+                              angle: -90,
+                              position: 'insideLeft',
+                              offset: 4,
+                              style: { textAnchor: 'middle', fill: '#cbd5e1', fontSize: 12, fontWeight: 600 },
+                            }}
+                          />
+
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                              border: '1px solid rgba(148, 163, 184, 0.25)',
+                              borderRadius: '12px',
+                              color: '#f8fafc',
+                              fontSize: '12px',
+                            }}
+                            formatter={(value: number) => [Number(value).toFixed(3), 'الشدة النسبية']}
+                            labelFormatter={(label) => `الطول الموجي: ${Math.round(Number(label))} nm`}
+                          />
+
+                          {/* True mathematically aligned visible spectrum band inside plot */}
+                          {showVisibleSpectrum && (
+                            <ReferenceArea
+                              x1={380}
+                              x2={750}
+                              fill="url(#visibleSpectrumBand)"
+                              stroke="rgba(255,255,255,0.22)"
+                              strokeDasharray="3 3"
+                              ifOverflow="hidden"
+                            />
+                          )}
+
+                          {/* Peak wavelength indicator (only drawn inside visible X domain so no edge bleed) */}
+                          {wienDisplacement >= 100 && wienDisplacement <= 3000 && (
+                            <ReferenceLine
+                              x={wienDisplacement}
+                              stroke="#facc15"
+                              strokeWidth={2.5}
+                              strokeDasharray="5 5"
+                              label={{
+                                value: `الذروة ${wienDisplacement.toFixed(0)} nm`,
+                                position: 'top',
+                                fill: '#fde047',
+                                fontSize: 12,
+                                fontWeight: 700,
+                              }}
+                            />
+                          )}
+
+                          {/* Clean anti-aliased Planck curve with gradient fill (no black SVG filter artifacts) */}
+                          <Area
+                            type="monotone"
+                            dataKey="intensity"
+                            stroke="#34d399"
+                            strokeWidth={3}
+                            fill="url(#planckCurveFill)"
+                            dot={false}
+                            activeDot={{ r: 5, fill: '#34d399', stroke: '#ffffff', strokeWidth: 2 }}
+                            isAnimationActive={false}
+                            baseValue={0}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
                     </div>
+
+                    {/* Clean Responsive Visible Spectrum Bar directly beneath chart — zero black edge blocks */}
+                    {showVisibleSpectrum && (
+                      <div className="rounded-xl bg-slate-900/35 border border-white/15 p-3 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-200 font-medium">
+                          <span>نطاق الطيف المرئي (380 – 750 نانومتر)</span>
+                          <span className="text-amber-300 font-mono">
+                            ذروة فين: {wienDisplacement.toFixed(1)} nm ({getColorFromWavelength(wienDisplacement)})
+                          </span>
+                        </div>
+                        <div
+                          className="h-4 sm:h-5 w-full rounded-full border border-white/25 overflow-hidden shadow-inner"
+                          style={{
+                            background:
+                              'linear-gradient(90deg, #6d28d9 0%, #4f46e5 14%, #2563eb 28%, #06b6d4 42%, #22c55e 56%, #eab308 72%, #f97316 86%, #ef4444 100%)',
+                          }}
+                        />
+                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 px-0.5">
+                          <span>380 nm (بنفسجي)</span>
+                          <span className="hidden sm:inline">550 nm (أخضر)</span>
+                          <span>750 nm (أحمر)</span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
                 {/* Physics Information */}
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20 mt-4">
+                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                   <CardContent className="p-4">
                     <h3 className="text-lg font-bold text-blue-300 mb-3">معلومات فيزيائية مهمة</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

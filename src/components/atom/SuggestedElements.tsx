@@ -35,9 +35,10 @@ export const SuggestedElements: React.FC<SuggestedElementsProps> = ({
               onClick={() => onBuildElement(element)}
               className={`w-full justify-start text-left p-3 h-auto ${
                 selectedElement?.symbol === element.symbol
-                  ? 'bg-blue-600 hover:bg-blue-700 border-blue-400'
+                  ? 'bg-blue-700 hover:bg-blue-800 border-blue-400'
                   : 'bg-white/5 hover:bg-white/10 border-white/20'
               }`}
+              style={selectedElement?.symbol === element.symbol ? { backgroundColor: '#1d4ed8', color: '#ffffff' } : undefined}
               variant="outline"
             >
               <div className="flex items-center gap-3 w-full">

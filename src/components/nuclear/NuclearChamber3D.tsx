@@ -174,8 +174,12 @@ function FissionScene3D({ stage }: { stage: 'idle' | 'neutron_fired' | 'excited'
             scale={1.3}
             colorTheme="uranium"
           />
-          <Html position={[0, 2.5, 0]} center>
-            <div className="bg-slate-900/90 text-emerald-300 text-xs px-2.5 py-1 rounded-full border border-emerald-500/40 whitespace-nowrap shadow-lg">
+          <Html position={[0, 2.3, 0]} center zIndexRange={[10, 0]}>
+            <div
+              data-preserve-dark
+              className="text-xs px-2.5 py-1 rounded-full border border-emerald-500/50 whitespace-nowrap shadow-lg font-semibold"
+              style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#6ee7b7' }}
+            >
               {stage === 'excited' ? 'نواة U-236 مُثارة وغير مستقرة' : 'نواة اليورانيوم ²³⁵U'}
             </div>
           </Html>
@@ -188,8 +192,12 @@ function FissionScene3D({ stage }: { stage: 'idle' | 'neutron_fired' | 'excited'
           {/* Barium-141 flying left */}
           <group position={[-2.8, 0.5, 0]}>
             <NucleusCluster3D protons={56} neutrons={85} scale={1.0} colorTheme="barium" />
-            <Html position={[0, 1.8, 0]} center>
-              <div className="bg-slate-900/90 text-pink-300 text-[11px] px-2 py-0.5 rounded border border-pink-500/40 whitespace-nowrap">
+            <Html position={[0, 1.8, 0]} center zIndexRange={[10, 0]}>
+              <div
+                data-preserve-dark
+                className="text-[11px] px-2 py-0.5 rounded border border-pink-500/50 whitespace-nowrap font-semibold"
+                style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#f9a8d4' }}
+              >
                 باريوم ¹⁴¹Ba (+86 MeV)
               </div>
             </Html>
@@ -198,8 +206,12 @@ function FissionScene3D({ stage }: { stage: 'idle' | 'neutron_fired' | 'excited'
           {/* Krypton-92 flying right */}
           <group position={[2.8, -0.5, 0]}>
             <NucleusCluster3D protons={36} neutrons={56} scale={0.85} colorTheme="krypton" />
-            <Html position={[0, -1.8, 0]} center>
-              <div className="bg-slate-900/90 text-cyan-300 text-[11px] px-2 py-0.5 rounded border border-cyan-500/40 whitespace-nowrap">
+            <Html position={[0, -1.8, 0]} center zIndexRange={[10, 0]}>
+              <div
+                data-preserve-dark
+                className="text-[11px] px-2 py-0.5 rounded border border-cyan-500/50 whitespace-nowrap font-semibold"
+                style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#67e8f9' }}
+              >
                 كريبتون ⁹²Kr (+86 MeV)
               </div>
             </Html>
@@ -236,8 +248,12 @@ function FissionScene3D({ stage }: { stage: 'idle' | 'neutron_fired' | 'excited'
       <mesh ref={neutronRef} position={[-5, 0, 0]}>
         <sphereGeometry args={[0.22, 16, 16]} />
         <meshStandardMaterial color="#38bdf8" emissive="#0284c7" emissiveIntensity={0.9} />
-        <Html position={[0, 0.5, 0]} center>
-          <div className="bg-slate-900/90 text-sky-400 text-[10px] px-1.5 py-0.5 rounded border border-sky-500/30 whitespace-nowrap">
+        <Html position={[0, 0.5, 0]} center zIndexRange={[10, 0]}>
+          <div
+            data-preserve-dark
+            className="text-[10px] px-1.5 py-0.5 rounded border border-sky-500/40 whitespace-nowrap font-semibold"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#7dd3fc' }}
+          >
             نيوترون حر (n)
           </div>
         </Html>
@@ -367,8 +383,12 @@ function FusionTokamak3D({
         distance={10}
       />
 
-      <Html position={[0, 3.2, 0]} center>
-        <div className="bg-slate-900/90 text-amber-300 text-xs px-3 py-1 rounded-full border border-amber-500/40 whitespace-nowrap shadow-xl">
+      <Html position={[0, 2.5, 0]} center zIndexRange={[10, 0]}>
+        <div
+          data-preserve-dark
+          className="text-xs px-3 py-1 rounded-full border border-amber-500/50 whitespace-nowrap shadow-xl font-semibold"
+          style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#fcd34d' }}
+        >
           {isFusing
             ? `🔥 اشتعال الاندماج النووي (T = ${plasmaTempMillionK}M K) → He-4 + n (17.6 MeV)`
             : `حصر مغناطيسي توكاماك (Tokamak Confinement B = ${magneticFieldTesla}T)`}
@@ -492,8 +512,12 @@ function ReactorCore3D({
           <meshStandardMaterial color="#475569" metalness={0.8} />
         </mesh>
 
-        <Html position={[0, 2.2, 0]} center>
-          <div className="bg-slate-900/90 text-amber-300 text-[10px] px-2 py-0.5 rounded border border-amber-500/40 whitespace-nowrap shadow-lg">
+        <Html position={[0, 2.2, 0]} center zIndexRange={[10, 0]}>
+          <div
+            data-preserve-dark
+            className="text-[10px] px-2 py-0.5 rounded border border-amber-500/50 whitespace-nowrap shadow-lg font-semibold"
+            style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', color: '#fcd34d' }}
+          >
             قضبان التحكم (كادميوم) إدخال: {controlRodPosition.toFixed(0)}%
           </div>
         </Html>

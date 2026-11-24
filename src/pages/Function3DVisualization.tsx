@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,22 +36,30 @@ const Function3DVisualization = () => {
 
   const colorOptions = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
 
-  useEffect(() => {
-    updatePlotData();
-  }, [functions]);
+  // Memoize lightweight ambient particles once so slider/zoom interactions never trigger random layout churn
+  const bgParticles = useMemo(
+    () =>
+      Array.from({ length: 18 }, (_, i) => ({
+        id: i,
+        left: `${(i * 37) % 100}%`,
+        top: `${(i * 53) % 100}%`,
+        duration: 12 + (i % 6) * 2,
+      })),
+    [],
+  );
 
-  const updatePlotData = () => {
+  useEffect(() => {
     if (functions.length === 0) {
       setPlotData([]);
+      setIsCalculating(false);
       return;
     }
 
     setIsCalculating(true);
-    
-    setTimeout(() => {
+    const timer = window.setTimeout(() => {
       const data = functions
-        .filter(func => func.visible)
-        .map(func => {
+        .filter((func) => func.visible)
+        .map((func) => {
           if (func.dimension === '3D') {
             const result = Function3DEngine.generate3DData(func.expression, rangeX, rangeY, points);
             return {
@@ -59,7 +67,7 @@ const Function3DVisualization = () => {
               x: result.x,
               y: result.y,
               z: result.z,
-              colorscale: colorscale,
+              colorscale,
               opacity: func.opacity,
               name: func.expression.substring(0, 20),
             };
@@ -79,8 +87,7 @@ const Function3DVisualization = () => {
               name: func.expression.substring(0, 20),
             };
           } else {
-            // 1D - Point
-            const coords = func.expression.split(',').map(v => parseFloat(v.trim()));
+            const coords = func.expression.split(',').map((v) => parseFloat(v.trim()));
             return {
               type: 'scatter3d',
               mode: 'markers',
@@ -99,8 +106,10 @@ const Function3DVisualization = () => {
 
       setPlotData(data);
       setIsCalculating(false);
-    }, 100);
-  };
+    }, 60);
+
+    return () => window.clearTimeout(timer);
+  }, [functions, rangeX, rangeY, points, colorscale]);
 
   const handleAddFunction = () => {
     if (functions.length >= 5) {
@@ -152,25 +161,15 @@ const Function3DVisualization = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 relative overflow-hidden">
-      {/* Animated Background */}
+      {/* Lightweight Memoized Ambient Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(50)].map((_, i) => (
+        {bgParticles.map((p) => (
           <motion.div
-            key={i}
+            key={p.id}
             className="absolute w-1 h-1 bg-primary/20 rounded-full"
-            initial={{
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-            }}
-            animate={{
-              y: [null, Math.random() * window.innerHeight],
-              opacity: [0, 1, 0],
-            }}
-            transition={{
-              duration: Math.random() * 10 + 10,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
+            style={{ left: p.left, top: p.top }}
+            animate={{ y: [0, -40, 0], opacity: [0.1, 0.7, 0.1] }}
+            transition={{ duration: p.duration, repeat: Infinity, ease: 'linear' }}
           />
         ))}
       </div>

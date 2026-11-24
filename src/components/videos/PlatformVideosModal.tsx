@@ -110,7 +110,7 @@ export const PlatformVideosModal: React.FC<PlatformVideosModalProps> = ({
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
             </span>
             <Film className="w-3.5 h-3.5 text-white/90 group-hover:rotate-6 transition-transform" />
-            <span className="tracking-tight">فيديوهات المنصة</span>
+            <span className="hidden tracking-tight sm:inline">فيديوهات المنصة</span>
             <ChevronDown className="w-3 h-3 text-white/70 group-hover:translate-y-0.5 transition-transform" />
           </button>
         </DropdownMenuTrigger>

@@ -342,7 +342,19 @@ export const ElectromagneticWavesSimulation: React.FC = () => {
 
             {/* Spectrum Tab */}
             <TabsContent value="spectrum">
-              <SpectrumDisplay currentFrequency={frequency} onFrequencyChange={setFrequency} />
+              <SpectrumDisplay
+                currentFrequency={frequency}
+                onFrequencyChange={(freq) => {
+                  setFrequency(freq);
+                  if (freq < 0.3) setWaveType('radio');
+                  else if (freq < 3) setWaveType('microwave');
+                  else if (freq < 400) setWaveType('infrared');
+                  else if (freq <= 790) setWaveType('visible');
+                  else if (freq < 10000) setWaveType('ultraviolet');
+                  else if (freq < 60000) setWaveType('xray');
+                  else setWaveType('gamma');
+                }}
+              />
             </TabsContent>
 
             {/* Applications Tab */}

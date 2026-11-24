@@ -469,12 +469,14 @@ const NuclearReactionsSimulation = () => {
               {/* 3D Canvas Column */}
               <div className="lg:col-span-2 space-y-4" ref={containerRef}>
                 <Card className="bg-slate-900/90 border-slate-800 overflow-hidden shadow-2xl relative">
-                  <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row items-center justify-between">
+                  <CardHeader className="py-3 px-4 bg-slate-900/60 border-b border-slate-800/80 flex flex-row flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-200">
-                      <Sparkles className="w-4 h-4 text-emerald-400" />
-                      {activeTab === 'fission' && 'الغرفة النووية ثلاثية الأبعاد: انشطار اليورانيوم-235'}
-                      {activeTab === 'fusion' && 'مفاعل الاندماج الحلقي توكاماك ثلاثي الأبعاد (Tokamak 3D)'}
-                      {activeTab === 'reactor' && 'مصفوفة حزمة الوقود وقضبان التحكم في قلب المفاعل'}
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>
+                        {activeTab === 'fission' && 'الغرفة النووية ثلاثية الأبعاد: انشطار اليورانيوم-235'}
+                        {activeTab === 'fusion' && 'مفاعل الاندماج الحلقي توكاماك ثلاثي الأبعاد (Tokamak 3D)'}
+                        {activeTab === 'reactor' && 'مصفوفة حزمة الوقود وقضبان التحكم في قلب المفاعل'}
+                      </span>
                     </CardTitle>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="border-emerald-500/50 text-emerald-400 bg-emerald-500/10">
@@ -483,15 +485,21 @@ const NuclearReactionsSimulation = () => {
                         {activeTab === 'reactor' && `الحرجية k=${kEff.toFixed(2)}`}
                       </Badge>
                       <button
+                        type="button"
                         onClick={toggleFullscreen}
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+                        className="p-1.5 rounded-lg border border-slate-700 transition-all"
+                        style={{ backgroundColor: '#1e293b', color: '#e2e8f0' }}
                         title="ملء الشاشة"
                       >
                         {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                       </button>
                     </div>
                   </CardHeader>
-                  <CardContent className="p-0 h-[480px] bg-slate-950 relative">
+                  <CardContent
+                    data-preserve-dark
+                    className="p-0 h-[460px] sm:h-[500px] relative overflow-hidden"
+                    style={{ backgroundColor: '#020617' }}
+                  >
                     <NuclearChamber3D
                       mode={chamberMode}
                       fissionStage={fissionStage}
@@ -504,50 +512,56 @@ const NuclearReactionsSimulation = () => {
                       cameraPreset={cameraPreset}
                     />
 
-                    {/* CyberLabHUD overlay */}
-                    <CyberLabHUD
-                      title={
-                        activeTab === 'fission'
-                          ? 'مختبر الانشطار النووي'
-                          : activeTab === 'fusion'
-                          ? 'مفاعل الاندماج البلازمي'
-                          : 'غرفة تحكم قلب المفاعل'
-                      }
-                      metrics={hudMetrics}
-                      waveformMode="pulse"
-                      status={coreTempC > 650 ? 'danger' : isScrammed ? 'warning' : 'nominal'}
-                    />
-
-                    {/* Camera Angle Presets */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-md p-1 rounded-xl border border-slate-800 text-[11px] z-20">
-                      <button
-                        onClick={() => setCameraPreset('overview')}
-                        className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'overview' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                      >
-                        المنظور العام
-                      </button>
-                      <button
-                        onClick={() => setCameraPreset('nucleus')}
-                        className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'nucleus' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                      >
-                        النواة الكمومية
-                      </button>
-                      <button
-                        onClick={() => setCameraPreset('core')}
-                        className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'core' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                      >
-                        قلب الحزمة
-                      </button>
-                      <button
-                        onClick={() => setCameraPreset('tokamak')}
-                        className={`px-2 py-1 rounded-lg transition-all ${cameraPreset === 'tokamak' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
-                      >
-                        التوكاماك
-                      </button>
+                    {/* Camera Angle Presets — clean high-contrast overlay above 3D scene */}
+                    <div
+                      data-preserve-dark
+                      className="absolute top-3 right-3 flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl border text-xs z-20 shadow-lg backdrop-blur-md"
+                      style={{ backgroundColor: 'rgba(15, 23, 42, 0.92)', borderColor: 'rgba(100, 116, 139, 0.55)' }}
+                    >
+                      {([
+                        { id: 'overview', label: 'المنظور العام' },
+                        { id: 'nucleus', label: 'النواة الكمومية' },
+                        { id: 'core', label: 'قلب الحزمة' },
+                        { id: 'tokamak', label: 'التوكاماك' },
+                      ] as const).map((preset) => {
+                        const isActive = cameraPreset === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setCameraPreset(preset.id)}
+                            className="px-2.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer border"
+                            style={
+                              isActive
+                                ? {
+                                    backgroundColor: '#059669',
+                                    color: '#ffffff',
+                                    borderColor: '#34d399',
+                                    boxShadow: '0 0 10px rgba(52, 211, 153, 0.45)',
+                                  }
+                                : {
+                                    backgroundColor: '#1e293b',
+                                    color: '#e2e8f0',
+                                    borderColor: 'rgba(148, 163, 184, 0.35)',
+                                  }
+                            }
+                          >
+                            {preset.label}
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Live Assistant Hint */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-800 text-xs text-slate-300 flex items-center gap-2 z-20">
+                    <div
+                      data-preserve-dark
+                      className="absolute bottom-3 left-3 right-3 backdrop-blur-md px-3.5 py-2 rounded-xl border text-xs flex items-center gap-2 z-20"
+                      style={{
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        borderColor: 'rgba(71, 85, 105, 0.6)',
+                        color: '#e2e8f0',
+                      }}
+                    >
                       <Info className="w-4 h-4 text-emerald-400 shrink-0" />
                       <span>
                         {activeTab === 'fission' &&
@@ -560,6 +574,20 @@ const NuclearReactionsSimulation = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Live Telemetry HUD placed cleanly below the 3D scene (no overlap or clipping) */}
+                <CyberLabHUD
+                  title={
+                    activeTab === 'fission'
+                      ? 'مختبر الانشطار النووي'
+                      : activeTab === 'fusion'
+                      ? 'مفاعل الاندماج البلازمي'
+                      : 'غرفة تحكم قلب المفاعل'
+                  }
+                  metrics={hudMetrics}
+                  waveformMode="pulse"
+                  status={coreTempC > 650 ? 'danger' : isScrammed ? 'warning' : 'nominal'}
+                />
 
                 {/* Cyber Challenges Engine */}
                 <LabChallengeEngine challenges={challenges} />
@@ -758,15 +786,21 @@ const NuclearReactionsSimulation = () => {
 
                 {/* Live AI Lab CoPilot */}
                 <LiveAILabCoPilot
-                  experimentName="الفيزياء النووية ومفاعلات الطاقة"
+                  experimentName="التفاعلات والانشطار والاندماج النووي ومفاعلات الطاقة"
                   currentMetrics={{
-                    mode: activeTab,
-                    kEff,
-                    thermalPowerMW,
-                    coreTempC,
-                    plasmaTempMillionK,
-                    isFusing,
-                    controlRodPosition,
+                    'الوضع النشط':
+                      activeTab === 'fission'
+                        ? 'انشطار اليورانيوم-235'
+                        : activeTab === 'fusion'
+                        ? 'اندماج التوكاماك (D-T)'
+                        : 'قلب المفاعل وقضبان التحكم',
+                    'زاوية العرض': cameraPreset,
+                    'معامل الحرجية (k_eff)': Number(kEff.toFixed(3)),
+                    'القدرة الحرارية (MW)': thermalPowerMW,
+                    'حرارة قلب المفاعل (°C)': coreTempC,
+                    'حرارة البلازما (مليون كلفن)': plasmaTempMillionK,
+                    'حالة الاندماج': isFusing ? 'نشط' : 'غير مشتعل بعد',
+                    'إدخال قضبان التحكم (%)': controlRodPosition,
                   }}
                   hint={
                     activeTab === 'reactor'

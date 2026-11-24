@@ -1,4 +1,4 @@
-import { Recycle, Lightbulb, Briefcase } from 'lucide-react';
+import { Recycle, Lightbulb, Briefcase, Trophy } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -12,6 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from '@/contexts/ThemeContext';
 import { CORE_SECTIONS, FUTURE_PROJECTS_PATH, findSectionByPath } from '@/config/platformSections';
+import { IDEA_COMPETITION } from '@/config/ideaCompetition';
 import { openAccessibilityModal } from '@/components/accessibility/AccessibilityPanel';
 import { useAccessibility } from '@/contexts/AccessibilityContext';
 import PlatformVideosModal from '@/components/videos/PlatformVideosModal';
@@ -173,11 +174,19 @@ const Navbar = () => {
 
   // Main navigation comes from the platform sections config (src/config/platformSections.ts)
   const navLinks: { label: string; path: string; icon: React.ElementType; badge?: string }[] = [
-    ...CORE_SECTIONS.map((section) => ({ label: section.navLabel, path: section.path, icon: section.icon })),
+    // «مسابقة الأفكار» takes the exams slot in the top bar; /exams stays reachable from the home page and footer.
+    ...CORE_SECTIONS.map((section) =>
+      section.id === 'exams'
+        ? { label: IDEA_COMPETITION.navLabel, path: IDEA_COMPETITION.path, icon: Trophy, badge: 'جديد' }
+        : { label: section.navLabel, path: section.path, icon: section.icon },
+    ),
     { label: 'ذكاء المنصة', path: FUTURE_PROJECTS_PATH, icon: Sparkles },
   ];
   const isNavActive = (path: string) =>
     location.pathname === path || findSectionByPath(location.pathname)?.path === path;
+  // The idea competition is the one item meant to catch the eye: warm gradient + soft glow.
+  const isCompetition = (path: string) => path === IDEA_COMPETITION.path;
+  const competitionClass = 'bg-gradient-to-l from-warning to-[hsl(var(--chart-5))] text-white shadow-md shadow-warning/40 ring-2 ring-warning/30';
 
   return (
     <nav className="sticky top-0 z-50 backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/70 dark:border-slate-800/80 shadow-[0_1px_3px_rgba(15,23,42,0.03)] transition-all w-full max-w-full">
@@ -189,7 +198,7 @@ const Navbar = () => {
             <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 p-1 flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm group-hover:scale-105 transition-transform duration-300">
               <img src="/logo.png" alt="ذروة العلم" className="h-full w-full object-contain" />
             </div>
-            <div className="flex flex-col">
+            <div className="hidden min-[400px]:flex flex-col">
               <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-cyan-300 transition-colors tracking-tight">
                 ذروة العلم
               </span>
@@ -232,15 +241,20 @@ const Navbar = () => {
                 to={item.path}
                 className={cn(
                   "relative px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5",
-                  active 
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-bold" 
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                  isCompetition(item.path)
+                    ? cn(competitionClass, "whitespace-nowrap font-black hover:scale-105", active && "ring-4")
+                    : active
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-bold"
+                      : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80"
                 )}
               >
-                {Icon && <Icon className="w-3.5 h-3.5 opacity-80" />}
-                <span>{item.label}</span>
+                {isCompetition(item.path) && (
+                  <span className="pointer-events-none absolute inset-0 rounded-full bg-warning/40 motion-safe:animate-ping [animation-duration:2.5s]" />
+                )}
+                {Icon && <Icon className={cn("relative w-3.5 h-3.5", isCompetition(item.path) ? "opacity-100" : "opacity-80")} />}
+                <span className="relative">{item.label}</span>
                 {item.badge && (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-100 text-blue-800 dark:bg-cyan-500/20 dark:text-cyan-300 font-bold">
+                  <span className={cn("relative text-[9px] px-1.5 py-0.2 rounded-full font-bold", isCompetition(item.path) ? "bg-white/25 text-white" : "bg-blue-100 text-blue-800 dark:bg-cyan-500/20 dark:text-cyan-300")}>
                     {item.badge}
                   </span>
                 )}
@@ -384,12 +398,25 @@ const Navbar = () => {
         </div>
 
         {/* Mobile menu drawer */}
-        <div className="lg:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-1.5 sm:gap-2">
+          {/* The competition stays visible in the phone top bar, not only inside the menu */}
+          <Link
+            to={IDEA_COMPETITION.path}
+            className={cn(
+              "relative flex shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-black transition",
+              competitionClass,
+              isNavActive(IDEA_COMPETITION.path) && "ring-4"
+            )}
+          >
+            <span className="pointer-events-none absolute inset-0 rounded-full bg-warning/40 motion-safe:animate-ping [animation-duration:2.5s]" />
+            <Trophy className="relative h-3.5 w-3.5" />
+            <span className="relative">المسابقة</span>
+          </Link>
           {/* Mobile Accessibility Button */}
           <button
             onClick={openAccessibilityModal}
             className={cn(
-              "relative p-1.5 rounded-lg border transition-all",
+              "relative hidden sm:block p-1.5 rounded-lg border transition-all",
               activeFeaturesCount > 0
                 ? "bg-cyan-500/20 text-cyan-400 border-cyan-400/50 shadow-sm"
                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800"
@@ -442,7 +469,9 @@ const Navbar = () => {
                       to={item.path} 
                       className={cn(
                         "px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-between",
-                        isNavActive(item.path)
+                        isCompetition(item.path)
+                          ? cn(competitionClass, "font-black")
+                          : isNavActive(item.path)
                           ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-sm"
                           : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                       )}

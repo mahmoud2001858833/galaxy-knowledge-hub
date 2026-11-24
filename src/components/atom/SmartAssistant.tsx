@@ -189,7 +189,8 @@ export const SmartAssistant: React.FC<SmartAssistantProps> = ({
               onClick={() => query.trim() && queryGeminiAPI(query)}
               disabled={isLoading || !query.trim()}
               size="sm"
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-violet-700 hover:bg-violet-800 font-bold"
+              style={{ backgroundColor: '#6d28d9', color: '#ffffff' }}
             >
               {isLoading ? '...' : 'سؤال'}
             </Button>
