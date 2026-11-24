@@ -5,6 +5,7 @@ const db = supabase as any;
 
 export type HistorySource =
   | { kind: "library"; id: string; title: string }
+  | { kind: "reference"; id: string; title: string }
   | { kind: "upload"; name: string; size: number };
 
 /** نسخة خفيفة للحفظ: بلا صور مضمّنة (قد تبلغ ميجابايتات)، مع بقاء مواضع الأشكال. */

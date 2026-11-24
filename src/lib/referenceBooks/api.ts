@@ -190,3 +190,21 @@ async function extractAndSave(bookId: string, file: File, onProgress: (p: Ingest
     pdf.destroy();
   }
 }
+
+export interface LibraryBook { id: string; title: string; total_pages: number | null; extracted_chars: number; extraction_method: string | null }
+export interface ReferenceSource { bookId: string; bookTitle: string; pageNumber: number | null; content: string }
+
+export const listReadyBooks = async () => (await invoke<{ books: LibraryBook[] }>('books')).books;
+
+export const askLibrary = (question: string) =>
+  invoke<{ answer: string; sources: ReferenceSource[] }>('ask', { question });
+
+export const getBookPage = (bookId: string, page: number) =>
+  invoke<{ bookTitle: string; page: number; text: string }>('page', { bookId, page });
+
+export const getBookText = (bookId: string, pageStart?: number, pageEnd?: number) =>
+  invoke<{ title: string; totalPages: number | null; truncated: boolean; pages: { page: number | null; text: string }[] }>('text', {
+    bookId,
+    pageStart,
+    pageEnd,
+  });

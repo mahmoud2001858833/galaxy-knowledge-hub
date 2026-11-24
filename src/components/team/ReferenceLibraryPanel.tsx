@@ -24,6 +24,7 @@ import {
   type ReferenceBook,
 } from '@/lib/referenceBooks/api';
 import { BOOK_ACCEPT, validateBookFile } from '@/lib/referenceBooks/extract';
+import { ReferenceAssistant } from '@/components/referenceBooks/ReferenceAssistant';
 import { errorMessage, formatDate, useTeamMembers } from './teamApi';
 
 const STATUS_LABEL: Record<BookStatus, string> = {
@@ -192,6 +193,8 @@ export const ReferenceLibraryPanel: React.FC<{ me: string; isLead: boolean }> = 
           </ul>
         )}
       </section>
+
+      <ReferenceAssistant />
 
       <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
         <h3 className="mb-3 text-base font-black text-foreground">{isLead ? `كل الكتب المرفوعة (${books.length})` : `ما رفعته أنت (${books.length})`}</h3>

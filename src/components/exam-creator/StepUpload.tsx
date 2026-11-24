@@ -6,11 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookMarked, FileText, Layers, Loader2, UploadCloud, Wand2, X } from "lucide-react";
 import { ACCEPT, MAX_FILES } from "@/lib/examCreator/fileUtils";
 import type { LibraryRow } from "@/lib/examCreator/library";
+import type { LibraryBook } from "@/lib/referenceBooks/api";
 import LibraryPicker from "./LibraryPicker";
 
 export type Source =
   | { key: string; kind: "upload"; file: File }
-  | { key: string; kind: "library"; row: LibraryRow };
+  | { key: string; kind: "library"; row: LibraryRow }
+  | { key: string; kind: "reference"; book: LibraryBook };
 
 interface Props {
   sources: Source[];
@@ -20,30 +22,51 @@ interface Props {
   stage: string;
   onAddFiles: (list: File[]) => void;
   onToggleLibrary: (row: LibraryRow) => void;
+  refBooks?: LibraryBook[] | null;
+  onToggleReference?: (book: LibraryBook) => void;
   onRemove: (key: string) => void;
   onAnalyze: () => void;
 }
 
 const mb = (b: number) => (b / 1024 / 1024).toFixed(2);
 
-export default function StepUpload({ sources, library, libraryError, busy, stage, onAddFiles, onToggleLibrary, onRemove, onAnalyze }: Props) {
+const sourceTitle = (s: Source) => (s.kind === "library" ? s.row.title : s.kind === "reference" ? s.book.title : s.file.name);
+const sourceSize = (s: Source) => (s.kind === "library" ? `${mb(s.row.size_bytes)} MB` : s.kind === "reference" ? `${s.book.total_pages ?? "؟"} صفحة` : `${mb(s.file.size)} MB`);
+
+export default function StepUpload({ sources, library, libraryError, busy, stage, onAddFiles, onToggleLibrary, refBooks, onToggleReference, onRemove, onAnalyze }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const hasLibrary = (library?.length ?? 0) > 0;
+  const hasRef = (refBooks?.length ?? 0) > 0;
+  const selectedRef = new Set(sources.filter((s): s is Extract<Source, { kind: "reference" }> => s.kind === "reference").map((s) => s.book.id));
   const selectedLib = new Set(sources.filter((s): s is Extract<Source, { kind: "library" }> => s.kind === "library").map((s) => s.row.id));
   const needsAI = sources.some((s) => s.kind === "upload" || !(s.kind === "library" && s.row.units));
 
   return (
     <div className="space-y-5">
-      <Tabs defaultValue={hasLibrary ? "library" : "upload"} key={hasLibrary ? "with-lib" : "no-lib"}>
-        <TabsList className="grid h-auto w-full grid-cols-2 bg-muted text-muted-foreground">
+      <Tabs defaultValue={hasLibrary ? "library" : "upload"} key={`${hasLibrary}-${hasRef}`}>
+        <TabsList className={`grid h-auto w-full ${hasRef ? "grid-cols-3" : "grid-cols-2"} bg-muted text-muted-foreground`}>
           <TabsTrigger value="library" className="gap-2"><BookMarked className="h-4 w-4" />من مكتبة المنصة{hasLibrary ? ` (${library!.length})` : ""}</TabsTrigger>
+          {hasRef && <TabsTrigger value="reference" className="gap-2"><BookMarked className="h-4 w-4" />مكتبة المراجع ({refBooks!.length})</TabsTrigger>}
           <TabsTrigger value="upload" className="gap-2"><UploadCloud className="h-4 w-4" />رفع ملفاتي</TabsTrigger>
         </TabsList>
 
         <TabsContent value="library" className="mt-4">
           <LibraryPicker rows={library} error={libraryError} selected={selectedLib} disabled={busy} onToggle={onToggleLibrary} />
         </TabsContent>
+
+        {hasRef && (
+          <TabsContent value="reference" className="mt-4 space-y-2">
+            <p className="text-xs text-muted-foreground">كتب رفعها فريق المنصة، نصها محفوظ جاهزاً فلا تُقرأ من جديد. يظهر لكل سؤال رقم صفحة مصدره، وتضغط عليه لترى نص الصفحة.</p>
+            {refBooks!.map((b) => (
+              <Card key={b.id} className={`flex cursor-pointer items-center justify-between p-3 transition-colors ${selectedRef.has(b.id) ? "border-primary bg-primary/5" : "hover:border-primary/60"}`}
+                onClick={() => !busy && onToggleReference?.(b)}>
+                <span className="truncate text-sm font-semibold"><bdi>{b.title}</bdi></span>
+                <span className="shrink-0 text-xs text-muted-foreground">{b.total_pages ? `${b.total_pages} صفحة` : ""}{selectedRef.has(b.id) ? " ✓" : ""}</span>
+              </Card>
+            ))}
+          </TabsContent>
+        )}
 
         <TabsContent value="upload" className="mt-4">
           <div
@@ -73,10 +96,10 @@ export default function StepUpload({ sources, library, libraryError, busy, stage
           {sources.map((s) => (
             <Card key={s.key} className="flex items-center justify-between p-3">
               <div className="flex min-w-0 items-center gap-2">
-                {s.kind === "library" ? <BookMarked className="h-4 w-4 shrink-0 text-primary" /> : <FileText className="h-4 w-4 shrink-0 text-primary" />}
-                <span className="truncate text-sm"><bdi>{s.kind === "library" ? s.row.title : s.file.name}</bdi></span>
-                <Badge variant={s.kind === "library" ? "secondary" : "outline"} className="shrink-0 text-[10px]">{s.kind === "library" ? "من المكتبة" : "مرفوع"}</Badge>
-                <span dir="ltr" className="shrink-0 text-xs text-muted-foreground">{mb(s.kind === "library" ? s.row.size_bytes : s.file.size)} MB</span>
+                {s.kind !== "upload" ? <BookMarked className="h-4 w-4 shrink-0 text-primary" /> : <FileText className="h-4 w-4 shrink-0 text-primary" />}
+                <span className="truncate text-sm"><bdi>{sourceTitle(s)}</bdi></span>
+                <Badge variant={s.kind !== "upload" ? "secondary" : "outline"} className="shrink-0 text-[10px]">{s.kind === "library" ? "من المكتبة" : s.kind === "reference" ? "مرجع" : "مرفوع"}</Badge>
+                <span className="shrink-0 text-xs text-muted-foreground">{sourceSize(s)}</span>
               </div>
               <Button size="icon" variant="ghost" disabled={busy} onClick={() => onRemove(s.key)}><X className="h-4 w-4" /></Button>
             </Card>

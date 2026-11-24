@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, ArrowLeft, Eye, RotateCcw, ShieldCheck } from "lucide-react";
 import QuestionPreview from "./QuestionPreview";
-import type { ExamDiagnostics, GeneratedExam } from "@/lib/examCreator/types";
+import type { ExamDiagnostics, ExamQuestion, GeneratedExam } from "@/lib/examCreator/types";
 import DiagnosticsPanel from "./DiagnosticsPanel";
 
 interface Props {
@@ -17,11 +17,12 @@ interface Props {
   showAnswers: boolean;
   onShowAnswers: (v: boolean) => void;
   onChange: (e: GeneratedExam) => void;
+  referenceOf?: (q: ExamQuestion) => { bookId: string; title: string } | null;
   onBack: () => void;
   onNext: () => void;
 }
 
-export default function StepReview({ exam, requested, dropped, warnings, diagnostics, backLabel, showAnswers, onShowAnswers, onChange, onBack, onNext }: Props) {
+export default function StepReview({ exam, requested, dropped, warnings, diagnostics, backLabel, showAnswers, onShowAnswers, onChange, referenceOf, onBack, onNext }: Props) {
   const figCount = exam.questions.filter((q) => q.figure?.dataUrl).length;
   const tblCount = exam.questions.filter((q) => q.table).length;
 
@@ -54,7 +55,7 @@ export default function StepReview({ exam, requested, dropped, warnings, diagnos
 
       <div className="space-y-3">
         {exam.questions.map((q, i) => (
-          <QuestionPreview key={q.id} q={q} index={i} showAnswer={showAnswers}
+          <QuestionPreview key={q.id} q={q} index={i} showAnswer={showAnswers} reference={referenceOf?.(q) ?? null}
             onChange={(nq) => onChange({ ...exam, questions: exam.questions.map((x) => (x.id === q.id ? nq : x)) })}
             onDelete={() => onChange({ ...exam, questions: exam.questions.filter((x) => x.id !== q.id) })} />
         ))}

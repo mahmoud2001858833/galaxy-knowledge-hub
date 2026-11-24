@@ -1,5 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { formatReferenceContext, searchReferenceBooks } from '../_shared/reference-knowledge.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,7 @@ serve(async (req) => {
 
   try {
     const { prompt, subject, useGemini = false } = await req.json()
+    const referenceContext = prompt ? formatReferenceContext(await searchReferenceBooks(String(prompt))) : ''
 
     if (!prompt) {
       return new Response(
@@ -66,7 +68,7 @@ serve(async (req) => {
               {
                 parts: [
                   {
-                    text: fullPrompt,
+                    text: fullPrompt + referenceContext,
                   },
                 ],
               },
@@ -145,7 +147,7 @@ serve(async (req) => {
                 {
                   parts: [
                     {
-                      text: fullPrompt,
+                      text: fullPrompt + referenceContext,
                     },
                   ],
                 },
@@ -187,7 +189,7 @@ serve(async (req) => {
               {
                 parts: [
                   {
-                    text: fullPrompt,
+                    text: fullPrompt + referenceContext,
                   },
                 ],
               },
