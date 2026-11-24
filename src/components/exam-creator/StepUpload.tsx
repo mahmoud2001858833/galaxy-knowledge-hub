@@ -62,7 +62,7 @@ export default function StepUpload({ sources, library, libraryError, busy, stage
               <Card key={b.id} className={`flex cursor-pointer items-center justify-between p-3 transition-colors ${selectedRef.has(b.id) ? "border-primary bg-primary/5" : "hover:border-primary/60"}`}
                 onClick={() => !busy && onToggleReference?.(b)}>
                 <span className="truncate text-sm font-semibold"><bdi>{b.title}</bdi></span>
-                <span className="shrink-0 text-xs text-muted-foreground">{b.total_pages ? `${b.total_pages} صفحة` : ""}{selectedRef.has(b.id) ? " ✓" : ""}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">{[b.grade, b.subject, b.semester, b.total_pages ? `${b.total_pages} صفحة` : ""].filter(Boolean).join(" · ")}{selectedRef.has(b.id) ? " ✓" : ""}</span>
               </Card>
             ))}
           </TabsContent>

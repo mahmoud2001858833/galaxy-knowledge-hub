@@ -1,5 +1,5 @@
 // reference-books: دالة واحدة لمكتبة المراجع (حد عدد الدوال في الخطة مستنفد) — تُوجَّه بحقل action:
-// upload-url | ingest | ocr | download | delete | search | ask | books | page | text
+// upload-url | ingest | ocr | download | view | delete | search | ask | books | page | text
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, jsonResponse } from "../_shared/exam-common.ts";
 import { handleAdmin } from "./admin.ts";
@@ -19,6 +19,7 @@ serve(async (req) => {
       case "ingest": return await handleIngest(req, body);
       case "ocr": return await handleOcr(req, body);
       case "download":
+      case "view":
       case "delete": return await handleAdmin(req, body);
       case "search": return await handleSearch(req, body);
       case "ask": return await handleAsk(req, body);

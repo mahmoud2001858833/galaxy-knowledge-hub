@@ -27,6 +27,9 @@ export interface ReferenceBook {
   error_message: string | null;
   created_at: string;
   processed_at: string | null;
+  grade: string | null;
+  subject: string | null;
+  semester: string | null;
 }
 
 const OCR_BATCH_PAGES = 5;
@@ -84,6 +87,7 @@ function putToR2(url: string, file: File, onProgress: (fraction: number) => void
 }
 
 export interface IngestProgress { phase: string; fraction: number }
+export interface BookMeta { grade: string; subject: string; semester: string }
 
 /**
  * Full pipeline for one book: register → upload to R2 → extract text (text layer / Word / OCR for scans)
@@ -92,6 +96,7 @@ export interface IngestProgress { phase: string; fraction: number }
 export async function ingestBook(
   file: File,
   title: string,
+  meta: BookMeta,
   onProgress: (p: IngestProgress) => void,
 ): Promise<string> {
   const invalid = validateBookFile(file);
@@ -102,6 +107,7 @@ export async function ingestBook(
     filename: file.name,
     sizeBytes: file.size,
     title,
+    ...meta,
   });
 
   try {
@@ -191,7 +197,7 @@ async function extractAndSave(bookId: string, file: File, onProgress: (p: Ingest
   }
 }
 
-export interface LibraryBook { id: string; title: string; total_pages: number | null; extracted_chars: number; extraction_method: string | null }
+export interface LibraryBook { id: string; title: string; total_pages: number | null; extracted_chars: number; extraction_method: string | null; grade: string | null; subject: string | null; semester: string | null }
 export interface ReferenceSource { bookId: string; bookTitle: string; pageNumber: number | null; content: string }
 
 export const listReadyBooks = async () => (await invoke<{ books: LibraryBook[] }>('books')).books;
@@ -208,3 +214,5 @@ export const getBookText = (bookId: string, pageStart?: number, pageEnd?: number
     pageStart,
     pageEnd,
   });
+
+export const getBookView = (bookId: string) => invoke<{ url: string; mimeType: string }>('view', { bookId });

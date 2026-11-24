@@ -1,4 +1,4 @@
-// admin: تنزيل الكتاب الأصلي وحذفه (للقيادة فقط) — رابط موقّع مؤقت من R2 أو حذف من R2 وقاعدة البيانات.
+// admin: تنزيل الكتاب الأصلي وعرضه وحذفه (للقيادة فقط) — رابط موقّع مؤقت من R2 أو حذف من R2 وقاعدة البيانات.
 import { jsonResponse } from "../_shared/exam-common.ts";
 import { deleteR2Object, getCaller, presignR2, serviceClient } from "../_shared/reference-books.ts";
 
@@ -11,7 +11,7 @@ export async function handleAdmin(req: Request, body: any): Promise<Response> {
     const { action, bookId } = body;
     const db = serviceClient();
     const { data: book } = await db
-      .from("reference_books").select("id, storage_key, original_filename").eq("id", String(bookId ?? "")).maybeSingle();
+      .from("reference_books").select("id, storage_key, original_filename, mime_type").eq("id", String(bookId ?? "")).maybeSingle();
     if (!book) return jsonResponse({ error: "الكتاب غير موجود" }, 404);
 
     if (action === "download") {
@@ -20,6 +20,10 @@ export async function handleAdmin(req: Request, body: any): Promise<Response> {
         "response-content-disposition": `attachment; filename*=UTF-8''${safeName}`,
       });
       return jsonResponse({ url });
+    }
+    if (action === "view") {
+      // عرض داخل المتصفح (بدون تنزيل): رابط قراءة قصير العمر لعارض الصفحات.
+      return jsonResponse({ url: await presignR2("GET", book.storage_key, 900), mimeType: book.mime_type });
     }
     if (action === "delete") {
       await deleteR2Object(book.storage_key);
