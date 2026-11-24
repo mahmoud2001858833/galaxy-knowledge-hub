@@ -302,3 +302,18 @@ verify_jwt = true
 
 [functions.volunteer-initiatives]
 verify_jwt = false
+
+[functions.reference-books-upload-url]
+verify_jwt = true
+
+[functions.reference-books-ingest]
+verify_jwt = true
+
+[functions.reference-books-ocr]
+verify_jwt = true
+
+[functions.reference-books-admin]
+verify_jwt = true
+
+[functions.reference-books-search]
+verify_jwt = true

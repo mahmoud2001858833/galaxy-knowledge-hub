@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { formatReferenceContext, searchReferenceBooks } from "../_shared/reference-knowledge.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +55,7 @@ Provide comprehensive answers with practical examples and clear explanations.`;
 
 السؤال: ${message}
 
-يرجى تقديم إجابة شاملة ومفيدة لتعلم اللغة الإنجليزية.`;
+يرجى تقديم إجابة شاملة ومفيدة لتعلم اللغة الإنجليزية.${formatReferenceContext(await searchReferenceBooks(String(message ?? '')))}`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
