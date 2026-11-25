@@ -1,6 +1,6 @@
 import { getPdfjs } from '@/lib/examCreator/fileUtils';
 
-export const MAX_BOOK_BYTES = 100 * 1024 * 1024;
+export const MAX_BOOK_BYTES = 500 * 1024 * 1024;
 export const BOOK_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg,.webp';
 const MAX_PDF_PAGES = 2500;
 const MIN_TEXT_CHARS_PER_PAGE = 25;
@@ -24,7 +24,7 @@ export const bookKind = (file: File): BookKind | null => {
 export const validateBookFile = (file: File): string | null => {
   if (!bookKind(file)) return `صيغة «${file.name}» غير مدعومة. المسموح: PDF وDOCX وصور PNG/JPG/WEBP`;
   if (file.size === 0) return `الملف «${file.name}» فارغ`;
-  if (file.size > MAX_BOOK_BYTES) return `الملف «${file.name}» أكبر من 100 ميجابايت`;
+  if (file.size > MAX_BOOK_BYTES) return `الملف «${file.name}» أكبر من 500 ميجابايت`;
   return null;
 };
 

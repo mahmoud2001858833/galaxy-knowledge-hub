@@ -179,7 +179,7 @@ export const ReferenceLibraryPanel: React.FC<{ me: string; isLead: boolean }> = 
           <div>
             <h2 className="text-lg font-black text-foreground">مكتبة المراجع</h2>
             <p className="text-sm text-muted-foreground">
-              ارفع كتباً ومراجع (PDF، Word، أو صور ممسوحة) ليقرأها الذكاء الاصطناعي ويستعين بها في أجوبته. الحد الأقصى 100 ميجابايت للملف.
+              ارفع كتباً ومراجع (PDF، Word، أو صور ممسوحة) ليقرأها الذكاء الاصطناعي ويستعين بها في أجوبته. الحد الأقصى 500 ميجابايت للملف.
             </p>
           </div>
         </div>

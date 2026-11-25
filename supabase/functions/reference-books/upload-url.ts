@@ -18,7 +18,7 @@ export async function handleUploadUrl(req: Request, body: any): Promise<Response
     if (!name || !mime) return jsonResponse({ error: "الصيغ المسموحة: PDF وDOCX وصور PNG/JPG/WEBP" }, 400);
     const size = Number(sizeBytes);
     if (!Number.isFinite(size) || size <= 0) return jsonResponse({ error: "حجم الملف غير صالح" }, 400);
-    if (size > MAX_BOOK_BYTES) return jsonResponse({ error: "الحد الأقصى لحجم الملف 100 ميجابايت" }, 400);
+    if (size > MAX_BOOK_BYTES) return jsonResponse({ error: "الحد الأقصى لحجم الملف 500 ميجابايت" }, 400);
 
     const bookTitle = String(title ?? "").trim().slice(0, 300) || name.replace(/\.[^.]+$/, "").slice(0, 300);
     const key = `books/${caller.userId}/${crypto.randomUUID()}.${ext}`;

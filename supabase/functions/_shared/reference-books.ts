@@ -2,7 +2,7 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 
-export const MAX_BOOK_BYTES = 100 * 1024 * 1024;
+export const MAX_BOOK_BYTES = 500 * 1024 * 1024;
 export const BOOK_MIME_BY_EXT: Record<string, string> = {
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
