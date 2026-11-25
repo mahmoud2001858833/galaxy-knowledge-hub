@@ -31,7 +31,7 @@
 
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, hostname, platform } from 'node:os';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -923,10 +923,33 @@ let agConn = null;
 
 function findAgServer() {
   const ps = execFileSync('/bin/ps', ['-axo', 'pid=,args='], { encoding: 'utf8' });
-  const line = ps.split('\n').find((l) => l.includes(`${AG_APP}/Contents/Resources/bin/language_server`) && l.includes('--csrf_token'));
+  const line = ps.split('\n').find((l) => l.includes(`${AG_APP}/Contents/Resources/bin/language_server`));
   if (!line) return null;
   const pid = line.trim().split(/\s+/)[0];
+
+  // Antigravity 2.35+ no longer passes --csrf_token on the command line (it reads it from stdin);
+  // it writes the running server's port(s) and token to ~/.gemini/antigravity/daemon/hub_<port>.json
+  // instead, one file per server it has started. Match by pid since old files are left behind.
+  try {
+    const daemonDir = join(homedir(), '.gemini', 'antigravity', 'daemon');
+    for (const f of readdirSync(daemonDir)) {
+      if (!f.startsWith('hub_') || !f.endsWith('.json')) continue;
+      let info;
+      try {
+        info = JSON.parse(readFileSync(join(daemonDir, f), 'utf8'));
+      } catch {
+        continue;
+      }
+      if (String(info.pid) === pid && info.csrfToken) {
+        const ports = [info.httpPort, info.httpsPort].filter(Boolean).map(String);
+        if (ports.length) return { token: info.csrfToken, ports };
+      }
+    }
+  } catch {}
+
+  // Older Antigravity: token is on the command line, ports found via lsof.
   const token = line.match(/--csrf_token[=\s]+(\S+)/)?.[1];
+  if (!token) return null;
   let ports = [];
   try {
     ports = execFileSync('/usr/sbin/lsof', ['-a', '-p', pid, '-iTCP', '-sTCP:LISTEN', '-nP', '-Fn'], { encoding: 'utf8' })
