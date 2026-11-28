@@ -87,9 +87,15 @@ const SERVER_TOOLS: Record<string, (a: Record<string, unknown>) => Promise<unkno
   },
 };
 
-function systemPrompt(referenceContext: string, memoryNote: string) {
+function systemPrompt(referenceContext: string, memoryNote: string, voiceMode: boolean) {
   return `أنتِ "العقل الموسوعي" لمنصة ذروة العلم: مساعد تعليمي شامل، للمدير (الأدمن) فقط حالياً كمرحلة تجربة قبل أي طرح للطلاب.
 الشخصية: دقيقة، صبورة، تشرح كمعلّمة محترفة. عربية فصيحة مبسطة قريبة من الأردنية عند الحديث العادي.
+${voiceMode ? `
+هذه محادثة صوتية الآن (كلامك سيُقرأ بصوت عالٍ، لا يُقرأ كنص): أجيبي بإيجاز حقيقي، جملتان إلى أربع جمل
+للسؤال المباشر، بلا Markdown إطلاقاً (لا جداول ولا عناوين ولا نجمتي تمييز **)، كأنك تتكلمين فعلاً لا تكتبين
+تقريراً. إجابة أطول (خطوات كثيرة أو مقارنة) اذكري أهم نقطتين وقولي إنك جاهزة توسّعي إذا طلب. كل جملة إضافية
+هنا تأخير حقيقي قبل ما يسمع صوتك، فلا تطيلي بلا داعٍ.
+` : ''}
 
 القاعدة الأهم: ارتكزي على "مراجع من مكتبة المنصة" أدناه إن وُجدت وكانت ذات صلة بالسؤال، واذكري اسم الكتاب
 والصفحة عند الاقتباس منها. إن لم توجد مراجع ذات صلة بهذا السؤال بالذات، صرّحي بوضوح أنك لم تجدي ذلك
@@ -191,6 +197,7 @@ async function chat(body: Record<string, unknown>) {
 
   const userMessage = typeof body.user_message === "string" ? body.user_message.trim().slice(0, 3000) : "";
   const imageDataUrl = typeof body.image_base64 === "string" && body.image_base64.startsWith("data:image/") ? body.image_base64.slice(0, 8_000_000) : "";
+  const voiceMode = body.voice === true;
   const toolResults = Array.isArray(body.tool_results) ? body.tool_results as { tool_call_id: string; content: string }[] : [];
   if (!userMessage && !imageDataUrl && !toolResults.length) return { error: "empty turn" };
 
@@ -218,9 +225,12 @@ async function chat(body: Record<string, unknown>) {
   const t0 = Date.now();
   for (let round = 0; round < 8 && Date.now() - t0 < 110_000; round++) {
     const providers = [geminiProvider()].filter((p): p is NonNullable<typeof p> => p !== null);
-    let messages: unknown[] = [{ role: "system", content: systemPrompt(referenceContext, memoryNote) }, ...history, ...added];
+    let messages: unknown[] = [{ role: "system", content: systemPrompt(referenceContext, memoryNote, voiceMode) }, ...history, ...added];
     if (round === 0 && imageDataUrl) messages = withImage(messages as { role: string; content?: unknown }[], imageDataUrl);
-    const msg = await callGateway({ service, providers, fnName: "omni-mind", userId: CURRENT_USER, tools: TOOLS, messages });
+    const msg = await callGateway({
+      service, providers, fnName: "omni-mind", userId: CURRENT_USER, tools: TOOLS, messages,
+      maxTokens: voiceMode ? 260 : 900,
+    });
     if (!msg) throw new Error("empty answer");
     const calls: { id: string; function: { name: string; arguments: string } }[] = (msg as { tool_calls?: typeof calls }).tool_calls ?? [];
     const assistantMsg = { role: "assistant", content: String((msg as { content?: string }).content ?? ""), ...(calls.length ? { tool_calls: calls } : {}) };

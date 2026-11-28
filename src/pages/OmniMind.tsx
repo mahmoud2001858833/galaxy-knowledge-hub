@@ -6,6 +6,7 @@ import {
   History, Plus, X, Paperclip, FileText,
 } from 'lucide-react';
 import { PageShell, PageHeader } from '@/components/layout/PageShell';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsPlatformAdmin } from '@/hooks/useIsPlatformAdmin';
 import { OmniMindMap } from '@/components/omniMind/OmniMindMap';
@@ -269,7 +270,7 @@ function OmniMindChat() {
   async function runTurn(payload: Record<string, unknown>, gen: number, viaVoice: boolean) {
     for (let round = 0; round < 10; round++) {
       if (gen !== turnGenRef.current) return;
-      const res = await callOmniMind({ ...payload, session_id: sessionIdRef.current, pages: pagesForTools() });
+      const res = await callOmniMind({ ...payload, session_id: sessionIdRef.current, pages: pagesForTools(), ...(viaVoice ? { voice: true } : {}) });
       if (gen !== turnGenRef.current) return; // superseded while this was in flight
       if (res.session_id && res.session_id !== sessionIdRef.current) {
         sessionIdRef.current = res.session_id;
@@ -564,6 +565,7 @@ function Markdown({ text }: { text: string }) {
 }
 
 function SourceModal({ source, onClose }: { source: Source; onClose: () => void }) {
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -572,12 +574,23 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
     let alive = true;
     setLoading(true);
     setErr(null);
+    setPdfUrl(null);
     setText(null);
-    supabase.functions.invoke('reference-books', { body: { action: 'page', bookId: source.bookId, page: source.pageNumber } })
+    // real page image first (the book's own PDF, jumped to this page); extracted text only as a
+    // fallback when the file isn't a PDF or the signed view URL fails
+    supabase.functions.invoke('reference-books', { body: { action: 'view', bookId: source.bookId } })
       .then(({ data, error }) => {
         if (!alive) return;
-        if (error) { setErr(String(error.message || error)); return; }
-        setText(data?.text || 'لا يوجد نص مستخرج لهذه الصفحة.');
+        if (!error && data?.url && String(data?.mimeType ?? '').includes('pdf')) {
+          setPdfUrl(`${data.url}#page=${source.pageNumber ?? 1}&view=FitH`);
+          return;
+        }
+        return supabase.functions.invoke('reference-books', { body: { action: 'page', bookId: source.bookId, page: source.pageNumber } })
+          .then(({ data: pageData, error: pageErr }) => {
+            if (!alive) return;
+            if (pageErr) { setErr(String(pageErr.message || pageErr)); return; }
+            setText(pageData?.text || 'لا يوجد نص مستخرج لهذه الصفحة.');
+          });
       })
       .catch((e) => { if (alive) setErr(String((e as Error)?.message ?? e)); })
       .finally(() => { if (alive) setLoading(false); });
@@ -587,7 +600,10 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
   return (
     <div className="fixed inset-0 z-[100] grid place-items-center bg-background/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl"
+        className={cn(
+          'overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl',
+          pdfUrl ? 'h-[85vh] w-full max-w-3xl' : 'max-h-[80vh] w-full max-w-lg',
+        )}
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -602,6 +618,9 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
         </div>
         {loading && <Loader2 className="mx-auto my-6 h-5 w-5 animate-spin text-muted-foreground" />}
         {err && <p className="text-xs text-destructive">{err}</p>}
+        {pdfUrl && (
+          <iframe src={pdfUrl} title={`${source.bookTitle} — صفحة ${source.pageNumber ?? ''}`} className="h-[calc(100%-3rem)] w-full rounded-2xl border border-border" />
+        )}
         {text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>}
       </div>
     </div>
