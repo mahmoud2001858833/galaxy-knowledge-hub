@@ -91,6 +91,57 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Finds the first balanced {...} block in text (brace-matching, string-aware) — used as a safety
+ * net for when the model writes a mind-map/concept-map structure as text instead of actually
+ * calling the tool (an LLM reliability gap, not something a prompt alone fully eliminates). */
+function findJsonBlock(text: string): { json: string; start: number; end: number } | null {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === '\\') escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return { json: text.slice(start, i + 1), start, end: i + 1 };
+    }
+  }
+  return null;
+}
+
+function extractStructuredAttachment(text: string): { attachment: Attachment; cleanedText: string } | null {
+  const block = findJsonBlock(text);
+  if (!block) return null;
+  let parsed: Record<string, unknown>;
+  try { parsed = JSON.parse(block.json); } catch { return null; }
+  if (!parsed || !Array.isArray(parsed.nodes)) return null;
+  const cleanedText = (text.slice(0, block.start) + text.slice(block.end)).replace(/```(json)?/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  if (Array.isArray(parsed.edges)) {
+    return {
+      attachment: { kind: 'concept_map', title: String(parsed.title ?? 'خريطة علاقات'), nodes: parsed.nodes as ConceptNode[], edges: parsed.edges as ConceptEdge[] },
+      cleanedText,
+    };
+  }
+  return {
+    attachment: {
+      kind: 'mindmap',
+      rootTitle: String(parsed.rootTitle ?? parsed.title ?? 'خريطة ذهنية'),
+      subjectTitle: String(parsed.subjectTitle ?? ''),
+      nodes: parsed.nodes as MindMapNode[],
+    },
+    cleanedText,
+  };
+}
+
 type HistoryMessage = { role: string; content: string; attachments?: { sources?: Source[] } | null };
 function toTurns(msgs: HistoryMessage[], nextId: () => number): Turn[] {
   return msgs.map((m) => ({
@@ -280,8 +331,10 @@ function OmniMindChat() {
       if (res.error) throw new Error(res.error);
       const sources: Source[] | undefined = Array.isArray(res.sources) && res.sources.length ? res.sources : undefined;
       if (res.client_calls?.length) {
-        const saying = res.say && viaVoice ? voiceRef.current?.say(res.say) : undefined;
-        if (res.say) addTurn('assistant', res.say, undefined, { sources });
+        const sayExtracted = res.say ? extractStructuredAttachment(res.say) : null;
+        const sayText = sayExtracted ? sayExtracted.cleanedText : res.say;
+        const saying = sayText && viaVoice ? voiceRef.current?.say(sayText) : undefined;
+        if (sayText || sayExtracted) addTurn('assistant', sayText ?? '', sayExtracted?.attachment, { sources });
         const tool_results: { tool_call_id: string; content: string }[] = [];
         for (const c of res.client_calls as { id: string; name: string; args: Record<string, unknown> }[]) {
           const out = await runClientTool(c.name, c.args ?? {});
@@ -294,8 +347,12 @@ function OmniMindChat() {
         continue;
       }
       if (res.reply) {
-        addTurn('assistant', res.reply, undefined, { sources });
-        if (viaVoice) await voiceRef.current?.say(res.reply);
+        // safety net: the model sometimes writes a mind-map/concept-map structure as text instead
+        // of actually calling the tool — render it anyway rather than showing raw JSON
+        const extracted = extractStructuredAttachment(res.reply);
+        const replyText = extracted ? extracted.cleanedText : res.reply;
+        addTurn('assistant', replyText, extracted?.attachment, { sources });
+        if (viaVoice) await voiceRef.current?.say(replyText || 'تفضّل.');
         return;
       }
       if (viaVoice) voiceRef.current?.doneThinking();
