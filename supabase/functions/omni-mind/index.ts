@@ -95,11 +95,19 @@ function systemPrompt(referenceContext: string, memoryNote: string) {
 والصفحة عند الاقتباس منها. إن لم توجد مراجع ذات صلة بهذا السؤال بالذات، صرّحي بوضوح أنك لم تجدي ذلك
 بالكتب المرفوعة حالياً قبل أن تجيبي من معرفتك العامة — لا تنسبي معلومة لكتاب لم يُرفع أو لم يَرِد في المراجع.
 
+تنسيق الجواب (نص نظيف يُقرأ مباشرة، لا رموز مصدر خام):
+- ممنوع نهائياً أي صيغة LaTeX مثل $H^+$ أو \\rightarrow أو \\frac{}{}. اكتبي الرموز العلمية بأحرف Unicode
+  جاهزة للقراءة مباشرة: الأس العلوي H⁺ Na⁺ x² ، الأس السفلي H₂O CO₂ ، الأسهم → ⇌ ، الحرارة Δ، الدرجة °.
+- استعملي Markdown عادياً للتنظيم عند الحاجة فقط: **تمييز** لكلمة مهمة، عناوين فرعية قصيرة، قوائم نقطية،
+  وجدول Markdown عند مقارنة عدة عناصر. لا تبالغي بالعناوين والرموز التعبيرية (الإيموجي)؛ وضوح لا زخرفة.
+- جملة قصيرة في النهاية فقط إن كان هناك اقتراح طبيعي للمتابعة (خريطة، صورة، تجربة)، لا تسأليه بعد كل جواب.
+
 قدراتك الإضافية (استعمليها كل ما كانت تخدم السؤال، لا تنتظري أن يُطلب صريحاً كل مرة):
 - رسم تعليمي: generate_image.
 - خريطة ذهنية هرمية لدرس واحد: generate_mindmap.
 - خريطة علاقات/مفاهيم (غير هرمية) بين عدة مفاهيم متصلة: generate_concept_map.
 - تجربة تفاعلية: ابحثي أولاً بـ find_experiment، ثم show_experiment (inline لتجربة محسوبة فورية، أو link لمختبر كامل بالمسار الذي أعاده find_experiment حرفياً — لا تخترعي مساراً أبداً).
+- قد يُرفق المدير صورة أو ملفاً مع سؤاله؛ إن وُجد صف "محتوى مرفق" بالرسالة فحلّليه وأجيبي بناءً عليه.
 
 ${memoryNote}${referenceContext}`;
 }
@@ -122,10 +130,10 @@ async function loadHistory(sessionId: string) {
   }));
 }
 
-async function saveMessage(sessionId: string, row: { role: string; content?: string; tool_calls?: unknown; tool_call_id?: string }) {
+async function saveMessage(sessionId: string, row: { role: string; content?: string; tool_calls?: unknown; tool_call_id?: string; attachments?: unknown }) {
   await service.from("omni_mind_messages").insert({
     session_id: sessionId, role: row.role, content: row.content ?? "",
-    tool_calls: row.tool_calls ?? null, tool_call_id: row.tool_call_id ?? null,
+    tool_calls: row.tool_calls ?? null, tool_call_id: row.tool_call_id ?? null, attachments: row.attachments ?? null,
   });
   await service.from("omni_mind_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
 }
@@ -141,6 +149,38 @@ async function ensureSession(sessionId: string | undefined, firstMessage: string
   return data.id as string;
 }
 
+/** Dedup reference hits to {bookId, bookTitle, pageNumber} chips the client can show and click to view. */
+function toSources(hits: { bookId: string; bookTitle: string; pageNumber: number | null }[]) {
+  const seen = new Set<string>();
+  const out: { bookId: string; bookTitle: string; pageNumber: number | null }[] = [];
+  for (const h of hits) {
+    const key = `${h.bookId}:${h.pageNumber ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ bookId: h.bookId, bookTitle: h.bookTitle, pageNumber: h.pageNumber });
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
+/** Swap the last user message's content for a multimodal (text + image) array, for the model call only — never persisted as-is. */
+function withImage(msgs: { role: string; content?: unknown }[], imageDataUrl: string) {
+  const out = [...msgs];
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].role === "user") {
+      out[i] = {
+        ...out[i],
+        content: [
+          { type: "text", text: String(out[i].content ?? "").trim() || "حلّل هذه الصورة وأجب بناءً عليها" },
+          { type: "image_url", image_url: { url: imageDataUrl } },
+        ],
+      };
+      break;
+    }
+  }
+  return out;
+}
+
 async function chat(body: Record<string, unknown>) {
   PAGES = Array.isArray(body?.pages)
     ? (body.pages as unknown[]).slice(0, 200).filter((p): p is { title: string; path: string } => {
@@ -150,15 +190,17 @@ async function chat(body: Record<string, unknown>) {
     : [];
 
   const userMessage = typeof body.user_message === "string" ? body.user_message.trim().slice(0, 3000) : "";
+  const imageDataUrl = typeof body.image_base64 === "string" && body.image_base64.startsWith("data:image/") ? body.image_base64.slice(0, 8_000_000) : "";
   const toolResults = Array.isArray(body.tool_results) ? body.tool_results as { tool_call_id: string; content: string }[] : [];
-  if (!userMessage && !toolResults.length) return { error: "empty turn" };
+  if (!userMessage && !imageDataUrl && !toolResults.length) return { error: "empty turn" };
 
-  const sessionId = await ensureSession(typeof body.session_id === "string" ? body.session_id : undefined, userMessage);
+  const sessionId = await ensureSession(typeof body.session_id === "string" ? body.session_id : undefined, userMessage || "صورة مرفقة");
   const history = trim(await loadHistory(sessionId));
   const added: { role: string; content?: string; tool_calls?: unknown; tool_call_id?: string }[] = [];
 
-  if (userMessage) {
-    const m = { role: "user", content: userMessage };
+  if (userMessage || imageDataUrl) {
+    const displayContent = imageDataUrl ? `📎 صورة مرفقة${userMessage ? ` — ${userMessage}` : ""}` : userMessage;
+    const m = { role: "user", content: displayContent };
     added.push(m);
     await saveMessage(sessionId, m);
   }
@@ -170,21 +212,21 @@ async function chat(body: Record<string, unknown>) {
 
   const refHits = userMessage ? await searchReferenceBooks(userMessage).catch(() => []) : [];
   const referenceContext = formatReferenceContext(refHits);
+  const sources = toSources(refHits);
   const memoryNote = ""; // no cross-session memory yet; each session is self-contained
 
   const t0 = Date.now();
   for (let round = 0; round < 8 && Date.now() - t0 < 110_000; round++) {
     const providers = [geminiProvider()].filter((p): p is NonNullable<typeof p> => p !== null);
-    const msg = await callGateway({
-      service, providers, fnName: "omni-mind", userId: CURRENT_USER, tools: TOOLS,
-      messages: [{ role: "system", content: systemPrompt(referenceContext, memoryNote) }, ...history, ...added],
-    });
+    let messages: unknown[] = [{ role: "system", content: systemPrompt(referenceContext, memoryNote) }, ...history, ...added];
+    if (round === 0 && imageDataUrl) messages = withImage(messages as { role: string; content?: unknown }[], imageDataUrl);
+    const msg = await callGateway({ service, providers, fnName: "omni-mind", userId: CURRENT_USER, tools: TOOLS, messages });
     if (!msg) throw new Error("empty answer");
     const calls: { id: string; function: { name: string; arguments: string } }[] = (msg as { tool_calls?: typeof calls }).tool_calls ?? [];
     const assistantMsg = { role: "assistant", content: String((msg as { content?: string }).content ?? ""), ...(calls.length ? { tool_calls: calls } : {}) };
     added.push(assistantMsg);
-    await saveMessage(sessionId, assistantMsg);
-    if (!calls.length) return { reply: assistantMsg.content.trim(), session_id: sessionId };
+    await saveMessage(sessionId, { ...assistantMsg, attachments: sources.length ? { sources } : undefined });
+    if (!calls.length) return { reply: assistantMsg.content.trim(), session_id: sessionId, sources };
 
     const clientCalls: { id: string; name: string; args: Record<string, unknown> }[] = [];
     for (const c of calls) {
@@ -200,7 +242,7 @@ async function chat(body: Record<string, unknown>) {
       added.push(toolMsg);
       await saveMessage(sessionId, toolMsg);
     }
-    if (clientCalls.length) return { client_calls: clientCalls, say: assistantMsg.content.trim(), session_id: sessionId };
+    if (clientCalls.length) return { client_calls: clientCalls, say: assistantMsg.content.trim(), session_id: sessionId, sources };
   }
   return { reply: "خلّيني أوقف هون، الطلب طوّل علي. شو بدك بالضبط؟", session_id: sessionId };
 }

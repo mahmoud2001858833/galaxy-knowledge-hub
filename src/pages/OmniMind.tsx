@@ -1,14 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Sparkles, BookOpen, Image as ImageIcon, Map as MapIcon, Share2, FlaskConical, Loader2, Mic, MicOff } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import {
+  Send, Sparkles, BookOpen, Image as ImageIcon, Map as MapIcon, Share2, FlaskConical, Loader2, Mic, MicOff,
+  History, Plus, X, Paperclip, FileText,
+} from 'lucide-react';
 import { PageShell, PageHeader } from '@/components/layout/PageShell';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsPlatformAdmin } from '@/hooks/useIsPlatformAdmin';
-import { InteractiveMindMap, type MindMapNode } from '@/components/shared/InteractiveMindMap';
+import { OmniMindMap } from '@/components/omniMind/OmniMindMap';
+import type { MindMapNode } from '@/components/shared/InteractiveMindMap';
 import { ConceptGraph, type ConceptNode, type ConceptEdge } from '@/components/omniMind/ConceptGraph';
 import { runExperiment, type ExperimentResult } from '@/components/admin-brain/experiments';
 import ExperimentPanel from '@/components/admin-brain/ExperimentPanel';
 import { SIMULATION_PAGES } from '@/components/admin-brain/simulationPages';
 import { VoiceLoop, type VoiceStatus } from '@/lib/voice/VoiceLoop';
+import { cleanScientificText } from '@/lib/text/cleanScientificText';
+
+type Source = { bookId: string; bookTitle: string; pageNumber: number | null };
 
 type Attachment =
   | { kind: 'image'; prompt: string; dataUrl: string }
@@ -22,6 +31,14 @@ interface Turn {
   who: 'user' | 'assistant';
   text: string;
   attachment?: Attachment;
+  sources?: Source[];
+  imagePreview?: string;
+}
+
+interface SessionRow {
+  id: string;
+  title: string;
+  updated_at: string;
 }
 
 const LAST_SESSION_KEY = 'omni_mind_last_session_id';
@@ -64,6 +81,25 @@ async function callOmniMind(body: Record<string, unknown>) {
   return j;
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+type HistoryMessage = { role: string; content: string; attachments?: { sources?: Source[] } | null };
+function toTurns(msgs: HistoryMessage[], nextId: () => number): Turn[] {
+  return msgs.map((m) => ({
+    id: nextId(),
+    who: m.role === 'user' ? 'user' : 'assistant',
+    text: m.content,
+    sources: m.attachments?.sources ?? undefined,
+  }));
+}
+
 export default function OmniMind() {
   const { isAdmin, loading } = useIsPlatformAdmin();
   if (loading) return <GateShell><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></GateShell>;
@@ -87,10 +123,52 @@ function OmniMindChat() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const turnId = useRef(0);
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
   const listEnd = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
   const [experiment, setExperiment] = useState<ExperimentResult | null>(null);
+  const [viewingSource, setViewingSource] = useState<Source | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+
+  // history sidebar
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [sessions, setSessions] = useState<SessionRow[] | null>(null);
+
+  // pending image attachment for the next message
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function loadSession(id: string) {
+    callOmniMind({ action: 'session_messages', session_id: id })
+      .then((res: { messages?: HistoryMessage[] }) => {
+        const msgs = (res.messages ?? []).filter((m) => m.role === 'user' || (m.role === 'assistant' && m.content));
+        setSessionId(id);
+        sessionIdRef.current = id;
+        localStorage.setItem(LAST_SESSION_KEY, id);
+        setTurns(toTurns(msgs, () => ++turnId.current));
+        setHistoryOpen(false);
+      })
+      .catch((e) => setError(String((e as Error)?.message ?? e)));
+  }
+
+  function newConversation() {
+    setSessionId(null);
+    sessionIdRef.current = null;
+    localStorage.removeItem(LAST_SESSION_KEY);
+    setTurns([]);
+    setError(null);
+    setHistoryOpen(false);
+  }
+
+  function openHistory() {
+    setHistoryOpen((o) => !o);
+    if (!sessions) {
+      callOmniMind({ action: 'sessions' })
+        .then((res: { sessions?: SessionRow[] }) => setSessions(res.sessions ?? []))
+        .catch(() => setSessions([]));
+    }
+  }
 
   // rehydrate the last session's text transcript on load (tool-rendered attachments are not
   // reconstructed on reload yet — a known scope cut for this first version)
@@ -98,19 +176,29 @@ function OmniMindChat() {
     const last = localStorage.getItem(LAST_SESSION_KEY);
     if (!last) return;
     callOmniMind({ action: 'session_messages', session_id: last })
-      .then((res: { messages?: { role: string; content: string }[] }) => {
+      .then((res: { messages?: HistoryMessage[] }) => {
         const msgs = (res.messages ?? []).filter((m) => m.role === 'user' || (m.role === 'assistant' && m.content));
         if (!msgs.length) return;
         setSessionId(last);
-        setTurns(msgs.map((m) => ({ id: ++turnId.current, who: m.role === 'user' ? 'user' : 'assistant', text: m.content })));
+        setTurns(toTurns(msgs, () => ++turnId.current));
       })
       .catch(() => localStorage.removeItem(LAST_SESSION_KEY));
   }, []);
 
-  useEffect(() => { listEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [turns, busy]);
+  // stick to bottom only while the admin hasn't scrolled up to read earlier messages
+  useEffect(() => {
+    if (stickToBottomRef.current) listEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [turns, busy]);
 
-  const addTurn = (who: Turn['who'], text: string, attachment?: Attachment) => {
-    setTurns((t) => [...t, { id: ++turnId.current, who, text, attachment }]);
+  const onScroll = () => {
+    const el = scrollBoxRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+  };
+
+  const addTurn = (who: Turn['who'], text: string, attachment?: Attachment, extra?: Partial<Turn>) => {
+    if (who === 'user') stickToBottomRef.current = true;
+    setTurns((t) => [...t, { id: ++turnId.current, who, text, attachment, ...extra }]);
   };
 
   const pagesForTools = () => SIMULATION_PAGES;
@@ -189,9 +277,10 @@ function OmniMindChat() {
         localStorage.setItem(LAST_SESSION_KEY, res.session_id);
       }
       if (res.error) throw new Error(res.error);
+      const sources: Source[] | undefined = Array.isArray(res.sources) && res.sources.length ? res.sources : undefined;
       if (res.client_calls?.length) {
         const saying = res.say && viaVoice ? voiceRef.current?.say(res.say) : undefined;
-        if (res.say) addTurn('assistant', res.say);
+        if (res.say) addTurn('assistant', res.say, undefined, { sources });
         const tool_results: { tool_call_id: string; content: string }[] = [];
         for (const c of res.client_calls as { id: string; name: string; args: Record<string, unknown> }[]) {
           const out = await runClientTool(c.name, c.args ?? {});
@@ -204,7 +293,7 @@ function OmniMindChat() {
         continue;
       }
       if (res.reply) {
-        addTurn('assistant', res.reply);
+        addTurn('assistant', res.reply, undefined, { sources });
         if (viaVoice) await voiceRef.current?.say(res.reply);
         return;
       }
@@ -215,15 +304,17 @@ function OmniMindChat() {
 
   async function send(text: string, viaVoice = false) {
     const t = text.trim();
-    if (!t) return;
+    const image = pendingImage;
+    if (!t && !image) return;
     const gen = ++turnGenRef.current;
     setInput('');
+    setPendingImage(null);
     setError(null);
-    addTurn('user', t);
+    addTurn('user', t, undefined, { imagePreview: image ?? undefined });
     setBusy(true);
     if (viaVoice) voiceRef.current?.setThinking();
     try {
-      await runTurn({ user_message: t }, gen, viaVoice);
+      await runTurn({ user_message: t, ...(image ? { image_base64: image } : {}) }, gen, viaVoice);
     } catch (e) {
       if (gen === turnGenRef.current) {
         setError(String((e as Error)?.message ?? e));
@@ -231,6 +322,19 @@ function OmniMindChat() {
       }
     } finally {
       if (gen === turnGenRef.current) setBusy(false);
+    }
+  }
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('حالياً بس الصور مدعومة، لسا مش الملفات (PDF/Word).'); return; }
+    if (file.size > 6 * 1024 * 1024) { setError('الصورة كبيرة (أكثر من 6 ميجا).'); return; }
+    try {
+      setPendingImage(await fileToDataUrl(file));
+    } catch {
+      setError('تعذّر قراءة الصورة.');
     }
   }
 
@@ -263,10 +367,44 @@ function OmniMindChat() {
         title="العقل الموسوعي"
         description="مساعد تعليمي موحّد: إجابات من الكتب المرفوعة، صور تعليمية، خرائط ذهنية وعلاقات، وتجارب تفاعلية — للمدير فقط الآن."
         icon={Sparkles}
+        actions={
+          <button
+            type="button"
+            onClick={openHistory}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:border-primary/50"
+          >
+            <History className="h-3.5 w-3.5" /> سجلّ المحادثات
+          </button>
+        }
       />
 
-      <div className="flex flex-col rounded-3xl border border-border bg-card shadow-sm" style={{ minHeight: '60vh' }}>
-        <div className="flex-1 space-y-4 overflow-y-auto p-5">
+      <div className="relative flex flex-col rounded-3xl border border-border bg-card shadow-sm" style={{ minHeight: '60vh' }}>
+        {historyOpen && (
+          <div className="absolute inset-x-0 top-0 z-20 max-h-72 overflow-y-auto rounded-t-3xl border-b border-border bg-card p-3 shadow-lg">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-xs font-semibold text-muted-foreground">المحادثات السابقة</p>
+              <div className="flex items-center gap-2">
+                <button onClick={newConversation} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                  <Plus className="h-3 w-3" /> جديدة
+                </button>
+                <button onClick={() => setHistoryOpen(false)} className="rounded-full p-1 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              </div>
+            </div>
+            {sessions === null && <Loader2 className="mx-auto my-3 h-4 w-4 animate-spin text-muted-foreground" />}
+            {sessions?.length === 0 && <p className="px-1 py-2 text-center text-xs text-muted-foreground">ما في محادثات سابقة بعد.</p>}
+            {sessions?.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => loadSession(s.id)}
+                className={`block w-full rounded-xl px-3 py-2 text-right text-xs hover:bg-background/70 ${s.id === sessionId ? 'bg-primary/10 text-primary' : 'text-foreground'}`}
+              >
+                {s.title || 'محادثة بلا عنوان'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div ref={scrollBoxRef} onScroll={onScroll} className="flex-1 space-y-4 overflow-y-auto p-5">
           {turns.length === 0 && (
             <div className="flex flex-wrap justify-center gap-2 pt-6">
               {SUGGESTIONS.map(({ icon: Icon, text }) => (
@@ -284,15 +422,31 @@ function OmniMindChat() {
           {turns.map((t) => (
             <div key={t.id} className={`flex ${t.who === 'user' ? 'justify-start' : 'justify-end'}`}>
               <div className="max-w-[90%] space-y-2">
+                {t.imagePreview && (
+                  <img src={t.imagePreview} alt="مرفق" className="max-h-56 w-auto rounded-2xl border border-border" />
+                )}
                 {t.text && (
                   <div
                     className={
                       t.who === 'user'
                         ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-brand-from to-brand-to px-4 py-2 text-sm text-primary-foreground shadow'
-                        : 'rounded-2xl rounded-bl-md border border-border bg-background/80 px-4 py-2 text-sm leading-relaxed text-foreground shadow-sm'
+                        : 'rounded-2xl rounded-bl-md border border-border bg-background/80 px-4 py-2.5 text-sm leading-relaxed text-foreground shadow-sm'
                     }
                   >
-                    {t.text}
+                    {t.who === 'assistant' ? <Markdown text={t.text} /> : t.text}
+                  </div>
+                )}
+                {t.sources && t.sources.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {t.sources.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setViewingSource(s)}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-primary/50 hover:text-primary"
+                      >
+                        <FileText className="h-3 w-3" /> {s.bookTitle}{s.pageNumber ? ` — ص${s.pageNumber}` : ''}
+                      </button>
+                    ))}
                   </div>
                 )}
                 {t.attachment && <AttachmentView attachment={t.attachment} />}
@@ -318,6 +472,14 @@ function OmniMindChat() {
         )}
         {voiceError && <p className="mx-3 mb-1 text-center text-xs text-destructive">{voiceError}</p>}
 
+        {pendingImage && (
+          <div className="mx-3 mb-1 flex items-center gap-2 rounded-2xl border border-border bg-background/60 p-1.5">
+            <img src={pendingImage} alt="معاينة" className="h-10 w-10 rounded-xl object-cover" />
+            <span className="flex-1 text-xs text-muted-foreground">صورة جاهزة للإرسال</span>
+            <button onClick={() => setPendingImage(null)} className="rounded-full p-1 text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+          </div>
+        )}
+
         <form
           className="m-3 flex items-center gap-2 rounded-full border border-border bg-background/80 p-1.5 pr-4 shadow-inner focus-within:border-primary/60"
           onSubmit={(e) => { e.preventDefault(); send(input, voiceStatus !== 'closed'); }}
@@ -332,6 +494,15 @@ function OmniMindChat() {
           >
             {voiceStatus === 'closed' ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
           </button>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="إرفاق صورة"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+          >
+            <Paperclip className="h-3.5 w-3.5" />
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onPickFile} />
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -340,7 +511,7 @@ function OmniMindChat() {
           />
           <button
             type="submit"
-            disabled={busy || !input.trim()}
+            disabled={busy || (!input.trim() && !pendingImage)}
             aria-label="إرسال"
             className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-from to-brand-to text-primary-foreground disabled:opacity-50"
           >
@@ -354,7 +525,86 @@ function OmniMindChat() {
           <ExperimentPanel res={experiment} onClose={() => setExperiment(null)} />
         </div>
       )}
+
+      {viewingSource && <SourceModal source={viewingSource} onClose={() => setViewingSource(null)} />}
     </PageShell>
+  );
+}
+
+function Markdown({ text }: { text: string }) {
+  return (
+    <div className="prose-sm max-w-none">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+          h1: ({ children }) => <h3 className="mb-1.5 mt-1 text-sm font-black text-foreground">{children}</h3>,
+          h2: ({ children }) => <h4 className="mb-1.5 mt-1 text-sm font-black text-foreground">{children}</h4>,
+          h3: ({ children }) => <h4 className="mb-1 mt-1 text-sm font-bold text-foreground">{children}</h4>,
+          ul: ({ children }) => <ul className="mb-2 list-disc space-y-0.5 pr-5">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-2 list-decimal space-y-0.5 pr-5">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          table: ({ children }) => (
+            <div className="mb-2 overflow-x-auto rounded-xl border border-border">
+              <table className="w-full text-xs">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-background/80">{children}</thead>,
+          th: ({ children }) => <th className="border-b border-border px-2 py-1.5 text-right font-semibold">{children}</th>,
+          td: ({ children }) => <td className="border-b border-border/50 px-2 py-1.5">{children}</td>,
+          code: ({ children }) => <code className="rounded bg-background px-1 py-0.5 font-mono text-[11px]" dir="ltr">{children}</code>,
+          a: ({ children, href }) => <a href={href} target="_blank" rel="noreferrer" className="text-primary underline">{children}</a>,
+        }}
+      >
+        {cleanScientificText(text)}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function SourceModal({ source, onClose }: { source: Source; onClose: () => void }) {
+  const [text, setText] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setErr(null);
+    setText(null);
+    supabase.functions.invoke('reference-books', { body: { action: 'page', bookId: source.bookId, page: source.pageNumber } })
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) { setErr(String(error.message || error)); return; }
+        setText(data?.text || 'لا يوجد نص مستخرج لهذه الصفحة.');
+      })
+      .catch((e) => { if (alive) setErr(String((e as Error)?.message ?? e)); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [source.bookId, source.pageNumber]);
+
+  return (
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-background/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-card p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        dir="rtl"
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">{source.bookTitle}</p>
+            <p className="text-sm font-bold text-foreground">{source.pageNumber ? `صفحة ${source.pageNumber}` : 'بدون رقم صفحة'}</p>
+          </div>
+          <button onClick={onClose} aria-label="إغلاق" className="rounded-full border border-border p-1.5 text-muted-foreground hover:text-foreground">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {loading && <Loader2 className="mx-auto my-6 h-5 w-5 animate-spin text-muted-foreground" />}
+        {err && <p className="text-xs text-destructive">{err}</p>}
+        {text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{text}</p>}
+      </div>
+    </div>
   );
 }
 
@@ -368,7 +618,7 @@ function AttachmentView({ attachment }: { attachment: Attachment }) {
       );
     case 'mindmap':
       return (
-        <InteractiveMindMap
+        <OmniMindMap
           rootTitle={attachment.rootTitle}
           subjectTitle={attachment.subjectTitle}
           nodes={attachment.nodes}
