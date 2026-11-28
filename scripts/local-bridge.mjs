@@ -125,9 +125,30 @@ function pair(code) {
   console.log('Start it with: npm run bridge');
 }
 
+// A flaky network (seen on mobile-carrier links) can hang a request well past the 5s/30s poll
+// backoff instead of failing it fast, so bound every request here and retry once immediately —
+// that alone recovers most single blips without waiting for the next full poll cycle.
+async function resilientFetch(url, opts = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      return await fetch(url, { ...opts, signal: opts.signal ?? controller.signal });
+    } catch (e) {
+      if (attempt > 0) throw e;
+      await sleep(1000);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
 // ---------------------------------------------------------------- platform API
 const makeApi = (cfg) => {
-  const client = createClient(cfg.supabaseUrl, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = createClient(cfg.supabaseUrl, cfg.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: resilientFetch },
+  });
   const authKey = hmacHex(cfg.deviceSecret, 'zarwa-bridge-auth');
   const rpc = async (fn, args) => {
     const { data, error } = await client.rpc(fn, { p_device_id: cfg.deviceId, p_auth_key: authKey, ...args });
@@ -1488,16 +1509,38 @@ async function main() {
   setInterval(refreshAgModels, 10 * 60 * 1000).unref();
   state.refreshAg = refreshAgModels;
 
-  // Doorbell: new job → poll now; cancelled current job → kill now.
-  client
-    .channel(`bridge-${cfg.deviceId}`)
-    .on('broadcast', { event: 'job' }, ({ payload }) => {
-      if (payload?.status === 'cancelled' && state.current?.id === payload.job) state.current.out.onCancel?.();
-      else state.wake?.();
-    })
-    .on('broadcast', { event: 'deploy' }, () => state.wake?.())
-    .on('broadcast', { event: 'project' }, () => state.wake?.())
-    .subscribe((s) => log(`realtime: ${s}`));
+  // Doorbell: new job → poll now; cancelled current job → kill now. A dropped channel (CHANNEL_ERROR /
+  // TIMED_OUT, seen during network blips) otherwise just sits dead — rejoin it with the same backoff
+  // the poll loop uses, so instant wake-ups recover on their own instead of falling back to the
+  // 5-30s heartbeat poll until the process is restarted by hand.
+  let realtimeDelay = 5000;
+  const connectRealtime = () => {
+    // scoped per attempt: the library can fire several error statuses for the same failed join,
+    // and this must only schedule one retry for them, while still letting the NEXT attempt retry too
+    let handled = false;
+    const channel = client.channel(`bridge-${cfg.deviceId}`);
+    channel
+      .on('broadcast', { event: 'job' }, ({ payload }) => {
+        if (payload?.status === 'cancelled' && state.current?.id === payload.job) state.current.out.onCancel?.();
+        else state.wake?.();
+      })
+      .on('broadcast', { event: 'deploy' }, () => state.wake?.())
+      .on('broadcast', { event: 'project' }, () => state.wake?.())
+      .subscribe((s) => {
+        log(`realtime: ${s}`);
+        if (s === 'SUBSCRIBED') {
+          realtimeDelay = 5000;
+        } else if ((s === 'CHANNEL_ERROR' || s === 'TIMED_OUT' || s === 'CLOSED') && !handled) {
+          handled = true;
+          try {
+            client.removeChannel(channel);
+          } catch {}
+          setTimeout(connectRealtime, realtimeDelay).unref();
+          realtimeDelay = Math.min(realtimeDelay * 2, 30000);
+        }
+      });
+  };
+  connectRealtime();
 
   installRepoGuard(cfg);
   for (const slug of Object.keys(cfg.projects ?? {})) {
