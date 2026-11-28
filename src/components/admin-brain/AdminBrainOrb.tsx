@@ -15,6 +15,7 @@ import BrainVisual from './BrainVisual';
 import { RISKY, click, findClickable, isNo, isYes, readControls, readPageText, readScreen, scrollPage, setControl, typeInto } from './screenControl';
 import { SIMULATION_PAGES } from './simulationPages';
 import { InsightsBar, useBrainPulse } from './BrainInsights';
+import { useIsPlatformAdmin } from '@/hooks/useIsPlatformAdmin';
 
 type Mode = 'corner' | 'center' | 'docked';
 
@@ -48,26 +49,6 @@ const STATUS_AR: Record<BrainStatus, string> = {
   closed: '',
 };
 
-function useIsAdmin() {
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    const check = async (uid?: string) => {
-      if (!uid) { if (alive) setOk(false); return; }
-      const { data, error } = await supabase.rpc('is_platform_admin', { _user_id: uid });
-      if (alive) setOk(!error && data === true);
-    };
-    supabase.auth.getSession().then(({ data }) => check(data.session?.user?.id));
-    // Deferred + not returned: an awaited Supabase call inside this callback deadlocks the auth client
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      const uid = s?.user?.id;
-      setTimeout(() => { void check(uid); }, 0);
-    });
-    return () => { alive = false; sub.subscription.unsubscribe(); };
-  }, []);
-  return ok;
-}
-
 function useViewport() {
   const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
@@ -79,7 +60,7 @@ function useViewport() {
 }
 
 export default function AdminBrainOrb() {
-  const isAdmin = useIsAdmin();
+  const { isAdmin } = useIsPlatformAdmin();
   if (!isAdmin) return null;
   return <Orb />;
 }

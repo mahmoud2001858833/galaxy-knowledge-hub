@@ -187,8 +187,13 @@ const ParentRegistration = wrap(lazy(() => import("./pages/ParentRegistration"))
 const ParentDashboard = wrap(lazy(() => import("./pages/ParentDashboard")));
 const ParentAssignments = wrap(lazy(() => import("./pages/ParentAssignments")));
 const ParentNotes = wrap(lazy(() => import("./pages/ParentNotes")));
+const StudentRegistration = wrap(lazy(() => import("./pages/StudentRegistration")));
+const StudentDashboard = wrap(lazy(() => import("./pages/StudentDashboard")));
+const StudentAssignments = wrap(lazy(() => import("./pages/StudentAssignments")));
+const StudentNotes = wrap(lazy(() => import("./pages/StudentNotes")));
 const ClassChat = wrap(lazy(() => import("./pages/ClassChat")));
 const SuperAdminControlHub = wrap(lazy(() => import("./pages/admin/SuperAdminControlHub")));
+const OmniMind = wrap(lazy(() => import("./pages/OmniMind")));
 const StudentCommunityForum = wrap(lazy(() => import("./pages/StudentCommunityForum")));
 const EducationSection = wrap(lazy(() => import("./pages/EducationSection")));
 const AIAssistantSection = wrap(lazy(() => import("./pages/AIAssistantSection")));
@@ -1283,6 +1288,26 @@ const router = createBrowserRouter([
         element: <AuthGuard><ClassChat /></AuthGuard>,
       },
       {
+        path: 'student-registration',
+        element: <AuthGuard><StudentRegistration /></AuthGuard>,
+      },
+      {
+        path: 'student-dashboard',
+        element: <AuthGuard><StudentDashboard /></AuthGuard>,
+      },
+      {
+        path: 'student/assignments',
+        element: <AuthGuard><StudentAssignments /></AuthGuard>,
+      },
+      {
+        path: 'student/notes',
+        element: <AuthGuard><StudentNotes /></AuthGuard>,
+      },
+      {
+        path: 'student/chat',
+        element: <AuthGuard><ClassChat /></AuthGuard>,
+      },
+      {
         path: 'admin',
         element: <SuperAdminControlHub />,
       },
@@ -1294,7 +1319,11 @@ const router = createBrowserRouter([
         path: 'super-admin-control-hub',
         element: <SuperAdminControlHub />,
       },
-      
+      {
+        path: 'omni-mind',
+        element: <OmniMind />,
+      },
+
       {
         path: 'institutional-partnerships',
         element: <PublicRoute><InstitutionalPartnerships /></PublicRoute>,

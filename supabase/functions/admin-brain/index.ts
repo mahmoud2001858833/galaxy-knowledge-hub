@@ -7,6 +7,8 @@
 // - action "speak": text -> audio (wav).
 // Only is_platform_admin users get anything. All data tools are read-only.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { callGateway, logAiUsage, type Provider } from "../_shared/ai-gateway.ts";
+import { speak as speakShared } from "../_shared/tts.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -207,25 +209,9 @@ const SERVER_TOOLS: Record<string, (a: any) => Promise<unknown>> = {
 };
 
 // ---------- what the AI costs ----------
-// Approximate list prices in USD per 1M tokens [input, output]. Groq's free tier costs nothing, so for
-// Groq this is the most it could cost. TTS is priced per character.
-const PRICES: [RegExp, number, number][] = [
-  [/gpt-oss-120b/, 0.15, 0.6], [/gpt-oss-20b/, 0.075, 0.3], [/llama-4-scout/, 0.27, 0.85],
-  [/flash-lite/, 0.1, 0.4], [/gemini.*flash/, 0.3, 2.5], [/gemini.*pro/, 1.25, 10],
-];
-const TTS_PER_CHAR: Record<string, number> = { openai: 0.000015, groq: 0.00002, gemini: 0.00002 };
+// Cost pricing, provider fallback and ai_usage_log writes live in _shared/ai-gateway.ts and
+// _shared/tts.ts now, shared with omni-mind instead of duplicated here.
 let CURRENT_USER: string | null = null;
-
-function logUsage(row: { kind: string; provider?: string; model?: string; tokens_in?: number; tokens_out?: number; chars?: number; cost_usd: number }) {
-  // never slows or breaks an answer
-  service.from("ai_usage_log").insert({ fn: "admin-brain", user_id: CURRENT_USER, ...row }).then(({ error }) => {
-    if (error) console.warn("ai_usage_log", error.message);
-  });
-}
-function chatCost(model: string, tin: number, tout: number) {
-  const p = PRICES.find(([re]) => re.test(model));
-  return p ? (tin * p[1] + tout * p[2]) / 1e6 : 0;
-}
 
 // ---------- team, schedule, bridge: the whole operation in one place ----------
 const AMMAN = "Asia/Amman";
@@ -544,9 +530,6 @@ ${memory.length ? `ما طلب المدير أن تتذكريه:\n- ${memory.joi
 //       ADMIN_BRAIN_LLM_KEY   the API key / token
 //       ADMIN_BRAIN_LLM_MODEL e.g. openai/gpt-oss-120b (Groq) or @cf/meta/llama-4-scout-17b-16e-instruct (Cloudflare)
 //  2. Google Gemini directly (ADMIN_BRAIN_GEMINI_KEY, needs billing on that Google project)
-type Provider = { name: string; url: string; key: string; model: string };
-const skipUntil = new Map<string, number>();
-
 function providers(): Provider[] {
   const list: Provider[] = [];
   const u = Deno.env.get("ADMIN_BRAIN_LLM_URL"), k = Deno.env.get("ADMIN_BRAIN_LLM_KEY");
@@ -568,75 +551,8 @@ function providers(): Provider[] {
   return list;
 }
 
-const timing: { provider?: string; ms: number[] } = { ms: [] };
-
 async function gateway(messages: unknown[]) {
-  const list = providers();
-  if (!list.length) throw new Error("ما في أي مزوّد ذكاء اصطناعي مضبوط");
-  const errors: string[] = [];
-  const now = Date.now();
-  // providers that failed recently go last instead of being skipped entirely
-  const ordered = [...list.filter((p) => (skipUntil.get(p.name) ?? 0) <= now), ...list.filter((p) => (skipUntil.get(p.name) ?? 0) > now)];
-  // one pass over every provider; if they are all only rate-limited for a few seconds (Groq's
-  // per-minute budget refills continuously), wait for the soonest one and try again instead of failing
-  const call = async (p: Provider) => {
-    const t = Date.now();
-    const r = await fetch(p.url, {
-      signal: AbortSignal.timeout(25_000),
-      method: "POST",
-      headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: p.model, messages, tools: TOOLS, tool_choice: "auto", max_tokens: 900, temperature: 0.6,
-        // gpt-oss on Groq: little hidden reasoning = answers in well under a second
-        ...(/gpt-oss/.test(p.model) ? { reasoning_effort: "low" } : {}),
-      }),
-    });
-    if (r.status === 429) {
-      const body = await r.text();
-      const secs = Number(r.headers.get("retry-after")) || Number(/try again in ([\d.]+)s/i.exec(body)?.[1]) || 10;
-      return { wait: secs };
-    }
-    if (!r.ok) {
-      const body = (await r.text()).slice(0, 140);
-      return { error: r.status === 402 ? `${p.name}: الرصيد خلص (402)` : r.status === 413 ? `${p.name}: الطلب كبير (413)` : `${p.name} ${r.status}: ${body}`, status: r.status };
-    }
-    const j = await r.json();
-    const msg = j?.choices?.[0]?.message;
-    if (!msg) return { error: `${p.name}: رد فاضي` };
-    timing.provider = p.name;
-    timing.ms.push(Date.now() - t);
-    const tin = Number(j?.usage?.prompt_tokens ?? 0), tout = Number(j?.usage?.completion_tokens ?? 0);
-    logUsage({ kind: "chat", provider: p.name, model: p.model, tokens_in: tin, tokens_out: tout, cost_usd: chatCost(p.model, tin, tout) });
-    return { msg };
-  };
-
-  let soonest: { p: Provider; wait: number } | null = null;
-  for (const p of ordered) {
-    try {
-      const res: any = await call(p);
-      if (res.msg) { skipUntil.delete(p.name); return res.msg; }
-      if (res.wait) {
-        errors.push(`${p.name}: حد الدقيقة (بعد ${Math.ceil(res.wait)}ث)`);
-        skipUntil.set(p.name, Date.now() + res.wait * 1000);
-        if (!soonest || res.wait < soonest.wait) soonest = { p, wait: res.wait };
-        continue;
-      }
-      errors.push(res.error);
-      skipUntil.set(p.name, Date.now() + (res.status === 402 ? 30 * 60_000 : 60_000));
-    } catch (e) {
-      errors.push(`${p.name}: ${String(e).slice(0, 100)}`);
-      skipUntil.set(p.name, Date.now() + 60_000);
-    }
-  }
-  if (soonest && soonest.wait <= 20) {
-    await new Promise((s) => setTimeout(s, soonest!.wait * 1000 + 300));
-    try {
-      const res: any = await call(soonest.p);
-      if (res.msg) { skipUntil.delete(soonest.p.name); return res.msg; }
-    } catch { /* fall through */ }
-  }
-  console.warn("admin-brain providers failed", errors);
-  throw new Error(errors.join(" · ") || "AI busy");
+  return await callGateway({ service, providers: providers(), messages, tools: TOOLS, fnName: "admin-brain", userId: CURRENT_USER });
 }
 
 /** Keep the history short, never starting in the middle of a tool exchange. */
@@ -666,16 +582,13 @@ async function chat(body: any) {
   const memory = await memories().catch(() => [] as string[]);
 
   const t0 = Date.now();
-  timing.ms = [];
-  timing.provider = undefined;
-  const took = () => ({ provider: timing.provider, model_ms: timing.ms, total_ms: Date.now() - t0 });
   for (let round = 0; round < 8 && Date.now() - t0 < 120_000; round++) {
     const msg = await gateway([{ role: "system", content: systemPrompt(pages, current, memory) }, ...history, ...added]);
     if (!msg) throw new Error("empty answer");
     const calls: any[] = msg.tool_calls ?? [];
     const assistant = { role: "assistant", content: msg.content ?? "", ...(calls.length ? { tool_calls: calls } : {}) };
     added.push(assistant);
-    if (!calls.length) return { reply: String(msg.content ?? "").trim(), added, took: took() };
+    if (!calls.length) return { reply: String(msg.content ?? "").trim(), added };
 
     const clientCalls: any[] = [];
     for (const c of calls) {
@@ -693,103 +606,15 @@ async function chat(body: any) {
       added.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify(out).slice(0, 2500) });
     }
     // the browser runs screen tools, appends their results and calls us again
-    if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added, took: took() };
+    if (clientCalls.length) return { client_calls: clientCalls, say: String(msg.content ?? "").trim(), added };
   }
   return { reply: "خلّيني أوقف هون، الطلب طوّل علي. شو بدك بالضبط؟", added };
 }
 
 // ---------- voice ----------
-// Same girl as Blind Eye (blind-eye-voice): gateway gpt-4o-mini-tts voice "nova" with the same style,
-// and Gemini TTS "Sulafat" as the backup, exactly like there.
-const VOICE = "nova";
-const VOICE_STYLE = "تحدثي بالعربية الفصحى المبسطة بصوت أنثوي دافئ وهادئ وواضح، كصديقة قريبة تتكلم بثقة. لا تستعجلي.";
-
-function wav(pcm: Uint8Array, rate = 24000): Uint8Array {
-  const h = new DataView(new ArrayBuffer(44));
-  const w = (o: number, s: string) => [...s].forEach((c, i) => h.setUint8(o + i, c.charCodeAt(0)));
-  w(0, "RIFF"); h.setUint32(4, 36 + pcm.length, true); w(8, "WAVE");
-  w(12, "fmt "); h.setUint32(16, 16, true); h.setUint16(20, 1, true); h.setUint16(22, 1, true);
-  h.setUint32(24, rate, true); h.setUint32(28, rate * 2, true); h.setUint16(32, 2, true); h.setUint16(34, 16, true);
-  w(36, "data"); h.setUint32(40, pcm.length, true);
-  const out = new Uint8Array(44 + pcm.length);
-  out.set(new Uint8Array(h.buffer), 0);
-  out.set(pcm, 44);
-  return out;
-}
-
-async function speakGemini(text: string): Promise<Uint8Array> {
-  const key = (Deno.env.get("GOOGLE_API_KEY") || Deno.env.get("ADMIN_BRAIN_GEMINI_KEY")) || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_API_KEY");
-  if (!key) throw new Error("no gemini key");
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${key}`, {
-    signal: AbortSignal.timeout(20_000),
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: `${VOICE_STYLE}\n${text}` }] }],
-      generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Sulafat" } } } },
-    }),
-  });
-  if (!r.ok) throw new Error(`gemini tts ${r.status}`);
-  const j = await r.json();
-  const part = j?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.data);
-  if (!part) throw new Error("gemini tts: no audio");
-  const rate = Number(/rate=(\d+)/.exec(part.inlineData.mimeType ?? "")?.[1] ?? 24000);
-  return wav(Uint8Array.from(atob(part.inlineData.data), (c) => c.charCodeAt(0)), rate);
-}
-
-// Groq's Arabic voice (needs its terms accepted once in the Groq console)
-async function speakGroq(text: string): Promise<Uint8Array> {
-  const key = Deno.env.get("ADMIN_BRAIN_LLM_KEY");
-  if (!key || !Deno.env.get("ADMIN_BRAIN_LLM_URL")?.includes("groq.com")) throw new Error("no groq");
-  let voice = Deno.env.get("ADMIN_BRAIN_TTS_VOICE") || "noura"; // women: noura, lulwa, aisha
-  for (let i = 0; i < 2; i++) {
-    const r = await fetch("https://api.groq.com/openai/v1/audio/speech", {
-      signal: AbortSignal.timeout(20_000),
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "canopylabs/orpheus-arabic-saudi", voice, input: text.slice(0, 1000), response_format: "wav" }),
-    });
-    if (r.ok) return new Uint8Array(await r.arrayBuffer());
-    const err = await r.text();
-    // unknown voice: the error lists the valid ones, take the first
-    const valid = /voice[^\[]*\[([^\]]+)\]/i.exec(err)?.[1]?.split(",")[0]?.replace(/["'\s]/g, "");
-    if (i === 0 && valid && valid !== voice) { voice = valid; continue; }
-    throw new Error(`groq tts ${r.status}: ${err.slice(0, 120)}`);
-  }
-  throw new Error("groq tts failed");
-}
-
-// The exact Blind Eye girl: OpenAI's own gpt-4o-mini-tts "nova" with the same style, paid by a
-// direct OpenAI key (ADMIN_BRAIN_OPENAI_KEY) instead of Lovable credit. Same model, same voice.
-async function speakOpenAI(text: string): Promise<Uint8Array> {
-  const key = Deno.env.get("ADMIN_BRAIN_OPENAI_KEY");
-  if (!key) throw new Error("no openai key");
-  const r = await fetch("https://api.openai.com/v1/audio/speech", {
-    signal: AbortSignal.timeout(20_000),
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "gpt-4o-mini-tts", voice: VOICE, input: text, instructions: VOICE_STYLE, response_format: "wav" }),
-  });
-  if (!r.ok) throw new Error(`openai tts ${r.status}: ${(await r.text()).slice(0, 120)}`);
-  return new Uint8Array(await r.arrayBuffer());
-}
-
-const ttsSkip = new Map<string, number>();
+// Provider fallback (OpenAI "nova" -> Groq Arabic -> Gemini "Sulafat") lives in _shared/tts.ts now.
 async function speak(text: string) {
-  const errors: string[] = [];
-  for (const [name, fn] of [["openai", speakOpenAI], ["groq", speakGroq], ["gemini", speakGemini]] as const) {
-    if ((ttsSkip.get(name) ?? 0) > Date.now()) continue;
-    try {
-      const audio = await fn(text);
-      logUsage({ kind: "tts", provider: name, chars: text.length, cost_usd: text.length * (TTS_PER_CHAR[name] ?? 0) });
-      return audio;
-    } catch (e) {
-      errors.push(`${name}: ${String(e).slice(0, 120)}`);
-      ttsSkip.set(name, Date.now() + (/402|terms|quota|429/.test(String(e)) ? 15 * 60_000 : 30_000));
-    }
-  }
-  console.warn("admin-brain voice failed", errors);
-  throw new Error(errors.join(" · ") || "no voice available");
+  return await speakShared(text, { service, fnName: "admin-brain", userId: CURRENT_USER });
 }
 
 Deno.serve(async (req) => {
