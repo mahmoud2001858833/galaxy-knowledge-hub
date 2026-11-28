@@ -54,7 +54,8 @@ serve(async (req) => {
     }
 
     // تجميع البرومبت النهائي
-    const enhancedPrompt = `${noTextInstruction}\n\nCreate a ${educationalContext} ${styleContext}: ${prompt}. Ultra high resolution, professional quality.`;
+    const accuracyInstruction = "Follow the requested subject, composition and details precisely and accurately — depict exactly what is described, not a generic or loosely related substitute.";
+    const enhancedPrompt = `${noTextInstruction}\n${accuracyInstruction}\n\nCreate a ${educationalContext} ${styleContext}: ${prompt}. Ultra high resolution, professional quality.`;
 
     console.log('Calling Lovable AI Gateway for image generation...');
     console.log('Enhanced prompt:', enhancedPrompt);
